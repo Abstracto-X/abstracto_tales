@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Chronicles | Webnovel & Gallery</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&family=Merriweather:wght@300;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+    <nav class="sidebar">
+        <div class="logo">
+            <h2>The Chronicles</h2>
+        </div>
+        <ul class="nav-links">
+            <li class="active" onclick="showSection('home')"><i class="fas fa-home"></i> Home</li>
+            <li onclick="showSection('novel')"><i class="fas fa-book-open"></i> Read Novel</li>
+            <li onclick="showSection('gallery')"><i class="fas fa-images"></i> Character Gallery</li>
+        </ul>
+        <div class="footer">
+            <p>&copy; 2025 Author Name</p>
+        </div>
+    </nav>
+
+    <main class="content">
+        
+        <section id="home" class="section active-section">
+            <div class="hero">
+                <h1>Welcome to the World</h1>
+                <p>A tale of stars, magic, and the void between.</p>
+                <button class="btn-primary" onclick="showSection('novel')">Start Reading</button>
+            </div>
+        </section>
+
+        <section id="novel" class="section hidden">
+            <header class="section-header">
+                <h2>Table of Contents</h2>
+            </header>
+            
+            <div class="chapter-list">
+                <button class="chapter-btn" onclick="loadChapter(1)">Chapter 1: The Beginning</button>
+                <button class="chapter-btn" onclick="loadChapter(2)">Chapter 2: The Shadow</button>
+                <button class="chapter-btn" onclick="loadChapter(3)">Chapter 3: Awakening</button>
+            </div>
+
+            <article id="chapter-viewer" class="reader-view hidden">
+                <button class="back-btn" onclick="closeChapter()"><i class="fas fa-arrow-left"></i> Back to Menu</button>
+                <h2 id="chapter-title">Chapter Title</h2>
+                <div id="chapter-content" class="text-content">
+                    </div>
+            </article>
+        </section>
+
+        <section id="gallery" class="section hidden">
+            <header class="section-header">
+                <h2>Character Archives</h2>
+            </header>
+            
+            <div class="gallery-grid">
+                <div class="gallery-card">
+                    <div class="img-container">
+                        <img src="https://images.unsplash.com/photo-1535905557558-afc4877a26fc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Character 1">
+                    </div>
+                    <div class="card-info">
+                        <h3>Aeliana</h3>
+                        <p>The Void Walker</p>
+                    </div>
+                </div>
+
+                <div class="gallery-card">
+                    <div class="img-container">
+                        <img src="https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Character 2">
+                    </div>
+                    <div class="card-info">
+                        <h3>Kael</h3>
+                        <p>The Iron Vanguard</p>
+                    </div>
+                </div>
+
+                 <div class="gallery-card">
+                    <div class="img-container">
+                        <img src="https://images.unsplash.com/photo-1542259681-d4cd7193bc86?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80" alt="Landscape">
+                    </div>
+                    <div class="card-info">
+                        <h3>The Citadel</h3>
+                        <p>Seat of Power</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
