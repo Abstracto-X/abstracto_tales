@@ -1,0 +1,24 @@
+[
+    {
+        "id": "char_ahsoka",
+        "name": "Ahsoka Tano",
+        "role": "The Ronin",
+        "img": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=500&auto=format&fit=crop",
+        "bio": "Former Padawan of Anakin Skywalker. Survivor of Order 66. She walks a path between the Jedi Code and her own moral compass."
+    },
+    {
+        "id": "char_1764396315147",
+        "name": "Vasha",
+        "role": "Role",
+        "bio": "",
+        "img": "data/stories/story_sw_01/gallery/img_1764396326615.webp",
+        "gallery_images": [
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764396870374.webp",
+                "tags": [
+                    "All"
+                ]
+            }
+        ]
+    }
+]

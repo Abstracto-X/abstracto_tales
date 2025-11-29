@@ -1,0 +1,16 @@
+[
+    {
+        "id": "story_sw_01",
+        "title": "Star Wars Rebels: A Gray Tale",
+        "genre": "Sci-Fi / Space Opera",
+        "cover": "data/stories/story_sw_01/gallery/img_1764396474135.webp",
+        "desc": "Order 66 changed everything. Ahsoka Tano is no longer a Jedi, but she cannot ignore the suffering of"
+    },
+    {
+        "id": "story_cyb_02",
+        "title": "Neon Virtue",
+        "genre": "Cyberpunk",
+        "cover": "https://images.unsplash.com/photo-1625805866449-3589fe3f71a3?q=80&w=1000&auto=format&fit=crop",
+        "desc": "In 2199, code is law, and hackers are the new high priests."
+    }
+]
