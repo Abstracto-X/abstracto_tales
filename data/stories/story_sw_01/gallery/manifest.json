@@ -1,0 +1,16 @@
+[
+    {
+        "id": "char_ahsoka",
+        "name": "Ahsoka Tano",
+        "role": "The Ronin",
+        "img": "https://images.unsplash.com/photo-1594736797933-d0501ba2fe65?q=80&w=500&auto=format&fit=crop",
+        "bio": "Former Padawan of Anakin Skywalker. Survivor of Order 66. She walks a path between the Jedi Code and her own moral compass."
+    },
+    {
+        "id": "char_ezra",
+        "name": "The Shadow Child",
+        "role": "The Target",
+        "img": "https://images.unsplash.com/photo-1485546246426-74dc88dec4d9?q=80&w=500&auto=format&fit=crop",
+        "bio": "A young street rat from Lothal with a terrifying connection to the Force. He doesn't just sense the Dark Side; he can weave it."
+    }
+]
