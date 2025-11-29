@@ -3,99 +3,605 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Chronicles | Database</title>
-    <link rel="stylesheet" href="style.css">
+    <title>The Aether | Author Archives</title>
+    
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lato:wght@300;400&family=Merriweather:wght@300;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- CORE VARIABLES --- */
+        :root {
+            --primary-color: #ffffff;
+            --accent-color: #ffd700;
+            --glass-bg: rgba(20, 20, 20, 0.85); /* Slightly darker for better readability */
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --font-header: 'Cinzel', serif;
+            --font-body: 'Lora', serif;
+            --font-ui: 'Montserrat', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #050505;
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+        }
+
+        /* --- 1. BACKGROUND LAYER --- */
+        .background-layer {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2;
+            background-color: #111;
+            background-image: url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop');
+            background-size: cover;
+            background-position: center;
+            transition: filter 0.5s ease, transform 0.5s ease, background-image 0.8s ease-in-out;
+            
+            /* Default: Slight cinematic blur */
+            filter: blur(5px) brightness(0.5);
+            transform: scale(1.02);
+        }
+
+        /* --- 2. UI CONTAINER --- */
+        #app-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            padding: 2rem;
+            /* Transition for the opacity changes handled by JS */
+            transition: opacity 0.1s linear; 
+        }
+
+        /* --- 3. UTILITIES --- */
+        .glass-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- 4. NAVIGATION & HEADER --- */
+        #main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            margin-bottom: 1rem;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .logo { 
+            font-family: var(--font-header); 
+            font-size: 1.8rem; 
+            letter-spacing: 4px; 
+            color: var(--primary-color);
+            text-shadow: 0 0 10px rgba(255,255,255,0.2);
+            cursor: pointer;
+        }
+
+        /* Back Button */
+        .back-btn-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+        .back-btn-wrapper:hover { color: var(--accent-color); }
+
+        /* --- 5. CONTENT STAGE --- */
+        #content-stage {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-color) rgba(0,0,0,0.3);
+        }
+        #content-stage::-webkit-scrollbar { width: 6px; }
+        #content-stage::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
+        #content-stage::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
+
+        /* --- VIEW: HOME --- */
+        .story-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 3rem;
+            padding: 2rem 0;
+        }
+        .story-card {
+            position: relative;
+            height: 450px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.4s ease, border-color 0.4s ease;
+            display: flex;
+            align-items: flex-end;
+        }
+        .story-card:hover { transform: translateY(-8px); border-color: var(--accent-color); }
+        .story-card img {
+            position: absolute; top:0; left:0; width:100%; height:100%; 
+            object-fit: cover; z-index: -1; transition: transform 0.6s ease;
+        }
+        .story-card:hover img { transform: scale(1.1); }
+        .card-info {
+            width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 100%);
+            padding: 2rem;
+        }
+        .card-title { font-family: var(--font-header); font-size: 1.4rem; color: var(--accent-color); margin-bottom: 0.5rem;}
+
+        /* --- VIEW: STORY HUB --- */
+        .story-hub-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 4rem;
+            max-width: 1200px;
+            margin: 2rem auto;
+            align-items: center;
+        }
+        .hub-cover { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        .hub-details h1 { font-family: var(--font-header); font-size: 3.5rem; margin-bottom: 1rem; line-height: 1; }
+        .hub-synopsis { font-size: 1.1rem; line-height: 1.8; margin-bottom: 3rem; color: #ddd; }
+        .hub-actions { display: flex; gap: 1.5rem; }
+        .btn-large {
+            padding: 1.2rem 3rem;
+            font-family: var(--font-header);
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            background: transparent;
+            border: 1px solid var(--accent-color);
+            color: var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .btn-large:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 20px var(--accent-color); }
+
+        /* --- VIEW: READER --- */
+        .reader-layout { display: flex; gap: 2rem; height: 100%; }
+        .reader-sidebar {
+            width: 250px;
+            overflow-y: auto;
+            border-right: 1px solid rgba(255,255,255,0.05);
+            padding-right: 1rem;
+        }
+        .chapter-list-item {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .chapter-list-item:hover { color: var(--accent-color); padding-left: 1.2rem; }
+        .chapter-list-item.active { border-left: 3px solid var(--accent-color); background: rgba(255,215,0,0.1); }
+        .reader-content {
+            flex: 1;
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(10, 10, 10, 0.95);
+            padding: 4rem;
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 1.2rem;
+            line-height: 1.8;
+            color: #d0d0d0;
+            overflow-y: auto;
+        }
+
+        /* --- VIEW: GALLERY --- */
+        .gallery-nav { display: flex; justify-content: center; gap: 1rem; margin-bottom: 3rem; }
+        .filter-chip {
+            padding: 0.5rem 1.5rem;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.3s;
+        }
+        .filter-chip.active, .filter-chip:hover { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
+        
+        .char-grid { display: flex; flex-wrap: wrap; gap: 3rem; justify-content: center; }
+        .char-card { width: 220px; text-align: center; cursor: pointer; transition: transform 0.3s; }
+        .char-card:hover { transform: translateY(-10px); }
+        .char-img-frame {
+            width: 180px; height: 180px; margin: 0 auto 1.5rem; border-radius: 50%; padding: 5px;
+            border: 2px solid var(--glass-border); position: relative; transition: border-color 0.3s;
+        }
+        .char-card:hover .char-img-frame { border-color: var(--accent-color); }
+        .char-img-frame img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+
+        .sub-gallery-grid { column-count: 3; column-gap: 1.5rem; margin-top: 2rem; }
+        .gallery-item {
+            break-inside: avoid; margin-bottom: 1.5rem; border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.1); transition: opacity 0.3s;
+        }
+        .gallery-item img { width: 100%; display: block; transition: transform 0.5s; cursor: zoom-in;}
+        .gallery-item:hover img { transform: scale(1.05); }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .story-hub-layout { grid-template-columns: 1fr; text-align: center; }
+            .sub-gallery-grid { column-count: 1; }
+            .reader-layout { flex-direction: column; }
+            .reader-sidebar { width: 100%; height: 100px; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; }
+        }
+    </style>
 </head>
 <body>
 
-    <nav class="sidebar">
-        <div class="logo">
-            <h2>The Chronicles</h2>
-        </div>
-        <ul class="nav-links">
-            <li class="active" onclick="showSection('home')"><i class="fas fa-home"></i> Home</li>
-            <li onclick="showSection('novel')"><i class="fas fa-book-open"></i> Read Novel</li>
-            <li onclick="showSection('gallery')"><i class="fas fa-users"></i> Character DB</li>
-        </ul>
-        <div class="footer">
-            <p>&copy; 2025 Author Name</p>
-        </div>
-    </nav>
+    <div class="background-layer" id="global-bg"></div>
 
-    <main class="content">
-        
-        <section id="home" class="section active-section">
-            <div class="hero">
-                <h1>The Gray Tales</h1>
-                <p>Explore the archives of the lost era.</p>
-                <div class="hero-btns">
-                    <button class="btn-primary" onclick="showSection('novel')">Read Story</button>
-                    <button class="btn-secondary" onclick="showSection('gallery')">View Characters</button>
-                </div>
+    <div id="app-container">
+        <!-- Header / Nav -->
+        <nav id="main-header" class="glass-box">
+            <div id="back-container">
+                <!-- Back button injected here dynamically -->
             </div>
-        </section>
+            <div class="logo" onclick="Router.navigate('home')">AETHER</div>
+            <div style="width: 50px;"> <!-- Spacer to center logo --> </div>
+        </nav>
 
-        <section id="novel" class="section hidden">
-            <header class="section-header"><h2>Table of Contents</h2></header>
-            <div class="chapter-list" id="chapter-list-display">
-                </div>
-            <article id="chapter-viewer" class="reader-view hidden">
-                <button class="back-btn" onclick="closeChapter()"><i class="fas fa-arrow-left"></i> Back</button>
-                <h2 id="chapter-title"></h2>
-                <div id="chapter-content" class="text-content"></div>
-            </article>
-        </section>
+        <div id="content-stage">
+            <!-- Content Injected Here -->
+        </div>
+    </div>
 
-        <section id="gallery" class="section hidden">
-            <header class="section-header">
-                <h2>Character Archives</h2>
-                <div class="filter-bar">
-                    <button class="filter-btn active" onclick="filterGallery('all')">All</button>
-                    <button class="filter-btn" onclick="filterGallery('hero')">Heroes</button>
-                    <button class="filter-btn" onclick="filterGallery('villain')">Villains</button>
-                    <button class="filter-btn" onclick="filterGallery('location')">Locations</button>
-                </div>
-            </header>
+    <script>
+        const USE_MOCK_DATA = true; 
+
+        // --- MOCK DATA ---
+        const MOCK_DB = {
+            manifest: [
+                { id: "story_001", title: "The Gray Tales", genre: "Dark Fantasy", cover: "https://images.unsplash.com/photo-1635326444826-06c8f8d2e666?q=80&w=1000&auto=format&fit=crop", desc: "A mercenary navigates a world where shadows have physical weight and the sun is dying." },
+                { id: "story_002", title: "Neon Virtue", genre: "Cyberpunk", cover: "https://images.unsplash.com/photo-1625805866449-3589fe3f71a3?q=80&w=1000&auto=format&fit=crop", desc: "In 2199, code is law, and hackers are the new high priests." }
+            ],
+            stories: {
+                "story_001": {
+                    config: { title: "The Gray Tales", status: "Ongoing", synopsis: "In a world where shadows have mass and can crush a man, Elara sells her sword to the highest bidder. But when a job goes wrong, she finds herself protecting a child who shines with an inner light that could burn the world down.", themeColor: "#b0c4de", bg: "https://images.unsplash.com/photo-1519074069444-1ba4fff66d16?q=80&w=2070&auto=format&fit=crop" },
+                    chapters: [
+                        { id: "ch1", title: "Chapter 1: Shadow Weight", content: "The tavern smelled of stale ale and fear. Elara kept her hand near the hilt of her blade. <br><br>The shadows in the corner were moving, shifting like oil on water. She took a sip of her drink. 'Not tonight,' she whispered. <br><br>But the shadows didn't listen. They coalesced, forming a jagged shape that lunged..." },
+                        { id: "ch2", title: "Chapter 2: The Contract", content: "Gold has a specific sound when it hits a table. Heavy. Final. <br><br>'Double it,' Elara said, not looking up from the coins. <br><br>'It's a child, mercenary. Not a dragon.' <br><br>'Children represent the future,' she replied, finally meeting the patron's eyes. 'And the future is heavy.'" }
+                    ],
+                    characters: [
+                        { id: "char1", name: "Elara", role: "Protagonist", img: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=500&auto=format&fit=crop", bio: "A veteran mercenary with a mysterious past." },
+                        { id: "char2", name: "The Child", role: "Target", img: "https://images.unsplash.com/photo-1605806616949-1e87b487bc2a?q=80&w=500&auto=format&fit=crop", bio: "A beacon of light in a dark world." }
+                    ],
+                    gallery: {
+                        "char1": [
+                            { src: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=500&auto=format&fit=crop", tags: ["Portrait", "Concepts"] },
+                            { src: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?q=80&w=1000&auto=format&fit=crop", tags: ["Action", "Combat"] },
+                            { src: "https://images.unsplash.com/photo-1514316454349-750a7fd3da3a?q=80&w=1000&auto=format&fit=crop", tags: ["Sketch", "Concepts"] },
+                            { src: "https://images.unsplash.com/photo-1493612276216-ee3925520721?q=80&w=1000&auto=format&fit=crop", tags: ["Portrait"] }
+                        ]
+                    }
+                }
+            }
+        };
+
+        // --- CORE LOGIC ---
+        const App = {
+            state: {
+                currentStoryId: null,
+                currentStoryData: null,
+                currentCharId: null,
+                currentImages: [],
+            },
             
-            <div class="masonry-grid" id="gallery-container">
-                </div>
-        </section>
+            init: () => {
+                Router.init();
+                Visuals.initDynamicTransparency();
+            },
 
-    </main>
+            // DATA FETCHING HELPERS
+            fetchManifest: async () => USE_MOCK_DATA ? MOCK_DB.manifest : (await fetch('data/manifest.json')).json(),
+            fetchStoryConfig: async (id) => USE_MOCK_DATA ? MOCK_DB.stories[id]?.config : (await fetch(`data/stories/${id}/config.json`)).json(),
+            fetchChapters: async (id) => USE_MOCK_DATA ? MOCK_DB.stories[id]?.chapters : (await fetch(`data/stories/${id}/chapters/index.json`)).json(),
+            fetchCharacters: async (id) => USE_MOCK_DATA ? MOCK_DB.stories[id]?.characters : (await fetch(`data/stories/${id}/gallery/manifest.json`)).json(),
+            fetchCharImages: async (storyId, charId) => USE_MOCK_DATA ? MOCK_DB.stories[storyId]?.gallery[charId] || [] : [],
+        };
 
-    <div id="char-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <button class="close-modal" onclick="closeModal('char-modal')">&times;</button>
-            
-            <div class="modal-body">
-                <div class="char-info">
-                    <h2 id="modal-name">Character Name</h2>
-                    <p class="subtitle" id="modal-title">The Title</p>
-                    <div class="stats-box">
-                        <p><strong>Role:</strong> <span id="modal-role">Warrior</span></p>
-                        <p><strong>Origin:</strong> <span id="modal-origin">Earth</span></p>
-                    </div>
-                    <p class="bio-text" id="modal-bio">...</p>
-                </div>
+        const UI = {
+            stage: document.getElementById('content-stage'),
+            bg: document.getElementById('global-bg'),
+            backContainer: document.getElementById('back-container'),
+            root: document.documentElement,
 
-                <div class="char-subgallery">
-                    <h3>Visual Archives</h3>
-                    <div class="sub-grid" id="modal-gallery-grid">
+            setTheme: (color, bgImage) => {
+                UI.root.style.setProperty('--accent-color', color || '#ffd700');
+                if (bgImage) UI.bg.style.backgroundImage = `url('${bgImage}')`;
+            },
+
+            setBackButton: (action, label) => {
+                if (!action) {
+                    UI.backContainer.innerHTML = '';
+                } else {
+                    UI.backContainer.innerHTML = `
+                        <div class="back-btn-wrapper" onclick="${action}">
+                            <i class="fas fa-arrow-left"></i> ${label || 'Back'}
                         </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    `;
+                }
+            },
 
-    <div id="lightbox" class="lightbox-overlay hidden" onclick="closeModal('lightbox')">
-        <span class="close-lightbox">&times;</span>
-        <img id="lightbox-img" src="" alt="Full Screen">
-        <p id="lightbox-caption"></p>
-    </div>
+            renderHome: async () => {
+                UI.setBackButton(null);
+                UI.stage.innerHTML = '<div style="color:white; text-align:center; margin-top:50px;">Loading Archives...</div>';
+                UI.setTheme('#ffd700', 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop'); 
+                
+                const stories = await App.fetchManifest();
+                let html = '<div class="story-grid fade-in">';
+                stories.forEach(story => {
+                    html += `
+                        <div class="story-card glass-box" onclick="Router.navigate('story/${story.id}')">
+                            <img src="${story.cover}" alt="${story.title}">
+                            <div class="card-info">
+                                <div class="card-title">${story.title}</div>
+                                <div style="color:#ccc; font-size:0.9rem;">${story.desc}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                UI.stage.innerHTML = html;
+            },
 
-    <script src="script.js"></script>
+            renderStoryHub: async (id) => {
+                UI.setBackButton("Router.navigate('home')", "Archives");
+                const config = await App.fetchStoryConfig(id);
+                if (!config) return UI.stage.innerHTML = "Story not found.";
+                
+                App.state.currentStoryId = id;
+                App.state.currentStoryData = config;
+                UI.setTheme(config.themeColor, config.bg);
+
+                UI.stage.innerHTML = `
+                    <div class="story-hub-layout fade-in glass-box">
+                        <img class="hub-cover" src="${config.bg}" alt="Cover">
+                        <div class="hub-details">
+                            <h1>${config.title}</h1>
+                            <div style="color:var(--accent-color); text-transform:uppercase; letter-spacing:1px; margin-bottom:2rem;">
+                                ${config.status} • ${App.state.currentStoryData.genre || 'Fiction'}
+                            </div>
+                            <div class="hub-synopsis">${config.synopsis}</div>
+                            <div class="hub-actions">
+                                <button class="btn-large" onclick="Router.navigate('read/${id}/0')">
+                                    <i class="fas fa-book-open"></i> READ
+                                </button>
+                                <button class="btn-large" onclick="Router.navigate('gallery/${id}')">
+                                    <i class="fas fa-images"></i> GALLERY
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderReader: async (storyId, chapterIndex) => {
+                UI.setBackButton(`Router.navigate('story/${storyId}')`, "Story Hub");
+                const chapters = await App.fetchChapters(storyId);
+                const chapter = chapters[chapterIndex];
+                
+                let sidebarHtml = '';
+                chapters.forEach((ch, idx) => {
+                    const active = idx == chapterIndex ? 'active' : '';
+                    sidebarHtml += `<div class="chapter-list-item ${active}" onclick="Router.navigate('read/${storyId}/${idx}')">${ch.title}</div>`;
+                });
+
+                UI.stage.innerHTML = `
+                    <div class="reader-layout fade-in">
+                        <div class="reader-sidebar glass-box">
+                            <h3 style="margin-bottom:1rem; color:var(--accent-color); font-family:var(--font-header);">Chapters</h3>
+                            ${sidebarHtml}
+                        </div>
+                        <div class="reader-content glass-box">
+                            <h2>${chapter.title}</h2>
+                            <div class="chapter-text">${chapter.content}</div>
+                            <br><hr style="border-color:rgba(255,255,255,0.1)"><br>
+                            <div style="text-align:center;">
+                                ${parseInt(chapterIndex) < chapters.length - 1 
+                                    ? `<button class="btn-large" style="margin:0 auto;" onclick="Router.navigate('read/${storyId}/${parseInt(chapterIndex)+1}')">Next Chapter</button>` 
+                                    : '<span>End of current updates.</span>'}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            },
+
+            renderGallery: async (storyId, charId = null) => {
+                if (!charId) {
+                    // Level 1: Roster
+                    UI.setBackButton(`Router.navigate('story/${storyId}')`, "Story Hub");
+                    const characters = await App.fetchCharacters(storyId);
+                    
+                    let html = `<h2 style="text-align:center; font-family:var(--font-header); font-size:2rem; margin-bottom:2rem;">Dramatis Personae</h2>`;
+                    html += '<div class="char-grid fade-in">';
+                    characters.forEach(char => {
+                        html += `
+                            <div class="char-card" onclick="Router.navigate('gallery/${storyId}/${char.id}')">
+                                <div class="char-img-frame"><img src="${char.img}"></div>
+                                <div class="char-name">${char.name}</div>
+                                <div style="font-size:0.8rem; color:#aaa;">${char.role}</div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    UI.stage.innerHTML = html;
+                } else {
+                    // Level 2: Sub-Gallery with Filters
+                    UI.setBackButton(`Router.navigate('gallery/${storyId}')`, "All Characters");
+                    const characters = await App.fetchCharacters(storyId);
+                    const charData = characters.find(c => c.id === charId);
+                    
+                    // Store images for filtering
+                    App.state.currentImages = await App.fetchCharImages(storyId, charId);
+                    
+                    // Extract unique tags
+                    const allTags = new Set(["All"]);
+                    App.state.currentImages.forEach(img => img.tags.forEach(t => allTags.add(t)));
+                    
+                    // Render Chips
+                    let chipsHtml = '';
+                    allTags.forEach(tag => {
+                        chipsHtml += `<div class="filter-chip ${tag === 'All' ? 'active' : ''}" onclick="UI.filterGallery('${tag}', this)">${tag}</div>`;
+                    });
+
+                    UI.stage.innerHTML = `
+                        <div class="fade-in">
+                            <div class="glass-box" style="margin-bottom:2rem; display:flex; gap:2rem; align-items:center; padding: 2rem;">
+                                <img src="${charData.img}" style="width:120px; height:120px; border-radius:50%; border:2px solid var(--accent-color); object-fit:cover;">
+                                <div>
+                                    <h2 style="font-family:var(--font-header); font-size:2rem; color: var(--accent-color);">${charData.name}</h2>
+                                    <p>${charData.bio}</p>
+                                </div>
+                            </div>
+                            
+                            <div class="gallery-nav">${chipsHtml}</div>
+                            <div id="gallery-grid" class="sub-gallery-grid"></div>
+                        </div>
+                    `;
+                    // Render initial images
+                    UI.renderGalleryGrid(App.state.currentImages);
+                }
+            },
+
+            filterGallery: (tag, chipElement) => {
+                // Update active chip visual
+                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+                chipElement.classList.add('active');
+
+                // Filter data
+                const filtered = tag === 'All' 
+                    ? App.state.currentImages 
+                    : App.state.currentImages.filter(img => img.tags.includes(tag));
+                
+                UI.renderGalleryGrid(filtered);
+            },
+
+            renderGalleryGrid: (images) => {
+                const grid = document.getElementById('gallery-grid');
+                grid.innerHTML = images.map(img => `
+                    <div class="gallery-item fade-in">
+                        <img src="${img.src}" loading="lazy">
+                    </div>
+                `).join('');
+            }
+        };
+
+        const Visuals = {
+            initDynamicTransparency: () => {
+                const app = document.getElementById('app-container');
+                const bgLayer = document.getElementById('global-bg');
+                let mouseX = 0, mouseY = 0;
+                
+                // Track mouse position
+                window.addEventListener('mousemove', (e) => {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+                    
+                    // Check if hovering ANY glass-box or interactive element
+                    const isHoveringContent = e.target.closest('.glass-box') || 
+                                              e.target.closest('.story-card') || 
+                                              e.target.closest('button') || 
+                                              e.target.closest('.char-card') ||
+                                              e.target.closest('.gallery-item') ||
+                                              e.target.closest('.reader-content');
+
+                    if (isHoveringContent) {
+                        // User is reading/interacting: Full Opacity, Blur BG
+                        app.style.opacity = '1';
+                        bgLayer.style.filter = 'blur(5px) brightness(0.5)';
+                        bgLayer.style.transform = 'scale(1.02)';
+                    } else {
+                        // User is looking at art: Calculate Rolling Opacity
+                        Visuals.calculateDistanceOpacity(mouseX, mouseY, app, bgLayer);
+                    }
+                });
+            },
+
+            calculateDistanceOpacity: (x, y, appEl, bgEl) => {
+                // Calculate distance from center of screen
+                const centerX = window.innerWidth / 2;
+                const centerY = window.innerHeight / 2;
+                const maxDist = Math.hypot(centerX, centerY); // Distance to corner
+                const currentDist = Math.hypot(x - centerX, y - centerY);
+                
+                const ratio = currentDist / maxDist; // 0 (center) to 1 (corner)
+
+                // LOGIC: 
+                // 0% to 70% distance -> High Opacity (0.9 to 0.7)
+                // 70% to 100% distance -> Exponential drop to 0.1
+                
+                let targetOpacity;
+                if (ratio < 0.7) {
+                    // Slow linear fade
+                    targetOpacity = 1 - (ratio * 0.3); // ranges 1.0 -> 0.79
+                } else {
+                    // Exponential drop for the edges
+                    // Normalize ratio to 0-1 range for the last 30%
+                    const edgeRatio = (ratio - 0.7) / 0.3; 
+                    targetOpacity = 0.79 * (1 - Math.pow(edgeRatio, 2)); // Drops to 0
+                }
+
+                // Clamp minimum opacity to 0.1 so it's never fully invisible
+                targetOpacity = Math.max(0.1, targetOpacity);
+
+                appEl.style.opacity = targetOpacity;
+                
+                // Remove blur so art is clear
+                bgEl.style.filter = 'blur(0px) brightness(1)';
+                bgEl.style.transform = 'scale(1)';
+            }
+        };
+
+        const Router = {
+            init: () => {
+                window.addEventListener('hashchange', Router.handle);
+                Router.handle();
+            },
+            navigate: (path) => window.location.hash = path,
+            handle: () => {
+                const hash = window.location.hash.slice(1) || 'home';
+                const parts = hash.split('/');
+                const route = parts[0];
+
+                if (route === 'home') UI.renderHome();
+                else if (route === 'story') UI.renderStoryHub(parts[1]);
+                else if (route === 'read') UI.renderReader(parts[1], parts[2] || 0);
+                else if (route === 'gallery') UI.renderGallery(parts[1], parts[2]);
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', App.init);
+
+    </script>
 </body>
 </html>
