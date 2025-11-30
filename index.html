@@ -41,8 +41,9 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -2; background-color: #111;
             background-size: cover; background-position: center;
-            transition: filter 0.6s ease, background-image 0.8s ease; /* Removed transform */
-            will-change: filter;
+            /* Slower background transitions */
+            transition: filter 1s ease, background-image 1s ease-in-out; 
+            will-change: filter, background-image;
         }
         
         #app-container { 
@@ -51,18 +52,23 @@
             will-change: opacity;
         }
 
-        /* --- SMOOTH FADE TRANSITIONS (No Zoom) --- */
+        /* --- SMOOTH CINEMATIC TRANSITIONS --- */
+        /* 1. EXIT: Takes 0.5s to fade out */
         .page-exit { 
             opacity: 0; 
             pointer-events: none; 
-            transition: opacity 0.2s ease-out; 
+            transition: opacity 0.5s ease-in-out; 
         }
+        
+        /* 2. ENTER: Starts invisible */
         .page-enter { 
             opacity: 0; 
         }
+        
+        /* 3. ACTIVE: Takes 0.6s to fade in smoothly */
         .page-active { 
             opacity: 1; 
-            transition: opacity 0.3s ease-in; 
+            transition: opacity 0.6s ease-in-out; 
         }
 
         /* --- GLASS UI --- */
@@ -314,7 +320,6 @@
 
         const State = { manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [], filterTag: 'All', wallpaperChar: null };
         
-        // --- IMPROVED API ERROR HANDLING ---
         const API = { 
             get: async (path) => {
                 try {
@@ -324,7 +329,7 @@
                     }
                     return await response.json();
                 } catch (e) {
-                    throw e; // Pass error to caller
+                    throw e; 
                 }
             }
         };
@@ -359,7 +364,6 @@
             reader: async (id, chIdx = 0) => {
                 State.currentStoryId = id;
                 try {
-                    // --- 1. ERROR CATCHING FOR READ BUTTON ---
                     const chapters = await API.get(`data/stories/${id}/chapters/index.json`);
                     const conf = await API.get(`data/stories/${id}/config.json`);
                     UI.setBg(conf.bg);
@@ -378,7 +382,6 @@
                     Render.stage.innerHTML = `<div class="reader-layout"><div class="reader-sidebar glass-box"><h3 style="padding:1rem; font-family:var(--font-header)">Chapters</h3>${sidebar}</div><div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}"><div class="reader-toolbar"><button class="rt-btn" title="Focus" onclick="ReaderFeatures.toggleFocus(this)"><i class="fas fa-expand"></i></button><div style="position:relative;"><button class="rt-btn" title="Fonts" onclick="ReaderFeatures.toggleFontMenu()"><i class="fas fa-font"></i></button><div id="font-menu" class="font-menu"><div class="font-option" onclick="ReaderFeatures.setFontFamily('font-serif')">Serif</div><div class="font-option" onclick="ReaderFeatures.setFontFamily('font-sans')">Sans</div><div style="border-top:1px solid #333; margin:4px 0"></div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-sm')">Small</div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-md')">Medium</div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-lg')">Large</div></div></div></div><h2 style="font-family:var(--font-header); margin-bottom:1.5rem">${chapter.title}</h2><div class="chapter-text">${chapter.content.replace(/\n/g, '<br>')}</div>${nextBtn}</div></div>`;
                 
                 } catch (e) {
-                    // --- 2. ALERT USER IF JSON IS INVALID ---
                     console.error(e);
                     alert(`FAILED TO LOAD CHAPTERS.\n\nReason: ${e.message}\n\nPlease check that 'index.json' exists and contains valid JSON (no trailing commas, all strings quoted).`);
                     Router.navigate(`story/${id}`);
@@ -446,7 +449,8 @@
             navigate: (h) => {
                 const app = document.getElementById('app-container');
                 app.classList.remove('page-active'); app.classList.add('page-exit');
-                setTimeout(() => window.location.hash = h, 200); 
+                // INCREASED TIMEOUT to 500ms to match CSS exit transition
+                setTimeout(() => window.location.hash = h, 500); 
             },
             handle: () => {
                 const parts = Router.getParts();
