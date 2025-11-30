@@ -1,0 +1,12 @@
+[
+    {
+        "name": "The Galaxy (Political)",
+        "src": "starwars_galaxy.jpeg",
+        "isPrimary": true
+    },
+    {
+        "name": "Tatooine",
+        "src": "tatooine.webp",
+        "isPrimary": false
+    }
+]
