@@ -316,8 +316,8 @@
         <img id="lightbox-img" src="" onclick="event.stopPropagation()">
     </div>
 
-    <script>
-        // --- 1. VISUAL CONTROLLERS (Particles, Tilt, Transparency) ---
+<script>
+        // --- 1. VISUAL CONTROLLERS ---
         const Particles = {
             init: () => {
                 const canvas = document.getElementById('particle-canvas');
@@ -386,15 +386,21 @@
             }
         };
 
+        const ReaderFeatures = {
+            fontSize: 'text-md', fontFamily: 'font-serif',
+            toggleFocus: (btn) => { document.body.classList.toggle('focus-active'); btn.classList.toggle('active'); },
+            toggleFontMenu: () => { const m = document.getElementById('font-menu'); m.style.display = m.style.display==='flex'?'none':'flex'; },
+            setFontSize: (s) => { ReaderFeatures.fontSize = s; ReaderFeatures.applyFonts(); },
+            setFontFamily: (f) => { ReaderFeatures.fontFamily = f; ReaderFeatures.applyFonts(); },
+            applyFonts: () => { const c = document.querySelector('.reader-content'); if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; }
+        };
+
         // --- 2. FUNCTIONAL CONTROLLERS (Audio, Map) ---
         const AudioController = {
             audio: document.getElementById('bg-music'),
             icon: document.getElementById('audio-icon'),
             isPlaying: false,
-            init: (src) => {
-                // To avoid errors if no src is provided, only set if valid
-                if(src) AudioController.audio.src = src;
-            },
+            init: (src) => { if(src) AudioController.audio.src = src; },
             toggle: () => {
                 if (AudioController.isPlaying) {
                     AudioController.audio.pause();
@@ -450,24 +456,13 @@
                 const oldZoom = MapController.zoom;
                 MapController.zoom += e.deltaY > 0 ? -scaleAmount : scaleAmount;
                 MapController.zoom = Math.max(0.5, Math.min(MapController.zoom, 5));
-                
                 MapController.x = mouseX - (mouseX - MapController.x) * (MapController.zoom / oldZoom);
                 MapController.y = mouseY - (mouseY - MapController.y) * (MapController.zoom / oldZoom);
-                
                 MapController.updateTransform();
             },
             updateTransform: () => {
                 MapController.image.style.transform = `translate(${MapController.x}px, ${MapController.y}px) scale(${MapController.zoom})`;
             }
-        };
-
-        const ReaderFeatures = {
-            fontSize: 'text-md', fontFamily: 'font-serif',
-            toggleFocus: (btn) => { document.body.classList.toggle('focus-active'); btn.classList.toggle('active'); },
-            toggleFontMenu: () => { const m = document.getElementById('font-menu'); m.style.display = m.style.display==='flex'?'none':'flex'; },
-            setFontSize: (s) => { ReaderFeatures.fontSize = s; ReaderFeatures.applyFonts(); },
-            setFontFamily: (f) => { ReaderFeatures.fontFamily = f; ReaderFeatures.applyFonts(); },
-            applyFonts: () => { const c = document.querySelector('.reader-content'); if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; }
         };
 
         // --- 3. STATE & API ---
@@ -482,7 +477,39 @@
             }
         };
 
-        // --- 4. RENDERERS & ACTIONS ---
+        // --- 4. UI OBJECT (FIXED) ---
+        const UI = {
+            bg: document.getElementById('global-bg'),
+            back: document.getElementById('back-container'),
+            wp: document.getElementById('wp-toggle-container'),
+            
+            // Background Functions (Merged from Primary)
+            setBg: (url) => { if(url && UI.bg) UI.bg.style.backgroundImage = `url('${url}')`; },
+            checkWallpaperChar: () => {
+                State.wallpaperChar = State.currentChars.find(c => c.name.toLowerCase().includes('wallpaper'));
+                UI.wp.innerHTML = State.wallpaperChar ? `<div class="back-btn-wrapper" style="color:var(--accent-color); margin-right:1rem;" onclick="UI.openWallpaperModal()"><i class="fas fa-paint-brush"></i></div>` : '';
+            },
+            hideWallpaperButton: () => UI.wp.innerHTML = '',
+            openWallpaperModal: () => {
+                if(!State.wallpaperChar) return;
+                document.getElementById('wp-grid').innerHTML = State.wallpaperChar.gallery_images.map(i => `<div style="cursor:pointer" onclick="UI.setBg('${i.src}'); document.getElementById('wp-modal').style.display='none'"><img src="${i.src}" style="width:100%; border-radius:4px;"></div>`).join('');
+                document.getElementById('wp-modal').style.display = 'flex';
+            },
+
+            // Navigation & Map Functions (Merged from New)
+            setBackButton: (act, lbl) => UI.back.innerHTML = act ? `<div class="back-btn-wrapper" onclick="${act}"><i class="fas fa-arrow-left"></i> ${lbl}</div>` : '',
+            openMapViewer: () => document.getElementById('map-viewer').classList.add('active'),
+            closeMapViewer: () => document.getElementById('map-viewer').classList.remove('active'),
+            setActiveMap: (src) => {
+                MapController.reset();
+                document.getElementById('map-image').src = src;
+                document.querySelectorAll('.map-option').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.src === src);
+                });
+            }
+        };
+
+        // --- 5. RENDERERS & ACTIONS ---
         const Render = {
             stage: document.getElementById('content-stage'),
             home: async () => {
@@ -500,15 +527,12 @@
                 UI.setBackButton("Router.navigate('home')", "Archives");
                 State.currentStoryId = id;
                 try {
-                    // Load Config and Manifest
                     State.currentStoryConfig = await API.get(`data/stories/${id}/config.json`);
                     State.manifest = await API.get('data/manifest.json');
-                    
-                    // Preload Chars for Wallpaper logic
                     State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(() => []);
                     
                     UI.setBg(State.currentStoryConfig.bg); 
-                    UI.checkWallpaperChar(); // Enable Wallpaper button if applicable
+                    UI.checkWallpaperChar();
 
                     const story = State.manifest.find(s => s.id === id) || { cover: "" };
                     const conf = State.currentStoryConfig;
@@ -516,7 +540,6 @@
 
                     let hubHtml = `<div class="story-hub-wrapper"><div class="story-hub-layout glass-box"><img class="hub-cover" src="${story.cover}"><div class="hub-details"><h1>${conf.title}</h1><div class="hub-meta">${conf.status} • ${conf.genre}</div><div class="hub-synopsis">${conf.synopsis}</div><div class="hub-actions"><button class="btn-large" onclick="Router.navigate('read/${id}')"><i class="fas fa-book-open"></i> READ</button><button class="btn-large" onclick="Router.navigate('gallery/${id}')"><i class="fas fa-images"></i> GALLERY</button></div></div></div>`;
 
-                    // Try loading expansion bar (New Feature)
                     try {
                         const worldMeta = await API.get(`world_data/${id}/meta.json`);
                         hubHtml += `<div class="expansion-bar glass-box">
@@ -553,7 +576,6 @@
                     Render.stage.innerHTML = `<div class="reader-layout"><div class="reader-sidebar glass-box"><h3 style="padding:1rem; font-family:var(--font-header)">Chapters</h3>${sidebar}</div><div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}"><div class="reader-toolbar"><button class="rt-btn" title="Focus" onclick="ReaderFeatures.toggleFocus(this)"><i class="fas fa-expand"></i></button><div style="position:relative;"><button class="rt-btn" title="Fonts" onclick="ReaderFeatures.toggleFontMenu()"><i class="fas fa-font"></i></button><div id="font-menu" class="font-menu"><div class="font-option" onclick="ReaderFeatures.setFontFamily('font-serif')">Serif</div><div class="font-option" onclick="ReaderFeatures.setFontFamily('font-sans')">Sans</div><div style="border-top:1px solid #333; margin:4px 0"></div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-sm')">Small</div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-md')">Medium</div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-lg')">Large</div></div></div></div><h2 style="font-family:var(--font-header); margin-bottom:1.5rem">${chapter.title}</h2><div class="chapter-text">${chapter.content.replace(/\n/g, '<br>')}</div>${nextBtn}</div></div>`;
                 
                 } catch (e) {
-                    console.error(e);
                     alert(`FAILED TO LOAD CHAPTERS.\n\nReason: ${e.message}`);
                     Router.navigate(`story/${id}`);
                 }
@@ -617,7 +639,6 @@
                     
                     UI.setActiveMap(primaryMap.src);
                     UI.openMapViewer();
-                    // Maps are an overlay, so we show a placeholder in the stage
                     Render.stage.innerHTML = `<div style="text-align:center; padding: 4rem;"><h2>Map Viewer Active</h2><p>Close the map viewer to return to the story hub.</p></div>`;
                 } catch(e) { 
                     alert(`Map Error: ${e.message}`);
@@ -639,34 +660,7 @@
             shuffleGallery: () => Actions.renderGalleryGrid(true),
         };
 
-        const UI = {
-            bg: document.getElementById('global-bg'),
-            back: document.getElementById('back-container'),
-            wp: document.getElementById('wp-toggle-container'),
-            setBg: (url) => { if(url) UI.bg.style.backgroundImage = `url('${url}')`; },
-            setBackButton: (act, lbl) => UI.back.innerHTML = act ? `<div class="back-btn-wrapper" onclick="${act}"><i class="fas fa-arrow-left"></i> ${lbl}</div>` : '',
-            checkWallpaperChar: () => {
-                State.wallpaperChar = State.currentChars.find(c => c.name.toLowerCase().includes('wallpaper'));
-                UI.wp.innerHTML = State.wallpaperChar ? `<div class="back-btn-wrapper" style="color:var(--accent-color); margin-right:1rem;" onclick="UI.openWallpaperModal()"><i class="fas fa-paint-brush"></i></div>` : '';
-            },
-            hideWallpaperButton: () => UI.wp.innerHTML = '',
-            openWallpaperModal: () => {
-                if(!State.wallpaperChar) return;
-                document.getElementById('wp-grid').innerHTML = State.wallpaperChar.gallery_images.map(i => `<div style="cursor:pointer" onclick="UI.setBg('${i.src}'); document.getElementById('wp-modal').style.display='none'"><img src="${i.src}" style="width:100%; border-radius:4px;"></div>`).join('');
-                document.getElementById('wp-modal').style.display = 'flex';
-            },
-            openMapViewer: () => document.getElementById('map-viewer').classList.add('active'),
-            closeMapViewer: () => document.getElementById('map-viewer').classList.remove('active'),
-            setActiveMap: (src) => {
-                MapController.reset();
-                document.getElementById('map-image').src = src;
-                document.querySelectorAll('.map-option').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.src === src);
-                });
-            }
-        };
-
-        // --- 5. ROUTER (Merged) ---
+        // --- 6. ROUTER ---
         const Router = {
             getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
             navigate: (h) => {
@@ -676,8 +670,6 @@
             handle: async () => {
                 const parts = Router.getParts();
                 const view = parts[0];
-                
-                // Map logical views to Render functions
                 const renderMap = {
                     'home': () => Render.home(),
                     'story': () => Render.storyHub(parts[1]),
@@ -687,15 +679,8 @@
                     'lore': () => Render.lore(parts[1]),
                     'maps': () => Render.maps(parts[1])
                 };
-
-                if (renderMap[view]) {
-                    await renderMap[view]();
-                }
-
-                // Fade back in
-                setTimeout(() => {
-                    document.body.classList.remove('is-transitioning');
-                }, 100);
+                if (renderMap[view]) await renderMap[view]();
+                setTimeout(() => { document.body.classList.remove('is-transitioning'); }, 100);
             }
         };
 
@@ -705,7 +690,7 @@
             Visuals.initDynamicTransparency(); 
             Particles.init();
             MapController.init();
-            AudioController.init('path/to/music.mp3'); // Set your audio path here
+            AudioController.init('path/to/music.mp3');
         });
     </script>
 </body>
