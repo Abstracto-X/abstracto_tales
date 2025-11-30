@@ -1,44 +1,51 @@
 [
   {
+    "id": "tatooine",
     "title": "Tatooine",
     "type": "Planet",
     "img": "https://upload.wikimedia.org/wikipedia/en/6/6d/Tatooine_%28fictional_desert_planet%29.jpg",
-    "desc": "A harsh desert planet orbiting twin suns in the Outer Rim, Tatooine is sparsely inhabited and often described as a lawless, frontier-style world — home to moisture farms, smugglers, and outlaws. Historically, it has served as home to key figures such as Anakin Skywalker and Luke Skywalker. "
+    "desc": "A harsh desert planet orbiting twin suns in the Outer Rim, Tatooine is sparsely inhabited and often described as a lawless, frontier-style world—home to moisture farms, smugglers, and outlaws.\n\nIts position far from the core worlds meant the planet was largely ignored by the Galactic Republic and later the Empire, allowing criminal organizations like the Hutts to exert significant control. This atmosphere of neglect and lawlessness shaped the lives of many who called it home.\n\nHistorically, Tatooine is one of the most consequential planets in galactic history, having served as the early home to key figures such as Anakin Skywalker and Luke Skywalker. Their ties to this arid, remote world often belied their importance to the future of the galaxy."
   },
   {
+    "id": "sith_holocron",
     "title": "Sith Holocron",
     "type": "Artifact",
     "img": "https://lumiere-a.akamaihd.net/v1/images/sith-holocron_fa76c67c.jpeg?region=0%2C0%2C1560%2C878",
-    "desc": "A dark-side holocron, used by Sith practitioners to store forbidden teachings, ancient knowledge and dangerous secrets. Sith holocrons often demand a strong affinity with the dark side to unlock. These artifacts have roots stretching back millennia before the Sith–Jedi conflicts that shaped galactic history.  "
+    "desc": "A dark-side holocron, used by Sith practitioners to store forbidden teachings, ancient knowledge, and dangerous secrets. Unlike Jedi holocrons, Sith holocrons often demand a strong affinity with the dark side to unlock, sometimes requiring violence or malice to be accessed.\n\nThese artifacts have roots stretching back millennia before the Sith–Jedi conflicts that shaped galactic history. They often feature crystalline or pyramidal designs and can contain not only information but also the consciousness of their creators, offering guidance (or tempting corruption) to those who find them.\n\nThe search for Sith holocrons has historically driven many dark-side users, including the Inquisitors, who seek them to gain an advantage in the Force or acquire powerful new Sith techniques."
   },
   {
+    "id": "jedi_holocron",
     "title": "Jedi Holocron",
     "type": "Artifact",
     "img": "https://cdnb.artstation.com/p/assets/images/images/028/229/113/large/sean-marino-holocron-02.jpg?1593850007",
-    "desc": "A holocron created by the Jedi, used to store massive repositories of knowledge — from Force lore to historical records, philosophy, and Jedi teachings. Accessing a Jedi holocron typically requires a Force-sensitive individual and often serves as a way to pass on lore across generations of Jedi."
+    "desc": "A holocron created by the Jedi, used to store massive repositories of knowledge—from Force lore to historical records, philosophy, and Jedi teachings. They serve as a primary means of preserving and passing on the Order's legacy across generations.\n\nAccessing a Jedi holocron typically requires a Force-sensitive individual, as the device will only respond to a mind that is open to the light side. Many holocrons contain interactive guides or holograms of past Jedi Masters, providing personalized instruction to the user.\n\nFollowing the destruction of the Jedi Order during Order 66, the few surviving holocrons became invaluable, often hidden or lost treasures sought by both remaining Jedi and agents of the Empire."
   },
   {
+    "id": "alderaan",
     "title": "Alderaan",
     "type": "Planet",
     "img": "https://lumiere-a.akamaihd.net/v1/images/alderaan-main_f5b676cf.jpeg?region=0%2C40%2C1280%2C640",
-    "desc": "An Earth-like planet celebrated for its natural beauty, culture, and commitment to peace and diplomacy. Alderaan was regarded as one of the Republic’s most prestigious and idealistic worlds. Its destruction by the superweapon of the Empire became a defining tragedy — a grim illustration of tyranny’s price. "
+    "desc": "An Earth-like planet celebrated for its natural beauty, culture, and profound commitment to peace and diplomacy. Alderaan was regarded as one of the Galactic Republic’s most prestigious and idealistic core worlds, having no standing military and dedicating itself to humanitarian causes.\n\nDue to its strong anti-Imperial stance, Alderaan became a key center for the early Rebel Alliance, led by its royal family, the House of Organa. This association ultimately sealed its fate.\n\nIts sudden and absolute destruction by the Death Star superweapon became a defining tragedy of the Galactic Civil War—a grim and shocking illustration of the Empire’s absolute tyranny. The event was immediately used as a rallying cry for the disparate elements of the Rebel Alliance."
   },
   {
+    "id": "galactic_empire",
     "title": "Galactic Empire",
     "type": "Faction",
     "img": "https://static.wikia.nocookie.net/empireatwar/images/c/ca/Imperial_Emblem_by_ConradChaos.png/revision/latest?cb=20150125062618",
-    "desc": "An autocratic galactic regime formed after the fall of the Republic, the Empire centralized power under the Emperor and imposed martial law across star systems. It wielded overwhelming military and industrial might to suppress dissent — often ruling through fear, intimidation, and massive weapons of war. "
+    "desc": "An autocratic galactic regime formed after the fall of the Republic and the subsequent purge of the Jedi Order. The Empire centralized power under Emperor Palpatine (Darth Sidious) and imposed martial law across star systems, promising order and security in the wake of the Clone Wars.\n\nIt wielded overwhelming military and industrial might, spearheaded by legions of Stormtroopers and massive Star Destroyers, to suppress all dissent. The Empire's doctrine focused on ruling through fear, intimidation, and the constant threat of massive weapons of war.\n\nThe regime utilized specialized agents, such as the Inquisitors, to hunt down remaining Jedi and Force-sensitives, ensuring no organized resistance could challenge its authority or Palpatine's dominance of the dark side of the Force."
   },
   {
+    "id": "rebel_alliance",
     "title": "Rebel Alliance",
     "type": "Faction",
     "img": "https://static.wikia.nocookie.net/star-wars-canon-extended/images/d/d3/Rebellion.jpg/revision/latest?cb=20171107224449",
-    "desc": "A coalition of rebel dissidents, former loyalists, and freedom fighters who rose up against the Empire’s tyranny. The Rebel Alliance began with covert operations and eventually coordinated large-scale resistance, famously stealing the plans of the Empire’s ultimate weapon and striking the first blows in a galaxy-wide civil war. "
+    "desc": "A coalition of rebel dissidents, former loyalists, and freedom fighters who rose up against the Empire’s tyranny. The Alliance began with small, covert operations and grew into a unified political and military entity dedicated to restoring democracy and the ideals of the old Republic.\n\nThe Alliance was a diverse group, drawing support from oppressed planets, dissatisfied military officers, and idealistic politicians. Key early leaders included Mon Mothma and Bail Organa, who provided the political and logistical infrastructure for the resistance.\n\nThey famously coordinated large-scale resistance, culminating in the heroic effort to steal the plans for the Death Star and, later, the ultimate destruction of the superweapon. This victory marked the beginning of a larger conflict known as the Galactic Civil War."
   },
   {
+    "id": "death_star",
     "title": "Death Star",
     "type": "Superweapon",
     "img": "https://upload.wikimedia.org/wikipedia/en/f/f9/Death_star1.png",
-    "desc": "A moon-sized battle station constructed by the Empire, armed with a planet-destroying superlaser powered by kyber crystals. The Death Star’s destructive capacity was unmatched — capable of annihilating entire planets with a single blast. Its use to destroy Alderaan shocked the galaxy and triggered widespread revolt against the Empire. Eventually, the Death Star was itself destroyed by the Rebel Alliance using stolen schematics that revealed a critical vulnerability. "
+    "desc": "A moon-sized battle station constructed by the Empire, armed with a planet-destroying superlaser powered by concentrated Kyber crystals. The Death Star was the ultimate symbol of Imperial control, designed to instill fear and prevent any planetary-scale rebellion.\n\nIts destructive capacity was unmatched, capable of annihilating entire planets with a single blast—a capability horrifyingly demonstrated on the planet Alderaan. The destruction of Alderaan shocked the galaxy and triggered widespread revolt against the Empire.\n\nDespite its overwhelming power, the Death Star was not invulnerable. The Rebel Alliance eventually managed to procure stolen schematics that revealed a critical vulnerability, leading to the superweapon's destruction in the Battle of Yavin by a single X-Wing fighter."
   }
 ]
