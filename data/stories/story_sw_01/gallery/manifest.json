@@ -72,13 +72,15 @@
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764396870374.webp",
                 "tags": [
-                    "All"
+                    "Portrait",
+                    "In-Story"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764399656516.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Concept"
                 ]
             },
             {
@@ -91,13 +93,14 @@
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764399728564.webp",
                 "tags": [
-                    "All"
+                    "NSFW"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764401727592.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Near Naked"
                 ]
             },
             {
@@ -109,31 +112,37 @@
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450174872_829.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Full Body",
+                    "Near Naked"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450175047_336.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Full Body"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450175156_431.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Near Naked"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450177298_994.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Full Body"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450177387_995.webp",
                 "tags": [
-                    "All"
+                    "Portrait",
+                    "Near Naked"
                 ]
             },
             {
@@ -145,31 +154,35 @@
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450177657_26.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Full Body"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450177788_173.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Near Naked"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450177918_817.webp",
                 "tags": [
-                    "All"
+                    "NSFW",
+                    "Full Body"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450282956_413.webp",
                 "tags": [
-                    "All"
+                    "Full Body",
+                    "Portrait"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450283063_414.webp",
                 "tags": [
-                    "All"
+                    "Portrait"
                 ]
             },
             {
@@ -181,25 +194,28 @@
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450283274_808.webp",
                 "tags": [
-                    "All"
+                    "Portrait",
+                    "Full Body"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450283399_285.webp",
                 "tags": [
-                    "All"
+                    "Concept",
+                    "Full Body"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450283513_972.webp",
                 "tags": [
-                    "All"
+                    "Portrait"
                 ]
             },
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450283632_863.webp",
                 "tags": [
-                    "All"
+                    "Portrait",
+                    "Concept"
                 ]
             },
             {
@@ -212,6 +228,19 @@
                 "src": "data/stories/story_sw_01/gallery/img_1764450504186_730.webp",
                 "tags": [
                     "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764474628442_200.webp",
+                "tags": [
+                    "Full Body",
+                    "In-Story"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764474628712_855.webp",
+                "tags": [
+                    "In-Story"
                 ]
             }
         ]
