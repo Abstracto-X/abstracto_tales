@@ -187,7 +187,7 @@
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764450283175_537.webp",
                 "tags": [
-                    "All"
+                    "casual"
                 ]
             },
             {
@@ -240,6 +240,12 @@
                 "src": "data/stories/story_sw_01/gallery/img_1764474628712_855.webp",
                 "tags": [
                     "In-Story"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764485652380_582.webp",
+                "tags": [
+                    "All"
                 ]
             }
         ]
