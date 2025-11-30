@@ -31,7 +31,7 @@
             user-select: none;
         }
 
-        /* --- BACKGROUND & CANVAS --- */
+        /* --- BACKGROUND --- */
         #particle-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -1; pointer-events: none;
@@ -41,22 +41,31 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             z-index: -2; background-color: #111;
             background-size: cover; background-position: center;
-            transition: filter 0.6s ease, transform 0.6s ease, background-image 0.8s ease;
-            will-change: transform, filter;
+            transition: filter 0.6s ease, background-image 0.8s ease; /* Removed transform */
+            will-change: filter;
         }
         
         #app-container { 
             position: relative; width: 100%; height: 100%; z-index: 10;
             display: flex; flex-direction: column; padding: 1.5rem 2rem;
-            transition: opacity 0.4s ease; 
             will-change: opacity;
         }
 
-        /* --- ANIMATIONS & UTILS --- */
-        .page-exit { opacity: 0; transform: scale(1.02); pointer-events: none; transition: 0.3s; }
-        .page-enter { opacity: 0; transform: scale(0.98); }
-        .page-active { opacity: 1; transform: scale(1); transition: 0.4s ease-out; }
+        /* --- SMOOTH FADE TRANSITIONS (No Zoom) --- */
+        .page-exit { 
+            opacity: 0; 
+            pointer-events: none; 
+            transition: opacity 0.2s ease-out; 
+        }
+        .page-enter { 
+            opacity: 0; 
+        }
+        .page-active { 
+            opacity: 1; 
+            transition: opacity 0.3s ease-in; 
+        }
 
+        /* --- GLASS UI --- */
         .glass-box {
             background: var(--glass-bg);
             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
@@ -73,7 +82,7 @@
         #main-header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 0.8rem 2rem; margin-bottom: 0.5rem; flex-shrink: 0; z-index: 20;
-            height: 70px; /* Fixed height to save space */
+            height: 70px;
         }
         .logo { 
             font-family: var(--font-header); font-size: 1.6rem; letter-spacing: 4px; 
@@ -86,10 +95,10 @@
         }
         .back-btn-wrapper:hover { color: var(--accent-color); }
 
-        /* --- CONTENT STAGE --- */
+        /* --- STAGE --- */
         #content-stage {
             flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px;
-            display: flex; flex-direction: column; /* Helps with centering */
+            display: flex; flex-direction: column;
             scrollbar-width: thin; scrollbar-color: var(--accent-color) rgba(0,0,0,0.3);
         }
         #content-stage::-webkit-scrollbar { width: 6px; }
@@ -97,81 +106,31 @@
         #content-stage::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
 
         /* --- VIEW: STORY HUB (Compact) --- */
-        .story-hub-wrapper {
-            /* Centers the box vertically in the available space */
-            flex: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 2rem;
-        }
-
+        .story-hub-wrapper { flex: 1; display: flex; align-items: center; justify-content: center; padding-bottom: 2rem; }
         .story-hub-layout {
-            display: grid;
-            /* Tighter columns: 220px image, rest content */
-            grid-template-columns: 220px 1fr; 
-            gap: 2.5rem;
-            width: 100%;
-            max-width: 850px; /* Much smaller max-width */
-            padding: 2rem !important;
-            align-items: center;
+            display: grid; grid-template-columns: 220px 1fr; gap: 2.5rem;
+            width: 100%; max-width: 850px; padding: 2rem !important; align-items: center;
         }
-
-        .hub-cover { 
-            width: 100%; 
-            border-radius: 6px; 
-            border: 1px solid rgba(255,255,255,0.15); 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
-        }
-
-        .hub-details {
-            display: flex; flex-direction: column; justify-content: center;
-        }
-
-        .hub-details h1 { 
-            font-family: var(--font-header); 
-            font-size: 2.2rem; /* Compact Font */
-            margin-bottom: 0.5rem; 
-            line-height: 1.1; 
-            color: #fff;
-        }
-
-        .hub-meta { 
-            color: var(--accent-color); 
-            margin-bottom: 1.5rem; 
-            text-transform: uppercase; 
-            letter-spacing: 1px; 
-            font-size: 0.8rem; 
-            font-weight: 600; 
-            opacity: 0.9;
-        }
-
+        .hub-cover { width: 100%; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .hub-details { display: flex; flex-direction: column; justify-content: center; }
+        .hub-details h1 { font-family: var(--font-header); font-size: 2.2rem; margin-bottom: 0.5rem; line-height: 1.1; color: #fff; }
+        .hub-meta { color: var(--accent-color); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; font-weight: 600; opacity: 0.9; }
         .hub-synopsis { 
-            font-size: 1rem; 
-            line-height: 1.6; 
-            color: #ddd;
-            margin-bottom: 2rem;
-            
-            /* SCROLLABLE SYNOPSIS: Prevents box from getting too tall */
-            max-height: 200px; 
-            overflow-y: auto;
-            padding-right: 10px;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255,255,255,0.2) transparent;
+            font-size: 1rem; line-height: 1.6; color: #ddd; margin-bottom: 2rem;
+            max-height: 200px; overflow-y: auto; padding-right: 10px;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent;
         }
-        
         .hub-actions { display: flex; gap: 1rem; }
-        
         .btn-large {
-            padding: 0.8rem 2rem;
-            font-family: var(--font-header); font-size: 0.9rem; letter-spacing: 2px;
+            padding: 0.8rem 2rem; font-family: var(--font-header); font-size: 0.9rem; letter-spacing: 2px;
             background: transparent; border: 1px solid var(--accent-color);
             color: var(--primary-color); cursor: pointer; transition: all 0.3s;
             display: flex; align-items: center; gap: 0.8rem;
         }
         .btn-large:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 15px var(--accent-color); }
 
-        /* --- VIEW: HOME GRID --- */
-        .story-grid { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); 
-            gap: 2rem; padding: 1rem 0; max-width: 1300px; margin: 0 auto; width: 100%;
-        }
+        /* --- VIEW: HOME --- */
+        .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2rem; padding: 1rem 0; max-width: 1300px; margin: 0 auto; width: 100%; }
         .story-card {
             position: relative; height: 380px; overflow: hidden; cursor: pointer;
             transition: transform 0.4s ease, border-color 0.4s ease; display: flex; align-items: flex-end;
@@ -188,22 +147,14 @@
         .chapter-list-item { padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.85rem; transition: 0.2s; color: #888; }
         .chapter-list-item:hover { color: var(--accent-color); padding-left: 1rem; }
         .chapter-list-item.active { border-left: 3px solid var(--accent-color); color: #fff; background: rgba(255,215,0,0.05); }
-        
-        .reader-content { 
-            flex: 1; max-width: 800px; margin: 0 auto; 
-            padding: 3rem 4rem; 
-            color: #d0d0d0; overflow-y: auto; position: relative;
-        }
+        .reader-content { flex: 1; max-width: 800px; margin: 0 auto; padding: 3rem 4rem; color: #d0d0d0; overflow-y: auto; position: relative; }
         
         .reader-toolbar { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
         .rt-btn { background: transparent; border: none; color: #666; cursor: pointer; transition: 0.2s; font-size: 1rem; }
         .rt-btn:hover, .rt-btn.active { color: var(--accent-color); }
-        
         .font-menu { position: absolute; top: 60px; right: 20px; background: #1a1a1a; border: 1px solid #333; padding: 10px; border-radius: 6px; display: none; flex-direction: column; gap: 8px; z-index: 50; width: 120px; }
         .font-option { cursor: pointer; font-size: 0.8rem; color: #aaa; padding: 4px; border-radius: 4px; }
         .font-option:hover { background: #333; color: #fff; }
-
-        /* Focus Mode */
         body.focus-active #main-header { opacity: 0; pointer-events: none; }
         body.focus-active .reader-sidebar { width: 0; padding: 0; opacity: 0; overflow: hidden; }
         body.focus-active .reader-content { max-width: 900px; background: rgba(10, 10, 10, 0.9); }
@@ -230,32 +181,21 @@
         .char-bio-preview { font-size: 0.75rem; line-height: 1.4; color: #ccc; opacity: 0; transition: opacity 0.3s 0.1s; margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
         .char-card:hover .char-bio-preview { opacity: 1; }
 
-        .char-profile-hero {
-            display: grid; grid-template-columns: 240px 1fr; gap: 2.5rem; padding: 2rem; 
-            max-width: 900px; margin: 0 auto 2rem auto; align-items: start;
-        }
+        .char-profile-hero { display: grid; grid-template-columns: 240px 1fr; gap: 2.5rem; padding: 2rem; max-width: 900px; margin: 0 auto 2rem auto; align-items: start; }
         .hero-img-container { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
         .hero-img { width: 100%; height: 100%; object-fit: cover; }
         .hero-name { font-family: var(--font-header); font-size: 2.5rem; line-height: 1; color: #fff; margin-bottom: 0.5rem; }
         .hero-role { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px; color: var(--accent-color); font-size: 0.8rem; margin-bottom: 1.5rem; opacity: 0.9; }
         .hero-bio { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: #d0d0d0; white-space: pre-line; background: rgba(0,0,0,0.2); padding: 1.2rem; border-radius: 6px; max-height: 300px; overflow-y: auto; }
-
         .sub-gallery-grid { column-count: 3; column-gap: 1rem; max-width: 900px; margin: 0 auto; }
         .gallery-item { break-inside: avoid; margin-bottom: 1rem; border-radius: 6px; overflow: hidden; transition: transform 0.3s; cursor: zoom-in; border: 1px solid rgba(255,255,255,0.1); }
         .gallery-item:hover { transform: scale(1.02); border-color: var(--accent-color); }
         .gallery-item img { display: block; width: 100%; }
-
-        /* --- LIGHTBOX --- */
-        .lightbox {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 5000; display: none;
-            justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s;
-        }
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
         .lightbox.active { opacity: 1; }
         .lightbox img { max-width: 95%; max-height: 95vh; border: 1px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 2rem; cursor: pointer; }
 
-        /* --- RESPONSIVE --- */
         @media (max-width: 900px) {
             .story-hub-layout, .char-profile-hero { grid-template-columns: 1fr; text-align: center; }
             .hub-cover, .hero-img-container { width: 180px; margin: 0 auto; }
@@ -295,295 +235,189 @@
     </div>
 
     <script>
-        // --- PARTICLES (Reduced count for performance) ---
         const Particles = {
             init: () => {
                 const canvas = document.getElementById('particle-canvas');
                 const ctx = canvas.getContext('2d');
-                let width, height;
-                let particlesArray = [];
-                const numberOfParticles = 30; // Reduced
-
+                let width, height, particlesArray = [];
                 const resize = () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; };
-                window.addEventListener('resize', resize);
-                resize();
-
+                window.addEventListener('resize', resize); resize();
                 class Particle {
                     constructor() {
-                        this.x = Math.random() * width;
-                        this.y = Math.random() * height;
-                        this.size = Math.random() * 1.5 + 0.5;
-                        this.speedY = Math.random() * 0.3 + 0.1;
-                        this.opacity = Math.random() * 0.5;
+                        this.x = Math.random() * width; this.y = Math.random() * height;
+                        this.size = Math.random() * 1.5 + 0.5; this.speedY = Math.random() * 0.3 + 0.1; this.opacity = Math.random() * 0.5;
                     }
-                    update() {
-                        this.y -= this.speedY;
-                        if(this.y < 0) { this.y = height; this.x = Math.random() * width; }
-                    }
-                    draw() {
-                        ctx.fillStyle = `rgba(255, 215, 0, ${this.opacity})`;
-                        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill();
-                    }
+                    update() { this.y -= this.speedY; if(this.y < 0) { this.y = height; this.x = Math.random() * width; } }
+                    draw() { ctx.fillStyle = `rgba(255, 215, 0, ${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
                 }
-                function initParticles() { particlesArray = []; for(let i=0; i<numberOfParticles; i++) particlesArray.push(new Particle()); }
-                function animate() {
-                    ctx.clearRect(0,0, width, height);
-                    particlesArray.forEach(p => { p.update(); p.draw(); });
-                    requestAnimationFrame(animate);
-                }
+                function initParticles() { particlesArray = []; for(let i=0; i<30; i++) particlesArray.push(new Particle()); }
+                function animate() { ctx.clearRect(0,0, width, height); particlesArray.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
                 initParticles(); animate();
             }
         };
 
-        // --- VISUALS (Optimized MouseMove) ---
         const Visuals = {
             initDynamicTransparency: () => {
                 const app = document.getElementById('app-container');
                 const bgLayer = document.getElementById('global-bg');
                 let ticking = false;
-
                 window.addEventListener('mousemove', (e) => {
                     if (!ticking) {
                         window.requestAnimationFrame(() => {
-                            const w = window.innerWidth;
-                            const h = window.innerHeight;
-                            // Only trigger invisible mode in bottom right 10%
+                            const w = window.innerWidth, h = window.innerHeight;
                             const isBottomRight = (e.clientX > w * 0.90) && (e.clientY > h * 0.90);
-
                             if (isBottomRight) {
-                                app.style.opacity = '0';
-                                bgLayer.style.filter = 'blur(0px) brightness(1)';
-                                bgLayer.style.transform = 'scale(1)';
+                                app.style.opacity = '0'; bgLayer.style.filter = 'blur(0px) brightness(1)';
                             } else {
                                 app.style.opacity = '1';
                                 const isHoveringContent = e.target.closest('.glass-box') || e.target.closest('.char-card');
-                                
                                 if (isHoveringContent) {
                                     bgLayer.style.filter = 'blur(5px) brightness(0.5)';
-                                    bgLayer.style.transform = 'scale(1.02)';
                                 } else {
-                                    // Subtle radial falloff
-                                    const distX = Math.abs(e.clientX - w / 2);
-                                    const distY = Math.abs(e.clientY - h / 2);
-                                    const maxDist = Math.hypot(w/2, h/2);
-                                    const currentDist = Math.hypot(distX, distY);
-                                    
-                                    const blur = 5 * (1 - (currentDist / maxDist)); 
-                                    const bright = 0.5 + (0.5 * (currentDist / maxDist));
-                                    
-                                    bgLayer.style.filter = `blur(${blur}px) brightness(${bright})`;
-                                    bgLayer.style.transform = 'scale(1)';
+                                    const distX = Math.abs(e.clientX - w / 2), distY = Math.abs(e.clientY - h / 2);
+                                    const blur = 5 * (1 - (Math.hypot(distX, distY) / Math.hypot(w/2, h/2))); 
+                                    bgLayer.style.filter = `blur(${blur}px) brightness(${0.5 + (0.5 * (Math.hypot(distX, distY) / Math.hypot(w/2, h/2)))}`;
                                 }
                             }
                             ticking = false;
-                        });
-                        ticking = true;
+                        }); ticking = true;
                     }
                 });
             },
-
             initCardTilt: () => {
                 document.querySelectorAll('.char-card').forEach(card => {
                     card.addEventListener('mousemove', (e) => {
                         requestAnimationFrame(() => {
                             const rect = card.getBoundingClientRect();
-                            const x = e.clientX - rect.left - rect.width/2;
-                            const y = e.clientY - rect.top - rect.height/2;
+                            const x = e.clientX - rect.left - rect.width/2, y = e.clientY - rect.top - rect.height/2;
                             card.classList.remove('reset-anim');
                             card.style.transform = `perspective(1000px) scale(1.02) rotateX(${y * -0.05}deg) rotateY(${x * 0.05}deg)`;
                         });
                     });
-                    card.addEventListener('mouseleave', () => {
-                        card.classList.add('reset-anim');
-                        card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`;
-                    });
+                    card.addEventListener('mouseleave', () => { card.classList.add('reset-anim'); card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`; });
                 });
             },
             openLightbox: (src) => {
-                const lb = document.getElementById('lightbox');
-                document.getElementById('lightbox-img').src = src;
-                lb.style.display = 'flex';
-                setTimeout(() => lb.classList.add('active'), 10);
+                const lb = document.getElementById('lightbox'); document.getElementById('lightbox-img').src = src;
+                lb.style.display = 'flex'; setTimeout(() => lb.classList.add('active'), 10);
             }
         };
 
-        // --- READER FEATURES ---
         const ReaderFeatures = {
             fontSize: 'text-md', fontFamily: 'font-serif',
             toggleFocus: (btn) => { document.body.classList.toggle('focus-active'); btn.classList.toggle('active'); },
             toggleFontMenu: () => { const m = document.getElementById('font-menu'); m.style.display = m.style.display==='flex'?'none':'flex'; },
             setFontSize: (s) => { ReaderFeatures.fontSize = s; ReaderFeatures.applyFonts(); },
             setFontFamily: (f) => { ReaderFeatures.fontFamily = f; ReaderFeatures.applyFonts(); },
-            applyFonts: () => { 
-                const c = document.querySelector('.reader-content'); 
-                if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; 
+            applyFonts: () => { const c = document.querySelector('.reader-content'); if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; }
+        };
+
+        const State = { manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [], filterTag: 'All', wallpaperChar: null };
+        
+        // --- IMPROVED API ERROR HANDLING ---
+        const API = { 
+            get: async (path) => {
+                try {
+                    const response = await fetch(path);
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: File not found at ${path}`);
+                    }
+                    return await response.json();
+                } catch (e) {
+                    throw e; // Pass error to caller
+                }
             }
         };
 
-        // --- DATA & API ---
-        const State = { manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [], filterTag: 'All', wallpaperChar: null };
-        const API = { get: async (path) => (await fetch(path)).json() };
-
-        // --- RENDERER ---
         const Render = {
             stage: document.getElementById('content-stage'),
-            
             home: async () => {
                 try {
                     const settings = await API.get('data/settings.json').catch(()=>({}));
                     UI.setBg(settings.homeBg || null);
                     State.manifest = await API.get('data/manifest.json');
                     UI.setBackButton(null); UI.hideWallpaperButton();
-
                     let html = '<div class="story-grid">';
-                    State.manifest.forEach(s => {
-                        html += `
-                            <div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')">
-                                <img src="${s.cover}" loading="lazy" alt="${s.title}">
-                                <div class="card-info"><div class="card-title">${s.title}</div><div style="color:#ccc; font-size:0.8rem;">${s.desc}</div></div>
-                            </div>`;
-                    });
+                    State.manifest.forEach(s => { html += `<div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')"><img src="${s.cover}" loading="lazy"><div class="card-info"><div class="card-title">${s.title}</div><div style="color:#ccc; font-size:0.8rem;">${s.desc}</div></div></div>`; });
                     Render.stage.innerHTML = html + '</div>';
-                } catch(e) { console.error(e); }
+                } catch(e) { Render.stage.innerHTML = `<div style="text-align:center; padding:3rem; color:red">Error loading manifest: ${e.message}</div>`; }
             },
-
             storyHub: async (id) => {
                 UI.setBackButton("Router.navigate('home')", "Archives");
                 State.currentStoryId = id;
-                State.currentStoryConfig = await API.get(`data/stories/${id}/config.json`);
-                State.manifest = await API.get('data/manifest.json');
-                State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(() => []);
-                UI.setBg(State.currentStoryConfig.bg);
-                UI.checkWallpaperChar();
-
-                const story = State.manifest.find(s => s.id === id) || { cover: "" };
-                const conf = State.currentStoryConfig;
-                document.documentElement.style.setProperty('--accent-color', conf.themeColor);
-
-                // WRAPPED for centering
-                Render.stage.innerHTML = `
-                    <div class="story-hub-wrapper">
-                        <div class="story-hub-layout glass-box">
-                            <img class="hub-cover" src="${story.cover}" alt="Cover">
-                            <div class="hub-details">
-                                <h1>${conf.title}</h1>
-                                <div class="hub-meta">${conf.status} • ${conf.genre}</div>
-                                <div class="hub-synopsis">${conf.synopsis}</div>
-                                <div class="hub-actions">
-                                    <button class="btn-large" onclick="Router.navigate('read/${id}')"><i class="fas fa-book-open"></i> READ</button>
-                                    <button class="btn-large" onclick="Router.navigate('gallery/${id}')"><i class="fas fa-images"></i> GALLERY</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
+                try {
+                    State.currentStoryConfig = await API.get(`data/stories/${id}/config.json`);
+                    State.manifest = await API.get('data/manifest.json');
+                    State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(() => []);
+                    UI.setBg(State.currentStoryConfig.bg); UI.checkWallpaperChar();
+                    const story = State.manifest.find(s => s.id === id) || { cover: "" };
+                    const conf = State.currentStoryConfig;
+                    document.documentElement.style.setProperty('--accent-color', conf.themeColor);
+                    Render.stage.innerHTML = `<div class="story-hub-wrapper"><div class="story-hub-layout glass-box"><img class="hub-cover" src="${story.cover}"><div class="hub-details"><h1>${conf.title}</h1><div class="hub-meta">${conf.status} • ${conf.genre}</div><div class="hub-synopsis">${conf.synopsis}</div><div class="hub-actions"><button class="btn-large" onclick="Router.navigate('read/${id}')"><i class="fas fa-book-open"></i> READ</button><button class="btn-large" onclick="Router.navigate('gallery/${id}')"><i class="fas fa-images"></i> GALLERY</button></div></div></div></div>`;
+                } catch(e) { Render.stage.innerHTML = `<div style="text-align:center; padding:3rem;">Error loading story: ${e.message}</div>`; }
             },
-
             reader: async (id, chIdx = 0) => {
                 State.currentStoryId = id;
-                const chapters = await API.get(`data/stories/${id}/chapters/index.json`);
-                const conf = await API.get(`data/stories/${id}/config.json`);
-                UI.setBg(conf.bg);
-                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                try {
+                    // --- 1. ERROR CATCHING FOR READ BUTTON ---
+                    const chapters = await API.get(`data/stories/${id}/chapters/index.json`);
+                    const conf = await API.get(`data/stories/${id}/config.json`);
+                    UI.setBg(conf.bg);
+                    UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
 
-                const chapter = chapters[chIdx];
-                if (!chapter) { Router.navigate(`story/${id}`); return; }
+                    const chapter = chapters[chIdx];
+                    if (!chapter) {
+                        Render.stage.innerHTML = `<div class="glass-box" style="padding:2rem; text-align:center;"><h3>Chapter Index Error</h3><p>Chapter ${chIdx} not found. <a onclick="Router.navigate('story/${id}')" style="cursor:pointer; color:var(--accent-color)">Go Back</a></p></div>`;
+                        return;
+                    }
 
-                let sidebar = '';
-                chapters.forEach((c, i) => sidebar += `<div class="chapter-list-item ${i == chIdx ? 'active':''}" onclick="Router.navigate('read/${id}/${i}')">${c.title}</div>`);
-
-                let nextBtn = parseInt(chIdx) < chapters.length - 1 
-                    ? `<button class="btn-large" style="margin:2rem auto 0; font-size:0.8rem" onclick="Router.navigate('read/${id}/${parseInt(chIdx) + 1}')">Next Chapter</button>`
-                    : '<div style="margin-top:2rem; text-align:center; color:#888">End of updates.</div>';
-
-                Render.stage.innerHTML = `
-                    <div class="reader-layout">
-                        <div class="reader-sidebar glass-box"><h3 style="padding:1rem; font-family:var(--font-header)">Chapters</h3>${sidebar}</div>
-                        <div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}">
-                            <div class="reader-toolbar">
-                                <button class="rt-btn" title="Focus" onclick="ReaderFeatures.toggleFocus(this)"><i class="fas fa-expand"></i></button>
-                                <div style="position:relative;">
-                                    <button class="rt-btn" title="Fonts" onclick="ReaderFeatures.toggleFontMenu()"><i class="fas fa-font"></i></button>
-                                    <div id="font-menu" class="font-menu">
-                                        <div class="font-option" onclick="ReaderFeatures.setFontFamily('font-serif')">Serif</div>
-                                        <div class="font-option" onclick="ReaderFeatures.setFontFamily('font-sans')">Sans</div>
-                                        <div style="border-top:1px solid #333; margin:4px 0"></div>
-                                        <div class="font-option" onclick="ReaderFeatures.setFontSize('text-sm')">Small</div>
-                                        <div class="font-option" onclick="ReaderFeatures.setFontSize('text-md')">Medium</div>
-                                        <div class="font-option" onclick="ReaderFeatures.setFontSize('text-lg')">Large</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <h2 style="font-family:var(--font-header); margin-bottom:1.5rem">${chapter.title}</h2>
-                            <div class="chapter-text">${chapter.content.replace(/\n/g, '<br>')}</div>
-                            ${nextBtn}
-                        </div>
-                    </div>`;
+                    let sidebar = '';
+                    chapters.forEach((c, i) => sidebar += `<div class="chapter-list-item ${i == chIdx ? 'active':''}" onclick="Router.navigate('read/${id}/${i}')">${c.title}</div>`);
+                    let nextBtn = parseInt(chIdx) < chapters.length - 1 ? `<button class="btn-large" style="margin:2rem auto 0; font-size:0.8rem" onclick="Router.navigate('read/${id}/${parseInt(chIdx) + 1}')">Next Chapter</button>` : '<div style="margin-top:2rem; text-align:center; color:#888">End of updates.</div>';
+                    
+                    Render.stage.innerHTML = `<div class="reader-layout"><div class="reader-sidebar glass-box"><h3 style="padding:1rem; font-family:var(--font-header)">Chapters</h3>${sidebar}</div><div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}"><div class="reader-toolbar"><button class="rt-btn" title="Focus" onclick="ReaderFeatures.toggleFocus(this)"><i class="fas fa-expand"></i></button><div style="position:relative;"><button class="rt-btn" title="Fonts" onclick="ReaderFeatures.toggleFontMenu()"><i class="fas fa-font"></i></button><div id="font-menu" class="font-menu"><div class="font-option" onclick="ReaderFeatures.setFontFamily('font-serif')">Serif</div><div class="font-option" onclick="ReaderFeatures.setFontFamily('font-sans')">Sans</div><div style="border-top:1px solid #333; margin:4px 0"></div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-sm')">Small</div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-md')">Medium</div><div class="font-option" onclick="ReaderFeatures.setFontSize('text-lg')">Large</div></div></div></div><h2 style="font-family:var(--font-header); margin-bottom:1.5rem">${chapter.title}</h2><div class="chapter-text">${chapter.content.replace(/\n/g, '<br>')}</div>${nextBtn}</div></div>`;
+                
+                } catch (e) {
+                    // --- 2. ALERT USER IF JSON IS INVALID ---
+                    console.error(e);
+                    alert(`FAILED TO LOAD CHAPTERS.\n\nReason: ${e.message}\n\nPlease check that 'index.json' exists and contains valid JSON (no trailing commas, all strings quoted).`);
+                    Router.navigate(`story/${id}`);
+                }
             },
-
             gallery: async (id, charId = null) => {
                 State.currentStoryId = id;
-                const conf = await API.get(`data/stories/${id}/config.json`);
-                UI.setBg(conf.bg);
-                State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`);
-
-                if (!charId) {
-                    UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
-                    let html = '<div class="char-grid">';
-                    State.currentChars.forEach(c => {
-                        html += `
-                            <div class="char-card" onclick="Router.navigate('gallery/${id}/${c.id}')">
-                                <div class="char-card-inner">
-                                    <img src="${c.img}" loading="lazy" alt="${c.name}">
-                                    <div class="char-info-overlay">
-                                        <div class="char-role">${c.role || ""}</div>
-                                        <div class="char-name">${c.name}</div>
-                                        <div class="char-bio-preview">${c.bio || ""}</div>
-                                    </div>
-                                </div>
-                            </div>`;
-                    });
-                    Render.stage.innerHTML = html + '</div>';
-                    Visuals.initCardTilt();
-                } else {
-                    UI.setBackButton(`Router.navigate('gallery/${id}')`, "Roster");
-                    const charData = State.currentChars.find(c => c.id === charId);
-                    if (!charData) { Router.navigate(`gallery/${id}`); return; }
-
-                    const allTags = new Set(['All']);
-                    if(charData.gallery_images) charData.gallery_images.forEach(img => img.tags.forEach(t => allTags.add(t)));
-                    
-                    let tagHtml = `<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:1.5rem">`;
-                    allTags.forEach(t => tagHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; text-transform:none; letter-spacing:0; min-height:0; ${t === State.filterTag ? 'background:var(--accent-color); color:#000':''}" onclick="Actions.setFilter('${t}')">${t}</div>`);
-                    tagHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; min-height:0;" onclick="Actions.shuffleGallery()"><i class="fas fa-random"></i></div></div>`;
-
-                    let html = `
-                        <div class="char-profile-hero glass-box">
-                            <div class="hero-img-container"><img src="${charData.img}" class="hero-img"></div>
-                            <div class="hero-info">
-                                <div class="hero-name">${charData.name}</div>
-                                <div class="hero-role">${charData.role || ""}</div>
-                                <div class="hero-bio">${charData.bio || ""}</div>
-                            </div>
-                        </div>
-                        ${tagHtml}
-                        <div class="sub-gallery-grid" id="gallery-grid"></div>`;
-                    Render.stage.innerHTML = html;
-                    Actions.renderGalleryGrid();
-                }
+                try {
+                    const conf = await API.get(`data/stories/${id}/config.json`);
+                    UI.setBg(conf.bg);
+                    State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`);
+                    if (!charId) {
+                        UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                        let html = '<div class="char-grid">';
+                        State.currentChars.forEach(c => { html += `<div class="char-card" onclick="Router.navigate('gallery/${id}/${c.id}')"><div class="char-card-inner"><img src="${c.img}" loading="lazy"><div class="char-info-overlay"><div class="char-role">${c.role || ""}</div><div class="char-name">${c.name}</div><div class="char-bio-preview">${c.bio || ""}</div></div></div></div>`; });
+                        Render.stage.innerHTML = html + '</div>'; Visuals.initCardTilt();
+                    } else {
+                        UI.setBackButton(`Router.navigate('gallery/${id}')`, "Roster");
+                        const c = State.currentChars.find(x => x.id === charId);
+                        if (!c) { Router.navigate(`gallery/${id}`); return; }
+                        const tags = new Set(['All']); if(c.gallery_images) c.gallery_images.forEach(i => i.tags.forEach(t => tags.add(t)));
+                        let tHtml = `<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:1.5rem">`;
+                        tags.forEach(t => tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; text-transform:none; letter-spacing:0; min-height:0; ${t === State.filterTag ? 'background:var(--accent-color); color:#000':''}" onclick="Actions.setFilter('${t}')">${t}</div>`);
+                        tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; min-height:0;" onclick="Actions.shuffleGallery()"><i class="fas fa-random"></i></div></div>`;
+                        Render.stage.innerHTML = `<div class="char-profile-hero glass-box"><div class="hero-img-container"><img src="${c.img}" class="hero-img"></div><div class="hero-info"><div class="hero-name">${c.name}</div><div class="hero-role">${c.role || ""}</div><div class="hero-bio">${c.bio || ""}</div></div></div>${tHtml}<div class="sub-gallery-grid" id="gallery-grid"></div>`;
+                        Actions.renderGalleryGrid();
+                    }
+                } catch(e) { alert(e.message); }
             }
         };
 
         const Actions = {
-            renderGalleryGrid: (shuffle = false) => {
+            renderGalleryGrid: (sf = false) => {
                 const c = State.currentChars.find(x => x.id === Router.getParts()[2]);
                 if(!c || !c.gallery_images) return;
                 let imgs = [...c.gallery_images];
                 if(State.filterTag !== 'All') imgs = imgs.filter(i => i.tags.includes(State.filterTag));
-                if(shuffle) imgs.sort(() => Math.random() - 0.5);
-                
-                document.getElementById('gallery-grid').innerHTML = imgs.map(i => `
-                    <div class="gallery-item" onclick="Visuals.openLightbox('${i.src}')"><img src="${i.src}" loading="lazy"></div>
-                `).join('');
+                if(sf) imgs.sort(() => Math.random() - 0.5);
+                document.getElementById('gallery-grid').innerHTML = imgs.map(i => `<div class="gallery-item" onclick="Visuals.openLightbox('${i.src}')"><img src="${i.src}" loading="lazy"></div>`).join('');
             },
             setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
             shuffleGallery: () => Actions.renderGalleryGrid(true),
@@ -612,7 +446,7 @@
             navigate: (h) => {
                 const app = document.getElementById('app-container');
                 app.classList.remove('page-active'); app.classList.add('page-exit');
-                setTimeout(() => window.location.hash = h, 300); 
+                setTimeout(() => window.location.hash = h, 200); 
             },
             handle: () => {
                 const parts = Router.getParts();
