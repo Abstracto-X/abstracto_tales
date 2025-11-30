@@ -3,319 +3,515 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Codex</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>The Aether Archives | Obsidian Edition</title>
     
+    <!-- New Font Stack: Playfair Display (Elegant) + Inter (Clean) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
-        /* --- 1. THEME DEFINITION: "CODEX" --- */
+        /* --- 1. DESIGN TOKENS --- */
         :root {
-            --bg-color: #fdf6e3; /* Parchment Paper */
-            --text-color: #3c3631; /* Dark Charcoal */
-            --header-color: #2b2622;
-            --accent-color: #9a2d2d; /* Deep Red */
-            --border-color: #dcd3bc;
-            --font-header: 'Cinzel', serif;
-            --font-body: 'Lora', serif;
+            --bg-deep: #050505;
+            --bg-panel: #111111;
+            --border-color: #333333;
+            --accent-color: #e0e0e0; /* Platinum */
+            --highlight: #ff4d4d; /* Subtle red interaction hint */
+            
+            --text-main: #f4f4f4;
+            --text-muted: #888888;
+            
+            --font-display: 'Playfair Display', serif;
+            --font-ui: 'Inter', sans-serif;
+            
+            --gap-std: 2rem;
         }
 
-        /* --- 2. BASE SETUP --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-body);
-            background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAMAAAAp4XiDAAAAUVBMVEWFhYWDg4N3d3dtbW17e3t1dXVhYWHg4ODKysqOjo6BgYGNjY1xcXFiYmJqampwcHB0dHRsbGzCwsLeerLy8vLz8/P29vb39/f5+fn9/f3+pqcxAAAAG0lEQVRIx8XAgQkAMAzDQIH/d/2j9gYtjVphao4m8IoxsM4495Jg8JBfBEFwXwYgwqQ8EAFbQjQEwT8rQiMgQoO8BEABx3A/gQAZ0QFbQPwz8A6cI44/jA8kygDj6K8AAAAASUVORK5CYII=');
-            background-repeat: repeat;
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            font-family: var(--font-ui);
+            overflow-x: hidden;
+            height: 100vh;
         }
 
-        /* Container & Scrolling */
-        #app-container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
-        #content-stage { overflow-x: hidden; }
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
 
-        /* --- 3. NAVIGATION --- */
-        #main-header {
-            padding-bottom: 2rem;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        /* --- 2. LAYOUT UTILITIES --- */
+        #app-container {
+            width: 100%; min-height: 100vh;
+            display: flex; flex-direction: column;
+            transition: opacity 0.5s ease;
         }
-        .logo { font-family: var(--font-header); font-size: 2.5rem; letter-spacing: 5px; color: var(--header-color); cursor: pointer; }
-        .back-btn-wrapper { color: var(--accent-color); font-family: var(--font-header); cursor: pointer; }
 
-        /* --- 4. HOME PAGE (TABLE OF CONTENTS) --- */
-        .codex-list { list-style: none; }
-        .codex-list-item {
-            padding: 2rem;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            gap: 2rem;
-            align-items: flex-start;
-            transition: background-color 0.3s;
-            cursor: pointer;
-        }
-        .codex-list-item:hover { background-color: rgba(0,0,0,0.03); }
-        .item-illumination {
-            width: 80px; height: 80px; flex-shrink: 0;
-            border-radius: 50%; border: 2px solid var(--border-color);
-            object-fit: cover;
-        }
-        .item-details h2 { font-family: var(--font-header); color: var(--header-color); margin-bottom: 0.5rem; }
-        .item-details p { font-size: 1rem; line-height: 1.6; color: #5a5149; }
+        .fade-in { animation: fadeInUp 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; opacity: 0; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- 5. STORY HUB --- */
-        .codex-hub { text-align: center; padding: 2rem 0; }
-        .hub-cover {
-            max-width: 350px; width: 100%;
-            border: 10px solid #fff;
-            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
-            margin-bottom: 2rem;
+        /* --- 3. NAVIGATION (Minimalist Top Bar) --- */
+        nav {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 2rem 4rem; z-index: 50;
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: linear-gradient(to bottom, rgba(5,5,5,0.9), transparent);
+            pointer-events: none; /* Let clicks pass through empty space */
         }
-        .hub-details h1 { font-family: var(--font-header); font-size: 4rem; margin-bottom: 0.5rem; }
-        .hub-details .genre { color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 2rem; }
-        .hub-details .synopsis { max-width: 700px; margin: 0 auto 3rem auto; line-height: 1.8; font-size: 1.1rem; }
+        nav > * { pointer-events: auto; }
+
+        .logo {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: 2px;
+            color: var(--text-main); text-transform: uppercase; cursor: pointer;
+            mix-blend-mode: difference; /* Ensures visibility over light images */
+        }
+
+        .nav-btn {
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: var(--text-main); padding: 0.5rem 1.5rem; border-radius: 50px;
+            cursor: pointer; transition: 0.3s; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .nav-btn:hover { background: var(--text-main); color: var(--bg-deep); border-color: var(--text-main); }
+
+        /* --- 4. VIEW: HOME (Editorial Grid) --- */
+        .home-container {
+            padding: 8rem 4rem 4rem;
+            max-width: 1600px; margin: 0 auto; width: 100%;
+        }
+        .archive-header {
+            font-family: var(--font-display); font-size: 4vw; margin-bottom: 4rem;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 2rem;
+        }
+
+        .story-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2px; /* Tight fit */
+            background: var(--border-color); /* Creates the grid lines */
+            border: 1px solid var(--border-color);
+        }
+
+        .story-card {
+            background: var(--bg-panel); aspect-ratio: 3/4; position: relative;
+            overflow: hidden; cursor: pointer; group;
+        }
         
-        .hub-actions { display: flex; justify-content: center; gap: 1rem; }
-        .codex-button {
-            padding: 1rem 2.5rem;
-            background: transparent;
-            border: 2px solid var(--text-color);
-            color: var(--text-color);
-            font-family: var(--font-header);
-            font-size: 1rem; letter-spacing: 2px;
+        .story-card img {
+            width: 100%; height: 100%; object-fit: cover;
+            transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.5s;
+            filter: grayscale(100%) contrast(120%);
+        }
+        
+        .story-card:hover img { transform: scale(1.05); filter: grayscale(0%) contrast(100%); }
+
+        .card-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; padding: 2rem;
+            background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+            transform: translateY(20px); opacity: 0; transition: 0.4s;
+        }
+        .story-card:hover .card-overlay { transform: translateY(0); opacity: 1; }
+
+        .card-title { font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 0.5rem; }
+        .card-desc { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+
+        /* --- 5. VIEW: STORY HUB (Split Screen) --- */
+        .split-layout {
+            display: flex; height: 100vh; width: 100vw; overflow: hidden;
+        }
+        
+        .split-image {
+            width: 40%; height: 100%; position: relative;
+            border-right: 1px solid var(--border-color);
+        }
+        .split-image img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .split-content {
+            width: 60%; height: 100%; overflow-y: auto;
+            padding: 6rem 6rem; background: var(--bg-deep);
+        }
+
+        .hub-meta { 
+            font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; 
+            color: var(--text-muted); margin-bottom: 1rem; border-left: 2px solid var(--accent-color); 
+            padding-left: 1rem;
+        }
+        .hub-title { font-family: var(--font-display); font-size: 5rem; line-height: 0.9; margin-bottom: 2rem; }
+        .hub-synopsis { 
+            font-size: 1.2rem; line-height: 1.8; color: #ccc; margin-bottom: 4rem; 
+            max-width: 700px;
+        }
+
+        .action-row { display: flex; gap: 1rem; padding-bottom: 4rem; border-bottom: 1px solid var(--border-color); margin-bottom: 4rem; }
+        
+        .big-btn {
+            padding: 1.5rem 3rem; font-family: var(--font-display); font-size: 1.2rem;
+            background: var(--text-main); color: var(--bg-deep); border: none;
             cursor: pointer; transition: 0.3s;
         }
-        .codex-button:hover { background: var(--text-color); color: var(--bg-color); }
+        .big-btn:hover { background: var(--accent-color); transform: translateY(-2px); }
+        .big-btn.outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-main); }
+        .big-btn.outline:hover { border-color: var(--text-main); }
 
-        /* --- 6. READER --- */
-        .reader-layout { display: grid; grid-template-columns: 250px 1fr; gap: 4rem; }
-        .reader-sidebar h3 { font-family: var(--font-header); margin-bottom: 1rem; }
-        .reader-sidebar ul { list-style: none; }
-        .reader-sidebar li { padding: 0.8rem 0; border-bottom: 1px solid var(--border-color); cursor: pointer; }
-        .reader-sidebar li:hover { color: var(--accent-color); }
-        .reader-sidebar li.active { font-weight: bold; color: var(--accent-color); }
-        .reader-content h2 { font-family: var(--font-header); font-size: 2.5rem; margin-bottom: 2rem; }
-        .reader-content .text { font-size: 1.2rem; line-height: 2; }
+        /* --- 6. VIEW: READER (Focus Mode) --- */
+        .reader-container {
+            max-width: 800px; margin: 8rem auto 4rem; padding: 0 2rem;
+        }
+        .chapter-header { text-align: center; margin-bottom: 4rem; }
+        .chapter-title { font-family: var(--font-display); font-size: 3rem; margin-bottom: 1rem; }
+        .chapter-nav { display: flex; justify-content: center; gap: 2rem; margin-bottom: 2rem; }
         
-        /* --- 7. GALLERY & CHARACTERS --- */
-        .char-grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; }
-        .char-card {
-            width: 250px; text-align: center; cursor: pointer;
-            transition: transform 0.2s;
+        .chapter-text {
+            font-family: var(--font-body); font-size: 1.3rem; line-height: 1.9; color: #dcdcdc;
+            text-align: justify;
         }
-        .char-card:hover { transform: translateY(-5px); }
-        .char-card img {
-            width: 100%; aspect-ratio: 3/4; object-fit: cover;
-            border: 1px solid var(--border-color); margin-bottom: 1rem;
+        .chapter-text p { margin-bottom: 1.5rem; }
+
+        /* Drawer for Chapter List */
+        .chapter-drawer {
+            position: fixed; left: 0; top: 0; height: 100%; width: 300px;
+            background: var(--bg-panel); border-right: 1px solid var(--border-color);
+            transform: translateX(-100%); transition: 0.4s cubic-bezier(0.8, 0, 0.2, 1);
+            z-index: 100; padding: 6rem 2rem; overflow-y: auto;
         }
-        .char-card .name { font-family: var(--font-header); font-size: 1.5rem; }
-        .char-card .role { color: var(--accent-color); text-transform: uppercase; font-size: 0.8rem; }
+        .chapter-drawer.open { transform: translateX(0); }
+        .drawer-toggle { position: fixed; top: 50%; left: 0; padding: 1rem; cursor: pointer; z-index: 101; opacity: 0.5; transition: 0.3s; }
+        .drawer-toggle:hover { opacity: 1; }
 
-        .char-profile {
-            display: grid; grid-template-columns: 300px 1fr; gap: 3rem;
-            margin-bottom: 3rem; align-items: flex-start;
+        /* --- 7. VIEW: GALLERY (Masonry & Hero) --- */
+        .gallery-container { padding: 6rem 4rem; }
+        
+        .char-hero {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 4rem;
+            margin-bottom: 6rem; align-items: center; min-height: 70vh;
         }
-        .profile-img { width: 100%; border: 1px solid var(--border-color); }
-        .profile-name { font-family: var(--font-header); font-size: 3rem; }
-        .profile-role { color: var(--accent-color); text-transform: uppercase; font-size: 0.9rem; margin-bottom: 1.5rem; }
-        .profile-bio { line-height: 1.8; white-space: pre-line; }
+        
+        .char-portrait {
+            width: 100%; height: 80vh; object-fit: cover; 
+            border: 1px solid var(--border-color);
+        }
+        
+        .char-details h1 { font-family: var(--font-display); font-size: 6rem; line-height: 0.9; margin-bottom: 0.5rem; }
+        .char-details h3 { font-family: var(--font-ui); font-weight: 300; letter-spacing: 3px; color: var(--accent-color); margin-bottom: 2rem; text-transform: uppercase;}
+        .char-details p { font-size: 1.1rem; line-height: 1.7; color: #999; margin-bottom: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;}
 
-        .tag-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 2rem; }
-        .tag-chip { padding: 5px 15px; border: 1px solid var(--border-color); border-radius: 20px; cursor: pointer; }
-        .tag-chip.active, .tag-chip:hover { background: var(--text-color); color: var(--bg-color); border-color: var(--text-color); }
+        .filter-bar {
+            display: flex; gap: 2rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 1rem;
+            font-family: var(--font-display); font-style: italic;
+        }
+        .filter-item { cursor: pointer; opacity: 0.5; transition: 0.3s; }
+        .filter-item.active, .filter-item:hover { opacity: 1; color: var(--accent-color); }
 
-        .gallery-grid { column-count: 3; column-gap: 1.5rem; }
-        .gallery-item { break-inside: avoid; margin-bottom: 1.5rem; }
-        .gallery-item img { width: 100%; border: 1px solid var(--border-color); }
+        .masonry-grid {
+            column-count: 4; column-gap: 1rem;
+        }
+        .masonry-item {
+            break-inside: avoid; margin-bottom: 1rem;
+            position: relative; overflow: hidden;
+        }
+        .masonry-item img { width: 100%; display: block; transition: 0.5s; filter: grayscale(50%); }
+        .masonry-item:hover img { filter: grayscale(0%); transform: scale(1.03); }
 
-        /* Responsive */
+        /* --- 8. ROSTER GRID (Minimalist) --- */
+        .roster-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 2rem; padding: 2rem;
+        }
+        .roster-card { cursor: pointer; text-align: center; opacity: 0.7; transition: 0.3s; }
+        .roster-card:hover { opacity: 1; transform: translateY(-5px); }
+        .roster-img { width: 100%; aspect-ratio: 3/4; object-fit: cover; margin-bottom: 1rem; border: 1px solid #333;}
+        .roster-name { font-family: var(--font-display); font-size: 1.2rem; }
+
+        /* Mobile Adjustments */
         @media (max-width: 900px) {
-            .reader-layout, .char-profile { grid-template-columns: 1fr; }
-            .gallery-grid { column-count: 2; }
+            .split-layout { flex-direction: column; height: auto; }
+            .split-image { width: 100%; height: 50vh; }
+            .split-content { width: 100%; padding: 2rem; }
+            .char-hero { grid-template-columns: 1fr; }
+            .masonry-grid { column-count: 2; }
+            .hub-title { font-size: 3rem; }
+            nav { padding: 1rem 2rem; }
+            .home-container { padding: 6rem 1rem; }
         }
     </style>
 </head>
 <body>
 
+    <nav id="navbar">
+        <div id="back-slot"></div>
+        <div class="logo" onclick="Router.navigate('home')">ARCHIVE.OS</div>
+        <div id="theme-slot" style="width: 50px;"></div>
+    </nav>
+
+    <!-- Drawer for Reader -->
+    <div id="chapter-drawer" class="chapter-drawer">
+        <h3 style="margin-bottom:2rem; font-family:var(--font-display);">Index</h3>
+        <div id="drawer-content"></div>
+    </div>
+    <div id="drawer-toggle" class="drawer-toggle" style="display:none;" onclick="UI.toggleDrawer()">
+        <i class="fas fa-bars fa-2x" style="color:#555"></i>
+    </div>
+
     <div id="app-container">
-        <header id="main-header">
-            <div class="logo" onclick="Router.navigate('home')">CODEX</div>
-            <div id="back-container"></div>
-        </header>
-        <main id="content-stage"></main>
+        <!-- Content injected here -->
     </div>
 
     <script>
-        // --- STATE & API (Read-Only) ---
+        // --- LOGIC ---
+        // (Almost identical to previous logic, but adapted for new class names/layout)
+
+        const API = { get: async (path) => (await fetch(path)).json() };
+
         const State = {
-            manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [],
-            filterTag: 'All'
+            manifest: [], currentStory: null, currentChars: [], filterTag: 'All', wallpaperChar: null
         };
 
-        const API = {
-            get: async (path) => (await fetch(path)).json()
-        };
-
-        // --- RENDERER (New "Codex" HTML Structures) ---
         const Render = {
-            stage: document.getElementById('content-stage'),
-            
+            stage: document.getElementById('app-container'),
+
             home: async () => {
-                UI.setBackButton(null);
+                UI.resetLayout();
                 State.manifest = await API.get('data/manifest.json');
-                let html = '<ul class="codex-list">';
-                State.manifest.forEach((story) => {
+                
+                let html = `
+                <div class="home-container fade-in">
+                    <h1 class="archive-header">Selected Works</h1>
+                    <div class="story-grid">`;
+                
+                State.manifest.forEach(s => {
                     html += `
-                        <li class="codex-list-item" onclick="Router.navigate('story/${story.id}')">
-                            <img src="${story.cover}" class="item-illumination" alt="${story.title}">
-                            <div class="item-details">
-                                <h2>${story.title}</h2>
-                                <p>${story.desc}</p>
+                        <div class="story-card" onclick="Router.navigate('story/${s.id}')">
+                            <img src="${s.cover}">
+                            <div class="card-overlay">
+                                <div class="card-title">${s.title}</div>
+                                <div class="card-desc">${s.desc}</div>
                             </div>
-                        </li>`;
+                        </div>`;
                 });
-                Render.stage.innerHTML = html + '</ul>';
+                
+                html += `</div></div>`;
+                Render.stage.innerHTML = html;
             },
 
             storyHub: async (id) => {
-                UI.setBackButton("Router.navigate('home')", "← Table of Contents");
-                State.currentStoryId = id;
-                State.currentStoryConfig = await API.get(`data/stories/${id}/config.json`);
-                State.manifest = await API.get('data/manifest.json');
-                const storyInManifest = State.manifest.find(s => s.id === id) || { cover: "" };
-                const conf = State.currentStoryConfig;
+                UI.resetLayout();
+                UI.setBack("Router.navigate('home')", "Index");
                 
+                const config = await API.get(`data/stories/${id}/config.json`);
+                State.manifest = await API.get('data/manifest.json');
+                State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(()=>[]);
+                
+                const cover = State.manifest.find(s=>s.id === id).cover;
+                
+                // Wallpaper Logic
+                const wpChar = State.currentChars.find(c => c.name.toLowerCase().includes('wallpaper'));
+                if(wpChar) UI.setThemeBtn(wpChar);
+
                 Render.stage.innerHTML = `
-                    <div class="codex-hub fade-in">
-                        <img class="hub-cover" src="${storyInManifest.cover}" alt="Cover">
-                        <div class="hub-details">
-                            <div class="genre">${conf.genre}</div>
-                            <h1>${conf.title}</h1>
-                            <p class="synopsis">${conf.synopsis}</p>
-                            <div class="hub-actions">
-                                <button class="codex-button" onclick="Router.navigate('read/${id}')">Begin Reading</button>
-                                <button class="codex-button" onclick="Router.navigate('gallery/${id}')">View Gallery</button>
+                    <div class="split-layout fade-in">
+                        <div class="split-image">
+                            <img src="${cover}">
+                        </div>
+                        <div class="split-content">
+                            <div class="hub-meta">${config.status}  //  ${config.genre}</div>
+                            <h1 class="hub-title">${config.title}</h1>
+                            <p class="hub-synopsis">${config.synopsis}</p>
+                            
+                            <div class="action-row">
+                                <button class="big-btn" onclick="Router.navigate('read/${id}')">Read Now</button>
+                                <button class="big-btn outline" onclick="Router.navigate('gallery/${id}')">Visual Archives</button>
                             </div>
                         </div>
-                    </div>`;
+                    </div>
+                `;
             },
 
-            reader: async (id, chapterIndex = 0) => {
-                UI.setBackButton(`Router.navigate('story/${id}')`, `← Back to ${State.currentStoryConfig.title}`);
+            reader: async (id, idx = 0) => {
+                UI.resetLayout();
+                UI.setBack(`Router.navigate('story/${id}')`, "Return");
+                
                 const chapters = await API.get(`data/stories/${id}/chapters/index.json`);
-                const chapter = chapters[chapterIndex];
-                if (!chapter) { Router.navigate(`story/${id}`); return; }
+                const chapter = chapters[idx];
+                
+                // Setup Drawer
+                const drawer = document.getElementById('drawer-content');
+                document.getElementById('drawer-toggle').style.display = 'block';
+                drawer.innerHTML = chapters.map((c, i) => 
+                    `<div style="padding:10px 0; cursor:pointer; color:${i==idx?'#fff':'#666'};" onclick="Router.navigate('read/${id}/${i}')">${i+1}. ${c.title}</div>`
+                ).join('');
 
-                let sidebar = '';
-                chapters.forEach((c, i) => {
-                    sidebar += `<li class="${i == chapterIndex ? 'active':''}" onclick="Router.navigate('read/${id}/${i}')">${c.title}</li>`;
-                });
-
-                let nextButton = parseInt(chapterIndex) < chapters.length - 1 
-                    ? `<button class="codex-button" onclick="Router.navigate('read/${id}/${parseInt(chapterIndex) + 1}')">Next Chapter</button>`
-                    : '<span>End</span>';
+                let nextBtn = idx < chapters.length - 1 
+                    ? `<button class="big-btn outline" style="margin-top:4rem;" onclick="Router.navigate('read/${id}/${parseInt(idx)+1}')">Next Chapter</button>`
+                    : `<div style="margin-top:4rem; color:#666;">End of Record</div>`;
 
                 Render.stage.innerHTML = `
-                    <div class="reader-layout fade-in">
-                        <nav class="reader-sidebar">
-                            <h3>Chapters</h3>
-                            <ul>${sidebar}</ul>
-                        </nav>
-                        <article class="reader-content">
-                            <h2>${chapter.title}</h2>
-                            <div class="text">${chapter.content.replace(/\n/g, '<br>')}</div>
-                            <div style="text-align:center; margin-top:3rem; padding-top:2rem; border-top:1px solid var(--border-color);">${nextButton}</div>
-                        </article>
-                    </div>`;
+                    <div class="reader-container fade-in">
+                        <div class="chapter-header">
+                            <div style="font-family:var(--font-ui); color:#666; margin-bottom:1rem;">CHAPTER ${parseInt(idx)+1}</div>
+                            <h1 class="chapter-title">${chapter.title}</h1>
+                        </div>
+                        <div class="chapter-text">
+                            ${chapter.content.replace(/\n/g, '<br>')}
+                        </div>
+                        <div style="text-align:center;">${nextBtn}</div>
+                    </div>
+                `;
             },
 
             gallery: async (id, charId = null) => {
-                UI.setBackButton(`Router.navigate('story/${id}')`, `← Back to Hub`);
-                State.currentStoryId = id;
+                UI.resetLayout();
                 State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`);
                 
-                if (!charId) {
-                    let html = '<div class="char-grid fade-in">';
-                    State.currentChars.forEach((char) => {
+                if(!charId) {
+                    // Roster View
+                    UI.setBack(`Router.navigate('story/${id}')`, "Overview");
+                    let html = `<div class="home-container fade-in"><h1 class="archive-header">Dramatis Personae</h1><div class="roster-grid">`;
+                    State.currentChars.forEach(c => {
                         html += `
-                            <div class="char-card" onclick="Router.navigate('gallery/${id}/${char.id}')">
-                                <img src="${char.img}" alt="${char.name}">
-                                <div class="name">${char.name}</div>
-                                <div class="role">${char.role || ""}</div>
+                            <div class="roster-card" onclick="Router.navigate('gallery/${id}/${c.id}')">
+                                <img class="roster-img" src="${c.img}">
+                                <div class="roster-name">${c.name}</div>
                             </div>`;
                     });
-                    Render.stage.innerHTML = html + '</div>';
+                    Render.stage.innerHTML = html + `</div></div>`;
                 } else {
-                    const charData = State.currentChars.find(c => c.id === charId);
-                    if (!charData) { Router.navigate(`gallery/${id}`); return; }
-
-                    const allTags = new Set(['All']);
-                    if(charData.gallery_images) charData.gallery_images.forEach(img => img.tags.forEach(t => allTags.add(t)));
+                    // Detail View
+                    UI.setBack(`Router.navigate('gallery/${id}')`, "Roster");
+                    const char = State.currentChars.find(c => c.id === charId);
                     
-                    let tagHtml = `<div class="tag-row">`;
-                    allTags.forEach(tag => tagHtml += `<div class="tag-chip ${tag === State.filterTag ? 'active' : ''}" onclick="Actions.setFilter('${tag}')">${tag}</div>`);
-                    tagHtml += `</div>`;
+                    // Tags
+                    const allTags = new Set(['All']);
+                    if(char.gallery_images) char.gallery_images.forEach(img => img.tags.forEach(t => allTags.add(t)));
+                    
+                    let tagsHtml = `<div class="filter-bar">`;
+                    allTags.forEach(t => tagsHtml += `<div class="filter-item ${t==='All'?'active':''}" onclick="Actions.filter('${t}')">${t}</div>`);
+                    tagsHtml += `</div>`;
 
-                    let html = `
-                        <div class="fade-in">
-                            <div class="char-profile">
-                                <img src="${charData.img}" class="profile-img" alt="${charData.name}">
-                                <div class="profile-details">
-                                    <div class="profile-name">${charData.name}</div>
-                                    <div class="profile-role">${charData.role || ""}</div>
-                                    <p class="profile-bio">${charData.bio || ""}</p>
+                    Render.stage.innerHTML = `
+                        <div class="gallery-container fade-in">
+                            <div class="char-hero">
+                                <img class="char-portrait" src="${char.img}">
+                                <div class="char-details">
+                                    <h1>${char.name}</h1>
+                                    <h3>${char.role || "Unknown"}</h3>
+                                    <p>${char.bio || "No data available."}</p>
                                 </div>
                             </div>
-                            ${tagHtml}
-                            <div class="gallery-grid" id="gallery-grid"></div>
-                        </div>`;
-                    Render.stage.innerHTML = html;
-                    Actions.renderGalleryGrid();
+                            ${tagsHtml}
+                            <div class="masonry-grid" id="masonry-grid"></div>
+                        </div>
+                    `;
+                    Actions.renderGrid(char.gallery_images, 'All');
                 }
             }
         };
 
-        // --- ACTIONS & UI ---
         const Actions = {
-            renderGalleryGrid: () => {
-                const charData = State.currentChars.find(c => c.id === Router.getParts()[2]);
-                if(!charData || !charData.gallery_images) return;
+            filter: (tag) => {
+                // Update active class
+                document.querySelectorAll('.filter-item').forEach(el => {
+                    el.classList.toggle('active', el.innerText === tag);
+                });
                 
-                let images = charData.gallery_images;
-                if(State.filterTag !== 'All') images = images.filter(img => img.tags.includes(State.filterTag));
-                
-                const grid = document.getElementById('gallery-grid');
-                grid.innerHTML = images.map(img => `<div class="gallery-item"><img src="${img.src}" loading="lazy"></div>`).join('');
+                const charId = window.location.hash.split('/')[2];
+                const char = State.currentChars.find(c => c.id === charId);
+                Actions.renderGrid(char.gallery_images, tag);
             },
-            setFilter: (tag) => { State.filterTag = tag; Actions.renderGalleryGrid(); },
-        };
+            
+            renderGrid: (images, tag) => {
+                if(!images) return;
+                let filtered = tag === 'All' ? images : images.filter(img => img.tags.includes(tag));
+                
+                // Sort Safe first logic
+                if(tag === 'All') {
+                     const nsfw = ['NSFW', 'R-18', 'Explicit'];
+                     filtered.sort((a,b) => {
+                         const aBad = a.tags.some(t=>nsfw.includes(t));
+                         const bBad = b.tags.some(t=>nsfw.includes(t));
+                         return aBad - bBad;
+                     });
+                }
 
-        const UI = {
-            backContainer: document.getElementById('back-container'),
-            setBackButton: (action, label) => {
-                UI.backContainer.innerHTML = action ? `<div class="back-btn-wrapper" onclick="${action}">${label}</div>` : '';
+                document.getElementById('masonry-grid').innerHTML = filtered.map(img => 
+                    `<div class="masonry-item"><img src="${img.src}"></div>`
+                ).join('');
             }
         };
 
-        // --- ROUTER ---
+        const UI = {
+            backSlot: document.getElementById('back-slot'),
+            themeSlot: document.getElementById('theme-slot'),
+            
+            resetLayout: () => {
+                document.getElementById('drawer-toggle').style.display = 'none';
+                document.getElementById('chapter-drawer').classList.remove('open');
+                UI.backSlot.innerHTML = '';
+                UI.themeSlot.innerHTML = '';
+            },
+            
+            setBack: (action, label) => {
+                UI.backSlot.innerHTML = `<button class="nav-btn" onclick="${action}">&larr; ${label}</button>`;
+            },
+
+            setThemeBtn: (char) => {
+                UI.themeSlot.innerHTML = `<button class="nav-btn" onclick="UI.changeBg('${char.gallery_images[0].src}')">Theme</button>`;
+                // Simple logic: clicking toggles bg change (for demo, just picks first img)
+                // You can expand this to the full modal logic from previous version if desired.
+            },
+            
+            toggleDrawer: () => document.getElementById('chapter-drawer').classList.toggle('open'),
+            
+            // Idle Mode
+            initIdle: () => {
+                const nav = document.getElementById('navbar');
+                window.addEventListener('mousemove', (e) => {
+                    const margin = 0.05; 
+                    const isEdge = (e.clientX < window.innerWidth * margin) || (e.clientX > window.innerWidth * (1 - margin));
+                    
+                    if(isEdge) {
+                        document.body.style.cursor = 'none';
+                        nav.style.opacity = '0';
+                        Render.stage.style.opacity = '0';
+                    } else {
+                        document.body.style.cursor = 'default';
+                        nav.style.opacity = '1';
+                        Render.stage.style.opacity = '1';
+                    }
+                });
+            },
+            
+            changeBg: (src) => {
+                document.body.style.backgroundImage = `url('${src}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+                // Darken overlay
+                document.body.style.boxShadow = 'inset 0 0 0 2000px rgba(5,5,5,0.85)'; 
+            }
+        };
+
         const Router = {
-            getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
-            navigate: (hash) => { window.location.hash = hash; },
+            navigate: (hash) => window.location.hash = hash,
             handle: () => {
-                const parts = Router.getParts();
+                const parts = (window.location.hash.slice(1) || 'home').split('/');
                 const view = parts[0];
-                if (view === 'home') Render.home();
-                else if (view === 'story') Render.storyHub(parts[1]);
-                else if (view === 'read') Render.reader(parts[1], parts[2]);
-                else if (view === 'gallery') Render.gallery(parts[1], parts[2]);
+                if(view === 'home') Render.home();
+                else if(view === 'story') Render.storyHub(parts[1]);
+                else if(view === 'read') Render.reader(parts[1], parts[2]);
+                else if(view === 'gallery') Render.gallery(parts[1], parts[2]);
             }
         };
 
         window.addEventListener('hashchange', Router.handle);
-        window.addEventListener('DOMContentLoaded', Router.handle);
+        window.addEventListener('DOMContentLoaded', () => {
+            Router.handle();
+            UI.initIdle();
+        });
+
     </script>
 </body>
 </html>
