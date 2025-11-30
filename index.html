@@ -3,464 +3,636 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AETHER | NOIR EDITORIAL</title>
-    
-    <!-- New Fonts: Playfair Display (Elegant Serif) & Lato (Clean Sans) -->
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+    <title>The Aether Archives</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 
     <style>
-        /* --- 1. THE NOIR THEME VARIABLES --- */
+        /* --- 1. CORE VARIABLES & OVERRIDES --- */
         :root {
-            --bg-color: #080808;
-            --text-color: #e0e0e0;
-            --accent-color: #d4af37; /* Metallic Gold */
-            --subtle-border: rgba(255, 255, 255, 0.1);
-            --font-header: 'Playfair Display', serif;
-            --font-body: 'Lato', sans-serif;
-            --sidebar-width: 60px;
+            --primary-color: #ffffff;
+            --accent-color: #ffd700;
+            --glass-bg: rgba(20, 20, 20, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --font-header: 'Cinzel', serif;
+            --font-body: 'Lora', serif;
+            --font-ui: 'Montserrat', sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: var(--font-body);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            display: flex;
-        }
-
-        /* --- 2. LAYOUT SKELETON --- */
-        
-        /* The Background Layer (Full Screen, dimmed) */
-        #global-bg {
+        /* Ambient Particles Canvas */
+        #particle-canvas {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-size: cover; background-position: center;
-            z-index: -1; opacity: 0.2; /* Darker, more subtle */
-            transition: background-image 0.8s ease-in-out, opacity 0.5s ease;
-            filter: grayscale(100%) contrast(1.2); /* Artistic noir filter */
+            z-index: -1; /* Above bg layer, below app */
+            pointer-events: none;
         }
 
-        /* Minimal Sidebar Navigation */
-        #side-nav {
-            width: var(--sidebar-width); height: 100%;
-            border-right: 1px solid var(--subtle-border);
-            display: flex; flex-direction: column; align-items: center; padding-top: 2rem;
-            background: rgba(8, 8, 8, 0.9); z-index: 50;
-            transition: width 0.3s ease;
-        }
-        .nav-icon {
-            font-size: 1.2rem; margin-bottom: 2rem; color: #555; cursor: pointer;
-            transition: 0.3s;
-        }
-        .nav-icon:hover { color: var(--accent-color); }
-        .logo-vertical {
-            writing-mode: vertical-rl; text-orientation: mixed;
-            font-family: var(--font-header); letter-spacing: 5px; font-weight: 700;
-            margin-top: auto; margin-bottom: 2rem; color: var(--accent-color); opacity: 0.5;
-        }
-
-        /* Main Content Stage */
-        #content-stage {
-            flex: 1; height: 100%; overflow: hidden; position: relative;
-        }
-
-        /* Utilities */
-        .fade-in { animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* Cinematic Transitions */
+        .background-layer { transition: filter 0.6s ease, transform 0.6s ease, background-image 0.8s ease; }
+        #app-container { transition: opacity 0.5s ease, transform 0.4s ease; }
         
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; }
+        .page-exit { opacity: 0; transform: scale(1.05) translateY(-10px); pointer-events: none; }
+        .page-enter { opacity: 0; transform: scale(0.95) translateY(10px); }
+        .page-active { opacity: 1; transform: scale(1) translateY(0); }
 
-        /* --- 3. VIEW: HOME (The Hero List) --- */
-        .home-layout {
-            height: 100%; display: flex; align-items: center; padding-left: 10vw;
+        /* Glassmorphism */
+        .glass-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border); border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
         }
-        .story-list {
-            display: flex; flex-direction: column; gap: 0; border-left: 1px solid var(--subtle-border);
+
+        /* --- 2. READER ENHANCEMENTS --- */
+        .reader-layout { display: flex; gap: 2rem; height: 100%; transition: 0.3s; }
+        .reader-sidebar { width: 250px; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 1rem; transition: 0.3s; }
+        .reader-content { 
+            flex: 1; max-width: 800px; margin: 0 auto; 
+            background: rgba(10, 10, 10, 0.95); padding: 4rem; 
+            border-radius: 4px; color: #d0d0d0; overflow-y: auto; position: relative;
+            transition: max-width 0.3s ease;
         }
-        .story-list-item {
-            padding: 1.5rem 3rem;
-            font-family: var(--font-header); font-size: 3rem; color: #444;
-            cursor: pointer; transition: 0.4s; position: relative;
-            line-height: 1;
+
+        /* Progress Bar */
+        #read-progress-container {
+            position: sticky; top: 0; left: 0; width: 100%; height: 4px;
+            background: rgba(255,255,255,0.1); margin: -4rem -4rem 2rem -4rem;
+            width: calc(100% + 8rem); z-index: 10;
         }
-        .story-list-item:hover {
-            color: #fff; padding-left: 4rem;
+        #read-progress-bar { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.1s; }
+
+        /* Reader Toolbar (Fonts & Focus) */
+        .reader-toolbar {
+            display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 2rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 1rem;
         }
-        .story-list-item.active { color: #fff; padding-left: 4rem; }
-        .story-list-item::before {
-            content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-            width: 0px; height: 1px; background: var(--accent-color); transition: 0.4s;
-        }
-        .story-list-item:hover::before { width: 30px; }
+        .rt-btn { background: transparent; border: none; color: #888; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .rt-btn:hover, .rt-btn.active { color: var(--accent-color); }
         
-        .story-meta {
-            font-family: var(--font-body); font-size: 0.9rem; color: var(--accent-color);
-            text-transform: uppercase; letter-spacing: 2px; margin-top: 5px;
-            opacity: 0; transform: translateY(10px); transition: 0.3s; height: 0;
+        .font-menu {
+            position: absolute; top: 80px; right: 40px; background: #222; border: 1px solid #444;
+            padding: 10px; border-radius: 8px; display: none; flex-direction: column; gap: 10px; z-index: 50;
         }
-        .story-list-item:hover .story-meta { opacity: 1; transform: translateY(0); height: auto; }
+        .font-option { display: flex; gap: 10px; align-items: center; cursor: pointer; font-size: 0.8rem; color: #ccc; }
+        .font-option:hover { color: #fff; }
 
-        /* --- 4. VIEW: STORY HUB (Split Screen) --- */
-        .split-layout {
-            display: flex; width: 100%; height: 100%;
-        }
-        .split-left {
-            width: 45%; height: 100%;
-            background-size: cover; background-position: center;
-            position: relative; border-right: 1px solid var(--subtle-border);
-        }
-        .split-overlay {
-            position: absolute; inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,1), transparent);
-        }
-        .split-right {
-            width: 55%; height: 100%; overflow-y: auto; padding: 5rem;
-            background: var(--bg-color);
+        /* Focus Mode Styles */
+        body.focus-active #main-header { opacity: 0; pointer-events: none; }
+        body.focus-active .reader-sidebar { width: 0; padding: 0; opacity: 0; overflow: hidden; }
+        body.focus-active .reader-content { max-width: 900px; background: rgba(5, 5, 5, 0.98); }
+
+        /* Dynamic Fonts */
+        .font-serif { font-family: var(--font-body); }
+        .font-sans { font-family: var(--font-ui); }
+        .text-sm { font-size: 1rem; }
+        .text-md { font-size: 1.2rem; }
+        .text-lg { font-size: 1.4rem; }
+
+        /* --- 3. 3D CHARACTER CARDS --- */
+        .char-grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; }
+        
+        .char-card {
+            width: 260px; height: 400px; position: relative; border-radius: 12px;
+            cursor: pointer; background: #000; border: 1px solid rgba(255,255,255,0.1);
+            /* 3D Props */
+            transform-style: preserve-3d;
+            transform: perspective(1000px);
+            transition: transform 0.1s; /* Fast update for mouse move */
         }
         
-        .huge-title { font-family: var(--font-header); font-size: 4rem; line-height: 0.9; margin-bottom: 2rem; color: #fff; }
-        .meta-tag { display: inline-block; padding: 5px 15px; border: 1px solid var(--subtle-border); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; margin-right: 10px; margin-bottom: 2rem; color: var(--accent-color); }
-        .synopsis-text { font-size: 1.2rem; line-height: 1.8; color: #aaa; margin-bottom: 3rem; max-width: 600px; }
+        /* Reset transition for smooth exit */
+        .char-card.reset-anim { transition: transform 0.5s ease; }
+
+        .char-card-inner {
+            width: 100%; height: 100%; position: relative; overflow: hidden; border-radius: 12px;
+            transform: translateZ(20px); /* Pop out */
+        }
+
+        .char-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .char-card:hover img { transform: scale(1.1); filter: brightness(0.6); }
+
+        .char-info-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 80%, transparent 100%);
+            padding: 20px; transform: translateY(60%) translateZ(30px); /* 3D pop text */
+            transition: transform 0.3s ease;
+        }
+        .char-card:hover .char-info-overlay { transform: translateY(0) translateZ(30px); }
+
+        .char-name { font-family: var(--font-header); font-size: 1.4rem; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+        .char-role { color: var(--accent-color); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; font-weight: bold; }
+        .char-bio-preview {
+            font-size: 0.85rem; line-height: 1.5; color: #ccc; opacity: 0; transition: opacity 0.3s 0.1s;
+            max-height: 100px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+        }
+        .char-card:hover .char-bio-preview { opacity: 1; }
+
+        /* --- 4. HERO PROFILE & GALLERY --- */
+        .char-profile-hero {
+            display: grid; grid-template-columns: 300px 1fr; gap: 3rem; padding: 3rem; 
+            margin-bottom: 3rem; background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px);
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); align-items: start;
+        }
+        .hero-img-container {
+            width: 100%; aspect-ratio: 3 / 4; border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .hero-img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-info { display: flex; flex-direction: column; text-align: left; }
+        .hero-name { font-family: var(--font-header); font-size: 3.5rem; line-height: 1.1; color: #fff; margin-bottom: 0.5rem; }
+        .hero-role { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px; color: var(--accent-color); font-size: 0.9rem; margin-bottom: 2rem; opacity: 0.8; font-weight: 600; }
+        .hero-bio { font-family: var(--font-body); font-size: 1.1rem; line-height: 1.8; color: #d0d0d0; white-space: pre-line; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; width: 100%; }
+
+        .tag-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center; }
+        .tag-chip { padding: 6px 18px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50px; cursor: pointer; font-size: 0.85rem; background: rgba(0,0,0,0.3); transition: 0.2s; }
+        .tag-chip:hover, .tag-chip.active { background: var(--accent-color); color: #000; border-color: var(--accent-color); font-weight: bold;}
         
-        .action-btn {
-            background: transparent; border: 1px solid #fff; color: #fff;
-            padding: 1rem 3rem; font-family: var(--font-body); text-transform: uppercase;
-            letter-spacing: 2px; cursor: pointer; transition: 0.3s; font-size: 0.8rem;
-            margin-right: 1rem;
-        }
-        .action-btn:hover { background: #fff; color: #000; }
-        .action-btn.secondary { border-color: var(--subtle-border); color: #888; }
-        .action-btn.secondary:hover { border-color: var(--accent-color); color: var(--accent-color); background: transparent; }
+        .sub-gallery-grid { column-count: 3; column-gap: 1.5rem; }
+        .gallery-item { break-inside: avoid; margin-bottom: 1.5rem; border-radius: 8px; overflow: hidden; transition: transform 0.3s; cursor: zoom-in; }
+        .gallery-item:hover { transform: scale(1.02); border-color: var(--accent-color); }
+        .gallery-item img { display: block; width: 100%; }
 
-        /* --- 5. VIEW: READER (Minimalist) --- */
-        .reader-container {
-            max-width: 800px; margin: 0 auto; height: 100%;
-            display: flex; flex-direction: column;
-            border-left: 1px solid var(--subtle-border); border-right: 1px solid var(--subtle-border);
-            background: #0b0b0b;
-        }
-        .reader-nav {
-            padding: 1.5rem; border-bottom: 1px solid var(--subtle-border);
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .chapter-title { font-family: var(--font-header); font-size: 1.5rem; color: var(--accent-color); }
-        .reader-text-area {
-            flex: 1; overflow-y: auto; padding: 4rem 5rem;
-            font-family: var(--font-header); font-size: 1.3rem; line-height: 1.8; color: #d0d0d0;
-        }
-        .reader-text-area p { margin-bottom: 1.5rem; }
-
-        /* --- 6. VIEW: GALLERY (Masonry Grid) --- */
-        .gallery-container { padding: 4rem; height: 100%; overflow-y: auto; }
-        .gallery-header { 
-            display: flex; justify-content: space-between; align-items: flex-end; 
-            margin-bottom: 3rem; border-bottom: 1px solid var(--subtle-border); padding-bottom: 2rem; 
-        }
-        .masonry-grid { column-count: 4; column-gap: 1.5rem; }
-        .masonry-item {
-            break-inside: avoid; margin-bottom: 1.5rem; position: relative;
-            transition: transform 0.3s ease; cursor: zoom-in;
-        }
-        .masonry-item:hover { transform: translateY(-5px); z-index: 10; }
-        .masonry-item img { width: 100%; display: block; filter: grayscale(50%); transition: 0.5s; }
-        .masonry-item:hover img { filter: grayscale(0%); }
-        
-        .char-tag {
-            position: absolute; bottom: 10px; left: 10px;
-            background: #000; color: #fff; padding: 3px 10px; font-size: 0.7rem;
-            text-transform: uppercase; letter-spacing: 1px; opacity: 0; transition: 0.3s;
-        }
-        .masonry-item:hover .char-tag { opacity: 1; }
-
-        /* Character Profile in Gallery */
-        .char-profile-split {
-            display: flex; height: 400px; margin-bottom: 4rem;
-            border: 1px solid var(--subtle-border);
-        }
-        .cp-img { width: 300px; height: 100%; object-fit: cover; filter: grayscale(30%); }
-        .cp-info { padding: 3rem; flex: 1; display: flex; flex-direction: column; justify-content: center; }
-        .cp-name { font-family: var(--font-header); font-size: 3rem; line-height: 1; margin-bottom: 0.5rem; }
-        .cp-role { color: var(--accent-color); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 2rem; font-size: 0.8rem; }
-        .cp-bio { color: #888; line-height: 1.6; max-width: 500px; }
-
-        /* Wallpaper Modal */
-        .wp-modal {
+        /* Lightbox */
+        .lightbox {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 200; display: none;
-            justify-content: center; align-items: center; flex-direction: column;
+            background: rgba(0,0,0,0.95); z-index: 5000; display: none;
+            justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s;
         }
-        .wp-grid { display: flex; gap: 10px; overflow-x: auto; max-width: 90%; padding: 20px 0; }
-        .wp-item { height: 200px; cursor: pointer; border: 1px solid #333; opacity: 0.7; transition: 0.3s; }
-        .wp-item:hover { opacity: 1; border-color: var(--accent-color); transform: scale(1.05); }
+        .lightbox.active { opacity: 1; }
+        .lightbox img { max-width: 95%; max-height: 95vh; border: 2px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 2rem; cursor: pointer; }
 
-        /* Mobile */
+        /* Layouts & Modals */
+        .story-hub-layout { display: grid; grid-template-columns: 350px 1fr; gap: 4rem; max-width: 1200px; margin: 2rem auto; align-items: center; }
+        .hub-cover { width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
+        
+        .wp-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .wp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; width: 80%; max-height: 70vh; overflow-y: auto; padding: 2rem; background: #111; border-radius: 12px; border: 1px solid #333; }
+        .wp-item { height: 120px; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+        .wp-item:hover { border-color: var(--accent-color); transform: scale(1.05); }
+        .wp-item img { width: 100%; height: 100%; object-fit: cover; }
+
         @media (max-width: 900px) {
-            .split-layout { flex-direction: column; }
-            .split-left { width: 100%; height: 40vh; }
-            .split-right { width: 100%; height: 60vh; padding: 2rem; }
-            .masonry-grid { column-count: 2; }
-            .reader-container { border: none; }
-            .reader-text-area { padding: 2rem; }
-            .char-profile-split { flex-direction: column; height: auto; }
-            .cp-img { width: 100%; height: 300px; }
-            .home-layout { padding-left: 1rem; }
-            .story-list-item { font-size: 2rem; }
+            .story-hub-layout, .char-profile-hero { grid-template-columns: 1fr; text-align: center; }
+            .hero-img-container { width: 250px; margin: 0 auto; }
+            .sub-gallery-grid { column-count: 2; }
+            .reader-layout { flex-direction: column; }
+            .reader-sidebar { width: 100%; height: 100px; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; }
         }
     </style>
 </head>
 <body>
 
-    <div id="global-bg"></div>
+    <div class="background-layer" id="global-bg"></div>
+    <canvas id="particle-canvas"></canvas>
 
-    <!-- Minimal Side Nav -->
-    <nav id="side-nav">
-        <div class="nav-icon" onclick="Router.navigate('home')"><i class="fas fa-home"></i></div>
-        <div class="nav-icon" id="back-btn" style="opacity:0"><i class="fas fa-arrow-left"></i></div>
-        <div class="nav-icon" id="wp-btn" style="display:none" onclick="UI.openWallpaperModal()"><i class="fas fa-palette"></i></div>
-        <div class="logo-vertical">AETHER</div>
-    </nav>
-
-    <div id="content-stage">
-        <!-- Content Injected Here -->
+    <div id="app-container" class="page-active">
+        <nav id="main-header" class="glass-box">
+            <div id="back-container"></div>
+            <div class="logo" onclick="Router.navigate('home')">AETHER</div>
+            <div id="wp-toggle-container"></div>
+        </nav>
+        <div id="content-stage"></div>
     </div>
 
     <!-- Wallpaper Modal -->
     <div id="wp-modal" class="wp-modal">
-        <h2 style="font-family: var(--font-header); color:#fff; margin-bottom:2rem;">Select Atmosphere</h2>
+        <h2 style="color:white; margin-bottom:1rem; font-family: var(--font-header);">Select Wallpaper</h2>
         <div id="wp-grid" class="wp-grid"></div>
-        <div style="margin-top:2rem; cursor:pointer; color:#666;" onclick="document.getElementById('wp-modal').style.display='none'">CLOSE</div>
+        <button class="btn-large" style="margin-top:1rem; border:1px solid #555; font-size:0.9rem;" onclick="document.getElementById('wp-modal').style.display='none'">Close</button>
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none', 300)">
+        <div class="lightbox-close">&times;</div>
+        <img id="lightbox-img" src="" onclick="event.stopPropagation()">
     </div>
 
     <script>
-        // --- 1. CORE LOGIC (READ ONLY) ---
-        const State = {
-            manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [], wallpaperChar: null
+        // --- 1. PARTICLES ---
+        const Particles = {
+            init: () => {
+                const canvas = document.getElementById('particle-canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                
+                let particlesArray = [];
+                const numberOfParticles = 50;
+
+                class Particle {
+                    constructor() {
+                        this.x = Math.random() * canvas.width;
+                        this.y = Math.random() * canvas.height;
+                        this.size = Math.random() * 2 + 0.5;
+                        this.speedY = Math.random() * 0.5 + 0.2;
+                        this.opacity = Math.random() * 0.5;
+                    }
+                    update() {
+                        this.y -= this.speedY;
+                        if(this.y < 0) {
+                            this.y = canvas.height;
+                            this.x = Math.random() * canvas.width;
+                        }
+                    }
+                    draw() {
+                        ctx.fillStyle = `rgba(255, 215, 0, ${this.opacity})`; // Goldish dust
+                        ctx.beginPath();
+                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+
+                function initParticles() {
+                    particlesArray = [];
+                    for(let i=0; i<numberOfParticles; i++) particlesArray.push(new Particle());
+                }
+                function animate() {
+                    ctx.clearRect(0,0, canvas.width, canvas.height);
+                    for(let i=0; i<particlesArray.length; i++){
+                        particlesArray[i].update();
+                        particlesArray[i].draw();
+                    }
+                    requestAnimationFrame(animate);
+                }
+                window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+                initParticles();
+                animate();
+            }
         };
 
+        // --- 2. VISUALS (Tilt, Idle, Lightbox) ---
+        const Visuals = {
+            initDynamicTransparency: () => {
+                const app = document.getElementById('app-container');
+                const bgLayer = document.getElementById('global-bg');
+                
+                window.addEventListener('mousemove', (e) => {
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    const margin = 0.05; 
+                    const isEdge = (e.clientX < w * margin) || (e.clientX > w * (1 - margin)) ||
+                                   (e.clientY < h * margin) || (e.clientY > h * (1 - margin));
+
+                    if (isEdge) {
+                        app.style.opacity = '0';
+                        bgLayer.style.filter = 'blur(0px) brightness(1)';
+                        bgLayer.style.transform = 'scale(1)';
+                        return;
+                    }
+                    app.style.opacity = '1';
+                    
+                    const isHoveringContent = e.target.closest('.glass-box') || e.target.closest('.char-card') || e.target.closest('.reader-content');
+                    if (isHoveringContent) {
+                        bgLayer.style.filter = 'blur(5px) brightness(0.5)';
+                        bgLayer.style.transform = 'scale(1.02)';
+                    } else {
+                        const ratio = Math.hypot(e.clientX - w/2, e.clientY - h/2) / Math.hypot(w/2, h/2);
+                        const opacity = ratio < 0.6 ? 1 : 1 - Math.pow((ratio - 0.6) / 0.4, 2);
+                        bgLayer.style.filter = 'blur(0px) brightness(1)';
+                        bgLayer.style.transform = 'scale(1)';
+                    }
+                });
+            },
+
+            initCardTilt: () => {
+                document.querySelectorAll('.char-card').forEach(card => {
+                    card.addEventListener('mousemove', (e) => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const y = e.clientY - rect.top;
+                        const centerX = rect.width / 2;
+                        const centerY = rect.height / 2;
+                        
+                        const rotateX = ((y - centerY) / centerY) * -10; // Max 10deg tilt
+                        const rotateY = ((x - centerX) / centerX) * 10;
+
+                        card.classList.remove('reset-anim');
+                        card.style.transform = `perspective(1000px) scale(1.05) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                    });
+
+                    card.addEventListener('mouseleave', () => {
+                        card.classList.add('reset-anim');
+                        card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`;
+                    });
+                });
+            },
+
+            openLightbox: (src) => {
+                const lb = document.getElementById('lightbox');
+                const img = document.getElementById('lightbox-img');
+                img.src = src;
+                lb.style.display = 'flex';
+                setTimeout(() => lb.classList.add('active'), 10);
+            }
+        };
+
+        // --- 3. READER FEATURES (Progress, Fonts, Focus) ---
+        const ReaderFeatures = {
+            fontSize: 'text-md',
+            fontFamily: 'font-serif',
+            
+            toggleFocus: (btn) => {
+                document.body.classList.toggle('focus-active');
+                btn.classList.toggle('active');
+            },
+            toggleFontMenu: () => {
+                const menu = document.getElementById('font-menu');
+                menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex';
+            },
+            setFontSize: (size) => {
+                ReaderFeatures.fontSize = size;
+                ReaderFeatures.applyFonts();
+            },
+            setFontFamily: (fam) => {
+                ReaderFeatures.fontFamily = fam;
+                ReaderFeatures.applyFonts();
+            },
+            applyFonts: () => {
+                const content = document.querySelector('.reader-content');
+                if(!content) return;
+                content.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`;
+            },
+            initProgress: () => {
+                const content = document.querySelector('.reader-content');
+                const bar = document.getElementById('read-progress-bar');
+                if(!content || !bar) return;
+                
+                content.addEventListener('scroll', () => {
+                    const scrollTop = content.scrollTop;
+                    const scrollHeight = content.scrollHeight - content.clientHeight;
+                    const scrolled = (scrollTop / scrollHeight) * 100;
+                    bar.style.width = scrolled + '%';
+                });
+            }
+        };
+
+        // --- 4. STATE & API ---
+        const State = {
+            manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [],
+            filterTag: 'All', wallpaperChar: null
+        };
         const API = { get: async (path) => (await fetch(path)).json() };
 
-        // --- 2. RENDERER (NOIR STYLE) ---
+        // --- 5. RENDERER ---
         const Render = {
             stage: document.getElementById('content-stage'),
-
+            
             home: async () => {
-                UI.resetState();
-                State.manifest = await API.get('data/manifest.json');
                 const settings = await API.get('data/settings.json').catch(() => ({}));
                 UI.setBg(settings.homeBg || null);
-                UI.setBackBtn(null);
+                State.manifest = await API.get('data/manifest.json');
+                UI.setBackButton(null);
+                UI.hideWallpaperButton();
 
-                let listHtml = '';
-                State.manifest.forEach(story => {
-                    // Note: Hover changes BG instantly
-                    listHtml += `
-                        <div class="story-list-item fade-in" 
-                             onmouseenter="UI.setBg('${story.cover}')" 
-                             onclick="Router.navigate('story/${story.id}')">
-                            ${story.title}
-                            <div class="story-meta">${story.genre}</div>
-                        </div>
-                    `;
+                let html = '<div class="story-grid">';
+                State.manifest.forEach((story) => {
+                    html += `
+                        <div class="story-card glass-box" onclick="Router.navigate('story/${story.id}')">
+                            <img src="${story.cover}" alt="${story.title}">
+                            <div class="card-info">
+                                <div class="card-title">${story.title}</div>
+                                <div style="color:#ccc; font-size:0.9rem;">${story.desc}</div>
+                            </div>
+                        </div>`;
                 });
-
-                Render.stage.innerHTML = `
-                    <div class="home-layout">
-                        <div class="story-list">
-                            ${listHtml}
-                        </div>
-                    </div>
-                `;
+                Render.stage.innerHTML = html + '</div>';
             },
 
             storyHub: async (id) => {
-                UI.resetState();
+                UI.setBackButton("Router.navigate('home')", "Archives");
                 State.currentStoryId = id;
                 State.currentStoryConfig = await API.get(`data/stories/${id}/config.json`);
-                State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(()=>[]);
-                
-                UI.setBg(null); // Clear global BG, we use local split
-                UI.setBackBtn("Router.navigate('home')");
+                State.manifest = await API.get('data/manifest.json');
+                State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(() => []);
+                UI.setBg(State.currentStoryConfig.bg);
                 UI.checkWallpaperChar();
 
+                const storyInManifest = State.manifest.find(s => s.id === id) || { cover: "" };
                 const conf = State.currentStoryConfig;
+                document.documentElement.style.setProperty('--accent-color', conf.themeColor);
 
                 Render.stage.innerHTML = `
-                    <div class="split-layout fade-in">
-                        <div class="split-left" style="background-image: url('${conf.bg}')">
-                            <div class="split-overlay"></div>
-                        </div>
-                        <div class="split-right">
-                            <div class="meta-tag">${conf.status} • ${conf.genre}</div>
-                            <div class="huge-title">${conf.title}</div>
-                            <div class="synopsis-text">${conf.synopsis}</div>
-                            
-                            <div style="display:flex;">
-                                <button class="action-btn" onclick="Router.navigate('read/${id}')">Read Story</button>
-                                <button class="action-btn secondary" onclick="Router.navigate('gallery/${id}')">Gallery</button>
+                    <div class="story-hub-layout glass-box" style="padding: 2rem;">
+                        <img class="hub-cover" src="${storyInManifest.cover}" alt="Cover">
+                        <div class="hub-details">
+                            <h1>${conf.title}</h1>
+                            <div style="color:var(--accent-color); margin-bottom:2rem; text-transform: uppercase; letter-spacing: 1px;">
+                                ${conf.status} • ${conf.genre}
+                            </div>
+                            <div class="hub-synopsis">${conf.synopsis}</div>
+                            <div class="hub-actions">
+                                <button class="btn-large" onclick="Router.navigate('read/${id}')"><i class="fas fa-book-open"></i> READ</button>
+                                <button class="btn-large" onclick="Router.navigate('gallery/${id}')"><i class="fas fa-images"></i> GALLERY</button>
                             </div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
             },
 
             reader: async (id, chapterIndex = 0) => {
+                State.currentStoryId = id;
                 const chapters = await API.get(`data/stories/${id}/chapters/index.json`);
-                UI.setBg(null); 
-                document.getElementById('global-bg').style.opacity = '0'; // Go pitch black for reading
-                UI.setBackBtn(`Router.navigate('story/${id}')`);
+                const conf = await API.get(`data/stories/${id}/config.json`);
+                UI.setBg(conf.bg);
+                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                UI.checkWallpaperChar();
 
                 const chapter = chapters[chapterIndex];
-                if(!chapter) return;
+                if (!chapter) { Router.navigate(`story/${id}`); return; }
 
-                // Simple Nav
-                const prev = parseInt(chapterIndex) > 0 ? `Router.navigate('read/${id}/${parseInt(chapterIndex)-1}')` : null;
-                const next = parseInt(chapterIndex) < chapters.length-1 ? `Router.navigate('read/${id}/${parseInt(chapterIndex)+1}')` : null;
+                let sidebar = '';
+                chapters.forEach((c, i) => {
+                    sidebar += `<div class="chapter-list-item ${i == chapterIndex ? 'active':''}" onclick="Router.navigate('read/${id}/${i}')">${c.title}</div>`;
+                });
+
+                let nextButton = parseInt(chapterIndex) < chapters.length - 1 
+                    ? `<button class="btn-large" style="margin:0 auto;" onclick="Router.navigate('read/${id}/${parseInt(chapterIndex) + 1}')">Next Chapter</button>`
+                    : '<span>End of current updates.</span>';
 
                 Render.stage.innerHTML = `
-                    <div class="reader-container fade-in">
-                        <div class="reader-nav">
-                            <div class="chapter-title">${chapter.title}</div>
-                            <div style="color:#666; font-size:0.9rem;">${parseInt(chapterIndex)+1} / ${chapters.length}</div>
-                        </div>
-                        <div class="reader-text-area">
-                            ${chapter.content.replace(/\n/g, '<br>')}
+                    <div class="reader-layout">
+                        <div class="reader-sidebar glass-box"><h3>Chapters</h3>${sidebar}</div>
+                        <div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}">
                             
-                            <div style="margin-top:4rem; display:flex; justify-content:space-between; border-top:1px solid #333; padding-top:2rem;">
-                                ${prev ? `<button class="action-btn secondary" onclick="${prev}">Previous</button>` : '<div></div>'}
-                                ${next ? `<button class="action-btn" onclick="${next}">Next</button>` : '<div style="color:#666">End</div>'}
+                            <div id="read-progress-container"><div id="read-progress-bar"></div></div>
+                            
+                            <div class="reader-toolbar">
+                                <button class="rt-btn" title="Focus Mode" onclick="ReaderFeatures.toggleFocus(this)"><i class="fas fa-expand"></i></button>
+                                <div style="position:relative;">
+                                    <button class="rt-btn" title="Font Settings" onclick="ReaderFeatures.toggleFontMenu()"><i class="fas fa-font"></i></button>
+                                    <div id="font-menu" class="font-menu">
+                                        <div class="font-option" onclick="ReaderFeatures.setFontFamily('font-serif')">Serif</div>
+                                        <div class="font-option" onclick="ReaderFeatures.setFontFamily('font-sans')">Sans</div>
+                                        <hr style="width:100%; border-color:#444">
+                                        <div class="font-option" onclick="ReaderFeatures.setFontSize('text-sm')">Small</div>
+                                        <div class="font-option" onclick="ReaderFeatures.setFontSize('text-md')">Medium</div>
+                                        <div class="font-option" onclick="ReaderFeatures.setFontSize('text-lg')">Large</div>
+                                    </div>
+                                </div>
                             </div>
+
+                            <h2>${chapter.title}</h2>
+                            <div class="chapter-text">${chapter.content.replace(/\n/g, '<br>')}</div>
+                            <br><hr style="border-color:rgba(255,255,255,0.1)"><br>
+                            <div style="text-align:center;">${nextButton}</div>
                         </div>
-                    </div>
-                `;
+                    </div>`;
+                
+                ReaderFeatures.initProgress();
             },
 
             gallery: async (id, charId = null) => {
-                UI.resetState();
                 State.currentStoryId = id;
                 const conf = await API.get(`data/stories/${id}/config.json`);
-                // Use story BG but dimmed
-                UI.setBg(conf.bg); 
-                document.getElementById('global-bg').style.opacity = '0.1'; 
-                
+                UI.setBg(conf.bg);
                 State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`);
                 UI.checkWallpaperChar();
 
-                if(!charId) {
-                    // ROSTER (Using Masonry for visual interest)
-                    UI.setBackBtn(`Router.navigate('story/${id}')`);
-                    
-                    let html = `<div class="gallery-container fade-in"><div class="gallery-header"><h1 class="huge-title" style="font-size:3rem; margin:0">Dramatis Personae</h1></div><div class="masonry-grid">`;
-                    State.currentChars.forEach(char => {
-                         html += `
-                            <div class="masonry-item" onclick="Router.navigate('gallery/${id}/${char.id}')">
-                                <img src="${char.img}">
-                                <div class="char-tag">${char.name}</div>
-                            </div>
-                         `;
-                    });
-                    Render.stage.innerHTML = html + '</div></div>';
-                } else {
-                    // CHARACTER DETAILS + GALLERY
-                    UI.setBackBtn(`Router.navigate('gallery/${id}')`);
-                    const char = State.currentChars.find(c => c.id === charId);
-                    
-                    // Profile Header
-                    let html = `
-                        <div class="gallery-container fade-in">
-                            <div class="char-profile-split">
-                                <img class="cp-img" src="${char.img}">
-                                <div class="cp-info">
-                                    <div class="cp-name">${char.name}</div>
-                                    <div class="cp-role">${char.role || "Unknown"}</div>
-                                    <div class="cp-bio">${char.bio || "No biography available."}</div>
+                if (!charId) {
+                    UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                    let html = '<div class="char-grid">';
+                    State.currentChars.forEach((char) => {
+                        html += `
+                            <div class="char-card" onclick="Router.navigate('gallery/${id}/${char.id}')">
+                                <div class="char-card-inner">
+                                    <img src="${char.img}" alt="${char.name}">
+                                    <div class="char-info-overlay">
+                                        <div class="char-role">${char.role || ""}</div>
+                                        <div class="char-name">${char.name}</div>
+                                        <div class="char-bio-preview">${char.bio || "No biography."}</div>
+                                    </div>
                                 </div>
+                            </div>`;
+                    });
+                    Render.stage.innerHTML = html + '</div>';
+                    Visuals.initCardTilt();
+                } else {
+                    UI.setBackButton(`Router.navigate('gallery/${id}')`, "Roster");
+                    const charData = State.currentChars.find(c => c.id === charId);
+                    if (!charData) { Router.navigate(`gallery/${id}`); return; }
+
+                    const allTags = new Set(['All']);
+                    if(charData.gallery_images) charData.gallery_images.forEach(img => img.tags.forEach(t => allTags.add(t)));
+                    
+                    let tagHtml = `<div class="tag-row">`;
+                    allTags.forEach(tag => tagHtml += `<div class="tag-chip ${tag === State.filterTag ? 'active' : ''}" onclick="Actions.setFilter('${tag}')">${tag}</div>`);
+                    tagHtml += `<button class="tag-chip" style="border-color:var(--accent-color)" onclick="Actions.shuffleGallery()"><i class="fas fa-random"></i> Shuffle</button></div>`;
+
+                    let html = `
+                        <div class="char-profile-hero">
+                            <div class="hero-img-container"><img src="${charData.img}" class="hero-img" alt="${charData.name}"></div>
+                            <div class="hero-info">
+                                <div class="hero-name">${charData.name}</div>
+                                <div class="hero-role">${charData.role || ""}</div>
+                                <div class="hero-bio">${charData.bio || ""}</div>
                             </div>
-                            <div class="masonry-grid">
-                    `;
-                    
-                    // Images
-                    if(char.gallery_images) {
-                        char.gallery_images.forEach(img => {
-                            html += `<div class="masonry-item"><img src="${img.src}"></div>`;
-                        });
-                    }
-                    
-                    Render.stage.innerHTML = html + '</div></div>';
+                        </div>
+                        ${tagHtml}
+                        <div class="sub-gallery-grid" id="gallery-grid"></div>`;
+                    Render.stage.innerHTML = html;
+                    Actions.renderGalleryGrid();
                 }
             }
         };
 
-        // --- 3. UI UTILITIES ---
+        // --- 6. ACTIONS ---
+        const Actions = {
+            renderGalleryGrid: (isShuffle = false) => {
+                const charData = State.currentChars.find(c => c.id === Router.getParts()[2]);
+                if(!charData || !charData.gallery_images) return;
+                
+                let images = [...charData.gallery_images];
+                if(State.filterTag !== 'All') {
+                    images = images.filter(img => img.tags.includes(State.filterTag));
+                } else if (!isShuffle) {
+                    const nsfw = ['NSFW', 'R-18', 'Explicit'];
+                    const safe = images.filter(img => !img.tags.some(t => nsfw.includes(t)));
+                    const unsafe = images.filter(img => img.tags.some(t => nsfw.includes(t)));
+                    images = [...safe, ...unsafe];
+                }
+
+                if(isShuffle) images.sort(() => Math.random() - 0.5);
+                
+                const grid = document.getElementById('gallery-grid');
+                grid.innerHTML = images.map(img => `
+                    <div class="gallery-item" onclick="Visuals.openLightbox('${img.src}')">
+                        <img src="${img.src}" loading="lazy">
+                    </div>`).join('');
+            },
+            setFilter: (tag) => { State.filterTag = tag; Actions.renderGalleryGrid(); },
+            shuffleGallery: () => Actions.renderGalleryGrid(true),
+        };
+
+        // --- 7. UI & ROUTER ---
         const UI = {
             bg: document.getElementById('global-bg'),
-            wpBtn: document.getElementById('wp-btn'),
-            backBtn: document.getElementById('back-btn'),
+            backContainer: document.getElementById('back-container'),
+            wpContainer: document.getElementById('wp-toggle-container'),
+            setBg: (url) => { if(url) UI.bg.style.backgroundImage = `url('${url}')`; },
+            setBackButton: (action, label) => UI.backContainer.innerHTML = action ? `<div class="back-btn-wrapper" onclick="${action}"><i class="fas fa-arrow-left"></i> ${label}</div>` : '',
             
-            resetState: () => {
-                UI.bg.style.opacity = '0.3';
-                UI.bg.style.filter = 'grayscale(100%) contrast(1.2)';
-            },
-
-            setBg: (url) => { 
-                if(url) UI.bg.style.backgroundImage = `url('${url}')`; 
-            },
-
-            setBackBtn: (action) => {
-                if(action) {
-                    UI.backBtn.style.opacity = '1';
-                    UI.backBtn.onclick = () => eval(action);
-                } else {
-                    UI.backBtn.style.opacity = '0';
-                    UI.backBtn.onclick = null;
-                }
-            },
-
             checkWallpaperChar: () => {
                 const wpChar = State.currentChars.find(c => c.name.toLowerCase().includes('wallpaper'));
                 State.wallpaperChar = wpChar;
-                UI.wpBtn.style.display = wpChar ? 'block' : 'none';
+                if (wpChar) {
+                    UI.wpContainer.innerHTML = `<div class="back-btn-wrapper" style="color:var(--accent-color)" onclick="UI.openWallpaperModal()"><i class="fas fa-paint-brush"></i> Theme</div>`;
+                } else { UI.hideWallpaperButton(); }
             },
-
+            hideWallpaperButton: () => { UI.wpContainer.innerHTML = ''; },
             openWallpaperModal: () => {
+                if(!State.wallpaperChar) return;
                 const grid = document.getElementById('wp-grid');
-                grid.innerHTML = State.wallpaperChar.gallery_images.map(img => `
-                    <div class="wp-item" onclick="UI.applyTheme('${img.src}')">
-                        <img src="${img.src}">
-                    </div>
-                `).join('');
+                grid.innerHTML = State.wallpaperChar.gallery_images.map(img => `<div class="wp-item" onclick="UI.setBg('${img.src}'); document.getElementById('wp-modal').style.display='none'"><img src="${img.src}"></div>`).join('');
                 document.getElementById('wp-modal').style.display = 'flex';
-            },
-
-            applyTheme: (url) => {
-                UI.bg.style.backgroundImage = `url('${url}')`;
-                UI.bg.style.opacity = '0.6'; // Brighter for selected wallpapers
-                UI.bg.style.filter = 'grayscale(20%) contrast(1.1)'; // Less noir filter
-                document.getElementById('wp-modal').style.display = 'none';
             }
         };
 
-        // --- 4. ROUTER ---
         const Router = {
-            navigate: (hash) => window.location.hash = hash,
+            getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
+            navigate: (hash) => {
+                // Cinematic Transition Logic
+                const app = document.getElementById('app-container');
+                app.classList.remove('page-active');
+                app.classList.add('page-exit');
+                
+                setTimeout(() => {
+                    window.location.hash = hash;
+                    // Hash change triggers handle(), which renders new content
+                }, 300); 
+            },
             handle: () => {
-                const parts = (window.location.hash.slice(1) || 'home').split('/');
+                const parts = Router.getParts();
                 const view = parts[0];
-                if (view === 'home') Render.home();
-                else if (view === 'story') Render.storyHub(parts[1]);
-                else if (view === 'read') Render.reader(parts[1], parts[2]);
-                else if (view === 'gallery') Render.gallery(parts[1], parts[2]);
+                const app = document.getElementById('app-container');
+                
+                const renderPromise = (async () => {
+                    if (view === 'home') await Render.home();
+                    else if (view === 'story') await Render.storyHub(parts[1]);
+                    else if (view === 'read') await Render.reader(parts[1], parts[2]);
+                    else if (view === 'gallery') await Render.gallery(parts[1], parts[2]);
+                })();
+
+                renderPromise.then(() => {
+                    // Animate In
+                    window.scrollTo(0,0);
+                    app.classList.remove('page-exit');
+                    app.classList.add('page-enter');
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            app.classList.remove('page-enter');
+                            app.classList.add('page-active');
+                        });
+                    });
+                });
             }
         };
 
         window.addEventListener('hashchange', Router.handle);
-        window.addEventListener('DOMContentLoaded', Router.handle);
+        window.addEventListener('DOMContentLoaded', () => { 
+            Router.handle(); 
+            Visuals.initDynamicTransparency(); 
+            Particles.init();
+        });
     </script>
 </body>
 </html>
