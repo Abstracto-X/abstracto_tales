@@ -65,9 +65,9 @@
     {
         "id": "char_1764396315147",
         "name": "Vasha",
-        "role": "Role",
-        "bio": "An twi'lek, born in ryloth but emmigrated to Lothal due to unknown reasons at the age of around 19",
-        "img": "data/stories/story_sw_01/gallery/img_1764410257373.webp",
+        "role": "The Technician",
+        "bio": "An Twi'lek, born in Ryloth at around 36 BBY but emigrated to Lothal due to unknown reasons at the age of 19, from where on, she worked as an technician at one of the many Ship Docking companies in the Capital City\n\nHas an unnamed brother whose is unconfirmed to be alive.\n\nDue to high stress in her job as technician with overworked quota, she never found the time to date anyone as she was essentially running on survival mode.",
+        "img": "data/stories/story_sw_01/gallery/img_1764537310737_296.webp",
         "gallery_images": [
             {
                 "src": "data/stories/story_sw_01/gallery/img_1764396870374.webp",
@@ -247,15 +247,82 @@
                 "tags": [
                     "All"
                 ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537310737_296.webp",
+                "tags": [
+                    "Portrait"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537630865_652.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537630988_393.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537631446_287.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537631527_477.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537631647_256.webp",
+                "tags": [
+                    "All"
+                ]
             }
         ]
     },
     {
         "id": "char_1764401166453",
         "name": "Sabine Wren",
-        "role": "Role",
-        "bio": "",
+        "role": "The Mandalorian Princess",
+        "bio": "Sabine Wren is a female Mandalorian warrior and revolutionary leader during the Galactic Civil War against the Galactic Empire who had joined the Ghost Crew in around 6-7 BBY after running away from imperial facility when she found out how the super-weapon she created was used to slaughter her own people.\n\nHer artistry during the rebellion inspired the symbol of the Alliance to Restore the Republic, and her claim over the ancient Mandalorian weapon known as the Darksaber made her a primary symbol to Clan Wren and the hopes of freeing her people's homeworld of Mandalore from the rule of the Empire. ",
         "img": "data/stories/story_sw_01/gallery/img_1764401224779.webp",
-        "gallery_images": []
+        "gallery_images": [
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537893291_265.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537893400_45.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537929391_427.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764537991534_790.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764538015372_864.webp",
+                "tags": [
+                    "All"
+                ]
+            }
+        ]
     }
 ]
