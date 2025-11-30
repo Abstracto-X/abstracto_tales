@@ -1,17 +1,3 @@
-<<<<<<< HEAD
-[
-    {
-        "date": "19 BBY",
-        "title": "Order 66 & The Great Jedi Purge",
-        "desc": "The clone army, under the influence of inhibitor chips, turns on their Jedi commanders, effectively wiping out the Jedi Order and paving the way for the Galactic Empire."
-    },
-    {
-        "date": "Example Date (e.g., 5 BBY)",
-        "title": "Add Your Event Title Here",
-        "desc": "A short, clear description of what happened during this event. You can add more events by copying this entire block (from { to })."
-    }
-]
-=======
 [
   {
     "date": "19 BBY",
@@ -109,4 +95,3 @@
     "desc": "Alex and Nari retrofit the 'Dawn Strider' shuttle with advanced sensor arrays recovered from the Tusken raid. They devise a grid-search strategy to locate the Warlord's hidden base in the Jundland Wastes, preparing for a targeted strike."
   }
 ]
->>>>>>> 437689564542ae8f8c118e9055f208bd7d591dec

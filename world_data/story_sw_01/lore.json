@@ -1,19 +1,3 @@
-<<<<<<< HEAD
-[
-    {
-        "title": "Holocron",
-        "type": "Artifact",
-        "img": "https://via.placeholder.com/100x120.png/000000/FFFFFF/?text=Lore",
-        "desc": "Ancient data storage devices used by Jedi and Sith to store vast quantities of knowledge. They can only be accessed by a Force-sensitive individual."
-    },
-    {
-        "title": "Example Lore Entry",
-        "type": "Character / Planet / Faction",
-        "img": "https://via.placeholder.com/100x120.png/000000/FFFFFF/?text=Lore",
-        "desc": "A detailed description of this lore entry. Remember to replace the placeholder image URL with a real one. Add more entries by copying this block."
-    }
-]
-=======
 [
   {
     "id": "tatooine",
@@ -65,4 +49,3 @@
     "desc": "A moon-sized battle station constructed by the Empire, armed with a planet-destroying superlaser powered by concentrated Kyber crystals. The Death Star was the ultimate symbol of Imperial control, designed to instill fear and prevent any planetary-scale rebellion.\n\nIts destructive capacity was unmatched, capable of annihilating entire planets with a single blast—a capability horrifyingly demonstrated on the planet Alderaan. The destruction of Alderaan shocked the galaxy and triggered widespread revolt against the Empire.\n\nDespite its overwhelming power, the Death Star was not invulnerable. The Rebel Alliance eventually managed to procure stolen schematics that revealed a critical vulnerability, leading to the superweapon's destruction in the Battle of Yavin by a single X-Wing fighter."
   }
 ]
->>>>>>> 437689564542ae8f8c118e9055f208bd7d591dec

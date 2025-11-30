@@ -1,18 +1,4 @@
-<<<<<<< HEAD
-[
-    {
-        "name": "The Galaxy (Political)",
-        "src": "starwars_galaxy.jpeg",
-        "isPrimary": true
-    },
-    {
-        "name": "Tatooine",
-        "src": "tatooine.webp",
-        "isPrimary": false
-    }
-]
-=======
-[
+ [
     {
         "name": "The Galaxy (Political)",
         "src": "https://lumiere-a.akamaihd.net/v1/images/star_wars_galaxy_map_4000x4000_20251009_3c4d0e08.jpeg?region=0%2C0%2C4000%2C4000",
@@ -25,4 +11,3 @@
     }
 
 ]
->>>>>>> 437689564542ae8f8c118e9055f208bd7d591dec
