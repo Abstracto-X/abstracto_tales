@@ -1,14 +1,56 @@
 [
     {
-        "title": "Holocron",
+        "title": "Jedi Holocron",
         "type": "Artifact",
-        "img": "https://via.placeholder.com/100x120.png/000000/FFFFFF/?text=Lore",
-        "desc": "Ancient data storage devices used by Jedi and Sith to store vast quantities of knowledge. They can only be accessed by a Force-sensitive individual."
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/52/Holocron_prop.jpg/600px-Holocron_prop.jpg", 
+        "desc": "A crystalline, organic data-storage device used by the Jedi Order to store ancient secrets and teachings. Unlike standard datacards, holocrons are imbued with the Force and can only be accessed by a Force-sensitive individual. They often contain the cognitive imprint of the Jedi Master who created them, acting as an interactive gatekeeper."
     },
     {
-        "title": "Example Lore Entry",
-        "type": "Character / Planet / Faction",
-        "img": "https://via.placeholder.com/100x120.png/000000/FFFFFF/?text=Lore",
-        "desc": "A detailed description of this lore entry. Remember to replace the placeholder image URL with a real one. Add more entries by copying this block."
+        "title": "The Galactic Empire",
+        "type": "Faction",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Emblem_of_the_First_Galactic_Empire.svg/600px-Emblem_of_the_First_Galactic_Empire.svg.png",
+        "desc": "An authoritarian regime that rose from the ashes of the Galactic Republic. Ruled by the Sith Lord Darth Sidious (Emperor Palpatine), the Empire enforced order through fear, militaristic might, and the suppression of non-human species. Its primary enforcers were the Stormtroopers and the Imperial Navy."
+    },
+    {
+        "title": "Lightsaber",
+        "type": "Weapon",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/1/14/Lightsaber%2C_silver_hilt%2C_blue_blade.png",
+        "desc": "The signature weapon of the Jedi and the Sith. It consists of a plasma blade, powered by a kyber crystal, emitted from a metal hilt. The blade can cut through almost any material and deflect blaster bolts. The color of the blade is determined by the crystal and the user's connection to the Force."
+    },
+    {
+        "title": "Tatooine",
+        "type": "Planet",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/e/e8/Tatooinecity.jpg",
+        "desc": "A desolate desert world in the Outer Rim Territories, orbiting twin suns. Controlled largely by the Hutt Cartel, it became a haven for smugglers, bounty hunters, and criminals. It is famously the homeworld of Anakin and Luke Skywalker."
+    },
+    {
+        "title": "The Rebel Alliance",
+        "type": "Faction",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Emblem_of_the_Rebel_Alliance.svg/600px-Emblem_of_the_Rebel_Alliance.svg.png",
+        "desc": "A resistance movement formed to oppose the tyranny of the Galactic Empire. Composed of a loose cell-based network of freedom fighters, the Alliance sought to restore the Galactic Republic and democratic rule to the galaxy."
+    },
+    {
+        "title": "Coruscant",
+        "type": "Planet",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/1/16/Trantor-Coruscant.jpg",
+        "desc": "A city-covered planet located in the Core Worlds, serving as the galactic capital for thousands of years. It was the seat of government for both the Republic and the Empire, and home to the main Jedi Temple. The entire surface is one massive ecumenopolis."
+    },
+    {
+        "title": "Sith Order",
+        "type": "Faction",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Sith_Emblem_%28Star_Wars%29.svg/600px-Sith_Emblem_%28Star_Wars%29.svg.png",
+        "desc": "An ancient order of Force-wielders devoted to the dark side. Driven by passion, power, and the desire for dominion, the Sith are the mortal enemies of the Jedi. They operate under the 'Rule of Two': a master to embody the power, and an apprentice to crave it."
+    },
+    {
+        "title": "Mandalorian Armor",
+        "type": "Artifact",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Mandalorian_symbol.svg/600px-Mandalorian_symbol.svg.png",
+        "desc": "Distinctive armor worn by the warrior people of Mandalore, forged from beskar—an incredibly durable metal capable of withstanding lightsaber strikes. The armor is central to their culture and identity, often passed down through generations."
+    },
+    {
+        "title": "The Force",
+        "type": "Concept",
+        "img": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Solar_system.jpg",
+        "desc": "A mysterious energy field created by all living things. It surrounds us, penetrates us, and binds the galaxy together. Force-sensitives can harness it for telekinesis, precognition, and physical augmentation. It has two aspects: the Light Side (peace, knowledge) and the Dark Side (anger, fear)."
     }
 ]
