@@ -6,69 +6,92 @@
     <title>The Aether Archives</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Link to the original, unmodified styles.css -->
+    <!-- Links to the original stylesheet for base styles -->
     <link rel="stylesheet" href="styles.css">
 
     <style>
-        /* --- VIEWER-SPECIFIC STYLES & OVERRIDES --- */
-        
+        /* --- CORE VARIABLES & STYLES (Restored for Consistency) --- */
+        :root {
+            --primary-color: #ffffff;
+            --accent-color: #ffd700;
+            --glass-bg: rgba(20, 20, 20, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --font-header: 'Cinzel', serif;
+            --font-body: 'Lora', serif;
+            --font-ui: 'Montserrat', sans-serif;
+        }
+
+        /* Glassmorphism Effect */
+        .glass-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
         /* Smoother background transitions */
         .background-layer {
             transition: filter 1.5s ease-in-out, transform 1.5s ease-in-out, background-image 1s ease;
         }
 
-        /* Character Hero Section Styles (copied from admin for consistency) */
-        .char-profile-hero {
+        /* --- LAYOUTS (Restored from Admin Panel) --- */
+        .story-hub-layout {
             display: grid;
-            grid-template-columns: 300px 1fr;
-            gap: 3rem;
-            padding: 3rem; 
-            margin-bottom: 3rem; 
-            background: rgba(20, 20, 20, 0.6);
-            backdrop-filter: blur(20px);
-            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-            align-items: start;
+            grid-template-columns: 350px 1fr;
+            gap: 4rem;
+            max-width: 1200px;
+            margin: 2rem auto;
+            align-items: center;
+        }
+        .hub-cover { 
+            width: 100%; 
+            border-radius: 8px; 
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .reader-layout { display: flex; gap: 2rem; height: 100%; }
+        .reader-sidebar { width: 250px; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 1rem; }
+        .reader-content { flex: 1; max-width: 800px; margin: 0 auto; background: rgba(10, 10, 10, 0.95); padding: 4rem; border-radius: 4px; font-family: var(--font-body); font-size: 1.2rem; line-height: 1.8; color: #d0d0d0; overflow-y: auto; }
+
+        .char-grid { display: flex; flex-wrap: wrap; gap: 3rem; justify-content: center; }
+        .char-card { width: 250px; text-align: center; cursor: pointer; transition: transform 0.3s; }
+        .char-card:hover { transform: translateY(-10px); }
+        .char-img-frame { width: 100%; aspect-ratio: 3/4; overflow: hidden; border-radius: 8px; margin-bottom: 1rem; }
+        .char-img-frame img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* Character Hero Section */
+        .char-profile-hero {
+            display: grid; grid-template-columns: 300px 1fr; gap: 3rem; padding: 3rem; 
+            margin-bottom: 3rem; background: rgba(20, 20, 20, 0.6); backdrop-filter: blur(20px);
+            border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); align-items: start;
         }
         .hero-img-container {
-            width: 100%; aspect-ratio: 3 / 4; position: relative;
-            border-radius: 8px; overflow: hidden;
-            border: 1px solid rgba(255,255,255,0.2);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 100%; aspect-ratio: 3 / 4; position: relative; border-radius: 8px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .hero-img { width: 100%; height: 100%; object-fit: cover; }
         .hero-info { display: flex; flex-direction: column; text-align: left; }
-        .hero-name { 
-            font-family: var(--font-header); font-size: 3.5rem; 
-            line-height: 1.1; color: #fff; text-shadow: 0 0 20px rgba(0,0,0,0.5); 
-            margin-bottom: 0.5rem;
-        }
-        .hero-role {
-            font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px;
-            color: var(--accent-color); font-size: 0.9rem; margin-bottom: 2rem;
-            opacity: 0.8; font-weight: 600;
-        }
-        .hero-bio { 
-            font-family: var(--font-body); font-size: 1.1rem; 
-            line-height: 1.8; color: #d0d0d0; 
-            white-space: pre-line;
-            background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px;
-            width: 100%;
-        }
+        .hero-name { font-family: var(--font-header); font-size: 3.5rem; line-height: 1.1; color: #fff; margin-bottom: 0.5rem; }
+        .hero-role { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px; color: var(--accent-color); font-size: 0.9rem; margin-bottom: 2rem; opacity: 0.8; font-weight: 600; }
+        .hero-bio { font-family: var(--font-body); font-size: 1.1rem; line-height: 1.8; color: #d0d0d0; white-space: pre-line; background: rgba(0,0,0,0.2); padding: 1.5rem; border-radius: 8px; width: 100%; }
 
-        /* Tag & Gallery Styles (copied from admin) */
+        /* Tags & Gallery */
         .tag-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center; }
-        .tag-chip {
-            padding: 6px 18px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50px;
-            cursor: pointer; font-size: 0.85rem; background: rgba(0,0,0,0.3); transition: 0.2s;
-        }
+        .tag-chip { padding: 6px 18px; border: 1px solid rgba(255,255,255,0.2); border-radius: 50px; cursor: pointer; font-size: 0.85rem; background: rgba(0,0,0,0.3); transition: 0.2s; }
         .tag-chip:hover, .tag-chip.active { background: var(--accent-color); color: #000; border-color: var(--accent-color); font-weight: bold;}
         .sub-gallery-grid { column-count: 3; column-gap: 1.5rem; }
-        .gallery-item { break-inside: avoid; margin-bottom: 1.5rem; }
+        .gallery-item { break-inside: avoid; margin-bottom: 1.5rem; border-radius: 8px; overflow: hidden; }
         
         @media (max-width: 900px) {
-            .char-profile-hero { grid-template-columns: 1fr; text-align: center; }
+            .story-hub-layout, .char-profile-hero { grid-template-columns: 1fr; text-align: center; }
             .hero-img-container { width: 250px; margin: 0 auto; }
             .sub-gallery-grid { column-count: 2; }
+            .reader-layout { flex-direction: column; }
+            .reader-sidebar { width: 100%; height: 100px; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; }
         }
     </style>
 </head>
@@ -110,7 +133,6 @@
             filterTag: 'All'
         };
 
-        // API is now just a simple fetcher. No POST requests.
         const API = {
             get: async (path) => (await fetch(path)).json()
         };
@@ -120,7 +142,7 @@
             stage: document.getElementById('content-stage'),
             
             home: async () => {
-                const settings = await API.get('data/settings.json').catch(() => ({})); // Graceful fail
+                const settings = await API.get('data/settings.json').catch(() => ({}));
                 UI.setBg(settings.homeBg || null);
                 State.manifest = await API.get('data/manifest.json');
                 UI.setBackButton(null);
@@ -172,7 +194,7 @@
                 UI.setBg(conf.bg);
                 UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
                 const chapter = chapters[chapterIndex];
-                if (!chapter) return; // Exit if chapter doesn't exist
+                if (!chapter) { Router.navigate(`story/${id}`); return; }
 
                 let sidebar = '';
                 chapters.forEach((c, i) => {
@@ -206,9 +228,9 @@
                     let html = '<div class="char-grid fade-in">';
                     State.currentChars.forEach((char) => {
                         html += `
-                            <div class="char-card glass-box" style="padding:1rem; width: 250px; cursor:pointer;" onclick="Router.navigate('gallery/${id}/${char.id}')">
-                                <div style="width:100%; aspect-ratio:3/4; overflow:hidden; border-radius:8px; margin-bottom:1rem;">
-                                    <img src="${char.img}" style="width:100%; height:100%; object-fit:cover;">
+                            <div class="char-card glass-box" style="padding:1rem;" onclick="Router.navigate('gallery/${id}/${char.id}')">
+                                <div class="char-img-frame">
+                                    <img src="${char.img}" alt="${char.name}">
                                 </div>
                                 <div class="char-name">${char.name}</div>
                                 <div style="color:var(--accent-color); font-size:0.8rem;">${char.role || ""}</div>
@@ -218,7 +240,7 @@
                 } else {
                     UI.setBackButton(`Router.navigate('gallery/${id}')`, "Roster");
                     const charData = State.currentChars.find(c => c.id === charId);
-                    if (!charData) return; // Exit if character not found
+                    if (!charData) { Router.navigate(`gallery/${id}`); return; }
 
                     const allTags = new Set(['All']);
                     if(charData.gallery_images) charData.gallery_images.forEach(img => img.tags.forEach(t => allTags.add(t)));
@@ -230,7 +252,7 @@
                     let html = `
                         <div class="fade-in">
                             <div class="char-profile-hero">
-                                <div class="hero-img-container"><img src="${charData.img}" class="hero-img"></div>
+                                <div class="hero-img-container"><img src="${charData.img}" class="hero-img" alt="${charData.name}"></div>
                                 <div class="hero-info">
                                     <div class="hero-name">${charData.name}</div>
                                     <div class="hero-role">${charData.role || ""}</div>
@@ -254,7 +276,7 @@
                 
                 let images = charData.gallery_images;
                 if(State.filterTag !== 'All') images = images.filter(img => img.tags.includes(State.filterTag));
-                if(isShuffle) images = [...images].sort(() => Math.random() - 0.5); // Use spread to avoid mutating original
+                if(isShuffle) images = [...images].sort(() => Math.random() - 0.5);
                 
                 const grid = document.getElementById('gallery-grid');
                 grid.innerHTML = images.map(img => `<div class="gallery-item"><img src="${img.src}" loading="lazy"></div>`).join('');
