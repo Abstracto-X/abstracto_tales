@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [
     {
         "date": "19 BBY",
@@ -10,3 +11,102 @@
         "desc": "A short, clear description of what happened during this event. You can add more events by copying this entire block (from { to })."
     }
 ]
+=======
+[
+  {
+    "date": "19 BBY",
+    "title": "The Awakening",
+    "desc": "Alex, a 27-year-old engineer from Earth, dies and reincarnates into the body of seven-year-old Ezra Bridger on Lothal. He discovers he possesses no 'System' or cheat codes, only a fractured soul and an overpowered, uncontrollable sensory ability he dubs 'Hyper Perception'."
+  },
+  {
+    "date": "19 BBY",
+    "title": "Weaponized Cuteness",
+    "desc": "Facing starvation on the streets of Lothal, Alex uses his child appearance to manipulate Vasha, a kind-hearted Twi'lek mechanic. He fabricates a sob story about abandonment, successfully convincing her to take him in as her ward.",
+    "character": {
+      "id": "vasha",
+      "name": "Vasha",
+      "img": "data/stories/story_sw_01/gallery/img_1764410257373.webp"
+    }
+  },
+  {
+    "date": "17 BBY",
+    "title": "The Workshop Life",
+    "desc": "Alex and Vasha establish a successful under-the-table repair business. Alex uses his Hyper Perception to diagnose tech with impossible accuracy. The dynamic shifts into a complex, co-dependent family unit, marked by Alex's internal awkwardness regarding their close living quarters."
+  },
+  {
+    "date": "10 BBY",
+    "title": "The Twin Stars & The Spear-Axe",
+    "desc": "Alex acquires an ancient spear-axe that induces brutal psychometric combat visions against a phantom warrior named 'Steve'. Internally, he discovers his soul is a binary system: a stable white star (Alex) and a fractured, bleeding blue star (Ezra), which scrambles his Force output."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Paranoia and Preparation",
+    "desc": "Plagued by Force premonitions of Vasha's death, Alex constructs a modular Gauss Rifle and turns their workshop into a fortress with traps and sensors. Vasha, interpreting this as trauma, initiates a 'forced pampering' campaign that eventually lulls Alex into a false sense of security."
+  },
+  {
+    "date": "9 BBY",
+    "title": "The Abduction",
+    "desc": "Vasha is lured into a trap by a fake client ('Corex Logistics') and kidnapped by Imperial forces. Alex tracks her to Warehouse 12B-2, where a psychometric vision reveals she was taken by an ISB agent named Tevan after killing an Imperial officer."
+  },
+  {
+    "date": "9 BBY",
+    "title": "The Black Site Revelation",
+    "desc": "Alex captures and tortures Trooper Ryker, crushing his heart after extracting critical intel: Vasha was moved to Site Gamma (Sector 47D) and subsequently transported off-world to the high-security data citadel, Scarif."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Departure from Lothal",
+    "desc": "Realizing he needs more power to breach Scarif, Alex leaves Lothal to find Obi-Wan Kenobi. He builds the 'Iron Mule Mark 0.5' exo-skeleton to carry his equipment and leaves his droid, Shockwave, in charge of the workshop."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Arrival on Tatooine",
+    "desc": "Alex lands in Mos Eisley and immediately kills two thugs (Grent and a Rodian) in self-defense using his new gear. He establishes a base at the 'Dune Drifter' motel and sets up his automated 'Predator Mk 1' turret."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Hello There",
+    "desc": "Using deductive reasoning regarding stabling logistics, Alex locates Obi-Wan Kenobi at Starlight Stables. He confronts the Jedi Master, revealing his identity and stating that the Force led him there, shattering Obi-Wan's isolation."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Shattering the Hermit",
+    "desc": "Alex forces Obi-Wan to train him by revealing meta-knowledge: Anakin Skywalker is alive as Darth Vader, and the Empire is hunting Luke. Obi-Wan, devastated and cornered by Alex's threat to blow his cover, agrees to train him."
+  },
+  {
+    "date": "9 BBY",
+    "title": "The Resonance Breakthrough",
+    "desc": "Frustrated by traditional training, Alex uses Hyper Perception to analyze Obi-Wan's physiology during a Force jump. He reverse-engineers the technique, creating 'Force Resonance'—a method of manually commanding midichlorians to enhance physical stats, bypassing his broken soul."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Grand Theft Starship",
+    "desc": "Alex teams up with a surviving Jedi, Nari. When Inquisitors (Reva and the Grand Inquisitor) arrive, Alex and Nari steal their transport ship, the 'Scythe', from under their noses."
+  },
+  {
+    "date": "9 BBY",
+    "title": "The Lando Calrissian Maneuver",
+    "desc": "To cover their tracks, Alex prank-calls the Inquisitorius HQ from the stolen ship, claiming to be Lando Calrissian and implicating Crimson Dawn in the theft. He leaves the Inquisitors stranded on Tatooine."
+  },
+  {
+    "date": "9 BBY",
+    "title": "The Tusken Massacre",
+    "desc": "Tracking Tuskens who raided Nari's shuttle, Alex and Nari engage a convoy carrying prisoners. Alex brutally slaughters the raiders using his armor and vibro-blades, a darker turn that horrifies Nari."
+  },
+  {
+    "date": "9 BBY",
+    "title": "The Lore Nuke",
+    "desc": "Before dying, a Tusken invokes the name 'A'Sharad Hett' (Darth Krayt). A psychometric vision confirms Hett's presence, causing Alex an existential crisis as he realizes the timeline is a unstable hybrid of Canon and Legends."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Refugees and Realization",
+    "desc": "Alex saves a Twi'lek named Lyra and other prisoners, dropping them at Anchorhead. He realizes a new, organized Tusken Warlord is rising and that simply fleeing would leave the region to be slaughtered."
+  },
+  {
+    "date": "9 BBY",
+    "title": "Operation Needle in a Haystack",
+    "desc": "Alex and Nari retrofit the 'Dawn Strider' shuttle with advanced sensor arrays recovered from the Tusken raid. They devise a grid-search strategy to locate the Warlord's hidden base in the Jundland Wastes, preparing for a targeted strike."
+  }
+]
+>>>>>>> 437689564542ae8f8c118e9055f208bd7d591dec

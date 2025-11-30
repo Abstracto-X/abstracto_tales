@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 [
     {
         "name": "The Galaxy (Political)",
@@ -10,3 +11,18 @@
         "isPrimary": false
     }
 ]
+=======
+[
+    {
+        "name": "The Galaxy (Political)",
+        "src": "https://lumiere-a.akamaihd.net/v1/images/star_wars_galaxy_map_4000x4000_20251009_3c4d0e08.jpeg?region=0%2C0%2C4000%2C4000",
+        "isPrimary": true
+    },
+    {
+        "name": "Tatooine",
+        "src": "https://preview.redd.it/outlaws-map-of-tatooine-located-on-tatooines-map-from-star-v0-1wufsw00pdod1.jpg?width=1080&crop=smart&auto=webp&s=ce5d1279c8a29bdde3f7f4cd447db30c88241058",
+        "isPrimary": false
+    }
+
+]
+>>>>>>> 437689564542ae8f8c118e9055f208bd7d591dec
