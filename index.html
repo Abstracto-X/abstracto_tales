@@ -443,7 +443,7 @@
                 // 1. Activate Curtain (Screen fades to black)
                 document.body.classList.add('is-transitioning');
                 // 2. Wait for fade (400ms) then switch URL
-                setTimeout(() => window.location.hash = h, 400); 
+                setTimeout(() => window.location.hash = h, 300); 
             },
             handle: () => {
                 const parts = Router.getParts();
