@@ -1,0 +1,14 @@
+[
+    {
+        "title": "Holocron",
+        "type": "Artifact",
+        "img": "https://via.placeholder.com/100x120.png/000000/FFFFFF/?text=Lore",
+        "desc": "Ancient data storage devices used by Jedi and Sith to store vast quantities of knowledge. They can only be accessed by a Force-sensitive individual."
+    },
+    {
+        "title": "Example Lore Entry",
+        "type": "Character / Planet / Faction",
+        "img": "https://via.placeholder.com/100x120.png/000000/FFFFFF/?text=Lore",
+        "desc": "A detailed description of this lore entry. Remember to replace the placeholder image URL with a real one. Add more entries by copying this block."
+    }
+]
