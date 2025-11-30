@@ -22,29 +22,78 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background-color: #050505; color: #e0e0e0; font-family: var(--font-ui);
-            overflow: hidden; height: 100vh; width: 100vw; user-select: none;
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: var(--font-ui);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
         }
 
-        /* --- 1. OVERLAYS & TRANSITIONS --- */
+        /* --- 1. VISUAL FX LAYERS --- */
         #transition-curtain {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000; z-index: 9999; opacity: 0;
-            pointer-events: none; transition: opacity 0.4s ease-in-out;
+            background-color: #000;
+            z-index: 9999; /* On top of everything */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
         }
-        body.is-transitioning #transition-curtain { opacity: 1; pointer-events: all; }
-
-        #particle-canvas, .background-layer { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
-        #particle-canvas { z-index: -1; pointer-events: none; }
-        .background-layer { z-index: -2; background-color: #111; background-size: cover; background-position: center; transition: filter 0.6s ease; }
         
-        /* --- 2. CORE LAYOUT --- */
-        #app-container { position: relative; width: 100%; height: 100%; z-index: 10; display: flex; flex-direction: column; padding: 1.5rem 2rem; }
+        body.is-transitioning #transition-curtain {
+            opacity: 1; pointer-events: all;
+        }
+
+        #particle-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; pointer-events: none;
+        }
+
+        .background-layer {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -2; background-color: #111;
+            background-size: cover; background-position: center;
+            transition: filter 0.6s ease;
+        }
+        
+        #app-container { 
+            position: relative; width: 100%; height: 100%; z-index: 10;
+            display: flex; flex-direction: column; padding: 1.5rem 2rem;
+            transition: opacity 0.3s ease;
+        }
+
+        /* --- 2. UI COMPONENTS --- */
+        .glass-box {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border); border-radius: 12px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            transition: background 0.3s, border-color 0.3s;
+        }
+        .glass-box:hover {
+            background: rgba(20, 20, 20, 0.65);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-large {
+            padding: 0.8rem 2rem; font-family: var(--font-header); font-size: 0.9rem; letter-spacing: 2px;
+            background: transparent; border: 1px solid var(--accent-color);
+            color: var(--primary-color); cursor: pointer; transition: all 0.3s;
+            display: flex; align-items: center; gap: 0.8rem;
+        }
+        .btn-large:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 15px var(--accent-color); }
+
+        /* --- HEADER --- */
         #main-header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 0.8rem 1.5rem; margin-bottom: 0.5rem; flex-shrink: 0; z-index: 20; height: 70px;
+            padding: 0.8rem 2rem; margin-bottom: 0.5rem; flex-shrink: 0; z-index: 20;
+            height: 70px;
         }
-        .logo { font-family: var(--font-header); font-size: 1.6rem; letter-spacing: 4px; cursor: pointer; }
+        .logo { 
+            font-family: var(--font-header); font-size: 1.6rem; letter-spacing: 4px; 
+            color: var(--primary-color); text-shadow: 0 0 10px rgba(255,255,255,0.2); cursor: pointer;
+        }
         .header-controls { display: flex; align-items: center; gap: 1.5rem; }
         .back-btn-wrapper, .audio-toggle {
             display: flex; align-items: center; gap: 8px; cursor: pointer;
@@ -53,50 +102,106 @@
         }
         .back-btn-wrapper:hover, .audio-toggle:hover { color: var(--accent-color); }
 
+        /* --- STAGE --- */
         #content-stage {
-            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px; display: flex; flex-direction: column;
+            flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px;
+            display: flex; flex-direction: column;
             scrollbar-width: thin; scrollbar-color: var(--accent-color) rgba(0,0,0,0.3);
         }
         #content-stage::-webkit-scrollbar { width: 6px; }
         #content-stage::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
         #content-stage::-webkit-scrollbar-thumb { background: var(--accent-color); border-radius: 10px; }
-        
-        /* --- 3. UTILS --- */
-        .glass-box {
-            background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border); border-radius: 12px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-        .btn-large {
-            padding: 0.8rem 2rem; font-family: var(--font-header); font-size: 0.9rem; letter-spacing: 2px;
-            background: transparent; border: 1px solid var(--accent-color); color: var(--primary-color); cursor: pointer;
-            transition: all 0.3s; display: flex; align-items: center; gap: 0.8rem;
-        }
-        .btn-large:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 15px var(--accent-color); }
-        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
-        .lightbox.active { opacity: 1; }
-        .lightbox img { max-width: 95%; max-height: 95vh; }
 
-        /* --- 4. VIEW: STORY HUB & EXPANSION BAR --- */
-        .story-hub-wrapper { flex: 1; display: flex; flex-direction:column; align-items: center; justify-content: center; padding: 1rem 0; }
-        .story-hub-layout {
-            display: grid; grid-template-columns: 220px 1fr; gap: 2.5rem; width: 100%;
-            max-width: 850px; padding: 2rem !important; align-items: center;
+        /* --- VIEW: HOME --- */
+        .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2rem; padding: 1rem 0; max-width: 1300px; margin: 0 auto; width: 100%; }
+        .story-card {
+            position: relative; height: 380px; overflow: hidden; cursor: pointer;
+            transition: transform 0.4s ease, border-color 0.4s ease; display: flex; align-items: flex-end;
         }
-        .hub-cover { width: 100%; border-radius: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .hub-details h1 { font-family: var(--font-header); font-size: 2.2rem; margin-bottom: 0.5rem; line-height: 1.1; }
-        .hub-meta { color: var(--accent-color); margin-bottom: 1.5rem; text-transform: uppercase; font-size: 0.8rem; }
-        .hub-synopsis { font-size: 1rem; line-height: 1.6; margin-bottom: 2rem; max-height: 180px; overflow-y: auto; padding-right: 10px; }
+        .story-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
+        .story-card img { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: -1; transition: transform 0.6s ease; }
+        .story-card:hover img { transform: scale(1.1); }
+        .card-info { width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%); padding: 1.5rem; }
+        .card-title { font-family: var(--font-header); font-size: 1.2rem; color: var(--accent-color); margin-bottom: 0.3rem;}
+
+        /* --- VIEW: STORY HUB --- */
+        .story-hub-wrapper { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 2rem; }
+        .story-hub-layout {
+            display: grid; grid-template-columns: 220px 1fr; gap: 2.5rem;
+            width: 100%; max-width: 850px; padding: 2rem !important; align-items: center;
+        }
+        .hub-cover { width: 100%; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .hub-details { display: flex; flex-direction: column; justify-content: center; }
+        .hub-details h1 { font-family: var(--font-header); font-size: 2.2rem; margin-bottom: 0.5rem; line-height: 1.1; color: #fff; }
+        .hub-meta { color: var(--accent-color); margin-bottom: 1.5rem; text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; font-weight: 600; opacity: 0.9; }
+        .hub-synopsis { 
+            font-size: 1rem; line-height: 1.6; color: #ddd; margin-bottom: 2rem;
+            max-height: 200px; overflow-y: auto; padding-right: 10px;
+            scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent;
+        }
         .hub-actions { display: flex; gap: 1rem; }
 
+        /* Expansion Bar (New) */
         .expansion-bar {
             width: 100%; max-width: 850px; margin-top: 1.5rem; padding: 0.75rem 1.5rem;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .expansion-title { font-family: var(--font-header); letter-spacing: 2px; opacity: 0.7; }
+        .expansion-title { font-family: var(--font-header); letter-spacing: 2px; opacity: 0.7; color: #fff; }
         .expansion-nav { display: flex; gap: 0.5rem; }
-        .expansion-nav .btn-large { font-size: 0.8rem; padding: 0.5rem 1.2rem; border-radius: 20px; }
+        .expansion-nav .btn-large { font-size: 0.7rem; padding: 0.5rem 1.2rem; border-radius: 20px; text-transform: uppercase; }
 
-        /* --- 5. VIEW: TIMELINE --- */
+        /* --- VIEW: READER --- */
+        .reader-layout { display: flex; gap: 2rem; height: 100%; max-width: 1300px; margin: 0 auto; width: 100%; }
+        .reader-sidebar { width: 220px; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 0.5rem; flex-shrink: 0; }
+        .chapter-list-item { padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.85rem; transition: 0.2s; color: #888; }
+        .chapter-list-item:hover { color: var(--accent-color); padding-left: 1rem; }
+        .chapter-list-item.active { border-left: 3px solid var(--accent-color); color: #fff; background: rgba(255,215,0,0.05); }
+        .reader-content { flex: 1; max-width: 800px; margin: 0 auto; padding: 3rem 4rem; color: #d0d0d0; overflow-y: auto; position: relative; }
+        
+        .reader-toolbar { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
+        .rt-btn { background: transparent; border: none; color: #666; cursor: pointer; transition: 0.2s; font-size: 1rem; }
+        .rt-btn:hover, .rt-btn.active { color: var(--accent-color); }
+        .font-menu { position: absolute; top: 60px; right: 20px; background: #1a1a1a; border: 1px solid #333; padding: 10px; border-radius: 6px; display: none; flex-direction: column; gap: 8px; z-index: 50; width: 120px; }
+        .font-option { cursor: pointer; font-size: 0.8rem; color: #aaa; padding: 4px; border-radius: 4px; }
+        .font-option:hover { background: #333; color: #fff; }
+        body.focus-active #main-header { opacity: 0; pointer-events: none; }
+        body.focus-active .reader-sidebar { width: 0; padding: 0; opacity: 0; overflow: hidden; }
+        body.focus-active .reader-content { max-width: 900px; background: rgba(10, 10, 10, 0.9); }
+
+        /* --- VIEW: GALLERY --- */
+        .char-grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; max-width: 1200px; margin: 0 auto; }
+        .char-card {
+            width: 220px; height: 350px; position: relative; border-radius: 10px;
+            cursor: pointer; background: #000; border: 1px solid rgba(255,255,255,0.1);
+            transform-style: preserve-3d; transition: transform 0.1s;
+        }
+        .char-card.reset-anim { transition: transform 0.5s ease; }
+        .char-card-inner { width: 100%; height: 100%; position: relative; overflow: hidden; border-radius: 10px; transform: translateZ(20px); }
+        .char-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.5s ease; }
+        .char-card:hover img { transform: scale(1.1); filter: brightness(0.6); }
+        .char-info-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%;
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.6) 80%, transparent 100%);
+            padding: 1.2rem; transform: translateY(60%) translateZ(30px); transition: transform 0.3s ease;
+        }
+        .char-card:hover .char-info-overlay { transform: translateY(0) translateZ(30px); }
+        .char-name { font-family: var(--font-header); font-size: 1.1rem; color: #fff; }
+        .char-role { color: var(--accent-color); font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
+        .char-bio-preview { font-size: 0.75rem; line-height: 1.4; color: #ccc; opacity: 0; transition: opacity 0.3s 0.1s; margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .char-card:hover .char-bio-preview { opacity: 1; }
+
+        .char-profile-hero { display: grid; grid-template-columns: 240px 1fr; gap: 2.5rem; padding: 2rem; max-width: 900px; margin: 0 auto 2rem auto; align-items: start; }
+        .hero-img-container { width: 100%; aspect-ratio: 3 / 4; border-radius: 6px; overflow: hidden; border: 1px solid rgba(255,255,255,0.2); }
+        .hero-img { width: 100%; height: 100%; object-fit: cover; }
+        .hero-name { font-family: var(--font-header); font-size: 2.5rem; line-height: 1; color: #fff; margin-bottom: 0.5rem; }
+        .hero-role { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px; color: var(--accent-color); font-size: 0.8rem; margin-bottom: 1.5rem; opacity: 0.9; }
+        .hero-bio { font-family: var(--font-body); font-size: 1rem; line-height: 1.6; color: #d0d0d0; white-space: pre-line; background: rgba(0,0,0,0.2); padding: 1.2rem; border-radius: 6px; max-height: 300px; overflow-y: auto; }
+        .sub-gallery-grid { column-count: 3; column-gap: 1rem; max-width: 900px; margin: 0 auto; }
+        .gallery-item { break-inside: avoid; margin-bottom: 1rem; border-radius: 6px; overflow: hidden; transition: transform 0.3s; cursor: zoom-in; border: 1px solid rgba(255,255,255,0.1); }
+        .gallery-item:hover { transform: scale(1.02); border-color: var(--accent-color); }
+        .gallery-item img { display: block; width: 100%; }
+
+        /* --- VIEW: TIMELINE (New) --- */
         .timeline-container { position: relative; max-width: 800px; margin: 2rem auto; padding: 2rem 0; }
         .timeline-container::before { /* The central "snake" line */
             content: ''; position: absolute; width: 3px; background: var(--glass-border);
@@ -114,8 +219,8 @@
         .timeline-content { padding: 20px 30px; position: relative; border-radius: 8px; }
         .timeline-content h2 { font-family: var(--font-header); font-size: 1.5rem; color: var(--accent-color); }
         .timeline-content p { font-size: 0.95rem; line-height: 1.6; margin-top: 0.5rem; }
-        
-        /* --- 6. VIEW: LORE BOOK --- */
+
+        /* --- VIEW: LORE BOOK (New) --- */
         .lore-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             gap: 2rem; padding: 2rem 0; max-width: 1200px; margin: auto;
@@ -129,7 +234,7 @@
         .lore-type { font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase; margin-bottom: 1rem; }
         .lore-desc { font-size: 0.9rem; line-height: 1.6; color: #ccc; }
 
-        /* --- 7. VIEW: MAP VIEWER --- */
+        /* --- VIEW: MAP VIEWER (New) --- */
         #map-viewer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 4000;
             background: rgba(5,5,5,0.95); opacity: 0; pointer-events: none; transition: opacity 0.3s;
@@ -152,12 +257,21 @@
         .map-close-btn { align-self: center; font-size: 2rem; color: #888; cursor: pointer; transition: color 0.2s; }
         .map-close-btn:hover { color: #fff; }
 
-        /* Other misc styles */
-        .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2rem; padding: 1rem 0; max-width: 1300px; margin: 0 auto; width: 100%; }
-        .story-card { position: relative; height: 380px; overflow: hidden; cursor: pointer; transition: transform 0.4s ease; display: flex; align-items: flex-end; }
-        .story-card:hover { transform: translateY(-5px); }
-        .story-card img { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: -1; transition: transform 0.6s ease; }
-        .story-card:hover img { transform: scale(1.1); }
+        /* --- MODALS --- */
+        .lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 5000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s; }
+        .lightbox.active { opacity: 1; }
+        .lightbox img { max-width: 95%; max-height: 95vh; border: 1px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 2rem; cursor: pointer; }
+
+        @media (max-width: 900px) {
+            .story-hub-layout, .char-profile-hero { grid-template-columns: 1fr; text-align: center; }
+            .hub-cover, .hero-img-container { width: 180px; margin: 0 auto; }
+            .hub-details { align-items: center; }
+            .sub-gallery-grid { column-count: 2; }
+            .reader-layout { flex-direction: column; }
+            .reader-sidebar { width: 100%; height: auto; max-height: 120px; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; }
+            .reader-content { padding: 1.5rem; }
+        }
     </style>
 </head>
 <body>
@@ -181,7 +295,6 @@
         <div id="content-stage"></div>
     </div>
 
-    <!-- Map Viewer Overlay -->
     <div id="map-viewer">
         <div class="map-container" id="map-pan-zoom-area">
             <img id="map-image" src="" alt="Interactive Map">
@@ -191,19 +304,96 @@
             <div class="map-close-btn" onclick="UI.closeMapViewer()">&times;</div>
         </div>
     </div>
-    
-    <!-- Other Modals -->
-    <div id="lightbox" class="lightbox" onclick="this.style.display='none'"></div>
-    <div id="wp-modal" style="display:none;"></div>
+
+    <div id="wp-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center;">
+        <h2 style="color:white; margin-bottom:1rem; font-family: var(--font-header);">Select Wallpaper</h2>
+        <div id="wp-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:1rem; width:80%; max-height:70vh; overflow-y:auto; padding:2rem; background:#111; border-radius:12px;"></div>
+        <button class="btn-large" style="margin-top:1rem; border:1px solid #555; font-size:0.8rem;" onclick="document.getElementById('wp-modal').style.display='none'">Close</button>
+    </div>
+
+    <div id="lightbox" class="lightbox" onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none', 300)">
+        <div class="lightbox-close">&times;</div>
+        <img id="lightbox-img" src="" onclick="event.stopPropagation()">
+    </div>
 
     <script>
-        // --- 1. CONTROLLERS (Audio, Map) ---
+        // --- 1. VISUAL CONTROLLERS (Particles, Tilt, Transparency) ---
+        const Particles = {
+            init: () => {
+                const canvas = document.getElementById('particle-canvas');
+                const ctx = canvas.getContext('2d');
+                let width, height, particlesArray = [];
+                const resize = () => { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; };
+                window.addEventListener('resize', resize); resize();
+                class Particle {
+                    constructor() {
+                        this.x = Math.random() * width; this.y = Math.random() * height;
+                        this.size = Math.random() * 1.5 + 0.5; this.speedY = Math.random() * 0.3 + 0.1; this.opacity = Math.random() * 0.5;
+                    }
+                    update() { this.y -= this.speedY; if(this.y < 0) { this.y = height; this.x = Math.random() * width; } }
+                    draw() { ctx.fillStyle = `rgba(255, 215, 0, ${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
+                }
+                function initParticles() { particlesArray = []; for(let i=0; i<30; i++) particlesArray.push(new Particle()); }
+                function animate() { ctx.clearRect(0,0, width, height); particlesArray.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
+                initParticles(); animate();
+            }
+        };
+
+        const Visuals = {
+            initDynamicTransparency: () => {
+                const app = document.getElementById('app-container');
+                const bgLayer = document.getElementById('global-bg');
+                let ticking = false;
+                window.addEventListener('mousemove', (e) => {
+                    if (!ticking) {
+                        window.requestAnimationFrame(() => {
+                            const w = window.innerWidth, h = window.innerHeight;
+                            const isBottomRight = (e.clientX > w * 0.90) && (e.clientY > h * 0.90);
+                            if (isBottomRight) {
+                                app.style.opacity = '0'; bgLayer.style.filter = 'blur(0px) brightness(1)';
+                            } else {
+                                app.style.opacity = '1';
+                                const isHoveringContent = e.target.closest('.glass-box') || e.target.closest('.char-card');
+                                if (isHoveringContent) {
+                                    bgLayer.style.filter = 'blur(5px) brightness(0.5)';
+                                } else {
+                                    const distX = Math.abs(e.clientX - w / 2), distY = Math.abs(e.clientY - h / 2);
+                                    const blur = 5 * (1 - (Math.hypot(distX, distY) / Math.hypot(w/2, h/2))); 
+                                    bgLayer.style.filter = `blur(${blur}px) brightness(${0.5 + (0.5 * (Math.hypot(distX, distY) / Math.hypot(w/2, h/2)))}`;
+                                }
+                            }
+                            ticking = false;
+                        }); ticking = true;
+                    }
+                });
+            },
+            initCardTilt: () => {
+                document.querySelectorAll('.char-card').forEach(card => {
+                    card.addEventListener('mousemove', (e) => {
+                        requestAnimationFrame(() => {
+                            const rect = card.getBoundingClientRect();
+                            const x = e.clientX - rect.left - rect.width/2, y = e.clientY - rect.top - rect.height/2;
+                            card.classList.remove('reset-anim');
+                            card.style.transform = `perspective(1000px) scale(1.02) rotateX(${y * -0.05}deg) rotateY(${x * 0.05}deg)`;
+                        });
+                    });
+                    card.addEventListener('mouseleave', () => { card.classList.add('reset-anim'); card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`; });
+                });
+            },
+            openLightbox: (src) => {
+                const lb = document.getElementById('lightbox'); document.getElementById('lightbox-img').src = src;
+                lb.style.display = 'flex'; setTimeout(() => lb.classList.add('active'), 10);
+            }
+        };
+
+        // --- 2. FUNCTIONAL CONTROLLERS (Audio, Map) ---
         const AudioController = {
             audio: document.getElementById('bg-music'),
             icon: document.getElementById('audio-icon'),
             isPlaying: false,
             init: (src) => {
-                AudioController.audio.src = src;
+                // To avoid errors if no src is provided, only set if valid
+                if(src) AudioController.audio.src = src;
             },
             toggle: () => {
                 if (AudioController.isPlaying) {
@@ -217,7 +407,6 @@
             }
         };
 
-        // --- NEW: Map Pan & Zoom Controller ---
         const MapController = {
             container: document.getElementById('map-pan-zoom-area'),
             image: document.getElementById('map-image'),
@@ -226,7 +415,7 @@
                 MapController.container.addEventListener('mousedown', MapController.onMouseDown);
                 MapController.container.addEventListener('mousemove', MapController.onMouseMove);
                 MapController.container.addEventListener('mouseup', MapController.onMouseUp);
-                MapController.container.addEventListener('mouseleave', MapController.onMouseUp); // Stop dragging if mouse leaves
+                MapController.container.addEventListener('mouseleave', MapController.onMouseUp);
                 MapController.container.addEventListener('wheel', MapController.onWheel);
                 MapController.reset();
             },
@@ -258,12 +447,10 @@
                 const rect = MapController.container.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
                 const mouseY = e.clientY - rect.top;
-
                 const oldZoom = MapController.zoom;
                 MapController.zoom += e.deltaY > 0 ? -scaleAmount : scaleAmount;
-                MapController.zoom = Math.max(0.5, Math.min(MapController.zoom, 5)); // Clamp zoom
+                MapController.zoom = Math.max(0.5, Math.min(MapController.zoom, 5));
                 
-                // Adjust position to zoom towards the mouse pointer
                 MapController.x = mouseX - (mouseX - MapController.x) * (MapController.zoom / oldZoom);
                 MapController.y = mouseY - (mouseY - MapController.y) * (MapController.zoom / oldZoom);
                 
@@ -274,176 +461,76 @@
             }
         };
 
-        // --- 2. CORE SYSTEMS (Router, State, API) ---
-        const State = { manifest: [], currentStoryId: null, currentWorldData: {}, filterTag: 'All' };
+        const ReaderFeatures = {
+            fontSize: 'text-md', fontFamily: 'font-serif',
+            toggleFocus: (btn) => { document.body.classList.toggle('focus-active'); btn.classList.toggle('active'); },
+            toggleFontMenu: () => { const m = document.getElementById('font-menu'); m.style.display = m.style.display==='flex'?'none':'flex'; },
+            setFontSize: (s) => { ReaderFeatures.fontSize = s; ReaderFeatures.applyFonts(); },
+            setFontFamily: (f) => { ReaderFeatures.fontFamily = f; ReaderFeatures.applyFonts(); },
+            applyFonts: () => { const c = document.querySelector('.reader-content'); if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; }
+        };
+
+        // --- 3. STATE & API ---
+        const State = { manifest: [], currentStoryId: null, currentStoryConfig: null, currentChars: [], filterTag: 'All', wallpaperChar: null };
         const API = { 
             get: async (path) => {
                 try {
                     const response = await fetch(path);
-                    if (!response.ok) throw new Error(`404: File not found at ${path}`);
+                    if (!response.ok) throw new Error(`Error ${response.status}: File not found at ${path}`);
                     return await response.json();
                 } catch (e) { throw e; }
             }
         };
 
-        const Router = {
-            getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
-            navigate: (h) => {
-                document.body.classList.add('is-transitioning');
-                setTimeout(() => window.location.hash = h, 400); 
-            },
-            handle: async () => {
-                const parts = Router.getParts();
-                const view = parts[0], id = parts[1], param = parts[2];
-                
-                const renderMap = {
-                    'home': () => Render.home(),
-                    'story': () => Render.storyHub(id),
-                    'read': () => Render.reader(id, param),
-                    'gallery': () => Render.gallery(id, param),
-                    'timeline': () => Render.timeline(id), // --- NEW
-                    'lore': () => Render.lore(id),       // --- NEW
-                    'maps': () => Render.maps(id)        // --- NEW
-                };
-                
-                if (renderMap[view]) {
-                    await renderMap[view]();
-                }
-
-                setTimeout(() => document.body.classList.remove('is-transitioning'), 100);
-            }
-        };
-
-        // --- 3. UI & RENDERER ---
-        const UI = {
-            stage: document.getElementById('content-stage'),
-            setBackButton: (action, label) => {
-                document.getElementById('back-container').innerHTML = action 
-                    ? `<div class="back-btn-wrapper" onclick="${action}"><i class="fas fa-arrow-left"></i> ${label}</div>` : '';
-            },
-            // --- NEW: Map Viewer Controls ---
-            openMapViewer: () => document.getElementById('map-viewer').classList.add('active'),
-            closeMapViewer: () => document.getElementById('map-viewer').classList.remove('active'),
-            setActiveMap: (src) => {
-                MapController.reset();
-                document.getElementById('map-image').src = src;
-                // Update active class on buttons
-                document.querySelectorAll('.map-option').forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.src === src);
-                });
-            }
-        };
-        
+        // --- 4. RENDERERS & ACTIONS ---
         const Render = {
+            stage: document.getElementById('content-stage'),
             home: async () => {
                 try {
-                    UI.setBackButton(null);
-                    const manifest = await API.get('data/manifest.json');
+                    const settings = await API.get('data/settings.json').catch(()=>({}));
+                    UI.setBg(settings.homeBg || null);
+                    State.manifest = await API.get('data/manifest.json');
+                    UI.setBackButton(null); UI.hideWallpaperButton();
                     let html = '<div class="story-grid">';
-                    manifest.forEach(s => { html += `<div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')"><img src="${s.cover}" loading="lazy"><div class="card-info"><h3>${s.title}</h3></div></div>`; });
-                    UI.stage.innerHTML = html + '</div>';
-                } catch(e) { UI.stage.innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
+                    State.manifest.forEach(s => { html += `<div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')"><img src="${s.cover}" loading="lazy"><div class="card-info"><div class="card-title">${s.title}</div><div style="color:#ccc; font-size:0.8rem;">${s.desc}</div></div></div>`; });
+                    Render.stage.innerHTML = html + '</div>';
+                } catch(e) { Render.stage.innerHTML = `<div style="text-align:center; padding:3rem; color:red">Error loading manifest: ${e.message}</div>`; }
             },
             storyHub: async (id) => {
+                UI.setBackButton("Router.navigate('home')", "Archives");
+                State.currentStoryId = id;
                 try {
-                    UI.setBackButton("Router.navigate('home')", "Archives");
-                    State.currentStoryId = id;
-                    const [storyConfig, manifest] = await Promise.all([
-                        API.get(`data/stories/${id}/config.json`),
-                        API.get('data/manifest.json')
-                    ]);
+                    // Load Config and Manifest
+                    State.currentStoryConfig = await API.get(`data/stories/${id}/config.json`);
+                    State.manifest = await API.get('data/manifest.json');
                     
-                    const story = manifest.find(s => s.id === id) || {};
-                    document.documentElement.style.setProperty('--accent-color', storyConfig.themeColor);
-                    document.getElementById('global-bg').style.backgroundImage = `url('${storyConfig.bg}')`;
+                    // Preload Chars for Wallpaper logic
+                    State.currentChars = await API.get(`data/stories/${id}/gallery/manifest.json`).catch(() => []);
+                    
+                    UI.setBg(State.currentStoryConfig.bg); 
+                    UI.checkWallpaperChar(); // Enable Wallpaper button if applicable
 
-                    let hubHtml = `<div class="story-hub-wrapper">
-                        <div class="story-hub-layout glass-box">
-                            <img class="hub-cover" src="${story.cover}">
-                            <div class="hub-details">
-                                <h1>${storyConfig.title}</h1><div class="hub-meta">${storyConfig.status} • ${storyConfig.genre}</div>
-                                <div class="hub-synopsis">${storyConfig.synopsis}</div>
-                                <div class="hub-actions">
-                                    <button class="btn-large" onclick="Router.navigate('read/${id}')"><i class="fas fa-book-open"></i> READ</button>
-                                    <button class="btn-large" onclick="Router.navigate('gallery/${id}')"><i class="fas fa-images"></i> GALLERY</button>
-                                </div>
-                            </div>
-                        </div>`;
+                    const story = State.manifest.find(s => s.id === id) || { cover: "" };
+                    const conf = State.currentStoryConfig;
+                    document.documentElement.style.setProperty('--accent-color', conf.themeColor);
 
-                    // --- NEW: Fetch and render Expansion Bar ---
+                    let hubHtml = `<div class="story-hub-wrapper"><div class="story-hub-layout glass-box"><img class="hub-cover" src="${story.cover}"><div class="hub-details"><h1>${conf.title}</h1><div class="hub-meta">${conf.status} • ${conf.genre}</div><div class="hub-synopsis">${conf.synopsis}</div><div class="hub-actions"><button class="btn-large" onclick="Router.navigate('read/${id}')"><i class="fas fa-book-open"></i> READ</button><button class="btn-large" onclick="Router.navigate('gallery/${id}')"><i class="fas fa-images"></i> GALLERY</button></div></div></div>`;
+
+                    // Try loading expansion bar (New Feature)
                     try {
                         const worldMeta = await API.get(`world_data/${id}/meta.json`);
                         hubHtml += `<div class="expansion-bar glass-box">
-                            <div class="expansion-title">${worldMeta.worldTitle}</div>
-                            <div class="expansion-nav">
-                                <button class="btn-large" onclick="Router.navigate('timeline/${id}')">Timeline</button>
-                                <button class="btn-large" onclick="Router.navigate('lore/${id}')">Lore</button>
-                                <button class="btn-large" onclick="Router.navigate('maps/${id}')">Maps</button>
-                            </div>
-                        </div>`;
-                    } catch (e) { /* No world data, fail silently */ console.log("No world data for this story."); }
-                    
-                    UI.stage.innerHTML = hubHtml + `</div>`;
-                } catch(e) { UI.stage.innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
-            },
-            // --- NEW: Timeline Renderer ---
-            timeline: async (id) => {
-                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
-                try {
-                    const data = await API.get(`world_data/${id}/timeline.json`);
-                    let html = '<div class="timeline-container">';
-                    data.forEach((item, index) => {
-                        const side = index % 2 === 0 ? 'left' : 'right';
-                        html += `<div class="timeline-node ${side}">
-                            <div class="timeline-content glass-box">
-                                <h2>${item.title} <span style="font-size:1rem; color:#aaa; margin-left:10px;">${item.date}</span></h2>
-                                <p>${item.desc}</p>
-                            </div>
-                        </div>`;
-                    });
-                    UI.stage.innerHTML = html + '</div>';
-                } catch(e) { UI.stage.innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
-            },
-            // --- NEW: Lore Renderer ---
-            lore: async (id) => {
-                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
-                try {
-                    const data = await API.get(`world_data/${id}/lore.json`);
-                    let html = '<div class="lore-grid">';
-                    data.forEach(item => {
-                        html += `<div class="lore-card glass-box">
-                            <img class="lore-img" src="${item.img}" loading="lazy">
-                            <div class="lore-details">
-                                <h3>${item.title}</h3>
-                                <div class="lore-type">${item.type}</div>
-                                <p class="lore-desc">${item.desc}</p>
-                            </div>
-                        </div>`;
-                    });
-                    UI.stage.innerHTML = html + '</div>';
-                } catch(e) { UI.stage.innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
-            },
-            // --- NEW: Maps Renderer ---
-            maps: async (id) => {
-                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
-                try {
-                    const data = await API.get(`world_data/${id}/maps.json`);
-                    const primaryMap = data.find(m => m.isPrimary) || data[0];
-                    if (!primaryMap) throw new Error("No maps found in maps.json");
+                                        <div class="expansion-title">${worldMeta.worldTitle}</div>
+                                        <div class="expansion-nav">
+                                            <button class="btn-large" onclick="Router.navigate('timeline/${id}')">Timeline</button>
+                                            <button class="btn-large" onclick="Router.navigate('lore/${id}')">Lore</button>
+                                            <button class="btn-large" onclick="Router.navigate('maps/${id}')">Maps</button>
+                                        </div>
+                                    </div>`;
+                    } catch (e) { console.log("No world expansion data found."); }
 
-                    const selectorList = document.getElementById('map-selector-list');
-                    selectorList.innerHTML = data.map(map => 
-                        `<button class="map-option" data-src="${map.src}" onclick="UI.setActiveMap('${map.src}')">${map.name}</button>`
-                    ).join('');
-                    
-                    UI.setActiveMap(primaryMap.src); // Set initial active map
-                    UI.openMapViewer();
-                    // Since this view is an overlay, we render a placeholder in the stage
-                    UI.stage.innerHTML = `<div style="text-align:center; padding: 4rem;"><h2>Map Viewer Active</h2><p>Close the map viewer to return to the story hub.</p></div>`;
-                } catch(e) { 
-                    alert(`Map Error: ${e.message}`);
-                    Router.navigate(`story/${id}`); // Go back if maps fail to load
-                }
+                    Render.stage.innerHTML = hubHtml + `</div>`;
+                } catch(e) { Render.stage.innerHTML = `<div style="text-align:center; padding:3rem;">Error loading story: ${e.message}</div>`; }
             },
             reader: async (id, chIdx = 0) => {
                 State.currentStoryId = id;
@@ -467,7 +554,7 @@
                 
                 } catch (e) {
                     console.error(e);
-                    alert(`FAILED TO LOAD CHAPTERS.\n\nReason: ${e.message}\n\nPlease check that 'index.json' exists and contains valid JSON.`);
+                    alert(`FAILED TO LOAD CHAPTERS.\n\nReason: ${e.message}`);
                     Router.navigate(`story/${id}`);
                 }
             },
@@ -494,16 +581,131 @@
                         Actions.renderGalleryGrid();
                     }
                 } catch(e) { alert(e.message); }
+            },
+            timeline: async (id) => {
+                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                try {
+                    const data = await API.get(`world_data/${id}/timeline.json`);
+                    let html = '<div class="timeline-container">';
+                    data.forEach((item, index) => {
+                        const side = index % 2 === 0 ? 'left' : 'right';
+                        html += `<div class="timeline-node ${side}"><div class="timeline-content glass-box"><h2>${item.title} <span style="font-size:1rem; color:#aaa; margin-left:10px;">${item.date}</span></h2><p>${item.desc}</p></div></div>`;
+                    });
+                    Render.stage.innerHTML = html + '</div>';
+                } catch(e) { Render.stage.innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
+            },
+            lore: async (id) => {
+                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                try {
+                    const data = await API.get(`world_data/${id}/lore.json`);
+                    let html = '<div class="lore-grid">';
+                    data.forEach(item => {
+                        html += `<div class="lore-card glass-box"><img class="lore-img" src="${item.img}" loading="lazy"><div class="lore-details"><h3>${item.title}</h3><div class="lore-type">${item.type}</div><p class="lore-desc">${item.desc}</p></div></div>`;
+                    });
+                    Render.stage.innerHTML = html + '</div>';
+                } catch(e) { Render.stage.innerHTML = `<p style="color:red">Error: ${e.message}</p>`; }
+            },
+            maps: async (id) => {
+                UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
+                try {
+                    const data = await API.get(`world_data/${id}/maps.json`);
+                    const primaryMap = data.find(m => m.isPrimary) || data[0];
+                    if (!primaryMap) throw new Error("No maps found");
+
+                    const selectorList = document.getElementById('map-selector-list');
+                    selectorList.innerHTML = data.map(map => `<button class="map-option" data-src="${map.src}" onclick="UI.setActiveMap('${map.src}')">${map.name}</button>`).join('');
+                    
+                    UI.setActiveMap(primaryMap.src);
+                    UI.openMapViewer();
+                    // Maps are an overlay, so we show a placeholder in the stage
+                    Render.stage.innerHTML = `<div style="text-align:center; padding: 4rem;"><h2>Map Viewer Active</h2><p>Close the map viewer to return to the story hub.</p></div>`;
+                } catch(e) { 
+                    alert(`Map Error: ${e.message}`);
+                    Router.navigate(`story/${id}`);
+                }
             }
         };
 
-        // --- 4. INITIALIZATION ---
+        const Actions = {
+            renderGalleryGrid: (sf = false) => {
+                const c = State.currentChars.find(x => x.id === Router.getParts()[2]);
+                if(!c || !c.gallery_images) return;
+                let imgs = [...c.gallery_images];
+                if(State.filterTag !== 'All') imgs = imgs.filter(i => i.tags.includes(State.filterTag));
+                if(sf) imgs.sort(() => Math.random() - 0.5);
+                document.getElementById('gallery-grid').innerHTML = imgs.map(i => `<div class="gallery-item" onclick="Visuals.openLightbox('${i.src}')"><img src="${i.src}" loading="lazy"></div>`).join('');
+            },
+            setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
+            shuffleGallery: () => Actions.renderGalleryGrid(true),
+        };
+
+        const UI = {
+            bg: document.getElementById('global-bg'),
+            back: document.getElementById('back-container'),
+            wp: document.getElementById('wp-toggle-container'),
+            setBg: (url) => { if(url) UI.bg.style.backgroundImage = `url('${url}')`; },
+            setBackButton: (act, lbl) => UI.back.innerHTML = act ? `<div class="back-btn-wrapper" onclick="${act}"><i class="fas fa-arrow-left"></i> ${lbl}</div>` : '',
+            checkWallpaperChar: () => {
+                State.wallpaperChar = State.currentChars.find(c => c.name.toLowerCase().includes('wallpaper'));
+                UI.wp.innerHTML = State.wallpaperChar ? `<div class="back-btn-wrapper" style="color:var(--accent-color); margin-right:1rem;" onclick="UI.openWallpaperModal()"><i class="fas fa-paint-brush"></i></div>` : '';
+            },
+            hideWallpaperButton: () => UI.wp.innerHTML = '',
+            openWallpaperModal: () => {
+                if(!State.wallpaperChar) return;
+                document.getElementById('wp-grid').innerHTML = State.wallpaperChar.gallery_images.map(i => `<div style="cursor:pointer" onclick="UI.setBg('${i.src}'); document.getElementById('wp-modal').style.display='none'"><img src="${i.src}" style="width:100%; border-radius:4px;"></div>`).join('');
+                document.getElementById('wp-modal').style.display = 'flex';
+            },
+            openMapViewer: () => document.getElementById('map-viewer').classList.add('active'),
+            closeMapViewer: () => document.getElementById('map-viewer').classList.remove('active'),
+            setActiveMap: (src) => {
+                MapController.reset();
+                document.getElementById('map-image').src = src;
+                document.querySelectorAll('.map-option').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.src === src);
+                });
+            }
+        };
+
+        // --- 5. ROUTER (Merged) ---
+        const Router = {
+            getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
+            navigate: (h) => {
+                document.body.classList.add('is-transitioning');
+                setTimeout(() => window.location.hash = h, 400); 
+            },
+            handle: async () => {
+                const parts = Router.getParts();
+                const view = parts[0];
+                
+                // Map logical views to Render functions
+                const renderMap = {
+                    'home': () => Render.home(),
+                    'story': () => Render.storyHub(parts[1]),
+                    'read': () => Render.reader(parts[1], parts[2]),
+                    'gallery': () => Render.gallery(parts[1], parts[2]),
+                    'timeline': () => Render.timeline(parts[1]),
+                    'lore': () => Render.lore(parts[1]),
+                    'maps': () => Render.maps(parts[1])
+                };
+
+                if (renderMap[view]) {
+                    await renderMap[view]();
+                }
+
+                // Fade back in
+                setTimeout(() => {
+                    document.body.classList.remove('is-transitioning');
+                }, 100);
+            }
+        };
+
         window.addEventListener('hashchange', Router.handle);
-        window.addEventListener('DOMContentLoaded', () => {
-            AudioController.init('path/to/your/music.mp3'); // IMPORTANT: Set your music file path here
-            MapController.init();
-            // Particles.init(); // You can add your particle code back here
+        window.addEventListener('DOMContentLoaded', () => { 
             Router.handle(); 
+            Visuals.initDynamicTransparency(); 
+            Particles.init();
+            MapController.init();
+            AudioController.init('path/to/music.mp3'); // Set your audio path here
         });
     </script>
 </body>
