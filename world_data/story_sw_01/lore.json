@@ -31,14 +31,14 @@
     "id": "galactic_empire",
     "title": "Galactic Empire",
     "type": "Faction",
-    "img": "https://static.wikia.nocookie.net/empireatwar/images/c/ca/Imperial_Emblem_by_ConradChaos.png/revision/latest?cb=20150125062618",
+    "img": "https://images3.alphacoders.com/754/thumb-1920-75475.jpg",
     "desc": "An autocratic galactic regime formed after the fall of the Republic and the subsequent purge of the Jedi Order. The Empire centralized power under Emperor Palpatine (Darth Sidious) and imposed martial law across star systems, promising order and security in the wake of the Clone Wars.\n\nIt wielded overwhelming military and industrial might, spearheaded by legions of Stormtroopers and massive Star Destroyers, to suppress all dissent. The Empire's doctrine focused on ruling through fear, intimidation, and the constant threat of massive weapons of war.\n\nThe regime utilized specialized agents, such as the Inquisitors, to hunt down remaining Jedi and Force-sensitives, ensuring no organized resistance could challenge its authority or Palpatine's dominance of the dark side of the Force."
   },
   {
     "id": "rebel_alliance",
     "title": "Rebel Alliance",
     "type": "Faction",
-    "img": "https://static.wikia.nocookie.net/star-wars-canon-extended/images/d/d3/Rebellion.jpg/revision/latest?cb=20171107224449",
+    "img": "https://img.goodfon.com/wallpaper/big/f/b2/star-wars-rebel-alliance.webp",
     "desc": "A coalition of rebel dissidents, former loyalists, and freedom fighters who rose up against the Empire’s tyranny. The Alliance began with small, covert operations and grew into a unified political and military entity dedicated to restoring democracy and the ideals of the old Republic.\n\nThe Alliance was a diverse group, drawing support from oppressed planets, dissatisfied military officers, and idealistic politicians. Key early leaders included Mon Mothma and Bail Organa, who provided the political and logistical infrastructure for the resistance.\n\nThey famously coordinated large-scale resistance, culminating in the heroic effort to steal the plans for the Death Star and, later, the ultimate destruction of the superweapon. This victory marked the beginning of a larger conflict known as the Galactic Civil War."
   },
   {
