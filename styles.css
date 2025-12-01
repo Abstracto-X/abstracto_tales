@@ -231,10 +231,152 @@ body {
 .gallery-item img { width: 100%; display: block; transition: transform 0.5s; cursor: zoom-in;}
 .gallery-item:hover img { transform: scale(1.05); }
 
-/* Responsive */
+/* --- MOBILE & TABLET OPTIMIZATION --- */
+
+@media (max-width: 1024px) {
+    /* Tablet Tweaks */
+    .story-hub-layout { grid-template-columns: 300px 1fr; gap: 2rem; padding: 2rem; }
+    .reader-content { padding: 3rem; }
+}
+
 @media (max-width: 768px) {
-    .story-hub-layout { grid-template-columns: 1fr; text-align: center; }
+    /* --- GLOBAL LAYOUT --- */
+    #app-container { padding: 0.5rem; }
+    #main-header { padding: 0.8rem 1rem; }
+    .logo { font-size: 1.4rem; }
+    .header-controls { gap: 0.5rem; }
+    
+    /* Reduce global scrollbar width for mobile */
+    #content-stage::-webkit-scrollbar { width: 3px; }
+
+    /* --- HOME VIEW --- */
+    .story-grid { 
+        grid-template-columns: 1fr; /* Single column on mobile */
+        gap: 1.5rem; 
+        padding: 0.5rem;
+    }
+    .story-card { height: 300px; } /* Shorter cards */
+    .card-title { font-size: 1.5rem; }
+
+    /* --- STORY HUB --- */
+    .story-hub-layout { 
+        grid-template-columns: 1fr; 
+        gap: 1.5rem; 
+        text-align: center;
+        padding: 1.5rem !important;
+    }
+    .hub-cover { 
+        width: 60%; 
+        max-width: 250px; 
+        margin: 0 auto; 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+    .hub-details h1 { font-size: 2rem; margin-top: 1rem; }
+    .hub-actions { 
+        flex-direction: column; 
+        width: 100%; 
+    }
+    .hub-actions .btn-large { 
+        width: 100%; 
+        justify-content: center; 
+        padding: 1rem;
+    }
+    .world-hub-bar { padding: 1rem; }
+    .world-hub-bar .bar-actions { gap: 0.5rem; }
+    .world-hub-bar .btn-large { 
+        font-size: 0.7rem; 
+        padding: 0.5rem 1rem; 
+        flex: 1 1 40%; /* 2 buttons per row */
+    }
+
+    /* --- READER VIEW --- */
+    .reader-layout { flex-direction: column; gap: 0; }
+    
+    /* Turn Sidebar into a horizontal scroll strip on top */
+    .reader-sidebar { 
+        width: 100%; 
+        border-right: none; 
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        display: flex;
+        overflow-x: auto;
+        padding: 0.5rem;
+        height: auto;
+        white-space: nowrap;
+        background: rgba(0,0,0,0.5);
+    }
+    .reader-sidebar h3 { display: none; } /* Hide "Chapters" title */
+    .chapter-list-item { 
+        padding: 0.5rem 1rem; 
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 20px;
+        margin-right: 0.5rem;
+        font-size: 0.8rem;
+    }
+    .chapter-list-item.active { border-left: 1px solid var(--accent-color); }
+
+    .reader-content { 
+        padding: 1.5rem; 
+        font-size: 1rem !important; /* Force readable size */
+        border-radius: 0 0 12px 12px;
+    }
+    .chapter-text { line-height: 1.6; }
+
+    /* --- GALLERY VIEW --- */
+    .char-profile-hero { 
+        grid-template-columns: 1fr; 
+        gap: 1.5rem; 
+        padding: 1.5rem;
+    }
+    .hero-img-container { width: 70%; margin: 0 auto; }
+    .hero-name { font-size: 2rem; text-align: center; }
+    .hero-role { text-align: center; }
+    .sub-gallery-grid { column-count: 2; column-gap: 0.5rem; } /* 2 cols on mobile */
+
+    /* --- TIMELINE (The Tricky Part) --- */
+    .timeline-path { left: 20px; transform: none; }
+    .timeline-node { 
+        flex-direction: column; 
+        margin-bottom: 2.5rem;
+    }
+    /* Force all content to the right of the line */
+    .node-left .timeline-content, 
+    .node-right .timeline-content {
+        width: calc(100% - 40px);
+        margin-left: 40px !important;
+        margin-right: 0 !important;
+        text-align: left !important;
+        border: none !important;
+        border-left: 2px solid var(--accent-color) !important;
+        padding: 1rem;
+    }
+    .timeline-dot { left: 20px; transform: translateX(-50%); }
+    
+    /* Fix Character box in timeline */
+    .timeline-char-box {
+        position: static !important;
+        width: calc(100% - 40px);
+        margin-left: 40px !important;
+        margin-top: 0.5rem;
+        background: rgba(255,255,255,0.08);
+        flex-direction: row !important;
+        text-align: left !important;
+    }
+    .node-right .timeline-char-box { transform: none; }
+
+    /* --- MAPS --- */
+    .map-layout { height: 70vh; } /* Prevent full screen blocking scrolling */
+    .map-selector { padding: 0.2rem; }
+    .map-selector-btn { padding: 0.4rem 0.8rem; font-size: 0.7rem; }
+    
+    /* --- LORE --- */
+    .lore-wiki-header { height: 180px; }
+    .lore-wiki-body { padding: 1.5rem; }
+    .lore-wiki-title { font-size: 1.8rem; }
+}
+
+@media (max-width: 480px) {
+    /* Small Phone adjustments */
     .sub-gallery-grid { column-count: 1; }
-    .reader-layout { flex-direction: column; }
-    .reader-sidebar { width: 100%; height: 100px; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; }
+    .logo { letter-spacing: 1px; }
 }
