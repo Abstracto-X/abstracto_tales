@@ -76,6 +76,26 @@
             border-color: rgba(255, 255, 255, 0.25);
         }
 
+        /* --- LIGHTBOX (THE FIX) --- */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 5000;
+            display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease;
+            pointer-events: none; /* Crucial: ensures it doesn't block clicks when hidden */
+        }
+        #lightbox.active {
+            opacity: 1;
+            pointer-events: all; /* Re-enable clicks when active */
+        }
+        #lightbox-img {
+            max-width: 95%; max-height: 95vh;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            border: 1px solid #333;
+            transform: scale(0.95); transition: transform 0.3s ease;
+        }
+        #lightbox.active #lightbox-img { transform: scale(1); }
+
         /* --- HEADER --- */
         #main-header {
             display: flex; justify-content: space-between; align-items: center;
@@ -268,7 +288,6 @@
         }
         .map-selector-btn.active, .map-selector-btn:hover { color: #000; background: var(--accent-color); border-color: var(--accent-color); }
         
-        /* FIX 2: Added touch-action: none to allow MapViewer to handle pinch, but standard gestures on page will work elsewhere */
         .map-viewer { flex: 1; overflow: hidden; cursor: grab; background: #080808; position: relative; border-radius: 0 0 12px 12px; touch-action: none; }
         .map-viewer.is-dragging { cursor: grabbing; }
         .map-canvas { position: absolute; transform-origin: 0 0; will-change: transform; }
@@ -316,14 +335,14 @@
             
             .sub-gallery-grid { column-count: 2; column-gap: 8px; }
 
-            /* FIX 4: Compact Timeline Styles */
+            /* Compact Timeline Styles */
             .timeline-wrapper { padding: 1rem 0; margin: 0; }
             .timeline-path { left: 15px; }
             .timeline-node { flex-direction: column; align-items: flex-start; margin-left: 15px; width: auto; padding-left: 15px; margin-bottom: 1.5rem; }
             .node-left .timeline-content, .node-right .timeline-content { 
                 width: 100%; text-align: left; border: none; 
                 border-left: 2px solid var(--accent-color); 
-                padding: 0.8rem !important; /* Smaller padding */
+                padding: 0.8rem !important; 
                 margin: 0; 
             }
             .timeline-content .title { font-size: 1.1rem; }
@@ -368,9 +387,9 @@
         <button class="btn-large" style="margin-top:1rem; border:1px solid #555; font-size:0.8rem;" onclick="document.getElementById('wp-modal').style.display='none'">Close</button>
     </div>
 
-    <div id="lightbox" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:5000; display:none; justify-content:center; align-items:center; opacity:0; transition:opacity 0.3s;" onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none', 300)">
+    <div id="lightbox" onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none', 300)">
         <div style="position:absolute; top:20px; right:30px; color:#fff; font-size:2rem; cursor:pointer;">&times;</div>
-        <img id="lightbox-img" src="" style="max-width:95%; max-height:95vh; box-shadow:0 0 50px rgba(0,0,0,0.8); border:1px solid #333;" onclick="event.stopPropagation()">
+        <img id="lightbox-img" src="" onclick="event.stopPropagation()">
     </div>
 
     <script>
@@ -483,7 +502,7 @@
             }
         };
 
-        // --- MAP VIEWER ENGINE (FIXED: Added Pinch-to-Zoom) ---
+        // --- MAP VIEWER ENGINE ---
         const MapViewer = {
             viewer: null, canvas: null, img: null,
             state: { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 },
@@ -500,9 +519,8 @@
                 v.addEventListener('mousedown', MapViewer.onDown);
                 window.addEventListener('mousemove', MapViewer.onMove);
                 window.addEventListener('mouseup', MapViewer.onUp);
-                v.addEventListener('wheel', MapViewer.onWheel);
+                v.addEventListener('wheel', MapViewer.onWheel, {passive: false});
 
-                // Touch Events
                 v.addEventListener('touchstart', MapViewer.onTouchStart, {passive: false});
                 v.addEventListener('touchmove', MapViewer.onTouchMove, {passive: false});
                 v.addEventListener('touchend', MapViewer.onUp);
@@ -545,7 +563,6 @@
             },
             onWheel: (e) => { e.preventDefault(); MapViewer.zoom(e.deltaY < 0 ? 1.1 : 0.9); },
             
-            // Interaction Handlers
             onDown: (e) => { e.preventDefault(); MapViewer.startDrag(e.clientX, e.clientY); },
             onTouchStart: (e) => { 
                 e.preventDefault(); 
@@ -556,14 +573,12 @@
                     MapViewer.startDrag(e.touches[0].clientX, e.touches[0].clientY); 
                 }
             },
-            
             startDrag: (x, y) => {
                 MapViewer.state.isDragging = true; 
                 MapViewer.state.startX = x - MapViewer.state.x; 
                 MapViewer.state.startY = y - MapViewer.state.y; 
                 MapViewer.viewer.classList.add('is-dragging');
             },
-            
             onMove: (e) => { if(MapViewer.state.isDragging) { e.preventDefault(); MapViewer.doDrag(e.clientX, e.clientY); } },
             onTouchMove: (e) => { 
                 e.preventDefault(); 
@@ -577,13 +592,11 @@
                     MapViewer.doDrag(e.touches[0].clientX, e.touches[0].clientY); 
                 } 
             },
-
             doDrag: (x, y) => {
                 MapViewer.state.x = x - MapViewer.state.startX; 
                 MapViewer.state.y = y - MapViewer.state.startY; 
                 MapViewer.clamp(); MapViewer.update();
             },
-            
             onUp: () => { MapViewer.state.isDragging = false; MapViewer.viewer.classList.remove('is-dragging'); }
         };
 
@@ -899,9 +912,8 @@
                 setTimeout(() => window.location.hash = h, 400); 
             },
             handle: () => {
-                // FIX 1: Aggressive Cleanup on Navigation
-                document.getElementById('lightbox').style.display = 'none';
                 document.getElementById('lightbox').classList.remove('active');
+                setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
                 document.getElementById('wp-modal').style.display = 'none';
                 const sb = document.querySelector('.reader-sidebar');
                 if(sb) sb.classList.remove('active');
