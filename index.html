@@ -10,7 +10,7 @@
       gtag('config', 'G-PQ7CENWKXE');
     </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Aether Archives</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,13 +27,13 @@
             --font-ui: 'Montserrat', sans-serif;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             background-color: #050505;
             color: #e0e0e0;
             font-family: var(--font-ui);
-            overflow: hidden;
+            overflow: hidden; /* Prevents scroll chaining on mobile */
             height: 100vh;
             width: 100vw;
             user-select: none;
@@ -100,6 +100,8 @@
             flex: 1; overflow-y: auto; overflow-x: hidden; padding: 10px;
             display: flex; flex-direction: column;
             scrollbar-width: thin; scrollbar-color: var(--accent-color) rgba(0,0,0,0.3);
+            /* Mobile Smooth Scrolling */
+            -webkit-overflow-scrolling: touch; 
         }
         #content-stage::-webkit-scrollbar { width: 6px; }
         #content-stage::-webkit-scrollbar-track { background: rgba(0,0,0,0.3); }
@@ -110,7 +112,7 @@
             padding: 0.8rem 2rem; font-family: var(--font-header); font-size: 0.9rem; letter-spacing: 2px;
             background: transparent; border: 1px solid var(--accent-color);
             color: var(--primary-color); cursor: pointer; transition: all 0.3s;
-            display: flex; align-items: center; gap: 0.8rem; text-decoration: none;
+            display: flex; align-items: center; justify-content: center; gap: 0.8rem; text-decoration: none;
         }
         .btn-large:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 15px var(--accent-color); }
 
@@ -119,6 +121,7 @@
         .story-card {
             position: relative; height: 380px; overflow: hidden; cursor: pointer;
             transition: transform 0.4s ease, border-color 0.4s ease; display: flex; align-items: flex-end;
+            border-radius: 12px; border: 1px solid transparent;
         }
         .story-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
         .story-card img { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: -1; transition: transform 0.6s ease; }
@@ -149,28 +152,31 @@
         /* --- VIEW: READER --- */
         .reader-layout { display: flex; gap: 2rem; height: 100%; max-width: 1300px; margin: 0 auto; width: 100%; }
         .reader-sidebar { width: 220px; overflow-y: auto; border-right: 1px solid rgba(255,255,255,0.05); padding-right: 0.5rem; flex-shrink: 0; transition: width 0.3s, opacity 0.3s; }
+        
         .chapter-list-item { padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.85rem; transition: 0.2s; color: #888; }
         .chapter-list-item:hover { color: var(--accent-color); padding-left: 1rem; }
         .chapter-list-item.active { border-left: 3px solid var(--accent-color); color: #fff; background: rgba(255,215,0,0.05); }
+        
         .reader-content { flex: 1; max-width: 800px; margin: 0 auto; padding: 3rem 4rem; color: #d0d0d0; overflow-y: auto; position: relative; transition: max-width 0.3s; }
         
         .reader-toolbar { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
         .rt-btn { background: transparent; border: none; color: #666; cursor: pointer; transition: 0.2s; font-size: 1rem; }
         .rt-btn:hover, .rt-btn.active { color: var(--accent-color); }
+        
         .font-menu { position: absolute; top: 60px; right: 20px; background: #1a1a1a; border: 1px solid #333; padding: 10px; border-radius: 6px; display: none; flex-direction: column; gap: 8px; z-index: 50; width: 120px; }
         .font-option { cursor: pointer; font-size: 0.8rem; color: #aaa; padding: 4px; border-radius: 4px; }
         .font-option:hover { background: #333; color: #fff; }
         
         /* Reader Focus Mode */
         body.focus-active #main-header { opacity: 0; pointer-events: none; }
-        body.focus-active .reader-sidebar { width: 0; padding: 0; opacity: 0; overflow: hidden; }
+        body.focus-active .reader-sidebar { width: 0; padding: 0; opacity: 0; overflow: hidden; display: none; }
         body.focus-active .reader-content { max-width: 900px; background: rgba(10, 10, 10, 0.9); }
         
         /* Font Classes */
         .text-sm { font-size: 1rem; } .text-md { font-size: 1.2rem; } .text-lg { font-size: 1.4rem; }
         .font-serif { font-family: var(--font-body); } .font-sans { font-family: var(--font-ui); }
 
-        /* --- VIEW: GALLERY (FULL RESTORATION) --- */
+        /* --- VIEW: GALLERY --- */
         .char-grid { display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; max-width: 1200px; margin: 0 auto; }
         .char-card {
             width: 220px; height: 350px; position: relative; border-radius: 10px;
@@ -267,7 +273,7 @@
         }
         .map-selector-btn.active, .map-selector-btn:hover { color: #000; background: var(--accent-color); border-color: var(--accent-color); }
         
-        .map-viewer { flex: 1; overflow: hidden; cursor: grab; background: #080808; position: relative; border-radius: 0 0 12px 12px; }
+        .map-viewer { flex: 1; overflow: hidden; cursor: grab; background: #080808; position: relative; border-radius: 0 0 12px 12px; touch-action: none; }
         .map-viewer.is-dragging { cursor: grabbing; }
         .map-canvas { position: absolute; transform-origin: 0 0; will-change: transform; }
         .map-canvas img { display: block; max-width: none; pointer-events: none; }
@@ -276,21 +282,58 @@
         .map-control-btn { width: 40px; height: 40px; background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
         .map-control-btn:hover { color: var(--accent-color); border-color: var(--accent-color); }
 
-        /* Responsive */
+        /* --- RESPONSIVE & MOBILE OPTIMIZATION --- */
         @media (max-width: 900px) {
-            .story-hub-layout, .char-profile-hero { grid-template-columns: 1fr; text-align: center; }
+            .story-hub-layout, .char-profile-hero { grid-template-columns: 1fr; text-align: center; padding: 1.5rem !important; }
             .hub-cover, .hero-img-container { width: 180px; margin: 0 auto; }
             .sub-gallery-grid { column-count: 2; }
-            .reader-layout { flex-direction: column; }
-            .reader-sidebar { width: 100%; height: auto; max-height: 120px; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; }
+            
+            /* Reader Mobile */
+            .reader-layout { flex-direction: column; gap: 1rem; }
+            .reader-sidebar { 
+                width: 100%; border-bottom: 1px solid rgba(255,255,255,0.1); border-right: none; padding-bottom: 1rem;
+                max-height: 0; overflow: hidden; opacity: 0; padding: 0;
+            }
+            .reader-sidebar.open { max-height: 300px; opacity: 1; padding: 1rem; margin-bottom: 1rem; }
+            .reader-content { padding: 1.5rem; }
+            
+            /* Mobile Navigation for Reader */
+            #mobile-chapter-btn { display: flex !important; width: 100%; margin-bottom: 1rem; justify-content: center; }
+            
+            /* Map */
+            .map-selector { overflow-x: auto; justify-content: flex-start; padding: 0.8rem; white-space: nowrap; }
         }
+
         @media (max-width: 768px) {
+            #app-container { padding: 0.5rem; }
+            #main-header { padding: 0.5rem 1rem; height: 60px; }
+            .logo { font-size: 1.2rem; letter-spacing: 2px; }
+            
+            /* Stack Story Cards for better visibility */
+            .story-grid { grid-template-columns: 1fr; padding: 0.5rem; }
+            .story-card { height: 250px; }
+            
+            /* Timeline Vertical Stack */
             .timeline-path { left: 20px; }
-            .timeline-node { flex-direction: column; align-items: flex-start; margin-left: 20px; width: auto; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px; }
-            .timeline-content { width: 100%; text-align: left !important; border: none !important; margin: 0 !important; }
-            .timeline-dot { left: -6px; transform: none; }
+            .timeline-node { flex-direction: column; align-items: flex-start; margin-left: 20px; width: auto; border-left: 2px solid rgba(255,255,255,0.1); padding-left: 20px; margin-bottom: 2.5rem; }
+            .timeline-content { width: 100%; text-align: left !important; border: none !important; margin: 0 !important; padding: 1rem; }
+            .timeline-dot { left: -6px; transform: none; top: 0; }
             .timeline-char-box { position: relative; left: 0 !important; right: auto !important; width: 100%; margin-top: 1rem; flex-direction: row !important; text-align: left !important; opacity: 1; background: rgba(255,255,255,0.05); }
+            
             .sub-gallery-grid { column-count: 1; }
+            .lore-wiki-body { padding: 1.5rem; }
+            .lore-wiki-header { height: 200px; }
+            .lore-wiki-title { font-size: 1.8rem; }
+            
+            /* Force Gallery Cards to show info on touch screens without hover */
+            .char-info-overlay {
+                transform: translateY(0) translateZ(30px);
+                background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 100%);
+                padding: 0.8rem;
+            }
+            .char-bio-preview { opacity: 1; display: -webkit-box; -webkit-line-clamp: 2; margin-top: 2px;}
+            .char-role { font-size: 0.6rem; }
+            .char-name { font-size: 1rem; }
         }
     </style>
 </head>
@@ -314,14 +357,12 @@
         <div id="content-stage"></div>
     </div>
 
-    <!-- Wallpaper Modal -->
     <div id="wp-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center;">
         <h2 style="color:white; margin-bottom:1rem; font-family: var(--font-header);">Select Wallpaper</h2>
         <div id="wp-grid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:1rem; width:80%; max-height:70vh; overflow-y:auto; padding:2rem; background:#111; border-radius:12px;"></div>
         <button class="btn-large" style="margin-top:1rem; border:1px solid #555; font-size:0.8rem;" onclick="document.getElementById('wp-modal').style.display='none'">Close</button>
     </div>
 
-    <!-- Lightbox -->
     <div id="lightbox" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:5000; display:none; justify-content:center; align-items:center; opacity:0; transition:opacity 0.3s;" onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none', 300)">
         <div style="position:absolute; top:20px; right:30px; color:#fff; font-size:2rem; cursor:pointer;">&times;</div>
         <img id="lightbox-img" src="" style="max-width:95%; max-height:95vh; box-shadow:0 0 50px rgba(0,0,0,0.8); border:1px solid #333;" onclick="event.stopPropagation()">
@@ -353,6 +394,9 @@
         // --- VISUALS ---
         const Visuals = {
             initDynamicTransparency: () => {
+                // Disable dynamic transparency on mobile/touch devices for performance and usability
+                if (window.matchMedia("(max-width: 768px)").matches) return;
+
                 const app = document.getElementById('app-container');
                 const bgLayer = document.getElementById('global-bg');
                 let ticking = false;
@@ -380,6 +424,9 @@
                 });
             },
             initCardTilt: () => {
+                // Disable complex 3D tilt on mobile
+                if (window.matchMedia("(max-width: 768px)").matches) return;
+                
                 document.querySelectorAll('.char-card').forEach(card => {
                     card.addEventListener('mousemove', (e) => {
                         requestAnimationFrame(() => {
@@ -425,10 +472,21 @@
             toggleFontMenu: () => { const m = document.getElementById('font-menu'); m.style.display = m.style.display==='flex'?'none':'flex'; },
             setFontSize: (s) => { ReaderFeatures.fontSize = s; ReaderFeatures.applyFonts(); },
             setFontFamily: (f) => { ReaderFeatures.fontFamily = f; ReaderFeatures.applyFonts(); },
-            applyFonts: () => { const c = document.querySelector('.reader-content'); if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; }
+            applyFonts: () => { const c = document.querySelector('.reader-content'); if(c) c.className = `reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}`; },
+            toggleMobileSidebar: () => {
+                const sb = document.querySelector('.reader-sidebar');
+                const btn = document.getElementById('mobile-chapter-icon');
+                if(sb.classList.contains('open')) {
+                    sb.classList.remove('open');
+                    btn.className = "fas fa-chevron-down";
+                } else {
+                    sb.classList.add('open');
+                    btn.className = "fas fa-chevron-up";
+                }
+            }
         };
 
-        // --- MAP VIEWER ENGINE ---
+        // --- MAP VIEWER ENGINE (TOUCH ENABLED) ---
         const MapViewer = {
             viewer: null, canvas: null, img: null,
             state: { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0 },
@@ -441,10 +499,18 @@
                 MapViewer.img.onload = () => MapViewer.centerMap();
                 MapViewer.img.src = src;
                 const v = MapViewer.viewer;
+                
+                // Mouse Events
                 v.addEventListener('mousedown', MapViewer.onDown);
                 window.addEventListener('mousemove', MapViewer.onMove);
                 window.addEventListener('mouseup', MapViewer.onUp);
                 v.addEventListener('wheel', MapViewer.onWheel);
+                
+                // Touch Events
+                v.addEventListener('touchstart', MapViewer.onTouchStart, {passive: false});
+                v.addEventListener('touchmove', MapViewer.onTouchMove, {passive: false});
+                v.addEventListener('touchend', MapViewer.onTouchEnd);
+
                 document.getElementById('zoom-in-btn').onclick = () => MapViewer.zoom(1.2);
                 document.getElementById('zoom-out-btn').onclick = () => MapViewer.zoom(0.8);
             },
@@ -482,9 +548,26 @@
                 MapViewer.clamp(); MapViewer.update();
             },
             onWheel: (e) => { e.preventDefault(); MapViewer.zoom(e.deltaY < 0 ? 1.1 : 0.9); },
-            onDown: (e) => { e.preventDefault(); MapViewer.state.isDragging = true; MapViewer.state.startX = e.clientX - MapViewer.state.x; MapViewer.state.startY = e.clientY - MapViewer.state.y; MapViewer.viewer.classList.add('is-dragging'); },
-            onMove: (e) => { if(!MapViewer.state.isDragging) return; e.preventDefault(); MapViewer.state.x = e.clientX - MapViewer.state.startX; MapViewer.state.y = e.clientY - MapViewer.state.startY; MapViewer.clamp(); MapViewer.update(); },
-            onUp: () => { MapViewer.state.isDragging = false; MapViewer.viewer.classList.remove('is-dragging'); }
+            onDown: (e) => { e.preventDefault(); MapViewer.startDrag(e.clientX, e.clientY); },
+            onMove: (e) => { if(!MapViewer.state.isDragging) return; e.preventDefault(); MapViewer.drag(e.clientX, e.clientY); },
+            onUp: () => { MapViewer.state.isDragging = false; MapViewer.viewer.classList.remove('is-dragging'); },
+            
+            // Touch Handlers
+            onTouchStart: (e) => { if(e.touches.length === 1) { e.preventDefault(); MapViewer.startDrag(e.touches[0].clientX, e.touches[0].clientY); }},
+            onTouchMove: (e) => { if(e.touches.length === 1 && MapViewer.state.isDragging) { e.preventDefault(); MapViewer.drag(e.touches[0].clientX, e.touches[0].clientY); }},
+            onTouchEnd: () => { MapViewer.state.isDragging = false; MapViewer.viewer.classList.remove('is-dragging'); },
+
+            startDrag: (x, y) => {
+                MapViewer.state.isDragging = true; 
+                MapViewer.state.startX = x - MapViewer.state.x; 
+                MapViewer.state.startY = y - MapViewer.state.y; 
+                MapViewer.viewer.classList.add('is-dragging');
+            },
+            drag: (x, y) => {
+                MapViewer.state.x = x - MapViewer.state.startX; 
+                MapViewer.state.y = y - MapViewer.state.startY; 
+                MapViewer.clamp(); MapViewer.update(); 
+            }
         };
 
         // --- DATA & STATE ---
@@ -582,7 +665,6 @@
                     </div>`;
             },
 
-            // --- FULL GALLERY RESTORATION ---
             gallery: async (id, charId = null) => {
                 State.currentStoryId = id;
                 const conf = await API.get(`data/stories/${id}/config.json`);
@@ -608,7 +690,7 @@
                     Render.stage.innerHTML = html + '</div>'; 
                     Visuals.initCardTilt();
                 } else {
-                    // Detail View (Hero + Sub-Gallery)
+                    // Detail View
                     UI.setBackButton(`Router.navigate('gallery/${id}')`, "Roster");
                     const c = State.currentChars.find(x => x.id === charId);
                     if (!c) { Router.navigate(`gallery/${id}`); return; }
@@ -635,7 +717,6 @@
                 }
             },
 
-            // --- FULL READER RESTORATION ---
             reader: async (id, chIdx = 0) => {
                 State.currentStoryId = id;
                 const chapters = await API.get(`data/stories/${id}/chapters/index.json`);
@@ -655,6 +736,12 @@
                 
                 Render.stage.innerHTML = `
                     <div class="reader-layout">
+                        <div id="mobile-chapter-btn" style="display:none;">
+                            <button class="btn-large" style="width:100%" onclick="ReaderFeatures.toggleMobileSidebar()">
+                                Chapters <i id="mobile-chapter-icon" class="fas fa-chevron-down"></i>
+                            </button>
+                        </div>
+
                         <div class="reader-sidebar glass-box"><h3 style="padding:1rem; font-family:var(--font-header)">Chapters</h3>${sidebar}</div>
                         <div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}">
                             <div class="reader-toolbar">
@@ -678,7 +765,6 @@
                     </div>`;
             },
 
-            // --- LORE RENDERERS ---
             lore: async (id) => {
                 UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
                 const data = await API.get(`world_data/${id}/lore.json`);
@@ -716,7 +802,6 @@
                     </div>`;
             },
 
-            // --- TIMELINE RENDERER ---
             timeline: async (id) => {
                 UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
                 const data = await API.get(`world_data/${id}/timeline.json`);
@@ -750,7 +835,6 @@
                 Render.stage.innerHTML = html + '</div>';
             },
 
-            // --- MAPS RENDERER ---
             maps: async (id) => {
                 UI.setBackButton(`Router.navigate('story/${id}')`, "Story Hub");
                 const maps = await API.get(`world_data/${id}/maps.json`);
