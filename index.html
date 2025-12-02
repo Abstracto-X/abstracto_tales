@@ -631,14 +631,22 @@
             stage: document.getElementById('content-stage'),
             
             home: async () => {
+                // 1. Fetch Settings & Background
                 const settings = await API.get('data/settings.json') || {};
                 UI.setBg(settings.homeBg || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop');
+                
+                // 2. Fetch Story Manifest AND Author Info
                 State.manifest = await API.get('data/manifest.json');
-                UI.setBackButton(null); UI.hideWallpaperButton();
+                const author = await API.get('data/author_info/author.json');
+
+                // Reset UI
+                UI.setBackButton(null); 
+                UI.hideWallpaperButton();
                 document.documentElement.style.setProperty('--accent-color', '#ffd700');
 
                 if(!State.manifest) { Render.stage.innerHTML = `<div style="padding:3rem;text-align:center">Error loading manifest.</div>`; return; }
                 
+                // 3. Build Story Grid HTML
                 let html = '<div class="story-grid">';
                 State.manifest.forEach(s => {
                     html += `<div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')">
@@ -649,7 +657,33 @@
                         </div>
                     </div>`;
                 });
-                Render.stage.innerHTML = html + '</div>';
+                html += '</div>';
+
+                // 4. Build Author Section HTML (If data exists)
+                if (author) {
+                    // Generate social links
+                    const linksHtml = author.links.map(link => `
+                        <a href="${link.url}" target="_blank" title="${link.name}">
+                            <img src="${link.icon}" class="social-icon" alt="${link.name}">
+                        </a>
+                    `).join('');
+
+                    html += `
+                    <div class="fade-in">
+                        <div class="author-section glass-box">
+                            <div class="author-img-wrapper">
+                                <img src="${author.avatar}" class="author-img">
+                            </div>
+                            <div class="author-info">
+                                <h2>${author.name}</h2>
+                                <div class="author-bio">${author.bio}</div>
+                                <div class="author-links">${linksHtml}</div>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+
+                Render.stage.innerHTML = html;
             },
 
             storyHub: async (id) => {
