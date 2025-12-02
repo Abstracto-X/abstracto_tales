@@ -1,6 +1,6 @@
 {
   "name": "Abstracto",
-  "avatar": "data/author_info/avatar.png",
+  "avatar": "data/author_info/cat.jpg",
   "bio": "Welcome to the archives. Here I chronicle the histories of worlds unknown.",
   "links": [
     {
@@ -24,7 +24,7 @@
     {
       "name": "Scribble Hub",
       "url": "https://www.scribblehub.com/profile/142369/abstracto/",
-      "icon": "data/author_info/scribblehub.png",
+      "icon": "data/author_info/sh.png",
       "note": ""
     }
   ]
