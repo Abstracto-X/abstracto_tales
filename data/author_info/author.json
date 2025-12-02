@@ -1,0 +1,11 @@
+{
+  "name": "Abstracto",
+  "avatar": "data/author_info/profile.jpg",
+  "bio": "A brief introduction about yourself. Maybe mention your writing style, what you love about fantasy/sci-fi, or a small welcome message to new readers.",
+  "links": [
+    { "name": "Patreon", "url": "https://patreon.com/AbstractoX", "icon": "data/author_info/patreon.png" },
+    { "name": "Royal Road", "url": "https://www.royalroad.com/profile/295963/fictions", "icon": "data/author_info/royalroad.png" },
+    { "name": "Webnovel", "url": "https://www.webnovel.com/profile/4319520811", "icon": "data/author_info/webnovel.png" },
+    { "name": "Scribble Hub", "url": "https://www.scribblehub.com/profile/142369/abstracto/", "icon": "data/author_info/sscribblehub.png" }
+  ]
+}
