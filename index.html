@@ -151,74 +151,108 @@
         /* --- AUTHOR SECTION --- */
         .author-section {
             max-width: 1000px;
-            margin: 4rem auto 2rem auto; /* Spacing from story grid */
+            margin: 4rem auto 2rem auto;
             padding: 2.5rem;
-            display: flex;
-            align-items: center;
-            gap: 2.5rem;
-            position: relative;
-            overflow: hidden;
+            display: grid;
+            grid-template-columns: 200px 1fr; /* Image left, content right */
+            gap: 3rem;
+            align-items: start;
         }
 
-        /* Profile Image with a cool glow effect */
+        /* Profile Image */
         .author-img-wrapper {
-            width: 150px; height: 150px;
-            flex-shrink: 0;
+            width: 180px; height: 180px;
             border-radius: 50%;
-            border: 2px solid var(--accent-color);
+            border: 3px solid var(--accent-color);
             padding: 5px;
-            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.15);
+            margin: 0 auto; /* Centers it if column wraps on mobile */
         }
         .author-img {
             width: 100%; height: 100%;
             border-radius: 50%;
             object-fit: cover;
+            background-color: #111; /* Fallback color if image fails to load */
         }
 
+        /* Info Text */
         .author-info h2 {
             font-family: var(--font-header);
             color: var(--accent-color);
-            margin-bottom: 0.8rem;
-            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+            line-height: 1;
         }
-
         .author-bio {
             color: #ccc;
             line-height: 1.6;
-            margin-bottom: 1.5rem;
-            font-size: 1rem;
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
         }
 
-        /* Social Links Row */
+        /* Vertical Links Stack */
         .author-links {
             display: flex;
-            gap: 1.5rem;
+            flex-direction: column;
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .link-row {
+            display: flex;
             align-items: center;
+            gap: 1.5rem;
+            padding: 1rem;
+            text-decoration: none;
+            transition: transform 0.2s, background 0.2s;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
         }
+        .link-row:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(10px);
+            border-color: var(--accent-color);
+        }
+
+        /* Logos: Rounded & Bright */
         .social-icon {
-            width: 32px;
-            height: 32px;
-            object-fit: contain;
-            transition: transform 0.3s, filter 0.3s;
-            opacity: 0.7;
-            filter: grayscale(100%); /* Start greyed out for sleek look */
+            width: 48px;
+            height: 48px;
+            object-fit: cover; /* Ensures square images fill the rounded box nicely */
+            border-radius: 12px; /* Rounded corners */
+            opacity: 1; /* Always bright */
+            filter: none; /* No grey filter */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .social-icon:hover {
-            transform: scale(1.2);
-            opacity: 1;
-            filter: grayscale(0%); /* Color on hover */
+
+        .link-details {
+            display: flex;
+            flex-direction: column;
+        }
+        .link-name {
+            font-family: var(--font-header);
+            color: #fff;
+            font-size: 1.1rem;
+        }
+        .link-note {
+            font-size: 0.85rem;
+            color: var(--accent-color);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
         }
 
         /* Mobile Adaptation */
         @media (max-width: 900px) {
             .author-section {
-                flex-direction: column;
+                grid-template-columns: 1fr; /* Stack vertically */
                 text-align: center;
                 padding: 1.5rem;
-                gap: 1.5rem;
-                margin-top: 2rem;
+                gap: 2rem;
             }
-            .author-links { justify-content: center; }
+            .author-img-wrapper { width: 140px; height: 140px; }
+            .link-row { text-align: left; /* Keep links readable */ }
         }
 
         /* --- VIEW: STORY HUB --- */
@@ -705,22 +739,21 @@
             stage: document.getElementById('content-stage'),
             
             home: async () => {
-                // 1. Fetch Settings & Background
                 const settings = await API.get('data/settings.json') || {};
                 UI.setBg(settings.homeBg || 'https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop');
                 
-                // 2. Fetch Story Manifest AND Author Info
                 State.manifest = await API.get('data/manifest.json');
+                // Ensure we fetch the author file. 
+                // Double check that 'data/author_info/author.json' exists!
                 const author = await API.get('data/author_info/author.json');
 
-                // Reset UI
                 UI.setBackButton(null); 
                 UI.hideWallpaperButton();
                 document.documentElement.style.setProperty('--accent-color', '#ffd700');
 
                 if(!State.manifest) { Render.stage.innerHTML = `<div style="padding:3rem;text-align:center">Error loading manifest.</div>`; return; }
                 
-                // 3. Build Story Grid HTML
+                // Story Grid
                 let html = '<div class="story-grid">';
                 State.manifest.forEach(s => {
                     html += `<div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')">
@@ -733,12 +766,15 @@
                 });
                 html += '</div>';
 
-                // 4. Build Author Section HTML (If data exists)
+                // Author Section
                 if (author) {
-                    // Generate social links
                     const linksHtml = author.links.map(link => `
-                        <a href="${link.url}" target="_blank" title="${link.name}">
+                        <a href="${link.url}" target="_blank" class="link-row">
                             <img src="${link.icon}" class="social-icon" alt="${link.name}">
+                            <div class="link-details">
+                                <span class="link-name">${link.name}</span>
+                                ${link.note ? `<span class="link-note">${link.note}</span>` : ''}
+                            </div>
                         </a>
                     `).join('');
 
@@ -746,7 +782,7 @@
                     <div class="fade-in">
                         <div class="author-section glass-box">
                             <div class="author-img-wrapper">
-                                <img src="${author.avatar}" class="author-img">
+                                <img src="${author.avatar}" class="author-img" onerror="this.style.display='none'"> 
                             </div>
                             <div class="author-info">
                                 <h2>${author.name}</h2>
@@ -759,6 +795,7 @@
 
                 Render.stage.innerHTML = html;
             },
+
 
             storyHub: async (id) => {
                 UI.setBackButton("Router.navigate('home')", "Archives");
