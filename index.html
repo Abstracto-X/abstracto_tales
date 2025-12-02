@@ -135,17 +135,99 @@
         }
         .btn-large:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 15px var(--accent-color); }
 
-        /* --- VIEW: HOME --- */
-        .story-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 2rem; padding: 1rem 0; max-width: 1300px; margin: 0 auto; width: 100%; }
-        .story-card {
-            position: relative; height: 380px; overflow: hidden; cursor: pointer;
-            transition: transform 0.4s ease, border-color 0.4s ease; display: flex; align-items: flex-end;
+        /* --- IMPROVED VIEW: HOME --- */
+        .story-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); /* Slightly wider */
+            gap: 2.5rem;
+            padding: 2rem 0;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            perspective: 1000px; /* Preps for 3D effects */
         }
-        .story-card:hover { transform: translateY(-5px); border-color: var(--accent-color); }
-        .story-card img { position: absolute; top:0; left:0; width:100%; height:100%; object-fit: cover; z-index: -1; transition: transform 0.6s ease; }
-        .story-card:hover img { transform: scale(1.1); }
-        .card-info { width: 100%; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%); padding: 1.5rem; }
-        .card-title { font-family: var(--font-header); font-size: 1.2rem; color: var(--accent-color); margin-bottom: 0.3rem;}
+
+        .story-card {
+            position: relative;
+            height: 450px; /* Taller, more poster-like */
+            border-radius: 16px; /* Softer corners */
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* Deep shadow */
+            border: 1px solid rgba(255,255,255,0.1);
+            background: #000;
+        }
+
+        /* The Image */
+        .story-card img {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            object-fit: cover;
+            transition: transform 0.7s ease, filter 0.5s ease;
+            opacity: 0.8;
+        }
+
+        /* The Content Box */
+        .card-info {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%;
+            padding: 2rem;
+            background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.8) 40%, transparent 100%);
+            transform: translateY(20px); /* Push text down slightly */
+            transition: transform 0.5s ease;
+            z-index: 2;
+        }
+
+        /* Title Styling */
+        .card-title {
+            font-family: var(--font-header);
+            font-size: 1.6rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            transition: color 0.3s;
+            line-height: 1.1;
+        }
+
+        /* Description - Hidden by default, fades in */
+        .card-desc {
+            font-size: 0.9rem;
+            color: #ccc;
+            line-height: 1.5;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease 0.1s;
+            max-height: 0; /* Collapse space */
+        }
+
+        /* --- HOVER EFFECTS --- */
+        .story-card:hover {
+            transform: translateY(-10px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(255, 215, 0, 0.2); /* Gold Glow */
+            border-color: var(--accent-color);
+        }
+
+        .story-card:hover img {
+            transform: scale(1.15);
+            filter: brightness(1.1); /* Brighten image slightly */
+            opacity: 1;
+        }
+
+        .story-card:hover .card-info {
+            transform: translateY(0);
+        }
+
+        .story-card:hover .card-title {
+            color: var(--accent-color);
+        }
+
+        .story-card:hover .card-desc {
+            opacity: 1;
+            transform: translateY(0);
+            max-height: 100px; /* Expand space */
+        }
+
 
 
         /* --- AUTHOR SECTION --- */
@@ -318,7 +400,7 @@
         .char-card:hover .char-info-overlay { transform: translateY(0) translateZ(30px); }
         .char-name { font-family: var(--font-header); font-size: 1.1rem; color: #fff; }
         .char-role { color: var(--accent-color); font-size: 0.7rem; text-transform: uppercase; font-weight: bold; }
-        .char-bio-preview { font-size: 0.75rem; line-height: 1.4; color: #ccc; opacity: 0; transition: opacity 0.3s 0.1s; margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .char-bio-preview { font-size: 0.75rem; line-height: 1.4; color: #ccc; opacity: 0; transition: opacity 0.3s 0.1s; margin-top: 0.5rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;; -webkit-box-orient: vertical; overflow: hidden; }
         .char-card:hover .char-bio-preview { opacity: 1; }
 
         /* Gallery Detail View */
@@ -346,7 +428,7 @@
         .lore-card-content { padding: 1.2rem; flex: 1; display: flex; flex-direction: column; border-top: 1px solid rgba(255,255,255,0.05); }
         .lore-card-content .title { font-family: var(--font-header); font-size: 1.2rem; color: #fff; margin-bottom: 0.2rem; }
         .lore-card-content .type { font-size: 0.7rem; text-transform: uppercase; color: var(--accent-color); margin-bottom: 0.5rem; letter-spacing: 1px; }
-        .lore-card-content .desc { font-size: 0.85rem; color: #bbb; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .lore-card-content .desc { font-size: 0.85rem; color: #bbb; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
         /* Lore Detail View */
         .lore-wiki-layout { max-width: 900px; margin: 0 auto; padding-bottom: 3rem; }
@@ -461,7 +543,7 @@
             .lore-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .lore-card { height: 220px; }
             .lore-card-content { padding: 0.8rem; }
-            .lore-card-content .desc { -webkit-line-clamp: 2; }
+            .lore-card-content .desc { -webkit-line-clamp: 2; line-clamp: 2; }
             
             .lore-wiki-header { height: 180px; margin-bottom: 1rem; }
             .lore-wiki-body { padding: 1.5rem; }
@@ -756,11 +838,11 @@
                 // Story Grid
                 let html = '<div class="story-grid">';
                 State.manifest.forEach(s => {
-                    html += `<div class="story-card glass-box" onclick="Router.navigate('story/${s.id}')">
+                    html += `<div class="story-card" onclick="Router.navigate('story/${s.id}')">
                         <img src="${s.cover}" loading="lazy">
                         <div class="card-info">
                             <div class="card-title">${s.title}</div>
-                            <div style="color:#ccc; font-size:0.8rem;">${s.desc}</div>
+                            <div class="card-desc">${s.desc}</div>
                         </div>
                     </div>`;
                 });

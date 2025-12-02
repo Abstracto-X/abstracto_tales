@@ -7,13 +7,7 @@
       "name": "Patreon",
       "url": "https://patreon.com/AbstractoX",
       "icon": "data/author_info/patreon.png",
-      "note": "Read 15 Chapters Ahead"
-    },
-    {
-      "name": "Royal Road",
-      "url": "https://www.royalroad.com/profile/295963/fictions",
-      "icon": "data/author_info/rr.png",
-      "note": ""
+      "note": "Read advanced chapters"
     },
     {
       "name": "Webnovel",
@@ -26,6 +20,12 @@
       "url": "https://www.scribblehub.com/profile/142369/abstracto/",
       "icon": "data/author_info/sh.png",
       "note": ""
+    },
+    {
+      "name": "Royal Road",
+      "url": "https://www.royalroad.com/profile/295963/fictions",
+      "icon": "data/author_info/rr.png",
+      "note": "Rewriting the earlier chapters"
     }
   ]
 }
