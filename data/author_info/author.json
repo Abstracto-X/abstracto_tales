@@ -1,6 +1,6 @@
 {
   "name": "Abstracto",
-  "avatar": "data/author_info/profile.jpg",
+  "avatar": "data/author_info/profile.jpeg",
   "bio": "A brief introduction about yourself. Maybe mention your writing style, what you love about fantasy/sci-fi, or a small welcome message to new readers.",
   "links": [
     { "name": "Patreon", "url": "https://patreon.com/AbstractoX", "icon": "data/author_info/patreon.png" },
