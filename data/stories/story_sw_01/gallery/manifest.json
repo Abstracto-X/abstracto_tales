@@ -284,6 +284,48 @@
                 "tags": [
                     "All"
                 ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679826453_924.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679827258_489.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679828015_983.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679828684_55.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679828885_806.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679829078_849.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679829749_431.webp",
+                "tags": [
+                    "All"
+                ]
             }
         ]
     },
@@ -322,6 +364,51 @@
                 "src": "data/stories/story_sw_01/gallery/img_1764538015372_864.webp",
                 "tags": [
                     "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679657514_839.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679658083_945.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679658215_494.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679743412_780.webp",
+                "tags": [
+                    "All"
+                ]
+            },
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764679743512_322.webp",
+                "tags": [
+                    "All"
+                ]
+            }
+        ]
+    },
+    {
+        "id": "char_1764716843215",
+        "name": "NightRider",
+        "role": "SpaceCraft",
+        "bio": "",
+        "img": "data/stories/story_sw_01/gallery/img_1764719658240_797.webp",
+        "gallery_images": [
+            {
+                "src": "data/stories/story_sw_01/gallery/img_1764719658240_797.webp",
+                "tags": [
+                    "Portrait"
                 ]
             }
         ]
