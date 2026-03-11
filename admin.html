@@ -811,7 +811,7 @@
 
             loadProfile: async () => {
                 try {
-                    let { data, error } = await supabase
+                    let { data, error } = await supabaseClient
                         .from('profiles')
                         .select('*')
                         .eq('id', State.user.id)
@@ -819,7 +819,7 @@
                     
                     // If the profile doesn't exist, automatically generate it
                     if (error && error.code === 'PGRST116') {
-                        const { data: newProf, error: insErr } = await supabase
+                        const { data: newProf, error: insErr } = await supabaseClient
                             .from('profiles')
                             .insert({ id: State.user.id, role: 'admin', display_name: 'Admin' })
                             .select().single();
@@ -1019,7 +1019,7 @@
                 // Handle category
                 if (categoryName) {
                     const catSlug = categoryName.toLowerCase().replace(/\s+/g, '-');
-                    let { data: existingCat } = await supabase
+                    let { data: existingCat } = await supabaseClient
                         .from('lore_categories')
                         .select('id')
                         .eq('story_id', storyId)
@@ -1027,7 +1027,7 @@
                         .single();
                     
                     if (!existingCat) {
-                        const { data: newCat } = await supabase
+                        const { data: newCat } = await supabaseClient
                             .from('lore_categories')
                             .insert({ story_id: storyId, name: categoryName, slug: catSlug })
                             .select()

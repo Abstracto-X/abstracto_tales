@@ -799,7 +799,7 @@
         const DB = {
             // Fetch all published stories
             getStories: async () => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('stories')
                     .select('*')
                     .eq('is_published', true)
@@ -810,7 +810,7 @@
 
             // Fetch single story by slug
             getStoryBySlug: async (slug) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('stories')
                     .select('*')
                     .eq('slug', slug)
@@ -822,7 +822,7 @@
 
             // Fetch author profile (first admin)
             getAuthorProfile: async () => {
-                const { data: profile, error: profileError } = await supabase
+                const { data: profile, error: profileError } = await supabaseClient
                     .from('profiles')
                     .select('*')
                     .eq('role', 'admin')
@@ -831,7 +831,7 @@
                 
                 if (profileError || !profile) return null;
 
-                const { data: links, error: linksError } = await supabase
+                const { data: links, error: linksError } = await supabaseClient
                     .from('author_links')
                     .select('*')
                     .eq('profile_id', profile.id)
@@ -845,7 +845,7 @@
 
             // Fetch chapters for a story
             getChapters: async (storyId) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('chapters')
                     .select('*')
                     .eq('story_id', storyId)
@@ -857,7 +857,7 @@
 
             // Fetch characters for a story
             getCharacters: async (storyId) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('characters')
                     .select('*')
                     .eq('story_id', storyId)
@@ -868,7 +868,7 @@
 
             // Fetch gallery images for a character
             getCharacterGallery: async (characterId) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('character_gallery_images')
                     .select('*')
                     .eq('character_id', characterId)
@@ -879,7 +879,7 @@
 
             // Fetch wallpapers for a story
             getWallpapers: async (storyId) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('story_wallpapers')
                     .select('*')
                     .eq('story_id', storyId)
@@ -890,7 +890,7 @@
 
             // Fetch lore entries with categories
             getLoreEntries: async (storyId) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('lore_entries')
                     .select(`
                         *,
@@ -908,7 +908,7 @@
 
             // Fetch single lore entry
             getLoreEntry: async (storyId, loreSlug) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('lore_entries')
                     .select(`
                         *,
@@ -927,7 +927,7 @@
 
             // Fetch timeline events with characters
             getTimelineEvents: async (storyId) => {
-                const { data: events, error } = await supabase
+                const { data: events, error } = await supabaseClient
                     .from('timeline_events')
                     .select('*')
                     .eq('story_id', storyId)
@@ -937,7 +937,7 @@
 
                 // Fetch character links for each event
                 for (let event of events) {
-                    const { data: charLinks } = await supabase
+                    const { data: charLinks } = await supabaseClient
                         .from('timeline_event_characters')
                         .select(`
                             character_id,
@@ -958,7 +958,7 @@
 
             // Fetch maps for a story
             getMaps: async (storyId) => {
-                const { data, error } = await supabase
+                const { data, error } = await supabaseClient
                     .from('maps')
                     .select('*')
                     .eq('story_id', storyId)
