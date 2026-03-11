@@ -3,7 +3,7 @@
 <head>
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-PQ7CENWKXE"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
+      window.dataLayer = window.dataLayer || []; 
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
       gtag('config', 'G-PQ7CENWKXE');
@@ -560,7 +560,7 @@
         const SUPABASE_URL = 'https://gdivyqfhgashkqcqqnas.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkaXZ5cWZoZ2FzaGtxY3FxbmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTg1MDAsImV4cCI6MjA2NTM5NDUwMH0.sb_publishable_pumorCjNkGt1RV_Ygfq30A_IFtVz_Lt';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ==============================================
         // PARTICLES ENGINE
