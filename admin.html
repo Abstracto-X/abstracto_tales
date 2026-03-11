@@ -718,7 +718,7 @@
         const SUPABASE_URL = 'https://gdivyqfhgashkqcqqnas.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkaXZ5cWZoZ2FzaGtxY3FxbmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTg1MDAsImV4cCI6MjA2NTM5NDUwMH0.sb_publishable_pumorCjNkGt1RV_Ygfq30A_IFtVz_Lt';
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // ==============================================
         // STATE
@@ -788,7 +788,7 @@
         // ==============================================
         const Auth = {
             init: async () => {
-                const { data: { session } } = await supabase.auth.getSession();
+                const { data: { session } } = await supabaseClient.auth.getSession();
                 
                 if (session) {
                     State.user = session.user;
@@ -797,7 +797,7 @@
                     Auth.showLoginView();
                 }
 
-                supabase.auth.onAuthStateChange(async (event, session) => {
+                supabaseClient.auth.onAuthStateChange(async (event, session) => {
                     if (event === 'SIGNED_IN' && session) {
                         State.user = session.user;
                         await Auth.loadProfile();
@@ -861,7 +861,7 @@
 
             login: async (email, password) => {
                 UI.showLoading();
-                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
                 UI.hideLoading();
 
                 if (error) {
@@ -872,7 +872,7 @@
             },
 
             logout: async () => {
-                await supabase.auth.signOut();
+                await supabaseClient.auth.signOut();
                 window.location.reload();
             }
         };
@@ -883,38 +883,38 @@
         const DB = {
             // Stories
             getStories: async () => {
-                const { data, error } = await supabase.from('stories').select('*').order('sort_order');
+                const { data, error } = await supabaseClient.from('stories').select('*').order('sort_order');
                 return data || [];
             },
 
             getStory: async (id) => {
-                const { data } = await supabase.from('stories').select('*').eq('id', id).single();
+                const { data } = await supabaseClient.from('stories').select('*').eq('id', id).single();
                 return data;
             },
 
             saveStory: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('stories').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('stories').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('stories').insert(record);
+                    const { error } = await supabaseClient.from('stories').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteStory: async (id) => {
-                const { error } = await supabase.from('stories').delete().eq('id', id);
+                const { error } = await supabaseClient.from('stories').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Chapters
             getChapters: async (storyId) => {
-                const { data } = await supabase.from('chapters').select('*').eq('story_id', storyId).order('chapter_order');
+                const { data } = await supabaseClient.from('chapters').select('*').eq('story_id', storyId).order('chapter_order');
                 return data || [];
             },
 
             getChapter: async (id) => {
-                const { data } = await supabase.from('chapters').select('*').eq('id', id).single();
+                const { data } = await supabaseClient.from('chapters').select('*').eq('id', id).single();
                 return data;
             },
 
@@ -923,95 +923,95 @@
                 record.word_count = record.content ? record.content.split(/\s+/).filter(w => w).length : 0;
                 
                 if (id) {
-                    const { error } = await supabase.from('chapters').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('chapters').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('chapters').insert(record);
+                    const { error } = await supabaseClient.from('chapters').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteChapter: async (id) => {
-                const { error } = await supabase.from('chapters').delete().eq('id', id);
+                const { error } = await supabaseClient.from('chapters').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Characters
             getCharacters: async (storyId) => {
-                const { data } = await supabase.from('characters').select('*').eq('story_id', storyId).order('sort_order');
+                const { data } = await supabaseClient.from('characters').select('*').eq('story_id', storyId).order('sort_order');
                 return data || [];
             },
 
             getCharacter: async (id) => {
-                const { data } = await supabase.from('characters').select('*').eq('id', id).single();
+                const { data } = await supabaseClient.from('characters').select('*').eq('id', id).single();
                 return data;
             },
 
             saveCharacter: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('characters').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('characters').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('characters').insert(record);
+                    const { error } = await supabaseClient.from('characters').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteCharacter: async (id) => {
-                const { error } = await supabase.from('characters').delete().eq('id', id);
+                const { error } = await supabaseClient.from('characters').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Gallery Images
             getGalleryImages: async (characterId) => {
-                const { data } = await supabase.from('character_gallery_images').select('*').eq('character_id', characterId).order('sort_order');
+                const { data } = await supabaseClient.from('character_gallery_images').select('*').eq('character_id', characterId).order('sort_order');
                 return data || [];
             },
 
             saveGalleryImage: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('character_gallery_images').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('character_gallery_images').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('character_gallery_images').insert(record);
+                    const { error } = await supabaseClient.from('character_gallery_images').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteGalleryImage: async (id) => {
-                const { error } = await supabase.from('character_gallery_images').delete().eq('id', id);
+                const { error } = await supabaseClient.from('character_gallery_images').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Wallpapers
             getWallpapers: async (storyId) => {
-                const { data } = await supabase.from('story_wallpapers').select('*').eq('story_id', storyId).order('sort_order');
+                const { data } = await supabaseClient.from('story_wallpapers').select('*').eq('story_id', storyId).order('sort_order');
                 return data || [];
             },
 
             saveWallpaper: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('story_wallpapers').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('story_wallpapers').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('story_wallpapers').insert(record);
+                    const { error } = await supabaseClient.from('story_wallpapers').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteWallpaper: async (id) => {
-                const { error } = await supabase.from('story_wallpapers').delete().eq('id', id);
+                const { error } = await supabaseClient.from('story_wallpapers').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Lore
             getLoreCategories: async (storyId) => {
-                const { data } = await supabase.from('lore_categories').select('*').eq('story_id', storyId).order('sort_order');
+                const { data } = await supabaseClient.from('lore_categories').select('*').eq('story_id', storyId).order('sort_order');
                 return data || [];
             },
 
             getLoreEntries: async (storyId) => {
-                const { data } = await supabase.from('lore_entries').select('*, lore_categories(*)').eq('story_id', storyId).order('sort_order');
+                const { data } = await supabaseClient.from('lore_entries').select('*, lore_categories(*)').eq('story_id', storyId).order('sort_order');
                 return data || [];
             },
 
@@ -1039,87 +1039,87 @@
                 }
 
                 if (id) {
-                    const { error } = await supabase.from('lore_entries').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('lore_entries').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('lore_entries').insert(record);
+                    const { error } = await supabaseClient.from('lore_entries').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteLoreEntry: async (id) => {
-                const { error } = await supabase.from('lore_entries').delete().eq('id', id);
+                const { error } = await supabaseClient.from('lore_entries').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Timeline
             getTimelineEvents: async (storyId) => {
-                const { data } = await supabase.from('timeline_events').select('*').eq('story_id', storyId).order('event_order');
+                const { data } = await supabaseClient.from('timeline_events').select('*').eq('story_id', storyId).order('event_order');
                 return data || [];
             },
 
             saveTimelineEvent: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('timeline_events').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('timeline_events').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('timeline_events').insert(record);
+                    const { error } = await supabaseClient.from('timeline_events').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteTimelineEvent: async (id) => {
-                const { error } = await supabase.from('timeline_events').delete().eq('id', id);
+                const { error } = await supabaseClient.from('timeline_events').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Maps
             getMaps: async (storyId) => {
-                const { data } = await supabase.from('maps').select('*').eq('story_id', storyId).order('sort_order');
+                const { data } = await supabaseClient.from('maps').select('*').eq('story_id', storyId).order('sort_order');
                 return data || [];
             },
 
             saveMap: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('maps').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('maps').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('maps').insert(record);
+                    const { error } = await supabaseClient.from('maps').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteMap: async (id) => {
-                const { error } = await supabase.from('maps').delete().eq('id', id);
+                const { error } = await supabaseClient.from('maps').delete().eq('id', id);
                 if (error) throw error;
             },
 
             // Profile & Links
             getAuthorProfile: async () => {
-                const { data: profile } = await supabase.from('profiles').select('*').eq('role', 'admin').limit(1).single();
+                const { data: profile } = await supabaseClient.from('profiles').select('*').eq('role', 'admin').limit(1).single();
                 if (!profile) return null;
                 
-                const { data: links } = await supabase.from('author_links').select('*').eq('profile_id', profile.id).order('sort_order');
+                const { data: links } = await supabaseClient.from('author_links').select('*').eq('profile_id', profile.id).order('sort_order');
                 return { ...profile, links: links || [] };
             },
 
             saveAuthorProfile: async (id, record) => {
-                const { error } = await supabase.from('profiles').update(record).eq('id', id);
+                const { error } = await supabaseClient.from('profiles').update(record).eq('id', id);
                 if (error) throw error;
             },
 
             saveAuthorLink: async (id, record) => {
                 if (id) {
-                    const { error } = await supabase.from('author_links').update(record).eq('id', id);
+                    const { error } = await supabaseClient.from('author_links').update(record).eq('id', id);
                     if (error) throw error;
                 } else {
-                    const { error } = await supabase.from('author_links').insert(record);
+                    const { error } = await supabaseClient.from('author_links').insert(record);
                     if (error) throw error;
                 }
             },
 
             deleteAuthorLink: async (id) => {
-                const { error } = await supabase.from('author_links').delete().eq('id', id);
+                const { error } = await supabaseClient.from('author_links').delete().eq('id', id);
                 if (error) throw error;
             },
 
@@ -1127,9 +1127,9 @@
             getStats: async () => {
                 const [stories, chapters, characters, lore] = await Promise.all([
                     DB.getStories(),
-                    supabase.from('chapters').select('*'),
-                    supabase.from('characters').select('*'),
-                    supabase.from('lore_entries').select('*')
+                    supabaseClient.from('chapters').select('*'),
+                    supabaseClient.from('characters').select('*'),
+                    supabaseClient.from('lore_entries').select('*')
                 ]);
                 return {
                     totalStories: stories.length,
@@ -1415,7 +1415,7 @@
                 let img = { image_url: '', caption: '', image_tags: [], character_id: State.selectedCharacterId };
                 
                 if (id) {
-                    const { data } = await supabase.from('character_gallery_images').select('*').eq('id', id).single();
+                    const { data } = await supabaseClient.from('character_gallery_images').select('*').eq('id', id).single();
                     img = data || img;
                 }
 
@@ -1488,7 +1488,7 @@
                 let wp = { image_url: '', label: '', story_id: State.selectedStoryId };
                 
                 if (id) {
-                    const { data } = await supabase.from('story_wallpapers').select('*').eq('id', id).single();
+                    const { data } = await supabaseClient.from('story_wallpapers').select('*').eq('id', id).single();
                     wp = data || wp;
                 }
 
@@ -1552,7 +1552,7 @@
                 let categoryName = '';
                 
                 if (id) {
-                    const { data } = await supabase.from('lore_entries').select('*, lore_categories(*)').eq('id', id).single();
+                    const { data } = await supabaseClient.from('lore_entries').select('*, lore_categories(*)').eq('id', id).single();
                     lore = data || lore;
                     categoryName = data?.lore_categories?.name || '';
                 }
@@ -1632,7 +1632,7 @@
                 let event = { event_date: '', title: '', description: '', event_order: 0, story_id: State.selectedStoryId };
                 
                 if (id) {
-                    const { data } = await supabase.from('timeline_events').select('*').eq('id', id).single();
+                    const { data } = await supabaseClient.from('timeline_events').select('*').eq('id', id).single();
                     event = data || event;
                 } else {
                     const events = await DB.getTimelineEvents(State.selectedStoryId);
@@ -1708,7 +1708,7 @@
                 let map = { map_name: '', image_url: '', is_primary: false, story_id: State.selectedStoryId };
                 
                 if (id) {
-                    const { data } = await supabase.from('maps').select('*').eq('id', id).single();
+                    const { data } = await supabaseClient.from('maps').select('*').eq('id', id).single();
                     map = data || map;
                 }
 
@@ -1778,7 +1778,7 @@
                 let link = { platform_name: '', url: '', icon_url: '', note: '', profile_id: profileId };
                 
                 if (id) {
-                    const { data } = await supabase.from('author_links').select('*').eq('id', id).single();
+                    const { data } = await supabaseClient.from('author_links').select('*').eq('id', id).single();
                     link = data || link;
                 }
 
@@ -2513,7 +2513,7 @@
             },
 
             editProfile: async (id) => {
-                const { data: author } = await supabase.from('profiles').select('*').eq('id', id).single();
+                const { data: author } = await supabaseClient.from('profiles').select('*').eq('id', id).single();
                 if (!author) return;
 
                 const html = `
