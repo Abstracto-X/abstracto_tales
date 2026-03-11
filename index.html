@@ -1049,6 +1049,7 @@
         const Render = {
             stage: document.getElementById('content-stage'),
             
+
             home: async () => {
                 UI.showLoading();
                 UI.setBackButton(null); 
@@ -1061,23 +1062,34 @@
                     DB.getAuthorProfile()
                 ]);
 
-                // Story Grid
                 let html = '<div class="story-grid">';
-                stories.forEach(s => {
+                
+                // ADDED: Empty State Fallback
+                if (!stories || stories.length === 0) {
                     html += `
-                        <div class="story-card" onclick="Router.navigate('story/${s.slug}')">
-                            <img src="${s.cover_image_url || ''}" loading="lazy">
-                            <div class="card-info">
-                                <div class="card-title">${s.title}</div>
-                                <div class="card-desc">${s.short_description || ''}</div>
-                            </div>
-                        </div>`;
-                });
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px dashed #555;">
+                            <h2 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 1rem;">The Archives are Empty</h2>
+                            <p style="color: #888;">No published stories were found in the database. Log into the admin panel to create or publish content.</p>
+                        </div>
+                    `;
+                } else {
+                    // Render stories if they exist
+                    stories.forEach(s => {
+                        html += `
+                            <div class="story-card" onclick="Router.navigate('story/${s.slug}')">
+                                <img src="${s.cover_image_url || ''}" loading="lazy">
+                                <div class="card-info">
+                                    <div class="card-title">${s.title}</div>
+                                    <div class="card-desc">${s.short_description || ''}</div>
+                                </div>
+                            </div>`;
+                    });
+                }
                 html += '</div>';
 
                 // Author Section
                 if (author) {
-                    const linksHtml = author.links.map(link => `
+                    const linksHtml = (author.links || []).map(link => `
                         <a href="${link.url}" target="_blank" class="link-row">
                             <img src="${link.icon_url || ''}" class="social-icon" alt="${link.platform_name}" onerror="this.style.display='none'">
                             <div class="link-details">
@@ -1104,7 +1116,6 @@
 
                 Render.stage.innerHTML = html;
             },
-
             storyHub: async (slug) => {
                 UI.showLoading();
                 UI.setBackButton("Router.navigate('home')", "Archives");
