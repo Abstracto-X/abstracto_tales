@@ -146,6 +146,50 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
+        /* --- LORE LOADING SCREEN --- */
+        #lore-loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #050505; z-index: 9000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            padding: 2rem; text-align: center;
+        }
+        
+        #lore-loading-screen.active {
+            opacity: 1; pointer-events: all;
+        }
+        
+        .stylish-spiral {
+            width: 60px; height: 60px;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+            border-radius: 50%;
+            animation: elegant-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin-bottom: 2.5rem;
+            position: relative;
+        }
+        
+        .stylish-spiral::before {
+            content: ''; position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px;
+            border: 2px solid transparent; border-left-color: #fff; border-right-color: #fff;
+            border-radius: 50%; animation: elegant-spin 1s linear infinite reverse;
+        }
+        
+        @keyframes elegant-spin { 100% { transform: rotate(360deg); } }
+        
+        .lore-loading-content { max-width: 650px; }
+        
+        #loading-lore-title { 
+            font-family: var(--font-header); color: var(--accent-color); 
+            margin-bottom: 1rem; letter-spacing: 2px; font-size: 1.4rem; 
+        }
+        
+        #loading-lore-text { 
+            font-family: var(--font-body); color: #ccc; 
+            line-height: 1.8; font-size: 1.1rem; font-style: italic; 
+        }
+
         /* --- VIEW: HOME --- */
         .story-grid {
             display: grid;
@@ -525,6 +569,14 @@
     <div class="background-layer" id="global-bg"></div>
     <canvas id="particle-canvas"></canvas>
     <div id="transition-curtain"></div>
+
+    <div id="lore-loading-screen">
+        <div class="stylish-spiral"></div>
+        <div class="lore-loading-content">
+            <h3 id="loading-lore-title">Accessing Archives...</h3>
+            <p id="loading-lore-text">Establishing connection to the Aether...</p>
+        </div>
+    </div>
 
     <div id="app-container">
         <nav id="main-header" class="glass-box">
@@ -987,6 +1039,37 @@
                     `<div class="back-btn-wrapper" onclick="window.location.href='admin.html'" title="Admin Panel">
                         <i class="fas fa-cog"></i>
                     </div>`;
+            },
+            
+            showLoreLoading: () => {
+                const screen = document.getElementById('lore-loading-screen');
+                const titleEl = document.getElementById('loading-lore-title');
+                const textEl = document.getElementById('loading-lore-text');
+
+                let availableLore = [];
+                Object.values(Cache.hubs).forEach(hub => {
+                    if (hub.lore && hub.lore.length > 0) {
+                        availableLore.push(...hub.lore);
+                    }
+                });
+
+                if (availableLore.length > 0) {
+                    const randomLore = availableLore[Math.floor(Math.random() * availableLore.length)];
+                    titleEl.textContent = randomLore.title;
+                    const truncatedText = randomLore.description.length > 250 
+                        ? randomLore.description.substring(0, 250) + '...' 
+                        : randomLore.description;
+                    textEl.textContent = `"${truncatedText}"`;
+                } else {
+                    titleEl.textContent = "Traversing the Aether...";
+                    textEl.textContent = "Gathering archival records and establishing secure connections.";
+                }
+
+                screen.classList.add('active');
+            },
+            
+            hideLoreLoading: () => {
+                document.getElementById('lore-loading-screen').classList.remove('active');
             }
         };
 
@@ -1118,7 +1201,7 @@
                     </div>`;
             },
 
-            
+
             gallery: async (slug, charId = null) => {
                 UI.showLoading();
                 
@@ -1411,12 +1494,11 @@
             getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
             
             navigate: (h) => {
-                document.body.classList.add('is-transitioning');
-                setTimeout(() => window.location.hash = h, 400); 
+                UI.showLoreLoading();
+                setTimeout(() => window.location.hash = h, 50); 
             },
             
             handle: () => {
-                // Close any open modals/overlays
                 document.getElementById('lightbox').classList.remove('active');
                 setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
                 document.getElementById('wp-modal').style.display = 'none';
@@ -1426,7 +1508,6 @@
                 const bd = document.querySelector('.sidebar-backdrop');
                 if(bd) bd.classList.remove('active');
                 
-                // Remove focus mode
                 document.body.classList.remove('focus-active');
 
                 const parts = Router.getParts();
@@ -1448,9 +1529,9 @@
                     else await Render.home();
                 })().then(() => {
                     setTimeout(() => {
-                        document.body.classList.remove('is-transitioning');
+                        UI.hideLoreLoading();
                         document.getElementById('content-stage').scrollTop = 0;
-                    }, 100);
+                    }, 400); 
                 });
             }
         };
