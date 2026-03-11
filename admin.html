@@ -1,0 +1,2572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether Archives - Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-color: #ffffff;
+            --accent-color: #ffd700;
+            --danger-color: #ff4444;
+            --success-color: #44ff88;
+            --glass-bg: rgba(15, 15, 15, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --font-header: 'Cinzel', serif;
+            --font-body: 'Lora', serif;
+            --font-ui: 'Montserrat', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            color: #e0e0e0;
+            font-family: var(--font-ui);
+            min-height: 100vh;
+        }
+
+        .admin-container { display: flex; min-height: 100vh; }
+
+        /* SIDEBAR */
+        .admin-sidebar {
+            width: 260px;
+            background: var(--glass-bg);
+            border-right: 1px solid var(--glass-border);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-logo {
+            font-family: var(--font-header);
+            font-size: 1.4rem;
+            color: var(--accent-color);
+            letter-spacing: 3px;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .sidebar-subtitle {
+            font-size: 0.7rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .nav-section { margin-bottom: 1.5rem; }
+
+        .nav-section-title {
+            font-size: 0.65rem;
+            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            padding-left: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem 1rem;
+            color: #888;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+
+        .nav-item.active {
+            background: rgba(255,215,0,0.1);
+            color: var(--accent-color);
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .nav-item i { width: 20px; text-align: center; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            padding: 0.8rem;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .user-name { font-size: 0.85rem; color: #fff; }
+        .user-role { font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; }
+
+        /* MAIN CONTENT */
+        .admin-main {
+            flex: 1;
+            margin-left: 260px;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .page-title {
+            font-family: var(--font-header);
+            font-size: 1.8rem;
+            color: #fff;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 0.85rem;
+            margin-top: 0.3rem;
+        }
+
+        /* BUTTONS */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary { background: var(--accent-color); color: #000; }
+        .btn-primary:hover { box-shadow: 0 0 15px var(--accent-color); transform: translateY(-2px); }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid var(--glass-border);
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+
+        .btn-danger {
+            background: rgba(255, 68, 68, 0.2);
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+        }
+        .btn-danger:hover { background: var(--danger-color); color: #fff; }
+
+        .btn-sm { padding: 0.4rem 0.8rem; font-size: 0.75rem; }
+
+        /* CARDS & TABLES */
+        .glass-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .card-title {
+            font-family: var(--font-header);
+            font-size: 1.1rem;
+            color: var(--accent-color);
+        }
+
+        .data-table { width: 100%; border-collapse: collapse; }
+
+        .data-table th, .data-table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .data-table th {
+            color: #888;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .data-table tr:hover { background: rgba(255,255,255,0.02); }
+
+        .data-table img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .status-badge {
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .status-published { background: rgba(68, 255, 136, 0.2); color: var(--success-color); }
+        .status-draft { background: rgba(255, 215, 0, 0.2); color: var(--accent-color); }
+
+        .action-btns { display: flex; gap: 0.5rem; }
+
+        /* FORMS */
+        .form-group { margin-bottom: 1.5rem; }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #aaa;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            color: #fff;
+            font-family: var(--font-ui);
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .form-textarea { min-height: 150px; resize: vertical; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        .form-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .form-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--accent-color);
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal-content {
+            background: #1a1a1a;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 700px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            position: sticky;
+            top: 0;
+            background: #1a1a1a;
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-family: var(--font-header);
+            font-size: 1.3rem;
+            color: var(--accent-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover { color: var(--danger-color); }
+
+        .modal-body { padding: 1.5rem; }
+
+        .modal-footer {
+            padding: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            position: sticky;
+            bottom: 0;
+            background: #1a1a1a;
+        }
+
+        /* STATS GRID */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            line-height: 1;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            margin-top: 0.5rem;
+        }
+
+        /* LOGIN */
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .login-box {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-logo {
+            font-family: var(--font-header);
+            font-size: 2rem;
+            color: var(--accent-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .login-subtitle {
+            color: #666;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+        }
+
+        .login-box .form-group { text-align: left; }
+
+        .login-error {
+            background: rgba(255,68,68,0.1);
+            border: 1px solid var(--danger-color);
+            color: var(--danger-color);
+            padding: 0.8rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            display: none;
+        }
+
+        /* TOAST */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #1a1a1a;
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            z-index: 2000;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { border-color: var(--success-color); }
+        .toast.success i { color: var(--success-color); }
+        .toast.error { border-color: var(--danger-color); }
+        .toast.error i { color: var(--danger-color); }
+
+        /* LOADING */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 3000;
+        }
+
+        .loading-overlay.active { display: flex; }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,215,0,0.2);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* IMAGE GRID */
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .image-grid-item {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .image-grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-grid-item .overlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .image-grid-item:hover .overlay { opacity: 1; }
+
+        /* TAG INPUT */
+        .tag-input-wrapper {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            min-height: 45px;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--accent-color);
+            color: #000;
+            padding: 0.3rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .tag-chip button {
+            background: none;
+            border: none;
+            color: #000;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .tag-input {
+            flex: 1;
+            min-width: 100px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+                z-index: 100;
+            }
+            .admin-sidebar.active { transform: translateX(0); }
+            .admin-main { margin-left: 0; }
+            .form-row { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- TOAST -->
+    <div class="toast" id="toast">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">Success!</span>
+    </div>
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-logo">AETHER</div>
+                <div class="login-subtitle">Admin Panel</div>
+                <div class="login-error" id="login-error"></div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top:1rem;">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+                <div style="margin-top:1.5rem">
+                    <a href="index.html" style="color:#666; font-size:0.8rem; text-decoration:none;">
+                        <i class="fas fa-arrow-left"></i> Back to Reader
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN VIEW -->
+    <div id="admin-view" style="display:none;">
+        <div class="admin-container">
+            <!-- SIDEBAR -->
+            <aside class="admin-sidebar" id="admin-sidebar">
+                <div class="sidebar-logo">AETHER</div>
+                <div class="sidebar-subtitle">Admin Panel</div>
+
+                <nav>
+                    <div class="nav-section">
+                        <div class="nav-section-title">Overview</div>
+                        <div class="nav-item active" data-view="dashboard">
+                            <i class="fas fa-home"></i> Dashboard
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Content</div>
+                        <div class="nav-item" data-view="stories">
+                            <i class="fas fa-book"></i> Stories
+                        </div>
+                        <div class="nav-item" data-view="chapters">
+                            <i class="fas fa-file-alt"></i> Chapters
+                        </div>
+                        <div class="nav-item" data-view="characters">
+                            <i class="fas fa-users"></i> Characters
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">World Building</div>
+                        <div class="nav-item" data-view="lore">
+                            <i class="fas fa-scroll"></i> Lore
+                        </div>
+                        <div class="nav-item" data-view="timeline">
+                            <i class="fas fa-stream"></i> Timeline
+                        </div>
+                        <div class="nav-item" data-view="maps">
+                            <i class="fas fa-map"></i> Maps
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Media</div>
+                        <div class="nav-item" data-view="gallery">
+                            <i class="fas fa-images"></i> Gallery
+                        </div>
+                        <div class="nav-item" data-view="wallpapers">
+                            <i class="fas fa-paint-brush"></i> Wallpapers
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
+                        <div class="nav-section-title">Settings</div>
+                        <div class="nav-item" data-view="profile">
+                            <i class="fas fa-user-edit"></i> Author Profile
+                        </div>
+                    </div>
+                </nav>
+
+                <div class="sidebar-footer">
+                    <div class="user-info">
+                        <div class="user-avatar" id="user-avatar">A</div>
+                        <div>
+                            <div class="user-name" id="user-name">Admin</div>
+                            <div class="user-role">Administrator</div>
+                        </div>
+                    </div>
+                    <div class="nav-item" onclick="Auth.logout()">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </div>
+                    <div class="nav-item" onclick="window.location.href='index.html'">
+                        <i class="fas fa-eye"></i> View Site
+                    </div>
+                </div>
+            </aside>
+
+            <!-- MAIN CONTENT -->
+            <main class="admin-main" id="admin-content">
+                <!-- Content rendered by JS -->
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target === this) Modal.close()">
+        <div class="modal-content" id="modal-content">
+            <!-- Modal content rendered by JS -->
+        </div>
+    </div>
+
+    <!-- SUPABASE SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <script>
+        // ==============================================
+        // SUPABASE CLIENT
+        // ==============================================
+        const SUPABASE_URL = 'https://gdivyqfhgashkqcqqnas.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdkaXZ5cWZoZ2FzaGtxY3FxbmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk4MTg1MDAsImV4cCI6MjA2NTM5NDUwMH0.sb_publishable_pumorCjNkGt1RV_Ygfq30A_IFtVz_Lt';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // ==============================================
+        // STATE
+        // ==============================================
+        const State = {
+            user: null,
+            profile: null,
+            currentView: 'dashboard',
+            stories: [],
+            characters: [],
+            selectedStoryId: null,
+            selectedCharacterId: null
+        };
+
+        // ==============================================
+        // UI HELPERS
+        // ==============================================
+        const UI = {
+            showLoading: () => document.getElementById('loading-overlay').classList.add('active'),
+            hideLoading: () => document.getElementById('loading-overlay').classList.remove('active'),
+            
+            showToast: (message, type = 'success') => {
+                const toast = document.getElementById('toast');
+                const toastMsg = document.getElementById('toast-message');
+                toast.className = `toast ${type}`;
+                toastMsg.textContent = message;
+                toast.querySelector('i').className = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3000);
+            }
+        };
+
+        // ==============================================
+        // MODAL SYSTEM
+        // ==============================================
+        const Modal = {
+            open: (title, bodyHtml, footerHtml = '') => {
+                const modal = document.getElementById('modal-content');
+                modal.innerHTML = `
+                    <div class="modal-header">
+                        <h3 class="modal-title">${title}</h3>
+                        <button class="modal-close" onclick="Modal.close()">&times;</button>
+                    </div>
+                    <div class="modal-body">${bodyHtml}</div>
+                    ${footerHtml ? `<div class="modal-footer">${footerHtml}</div>` : ''}
+                `;
+                document.getElementById('modal-overlay').classList.add('active');
+            },
+
+            close: () => {
+                document.getElementById('modal-overlay').classList.remove('active');
+            },
+
+            confirm: (message) => {
+                return new Promise((resolve) => {
+                    Modal.open('Confirm', `<p style="margin-bottom:1rem">${message}</p>`, `
+                        <button class="btn btn-secondary" onclick="Modal.close(); window._confirmResolve(false)">Cancel</button>
+                        <button class="btn btn-danger" onclick="Modal.close(); window._confirmResolve(true)">Delete</button>
+                    `);
+                    window._confirmResolve = resolve;
+                });
+            }
+        };
+
+        // ==============================================
+        // AUTH
+        // ==============================================
+        const Auth = {
+            init: async () => {
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (session) {
+                    State.user = session.user;
+                    await Auth.loadProfile();
+                } else {
+                    Auth.showLoginView();
+                }
+
+                supabase.auth.onAuthStateChange(async (event, session) => {
+                    if (event === 'SIGNED_IN' && session) {
+                        State.user = session.user;
+                        await Auth.loadProfile();
+                    } else if (event === 'SIGNED_OUT') {
+                        State.user = null;
+                        State.profile = null;
+                        Auth.showLoginView();
+                    }
+                });
+            },
+
+            loadProfile: async () => {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', State.user.id)
+                    .single();
+                
+                if (error || !data) {
+                    UI.showToast('Profile not found.', 'error');
+                    Auth.logout();
+                    return;
+                }
+
+                if (data.role !== 'admin') {
+                    UI.showToast('Access denied. Admin privileges required.', 'error');
+                    Auth.logout();
+                    return;
+                }
+
+                State.profile = data;
+                document.getElementById('user-name').textContent = data.display_name || 'Admin';
+                document.getElementById('user-avatar').textContent = (data.display_name || 'A')[0].toUpperCase();
+                Auth.showAdminView();
+            },
+
+            showLoginView: () => {
+                document.getElementById('login-view').style.display = 'block';
+                document.getElementById('admin-view').style.display = 'none';
+            },
+
+            showAdminView: () => {
+                document.getElementById('login-view').style.display = 'none';
+                document.getElementById('admin-view').style.display = 'block';
+                Views.render('dashboard');
+            },
+
+            login: async (email, password) => {
+                UI.showLoading();
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                UI.hideLoading();
+
+                if (error) {
+                    document.getElementById('login-error').textContent = error.message;
+                    document.getElementById('login-error').style.display = 'block';
+                    return;
+                }
+            },
+
+            logout: async () => {
+                await supabase.auth.signOut();
+                window.location.reload();
+            }
+        };
+
+        // ==============================================
+        // DATABASE
+        // ==============================================
+        const DB = {
+            // Stories
+            getStories: async () => {
+                const { data, error } = await supabase.from('stories').select('*').order('sort_order');
+                return data || [];
+            },
+
+            getStory: async (id) => {
+                const { data } = await supabase.from('stories').select('*').eq('id', id).single();
+                return data;
+            },
+
+            saveStory: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('stories').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('stories').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteStory: async (id) => {
+                const { error } = await supabase.from('stories').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Chapters
+            getChapters: async (storyId) => {
+                const { data } = await supabase.from('chapters').select('*').eq('story_id', storyId).order('chapter_order');
+                return data || [];
+            },
+
+            getChapter: async (id) => {
+                const { data } = await supabase.from('chapters').select('*').eq('id', id).single();
+                return data;
+            },
+
+            saveChapter: async (id, record) => {
+                // Calculate word count
+                record.word_count = record.content ? record.content.split(/\s+/).filter(w => w).length : 0;
+                
+                if (id) {
+                    const { error } = await supabase.from('chapters').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('chapters').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteChapter: async (id) => {
+                const { error } = await supabase.from('chapters').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Characters
+            getCharacters: async (storyId) => {
+                const { data } = await supabase.from('characters').select('*').eq('story_id', storyId).order('sort_order');
+                return data || [];
+            },
+
+            getCharacter: async (id) => {
+                const { data } = await supabase.from('characters').select('*').eq('id', id).single();
+                return data;
+            },
+
+            saveCharacter: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('characters').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('characters').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteCharacter: async (id) => {
+                const { error } = await supabase.from('characters').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Gallery Images
+            getGalleryImages: async (characterId) => {
+                const { data } = await supabase.from('character_gallery_images').select('*').eq('character_id', characterId).order('sort_order');
+                return data || [];
+            },
+
+            saveGalleryImage: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('character_gallery_images').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('character_gallery_images').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteGalleryImage: async (id) => {
+                const { error } = await supabase.from('character_gallery_images').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Wallpapers
+            getWallpapers: async (storyId) => {
+                const { data } = await supabase.from('story_wallpapers').select('*').eq('story_id', storyId).order('sort_order');
+                return data || [];
+            },
+
+            saveWallpaper: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('story_wallpapers').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('story_wallpapers').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteWallpaper: async (id) => {
+                const { error } = await supabase.from('story_wallpapers').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Lore
+            getLoreCategories: async (storyId) => {
+                const { data } = await supabase.from('lore_categories').select('*').eq('story_id', storyId).order('sort_order');
+                return data || [];
+            },
+
+            getLoreEntries: async (storyId) => {
+                const { data } = await supabase.from('lore_entries').select('*, lore_categories(*)').eq('story_id', storyId).order('sort_order');
+                return data || [];
+            },
+
+            saveLoreEntry: async (id, record, categoryName, storyId) => {
+                // Handle category
+                if (categoryName) {
+                    const catSlug = categoryName.toLowerCase().replace(/\s+/g, '-');
+                    let { data: existingCat } = await supabase
+                        .from('lore_categories')
+                        .select('id')
+                        .eq('story_id', storyId)
+                        .eq('slug', catSlug)
+                        .single();
+                    
+                    if (!existingCat) {
+                        const { data: newCat } = await supabase
+                            .from('lore_categories')
+                            .insert({ story_id: storyId, name: categoryName, slug: catSlug })
+                            .select()
+                            .single();
+                        existingCat = newCat;
+                    }
+                    
+                    record.category_id = existingCat?.id || null;
+                }
+
+                if (id) {
+                    const { error } = await supabase.from('lore_entries').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('lore_entries').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteLoreEntry: async (id) => {
+                const { error } = await supabase.from('lore_entries').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Timeline
+            getTimelineEvents: async (storyId) => {
+                const { data } = await supabase.from('timeline_events').select('*').eq('story_id', storyId).order('event_order');
+                return data || [];
+            },
+
+            saveTimelineEvent: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('timeline_events').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('timeline_events').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteTimelineEvent: async (id) => {
+                const { error } = await supabase.from('timeline_events').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Maps
+            getMaps: async (storyId) => {
+                const { data } = await supabase.from('maps').select('*').eq('story_id', storyId).order('sort_order');
+                return data || [];
+            },
+
+            saveMap: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('maps').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('maps').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteMap: async (id) => {
+                const { error } = await supabase.from('maps').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Profile & Links
+            getAuthorProfile: async () => {
+                const { data: profile } = await supabase.from('profiles').select('*').eq('role', 'admin').limit(1).single();
+                if (!profile) return null;
+                
+                const { data: links } = await supabase.from('author_links').select('*').eq('profile_id', profile.id).order('sort_order');
+                return { ...profile, links: links || [] };
+            },
+
+            saveAuthorProfile: async (id, record) => {
+                const { error } = await supabase.from('profiles').update(record).eq('id', id);
+                if (error) throw error;
+            },
+
+            saveAuthorLink: async (id, record) => {
+                if (id) {
+                    const { error } = await supabase.from('author_links').update(record).eq('id', id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await supabase.from('author_links').insert(record);
+                    if (error) throw error;
+                }
+            },
+
+            deleteAuthorLink: async (id) => {
+                const { error } = await supabase.from('author_links').delete().eq('id', id);
+                if (error) throw error;
+            },
+
+            // Stats
+            getStats: async () => {
+                const [stories, chapters, characters, lore] = await Promise.all([
+                    DB.getStories(),
+                    supabase.from('chapters').select('*'),
+                    supabase.from('characters').select('*'),
+                    supabase.from('lore_entries').select('*')
+                ]);
+                return {
+                    totalStories: stories.length,
+                    totalChapters: chapters.data?.length || 0,
+                    totalCharacters: characters.data?.length || 0,
+                    totalLore: lore.data?.length || 0
+                };
+            }
+        };
+
+        // ==============================================
+        // FORMS (CRUD Modals)
+        // ==============================================
+        const Forms = {
+            // STORY FORM
+            storyForm: async (id = null) => {
+                let story = { title: '', slug: '', short_description: '', synopsis: '', genre: '', status: '', cover_image_url: '', background_image_url: '', theme_color: '#ffd700', world_title: '', is_published: false };
+                
+                if (id) {
+                    story = await DB.getStory(id) || story;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        <input type="text" class="form-input" id="f-title" value="${story.title || ''}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Slug (URL-friendly ID) *</label>
+                        <input type="text" class="form-input" id="f-slug" value="${story.slug || ''}" placeholder="e.g., my-story-name">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Genre</label>
+                            <input type="text" class="form-input" id="f-genre" value="${story.genre || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <input type="text" class="form-input" id="f-status" value="${story.status || ''}" placeholder="e.g., Ongoing, Complete">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Short Description</label>
+                        <input type="text" class="form-input" id="f-short_description" value="${story.short_description || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Synopsis</label>
+                        <textarea class="form-textarea" id="f-synopsis">${story.synopsis || ''}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Cover Image URL</label>
+                            <input type="text" class="form-input" id="f-cover_image_url" value="${story.cover_image_url || ''}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Background Image URL</label>
+                            <input type="text" class="form-input" id="f-background_image_url" value="${story.background_image_url || ''}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Theme Color</label>
+                            <input type="color" class="form-input" id="f-theme_color" value="${story.theme_color || '#ffd700'}" style="height:45px">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">World Title (for encyclopedia)</label>
+                            <input type="text" class="form-input" id="f-world_title" value="${story.world_title || ''}">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="f-is_published" ${story.is_published ? 'checked' : ''}>
+                            Published
+                        </label>
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteStory(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveStory('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Story' : 'Add Story', html, footer);
+            },
+
+            saveStory: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        title: document.getElementById('f-title').value,
+                        slug: document.getElementById('f-slug').value || document.getElementById('f-title').value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                        short_description: document.getElementById('f-short_description').value,
+                        synopsis: document.getElementById('f-synopsis').value,
+                        genre: document.getElementById('f-genre').value,
+                        status: document.getElementById('f-status').value,
+                        cover_image_url: document.getElementById('f-cover_image_url').value,
+                        background_image_url: document.getElementById('f-background_image_url').value,
+                        theme_color: document.getElementById('f-theme_color').value,
+                        world_title: document.getElementById('f-world_title').value,
+                        is_published: document.getElementById('f-is_published').checked
+                    };
+                    await DB.saveStory(id || null, record);
+                    Modal.close();
+                    UI.showToast('Story saved!');
+                    Views.render('stories');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteStory: async (id) => {
+                if (await Modal.confirm('Delete this story and all its content?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteStory(id);
+                        UI.showToast('Story deleted!');
+                        Views.render('stories');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // CHAPTER FORM
+            chapterForm: async (id = null) => {
+                let chapter = { title: '', content: '', chapter_order: 0, is_published: false, story_id: State.selectedStoryId };
+                
+                if (id) {
+                    chapter = await DB.getChapter(id) || chapter;
+                } else {
+                    // Get next order number
+                    const chapters = await DB.getChapters(State.selectedStoryId);
+                    chapter.chapter_order = chapters.length;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Chapter Title *</label>
+                        <input type="text" class="form-input" id="f-title" value="${chapter.title || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Content *</label>
+                        <textarea class="form-textarea" id="f-content" style="min-height:300px">${chapter.content || ''}</textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Chapter Order</label>
+                            <input type="number" class="form-input" id="f-chapter_order" value="${chapter.chapter_order || 0}" min="0">
+                        </div>
+                        <div class="form-group" style="display:flex; align-items:flex-end;">
+                            <label class="form-checkbox">
+                                <input type="checkbox" id="f-is_published" ${chapter.is_published ? 'checked' : ''}>
+                                Published
+                            </label>
+                        </div>
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteChapter(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveChapter('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Chapter' : 'Add Chapter', html, footer);
+            },
+
+            saveChapter: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        story_id: State.selectedStoryId,
+                        title: document.getElementById('f-title').value,
+                        content: document.getElementById('f-content').value,
+                        chapter_order: parseInt(document.getElementById('f-chapter_order').value) || 0,
+                        is_published: document.getElementById('f-is_published').checked
+                    };
+                    await DB.saveChapter(id || null, record);
+                    Modal.close();
+                    UI.showToast('Chapter saved!');
+                    Views.render('chapters');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteChapter: async (id) => {
+                if (await Modal.confirm('Delete this chapter?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteChapter(id);
+                        UI.showToast('Chapter deleted!');
+                        Views.render('chapters');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // CHARACTER FORM
+            characterForm: async (id = null) => {
+                let character = { name: '', role_title: '', biography: '', profile_image_url: '', story_id: State.selectedStoryId };
+                
+                if (id) {
+                    character = await DB.getCharacter(id) || character;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Name *</label>
+                        <input type="text" class="form-input" id="f-name" value="${character.name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Role/Title</label>
+                        <input type="text" class="form-input" id="f-role_title" value="${character.role_title || ''}" placeholder="e.g., Protagonist, Villain">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Biography</label>
+                        <textarea class="form-textarea" id="f-biography">${character.biography || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Profile Image URL</label>
+                        <input type="text" class="form-input" id="f-profile_image_url" value="${character.profile_image_url || ''}">
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteCharacter(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveCharacter('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Character' : 'Add Character', html, footer);
+            },
+
+            saveCharacter: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        story_id: State.selectedStoryId,
+                        name: document.getElementById('f-name').value,
+                        role_title: document.getElementById('f-role_title').value,
+                        biography: document.getElementById('f-biography').value,
+                        profile_image_url: document.getElementById('f-profile_image_url').value
+                    };
+                    await DB.saveCharacter(id || null, record);
+                    Modal.close();
+                    UI.showToast('Character saved!');
+                    Views.render('characters');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteCharacter: async (id) => {
+                if (await Modal.confirm('Delete this character and all their gallery images?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteCharacter(id);
+                        UI.showToast('Character deleted!');
+                        Views.render('characters');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // GALLERY IMAGE FORM
+            galleryImageForm: async (id = null) => {
+                let img = { image_url: '', caption: '', image_tags: [], character_id: State.selectedCharacterId };
+                
+                if (id) {
+                    const { data } = await supabase.from('character_gallery_images').select('*').eq('id', id).single();
+                    img = data || img;
+                }
+
+                const tagsStr = (img.image_tags || []).join(', ');
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Image URL *</label>
+                        <input type="text" class="form-input" id="f-image_url" value="${img.image_url || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Caption</label>
+                        <input type="text" class="form-input" id="f-caption" value="${img.caption || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tags (comma-separated)</label>
+                        <input type="text" class="form-input" id="f-image_tags" value="${tagsStr}" placeholder="e.g., portrait, action, casual">
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteGalleryImage(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveGalleryImage('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Image' : 'Add Image', html, footer);
+            },
+
+            saveGalleryImage: async (id) => {
+                try {
+                    UI.showLoading();
+                    const tagsInput = document.getElementById('f-image_tags').value;
+                    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
+                    
+                    const record = {
+                        character_id: State.selectedCharacterId,
+                        image_url: document.getElementById('f-image_url').value,
+                        caption: document.getElementById('f-caption').value,
+                        image_tags: tags
+                    };
+                    await DB.saveGalleryImage(id || null, record);
+                    Modal.close();
+                    UI.showToast('Image saved!');
+                    Views.render('gallery');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteGalleryImage: async (id) => {
+                if (await Modal.confirm('Delete this image?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteGalleryImage(id);
+                        UI.showToast('Image deleted!');
+                        Views.render('gallery');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // WALLPAPER FORM
+            wallpaperForm: async (id = null) => {
+                let wp = { image_url: '', label: '', story_id: State.selectedStoryId };
+                
+                if (id) {
+                    const { data } = await supabase.from('story_wallpapers').select('*').eq('id', id).single();
+                    wp = data || wp;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Image URL *</label>
+                        <input type="text" class="form-input" id="f-image_url" value="${wp.image_url || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Label</label>
+                        <input type="text" class="form-input" id="f-label" value="${wp.label || ''}">
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteWallpaper(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveWallpaper('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Wallpaper' : 'Add Wallpaper', html, footer);
+            },
+
+            saveWallpaper: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        story_id: State.selectedStoryId,
+                        image_url: document.getElementById('f-image_url').value,
+                        label: document.getElementById('f-label').value
+                    };
+                    await DB.saveWallpaper(id || null, record);
+                    Modal.close();
+                    UI.showToast('Wallpaper saved!');
+                    Views.render('wallpapers');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteWallpaper: async (id) => {
+                if (await Modal.confirm('Delete this wallpaper?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteWallpaper(id);
+                        UI.showToast('Wallpaper deleted!');
+                        Views.render('wallpapers');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // LORE ENTRY FORM
+            loreForm: async (id = null) => {
+                let lore = { title: '', slug: '', description: '', image_url: '', story_id: State.selectedStoryId };
+                let categoryName = '';
+                
+                if (id) {
+                    const { data } = await supabase.from('lore_entries').select('*, lore_categories(*)').eq('id', id).single();
+                    lore = data || lore;
+                    categoryName = data?.lore_categories?.name || '';
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        <input type="text" class="form-input" id="f-title" value="${lore.title || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Slug</label>
+                        <input type="text" class="form-input" id="f-slug" value="${lore.slug || ''}" placeholder="Auto-generated from title if empty">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <input type="text" class="form-input" id="f-category" value="${categoryName}" placeholder="e.g., Location, Faction, Magic System">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" id="f-description" style="min-height:200px">${lore.description || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Image URL</label>
+                        <input type="text" class="form-input" id="f-image_url" value="${lore.image_url || ''}">
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteLoreEntry(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveLoreEntry('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Lore Entry' : 'Add Lore Entry', html, footer);
+            },
+
+            saveLoreEntry: async (id) => {
+                try {
+                    UI.showLoading();
+                    const title = document.getElementById('f-title').value;
+                    const record = {
+                        story_id: State.selectedStoryId,
+                        title: title,
+                        slug: document.getElementById('f-slug').value || title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+                        description: document.getElementById('f-description').value,
+                        image_url: document.getElementById('f-image_url').value
+                    };
+                    const categoryName = document.getElementById('f-category').value;
+                    await DB.saveLoreEntry(id || null, record, categoryName, State.selectedStoryId);
+                    Modal.close();
+                    UI.showToast('Lore entry saved!');
+                    Views.render('lore');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteLoreEntry: async (id) => {
+                if (await Modal.confirm('Delete this lore entry?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteLoreEntry(id);
+                        UI.showToast('Lore entry deleted!');
+                        Views.render('lore');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // TIMELINE EVENT FORM
+            timelineForm: async (id = null) => {
+                let event = { event_date: '', title: '', description: '', event_order: 0, story_id: State.selectedStoryId };
+                
+                if (id) {
+                    const { data } = await supabase.from('timeline_events').select('*').eq('id', id).single();
+                    event = data || event;
+                } else {
+                    const events = await DB.getTimelineEvents(State.selectedStoryId);
+                    event.event_order = events.length;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Event Date/Era *</label>
+                        <input type="text" class="form-input" id="f-event_date" value="${event.event_date || ''}" placeholder="e.g., Year 1023, The First Age">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Title *</label>
+                        <input type="text" class="form-input" id="f-title" value="${event.title || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-textarea" id="f-description">${event.description || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Display Order</label>
+                        <input type="number" class="form-input" id="f-event_order" value="${event.event_order || 0}" min="0">
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteTimelineEvent(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveTimelineEvent('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Timeline Event' : 'Add Timeline Event', html, footer);
+            },
+
+            saveTimelineEvent: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        story_id: State.selectedStoryId,
+                        event_date: document.getElementById('f-event_date').value,
+                        title: document.getElementById('f-title').value,
+                        description: document.getElementById('f-description').value,
+                        event_order: parseInt(document.getElementById('f-event_order').value) || 0
+                    };
+                    await DB.saveTimelineEvent(id || null, record);
+                    Modal.close();
+                    UI.showToast('Event saved!');
+                    Views.render('timeline');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteTimelineEvent: async (id) => {
+                if (await Modal.confirm('Delete this timeline event?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteTimelineEvent(id);
+                        UI.showToast('Event deleted!');
+                        Views.render('timeline');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // MAP FORM
+            mapForm: async (id = null) => {
+                let map = { map_name: '', image_url: '', is_primary: false, story_id: State.selectedStoryId };
+                
+                if (id) {
+                    const { data } = await supabase.from('maps').select('*').eq('id', id).single();
+                    map = data || map;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Map Name *</label>
+                        <input type="text" class="form-input" id="f-map_name" value="${map.map_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Image URL *</label>
+                        <input type="text" class="form-input" id="f-image_url" value="${map.image_url || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-checkbox">
+                            <input type="checkbox" id="f-is_primary" ${map.is_primary ? 'checked' : ''}>
+                            Primary Map (shown by default)
+                        </label>
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteMap(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveMap('${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Map' : 'Add Map', html, footer);
+            },
+
+            saveMap: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        story_id: State.selectedStoryId,
+                        map_name: document.getElementById('f-map_name').value,
+                        image_url: document.getElementById('f-image_url').value,
+                        is_primary: document.getElementById('f-is_primary').checked
+                    };
+                    await DB.saveMap(id || null, record);
+                    Modal.close();
+                    UI.showToast('Map saved!');
+                    Views.render('maps');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteMap: async (id) => {
+                if (await Modal.confirm('Delete this map?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteMap(id);
+                        UI.showToast('Map deleted!');
+                        Views.render('maps');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            },
+
+            // AUTHOR LINK FORM
+            authorLinkForm: async (profileId, id = null) => {
+                let link = { platform_name: '', url: '', icon_url: '', note: '', profile_id: profileId };
+                
+                if (id) {
+                    const { data } = await supabase.from('author_links').select('*').eq('id', id).single();
+                    link = data || link;
+                }
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Platform Name *</label>
+                        <input type="text" class="form-input" id="f-platform_name" value="${link.platform_name || ''}" placeholder="e.g., Twitter, Patreon">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">URL *</label>
+                        <input type="text" class="form-input" id="f-url" value="${link.url || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Icon URL</label>
+                        <input type="text" class="form-input" id="f-icon_url" value="${link.icon_url || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Note (subtitle)</label>
+                        <input type="text" class="form-input" id="f-note" value="${link.note || ''}" placeholder="e.g., Support my work!">
+                    </div>
+                `;
+
+                const footer = `
+                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteAuthorLink(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Forms.saveAuthorLink('${profileId}', '${id || ''}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open(id ? 'Edit Link' : 'Add Link', html, footer);
+            },
+
+            saveAuthorLink: async (profileId, id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        profile_id: profileId,
+                        platform_name: document.getElementById('f-platform_name').value,
+                        url: document.getElementById('f-url').value,
+                        icon_url: document.getElementById('f-icon_url').value,
+                        note: document.getElementById('f-note').value
+                    };
+                    await DB.saveAuthorLink(id || null, record);
+                    Modal.close();
+                    UI.showToast('Link saved!');
+                    Views.render('profile');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            deleteAuthorLink: async (id) => {
+                if (await Modal.confirm('Delete this link?')) {
+                    try {
+                        UI.showLoading();
+                        await DB.deleteAuthorLink(id);
+                        UI.showToast('Link deleted!');
+                        Views.render('profile');
+                    } catch (err) {
+                        UI.showToast(err.message, 'error');
+                    } finally {
+                        UI.hideLoading();
+                    }
+                }
+            }
+        };
+
+        // ==============================================
+        // VIEWS
+        // ==============================================
+        const Views = {
+            render: async (viewName) => {
+                State.currentView = viewName;
+                
+                document.querySelectorAll('.nav-item').forEach(item => {
+                    item.classList.toggle('active', item.dataset.view === viewName);
+                });
+
+                UI.showLoading();
+                const content = document.getElementById('admin-content');
+                
+                try {
+                    switch(viewName) {
+                        case 'dashboard': await Views.dashboard(content); break;
+                        case 'stories': await Views.stories(content); break;
+                        case 'chapters': await Views.chapters(content); break;
+                        case 'characters': await Views.characters(content); break;
+                        case 'gallery': await Views.gallery(content); break;
+                        case 'wallpapers': await Views.wallpapers(content); break;
+                        case 'lore': await Views.lore(content); break;
+                        case 'timeline': await Views.timeline(content); break;
+                        case 'maps': await Views.maps(content); break;
+                        case 'profile': await Views.profile(content); break;
+                        default: await Views.dashboard(content);
+                    }
+                } catch (err) {
+                    console.error('View render error:', err);
+                    content.innerHTML = `<div class="glass-card"><p>Error loading view: ${err.message}</p></div>`;
+                }
+
+                UI.hideLoading();
+            },
+
+            dashboard: async (container) => {
+                const stats = await DB.getStats();
+                const stories = await DB.getStories();
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Dashboard</h1>
+                            <p class="page-subtitle">Overview of your content</p>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalStories}</div>
+                            <div class="stat-label">Stories</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalChapters}</div>
+                            <div class="stat-label">Chapters</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalCharacters}</div>
+                            <div class="stat-label">Characters</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">${stats.totalLore}</div>
+                            <div class="stat-label">Lore Entries</div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Recent Stories</h3>
+                            <button class="btn btn-primary btn-sm" onclick="Forms.storyForm()">
+                                <i class="fas fa-plus"></i> New Story
+                            </button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cover</th>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stories.slice(0, 5).map(s => `
+                                    <tr style="cursor:pointer" onclick="Forms.storyForm('${s.id}')">
+                                        <td><img src="${s.cover_image_url || 'https://via.placeholder.com/50x50?text=?'}" alt=""></td>
+                                        <td><strong>${s.title}</strong></td>
+                                        <td><span class="status-badge ${s.is_published ? 'status-published' : 'status-draft'}">${s.is_published ? 'Published' : 'Draft'}</span></td>
+                                        <td>${new Date(s.updated_at).toLocaleDateString()}</td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center;color:#666">No stories yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            stories: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Stories</h1>
+                            <p class="page-subtitle">Manage your story collection</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.storyForm()">
+                            <i class="fas fa-plus"></i> Add Story
+                        </button>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Cover</th>
+                                    <th>Title</th>
+                                    <th>Slug</th>
+                                    <th>Genre</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${stories.map(s => `
+                                    <tr>
+                                        <td><img src="${s.cover_image_url || 'https://via.placeholder.com/50x50?text=?'}" alt=""></td>
+                                        <td><strong>${s.title}</strong></td>
+                                        <td><code style="font-size:0.8rem;color:#888">${s.slug}</code></td>
+                                        <td>${s.genre || '-'}</td>
+                                        <td><span class="status-badge ${s.is_published ? 'status-published' : 'status-draft'}">${s.is_published ? 'Published' : 'Draft'}</span></td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.storyForm('${s.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="6" style="text-align:center;color:#666">No stories yet. Click "Add Story" to create one.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            chapters: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Chapters</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story first to add chapters.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const chapters = await DB.getChapters(State.selectedStoryId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Chapters</h1>
+                            <p class="page-subtitle">Manage story chapters</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.chapterForm()">
+                            <i class="fas fa-plus"></i> Add Chapter
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <label class="form-label">Select Story</label>
+                        <select class="form-select" id="story-select" onchange="State.selectedStoryId = this.value; Views.render('chapters')">
+                            ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Title</th>
+                                    <th>Words</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${chapters.map((c, i) => `
+                                    <tr>
+                                        <td>${i + 1}</td>
+                                        <td><strong>${c.title}</strong></td>
+                                        <td>${c.word_count || 0}</td>
+                                        <td><span class="status-badge ${c.is_published ? 'status-published' : 'status-draft'}">${c.is_published ? 'Published' : 'Draft'}</span></td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.chapterForm('${c.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="5" style="text-align:center;color:#666">No chapters yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            characters: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Characters</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story first to add characters.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const characters = await DB.getCharacters(State.selectedStoryId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Characters</h1>
+                            <p class="page-subtitle">Manage character roster</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.characterForm()">
+                            <i class="fas fa-plus"></i> Add Character
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <label class="form-label">Select Story</label>
+                        <select class="form-select" onchange="State.selectedStoryId = this.value; Views.render('characters')">
+                            ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${characters.map(c => `
+                                    <tr>
+                                        <td><img src="${c.profile_image_url || 'https://via.placeholder.com/50x50?text=?'}" alt=""></td>
+                                        <td><strong>${c.name}</strong></td>
+                                        <td>${c.role_title || '-'}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.characterForm('${c.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center;color:#666">No characters yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            gallery: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Gallery</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story and characters first.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const characters = await DB.getCharacters(State.selectedStoryId);
+                State.characters = characters;
+
+                if (characters.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Gallery</h1></div></div>
+                        <div class="glass-card" style="margin-bottom:1rem">
+                            <label class="form-label">Select Story</label>
+                            <select class="form-select" onchange="State.selectedStoryId = this.value; Views.render('gallery')">
+                                ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">No characters in this story. Add characters first.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedCharacterId = State.selectedCharacterId || characters[0].id;
+                
+                // Verify selected character belongs to selected story
+                if (!characters.find(c => c.id === State.selectedCharacterId)) {
+                    State.selectedCharacterId = characters[0].id;
+                }
+
+                const images = await DB.getGalleryImages(State.selectedCharacterId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Character Gallery</h1>
+                            <p class="page-subtitle">Manage character images</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.galleryImageForm()">
+                            <i class="fas fa-plus"></i> Add Image
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <div class="form-row">
+                            <div class="form-group" style="margin-bottom:0">
+                                <label class="form-label">Select Story</label>
+                                <select class="form-select" onchange="State.selectedStoryId = this.value; State.selectedCharacterId = null; Views.render('gallery')">
+                                    ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0">
+                                <label class="form-label">Select Character</label>
+                                <select class="form-select" onchange="State.selectedCharacterId = this.value; Views.render('gallery')">
+                                    ${characters.map(c => `<option value="${c.id}" ${c.id === State.selectedCharacterId ? 'selected' : ''}>${c.name}</option>`).join('')}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title">${characters.find(c => c.id === State.selectedCharacterId)?.name || 'Character'} Gallery</h3>
+                            <span style="color:#666">${images.length} image(s)</span>
+                        </div>
+                        <div class="image-grid">
+                            ${images.map(img => `
+                                <div class="image-grid-item">
+                                    <img src="${img.image_url}" alt="">
+                                    <div class="overlay">
+                                        <button class="btn btn-secondary btn-sm" onclick="Forms.galleryImageForm('${img.id}')"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                            `).join('') || '<p style="grid-column:1/-1;text-align:center;color:#666;padding:2rem">No images yet</p>'}
+                        </div>
+                    </div>
+                `;
+            },
+
+            wallpapers: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Wallpapers</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story first.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const wallpapers = await DB.getWallpapers(State.selectedStoryId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Wallpapers</h1>
+                            <p class="page-subtitle">Background images for stories</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.wallpaperForm()">
+                            <i class="fas fa-plus"></i> Add Wallpaper
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <label class="form-label">Select Story</label>
+                        <select class="form-select" onchange="State.selectedStoryId = this.value; Views.render('wallpapers')">
+                            ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="image-grid">
+                            ${wallpapers.map(wp => `
+                                <div class="image-grid-item" style="aspect-ratio:16/9">
+                                    <img src="${wp.image_url}" alt="">
+                                    <div class="overlay">
+                                        <button class="btn btn-secondary btn-sm" onclick="Forms.wallpaperForm('${wp.id}')"><i class="fas fa-edit"></i></button>
+                                    </div>
+                                </div>
+                            `).join('') || '<p style="grid-column:1/-1;text-align:center;color:#666;padding:2rem">No wallpapers yet</p>'}
+                        </div>
+                    </div>
+                `;
+            },
+
+            lore: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Lore</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story first.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const entries = await DB.getLoreEntries(State.selectedStoryId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Lore Encyclopedia</h1>
+                            <p class="page-subtitle">World-building entries</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.loreForm()">
+                            <i class="fas fa-plus"></i> Add Entry
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <label class="form-label">Select Story</label>
+                        <select class="form-select" onchange="State.selectedStoryId = this.value; Views.render('lore')">
+                            ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Image</th>
+                                    <th>Title</th>
+                                    <th>Category</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${entries.map(e => `
+                                    <tr>
+                                        <td><img src="${e.image_url || 'https://via.placeholder.com/50x50?text=?'}" alt=""></td>
+                                        <td><strong>${e.title}</strong></td>
+                                        <td>${e.lore_categories?.name || '-'}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.loreForm('${e.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center;color:#666">No lore entries yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            timeline: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Timeline</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story first.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const events = await DB.getTimelineEvents(State.selectedStoryId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Timeline</h1>
+                            <p class="page-subtitle">Story events in chronological order</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.timelineForm()">
+                            <i class="fas fa-plus"></i> Add Event
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <label class="form-label">Select Story</label>
+                        <select class="form-select" onchange="State.selectedStoryId = this.value; Views.render('timeline')">
+                            ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Order</th>
+                                    <th>Date/Era</th>
+                                    <th>Title</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${events.map(e => `
+                                    <tr>
+                                        <td>${e.event_order}</td>
+                                        <td><strong>${e.event_date}</strong></td>
+                                        <td>${e.title}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.timelineForm('${e.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center;color:#666">No timeline events yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            maps: async (container) => {
+                const stories = await DB.getStories();
+                State.stories = stories;
+
+                if (stories.length === 0) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Maps</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Create a story first.</p></div>
+                    `;
+                    return;
+                }
+
+                State.selectedStoryId = State.selectedStoryId || stories[0].id;
+                const maps = await DB.getMaps(State.selectedStoryId);
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Maps</h1>
+                            <p class="page-subtitle">World maps and locations</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="Forms.mapForm()">
+                            <i class="fas fa-plus"></i> Add Map
+                        </button>
+                    </div>
+
+                    <div class="glass-card" style="margin-bottom:1rem">
+                        <label class="form-label">Select Story</label>
+                        <select class="form-select" onchange="State.selectedStoryId = this.value; Views.render('maps')">
+                            ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${s.title}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Preview</th>
+                                    <th>Name</th>
+                                    <th>Primary</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${maps.map(m => `
+                                    <tr>
+                                        <td><img src="${m.image_url}" alt="" style="width:80px;height:50px;object-fit:cover;border-radius:4px"></td>
+                                        <td><strong>${m.map_name}</strong></td>
+                                        <td>${m.is_primary ? '<i class="fas fa-check" style="color:var(--success-color)"></i>' : ''}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.mapForm('${m.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="4" style="text-align:center;color:#666">No maps yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            profile: async (container) => {
+                const author = await DB.getAuthorProfile();
+
+                if (!author) {
+                    container.innerHTML = `
+                        <div class="page-header"><div><h1 class="page-title">Author Profile</h1></div></div>
+                        <div class="glass-card"><p style="text-align:center;color:#666">Profile not found.</p></div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Author Profile</h1>
+                            <p class="page-subtitle">Your public author information</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Profile Information</h3>
+                            <button class="btn btn-secondary btn-sm" onclick="Views.editProfile('${author.id}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                        </div>
+                        <div style="display:flex;gap:2rem;align-items:flex-start">
+                            <img src="${author.avatar_url || 'https://via.placeholder.com/120x120?text=Avatar'}" 
+                                 style="width:120px;height:120px;border-radius:50%;object-fit:cover;border:3px solid var(--accent-color)">
+                            <div>
+                                <h2 style="font-family:var(--font-header);color:var(--accent-color);margin-bottom:0.5rem">${author.display_name || 'No name set'}</h2>
+                                <p style="color:#aaa;line-height:1.6;max-width:500px">${author.bio || 'No bio set'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header">
+                            <h3 class="card-title">Social Links</h3>
+                            <button class="btn btn-primary btn-sm" onclick="Forms.authorLinkForm('${author.id}')">
+                                <i class="fas fa-plus"></i> Add Link
+                            </button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Icon</th>
+                                    <th>Platform</th>
+                                    <th>URL</th>
+                                    <th>Note</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${author.links.map(l => `
+                                    <tr>
+                                        <td><img src="${l.icon_url || 'https://via.placeholder.com/40?text=?'}" style="width:40px;height:40px;border-radius:8px"></td>
+                                        <td><strong>${l.platform_name}</strong></td>
+                                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis"><a href="${l.url}" target="_blank" style="color:var(--accent-color)">${l.url}</a></td>
+                                        <td>${l.note || '-'}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.authorLinkForm('${author.id}', '${l.id}')" title="Edit"><i class="fas fa-edit"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('') || '<tr><td colspan="5" style="text-align:center;color:#666">No links yet</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
+            editProfile: async (id) => {
+                const { data: author } = await supabase.from('profiles').select('*').eq('id', id).single();
+                if (!author) return;
+
+                const html = `
+                    <div class="form-group">
+                        <label class="form-label">Display Name</label>
+                        <input type="text" class="form-input" id="f-display_name" value="${author.display_name || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Bio</label>
+                        <textarea class="form-textarea" id="f-bio">${author.bio || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Avatar URL</label>
+                        <input type="text" class="form-input" id="f-avatar_url" value="${author.avatar_url || ''}">
+                    </div>
+                `;
+
+                const footer = `
+                    <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                    <button class="btn btn-primary" onclick="Views.saveProfile('${id}')"><i class="fas fa-save"></i> Save</button>
+                `;
+
+                Modal.open('Edit Profile', html, footer);
+            },
+
+            saveProfile: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        display_name: document.getElementById('f-display_name').value,
+                        bio: document.getElementById('f-bio').value,
+                        avatar_url: document.getElementById('f-avatar_url').value
+                    };
+                    await DB.saveAuthorProfile(id, record);
+                    Modal.close();
+                    UI.showToast('Profile saved!');
+                    Views.render('profile');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            }
+        };
+
+        // ==============================================
+        // INITIALIZATION
+        // ==============================================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Login form handler
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                await Auth.login(email, password);
+            });
+
+            // Nav click handlers
+            document.querySelectorAll('.nav-item[data-view]').forEach(item => {
+                item.addEventListener('click', () => {
+                    Views.render(item.dataset.view);
+                });
+            });
+
+            // Initialize auth
+            Auth.init();
+        });
+    </script>
+</body>
+</html>
