@@ -326,7 +326,7 @@
         .chapter-list-item { padding: 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.85rem; transition: 0.2s; color: #888; }
         .chapter-list-item:hover { color: var(--accent-color); padding-left: 1rem; }
         .chapter-list-item.active { border-left: 3px solid var(--accent-color); color: #fff; background: rgba(255,215,0,0.05); }
-        .reader-content { flex: 1; max-width: 800px; margin: 0 auto; padding: 3rem 4rem; color: #d0d0d0; overflow-y: auto; position: relative; transition: max-width 0.3s; }
+        .reader-content { flex: 1; max-width: 800px; margin: 0 auto; padding: 3rem 4rem; color: #d0d0d0; overflow-y: auto; position: relative; transition: max-width 0.3s; user-select: text; }
         
         .reader-toolbar { display: flex; justify-content: flex-end; gap: 15px; margin-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.5rem; }
         .rt-btn { background: transparent; border: none; color: #666; cursor: pointer; transition: 0.2s; font-size: 1rem; }
@@ -396,7 +396,7 @@
         .lore-wiki-body { padding: 3rem; }
         .lore-wiki-title { font-family: var(--font-header); font-size: 2.5rem; color: var(--accent-color); margin-bottom: 0.5rem; }
         .lore-wiki-type { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 2rem; font-size: 0.9rem; }
-        .lore-wiki-text { font-family: var(--font-body); font-size: 1.1rem; line-height: 1.8; color: #d0d0d0; white-space: pre-line; }
+        .lore-wiki-text { font-family: var(--font-body); font-size: 1.1rem; line-height: 1.8; color: #d0d0d0; white-space: pre-line; user-select: text; }
 
         /* --- VIEW: TIMELINE --- */
         .timeline-wrapper { position: relative; max-width: 800px; margin: 2rem auto; padding: 2rem 0; }
@@ -816,6 +816,10 @@
 
                 document.getElementById('zoom-in-btn').onclick = () => MapViewer.zoom(1.2);
                 document.getElementById('zoom-out-btn').onclick = () => MapViewer.zoom(0.8);
+            },
+            destroy: () => {
+                window.removeEventListener('mousemove', MapViewer.onMove);
+                window.removeEventListener('mouseup', MapViewer.onUp);
             },
             centerMap: () => {
                 if(!MapViewer.img || !MapViewer.viewer) return;
@@ -1248,14 +1252,15 @@
             gallery: async (slug, charId = null) => {
                 UI.showLoading();
                 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) { Router.navigate('home'); return; }
+                const hubData = await DB.getStoryHubData(slug);
+                if (!hubData || !hubData.story) { Router.navigate('home'); return; }
+                const story = hubData.story;
                 
                 State.currentStory = story;
                 UI.setBg(story.background_image_url);
                 document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-                const characters = await DB.getCharacters(story.id);
+                const characters = hubData.characters;
                 State.currentChars = characters;
                 
                 if (!charId) {
@@ -1321,8 +1326,9 @@
             reader: async (slug, chIdx = 0) => {
                 UI.showLoading();
                 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) { Router.navigate('home'); return; }
+                const hubData = await DB.getStoryHubData(slug);
+                if (!hubData || !hubData.story) { Router.navigate('home'); return; }
+                const story = hubData.story;
 
                 State.currentStory = story;
                 UI.setBg(story.background_image_url);
@@ -1380,14 +1386,15 @@
             lore: async (slug) => {
                 UI.showLoading();
                 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) { Router.navigate('home'); return; }
+                const hubData = await DB.getStoryHubData(slug);
+                if (!hubData || !hubData.story) { Router.navigate('home'); return; }
+                const story = hubData.story;
 
                 UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                 UI.setBg(story.background_image_url);
                 document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-                const loreEntries = await DB.getLoreEntries(story.id);
+                const loreEntries = hubData.lore;
                 
                 if (!loreEntries || loreEntries.length === 0) {
                     Render.stage.innerHTML = `<div style="padding:2rem;text-align:center">No lore data found.</div>`;
@@ -1413,8 +1420,9 @@
             loreDetail: async (slug, loreSlug) => {
                 UI.showLoading();
                 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) { Router.navigate('home'); return; }
+                const hubData = await DB.getStoryHubData(slug);
+                if (!hubData || !hubData.story) { Router.navigate('home'); return; }
+                const story = hubData.story;
 
                 UI.setBackButton(`Router.navigate('lore/${slug}')`, "Lore Index");
                 UI.setBg(story.background_image_url);
@@ -1443,14 +1451,15 @@
             timeline: async (slug) => {
                 UI.showLoading();
                 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) { Router.navigate('home'); return; }
+                const hubData = await DB.getStoryHubData(slug);
+                if (!hubData || !hubData.story) { Router.navigate('home'); return; }
+                const story = hubData.story;
 
                 UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                 UI.setBg(story.background_image_url);
                 document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-                const events = await DB.getTimelineEvents(story.id);
+                const events = hubData.timeline;
                 
                 if (!events || events.length === 0) {
                     Render.stage.innerHTML = `<div style="padding:2rem;text-align:center">No timeline data.</div>`;
@@ -1491,14 +1500,15 @@
             maps: async (slug) => {
                 UI.showLoading();
                 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) { Router.navigate('home'); return; }
+                const hubData = await DB.getStoryHubData(slug);
+                if (!hubData || !hubData.story) { Router.navigate('home'); return; }
+                const story = hubData.story;
 
                 UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                 UI.setBg(story.background_image_url);
                 document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-                const maps = await DB.getMaps(story.id);
+                const maps = hubData.maps;
                 
                 if (!maps || maps.length === 0) {
                     Render.stage.innerHTML = `<div style="padding:2rem;text-align:center">No maps found.</div>`;
@@ -1539,16 +1549,15 @@
             navigate: (h) => {
                 document.body.classList.add('is-transitioning');
                 setTimeout(() => window.location.hash = h, 400); 
-                document.body.classList.add('is-transitioning');
-                setTimeout(() => window.location.hash = h, 400); 
             },
             
             handle: () => {
                 // Close any open modals/overlays
-                // Close any open modals/overlays
                 document.getElementById('lightbox').classList.remove('active');
                 setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
                 document.getElementById('wp-modal').style.display = 'none';
+                
+                if (MapViewer.destroy) MapViewer.destroy();
                 
                 const sb = document.querySelector('.reader-sidebar');
                 if(sb) sb.classList.remove('active');
@@ -1581,7 +1590,6 @@
                         document.body.classList.remove('is-transitioning');
                         UI.hideLoading();
                         document.getElementById('content-stage').scrollTop = 0;
-                    }, 100);
                     }, 100);
                 });
             }
