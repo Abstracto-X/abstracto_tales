@@ -794,33 +794,26 @@
         };
 
         // ==============================================
-        // DATABASE API LAYER
+        // DATABASE API LAYER (WITH CACHING)
         // ==============================================
+        const Cache = {
+            stories: null,
+            hubs: {} 
+        };
+
         const DB = {
-            // Fetch all published stories
             getStories: async () => {
+                if (Cache.stories) return Cache.stories;
                 const { data, error } = await supabaseClient
                     .from('stories')
                     .select('*')
                     .eq('is_published', true)
                     .order('sort_order');
                 if (error) { console.error('Error fetching stories:', error); return []; }
-                return data || [];
+                Cache.stories = data || [];
+                return Cache.stories;
             },
 
-            // Fetch single story by slug
-            getStoryBySlug: async (slug) => {
-                const { data, error } = await supabaseClient
-                    .from('stories')
-                    .select('*')
-                    .eq('slug', slug)
-                    .eq('is_published', true)
-                    .single();
-                if (error) { console.error('Error fetching story:', error); return null; }
-                return data;
-            },
-
-            // Fetch author profile (first admin)
             getAuthorProfile: async () => {
                 const { data: profile, error: profileError } = await supabaseClient
                     .from('profiles')
@@ -843,7 +836,51 @@
                 };
             },
 
-            // Fetch chapters for a story
+            // The new unified and cached fetching function
+            getStoryHubData: async (slug) => {
+                if (Cache.hubs[slug]) return Cache.hubs[slug];
+
+                const { data: story, error: storyError } = await supabaseClient
+                    .from('stories')
+                    .select('*')
+                    .eq('slug', slug)
+                    .eq('is_published', true)
+                    .single();
+
+                if (storyError || !story) return null;
+
+                // Execute all dependent queries simultaneously
+                const [wallpapersReq, charactersReq, loreReq, timelineReq, mapsReq] = await Promise.all([
+                    supabaseClient.from('story_wallpapers').select('*').eq('story_id', story.id).order('sort_order'),
+                    supabaseClient.from('characters').select('*').eq('story_id', story.id).order('sort_order'),
+                    supabaseClient.from('lore_entries').select('*, lore_categories(id, name, slug)').eq('story_id', story.id).order('sort_order'),
+                    supabaseClient.from('timeline_events').select('*').eq('story_id', story.id).order('event_order'),
+                    supabaseClient.from('maps').select('*').eq('story_id', story.id).order('sort_order')
+                ]);
+
+                const timelineEvents = timelineReq.data || [];
+                
+                for (let event of timelineEvents) {
+                    const { data: charLinks } = await supabaseClient
+                        .from('timeline_event_characters')
+                        .select('character_id, characters(id, name, role_title, profile_image_url)')
+                        .eq('event_id', event.id);
+                    event.characters = charLinks ? charLinks.map(cl => cl.characters) : [];
+                }
+
+                const hubData = {
+                    story: story,
+                    wallpapers: wallpapersReq.data || [],
+                    characters: charactersReq.data || [],
+                    lore: loreReq.data || [],
+                    timeline: timelineEvents,
+                    maps: mapsReq.data || []
+                };
+
+                Cache.hubs[slug] = hubData;
+                return hubData;
+            },
+
             getChapters: async (storyId) => {
                 const { data, error } = await supabaseClient
                     .from('chapters')
@@ -855,18 +892,6 @@
                 return data || [];
             },
 
-            // Fetch characters for a story
-            getCharacters: async (storyId) => {
-                const { data, error } = await supabaseClient
-                    .from('characters')
-                    .select('*')
-                    .eq('story_id', storyId)
-                    .order('sort_order');
-                if (error) { console.error('Error fetching characters:', error); return []; }
-                return data || [];
-            },
-
-            // Fetch gallery images for a character
             getCharacterGallery: async (characterId) => {
                 const { data, error } = await supabaseClient
                     .from('character_gallery_images')
@@ -877,94 +902,15 @@
                 return data || [];
             },
 
-            // Fetch wallpapers for a story
-            getWallpapers: async (storyId) => {
-                const { data, error } = await supabaseClient
-                    .from('story_wallpapers')
-                    .select('*')
-                    .eq('story_id', storyId)
-                    .order('sort_order');
-                if (error) { console.error('Error fetching wallpapers:', error); return []; }
-                return data || [];
-            },
-
-            // Fetch lore entries with categories
-            getLoreEntries: async (storyId) => {
-                const { data, error } = await supabaseClient
-                    .from('lore_entries')
-                    .select(`
-                        *,
-                        lore_categories (
-                            id,
-                            name,
-                            slug
-                        )
-                    `)
-                    .eq('story_id', storyId)
-                    .order('sort_order');
-                if (error) { console.error('Error fetching lore:', error); return []; }
-                return data || [];
-            },
-
-            // Fetch single lore entry
             getLoreEntry: async (storyId, loreSlug) => {
                 const { data, error } = await supabaseClient
                     .from('lore_entries')
-                    .select(`
-                        *,
-                        lore_categories (
-                            id,
-                            name,
-                            slug
-                        )
-                    `)
+                    .select('*, lore_categories(id, name, slug)')
                     .eq('story_id', storyId)
                     .eq('slug', loreSlug)
                     .single();
                 if (error) { console.error('Error fetching lore entry:', error); return null; }
                 return data;
-            },
-
-            // Fetch timeline events with characters
-            getTimelineEvents: async (storyId) => {
-                const { data: events, error } = await supabaseClient
-                    .from('timeline_events')
-                    .select('*')
-                    .eq('story_id', storyId)
-                    .order('event_order');
-                
-                if (error || !events) return [];
-
-                // Fetch character links for each event
-                for (let event of events) {
-                    const { data: charLinks } = await supabaseClient
-                        .from('timeline_event_characters')
-                        .select(`
-                            character_id,
-                            characters (
-                                id,
-                                name,
-                                role_title,
-                                profile_image_url
-                            )
-                        `)
-                        .eq('event_id', event.id);
-                    
-                    event.characters = charLinks ? charLinks.map(cl => cl.characters) : [];
-                }
-
-                return events;
-            },
-
-            // Fetch maps for a story
-            getMaps: async (storyId) => {
-                const { data, error } = await supabaseClient
-                    .from('maps')
-                    .select('*')
-                    .eq('story_id', storyId)
-                    .order('sort_order');
-                if (error) { console.error('Error fetching maps:', error); return []; }
-                return data || [];
             }
         };
 
@@ -1117,32 +1063,29 @@
 
                 Render.stage.innerHTML = html;
             },
+
             storyHub: async (slug) => {
                 UI.showLoading();
                 UI.setBackButton("Router.navigate('home')", "Archives");
 
-                const story = await DB.getStoryBySlug(slug);
-                if (!story) {
+                const hubData = await DB.getStoryHubData(slug);
+                
+                if (!hubData || !hubData.story) {
                     Render.stage.innerHTML = `<div class="glass-box" style="padding:2rem;text-align:center"><h3>Story Not Found</h3></div>`;
                     return;
                 }
 
+                const story = hubData.story;
                 State.currentStory = story;
                 State.currentStorySlug = slug;
-                State.currentWallpapers = await DB.getWallpapers(story.id);
-                State.currentChars = await DB.getCharacters(story.id);
+                State.currentWallpapers = hubData.wallpapers;
+                State.currentChars = hubData.characters;
                 
                 UI.setBg(story.background_image_url);
                 UI.showWallpaperButton();
                 document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-                // Check if world data exists
-                const [lore, timeline, maps] = await Promise.all([
-                    DB.getLoreEntries(story.id),
-                    DB.getTimelineEvents(story.id),
-                    DB.getMaps(story.id)
-                ]);
-                const hasWorldData = lore.length > 0 || timeline.length > 0 || maps.length > 0;
+                const hasWorldData = hubData.lore.length > 0 || hubData.timeline.length > 0 || hubData.maps.length > 0;
 
                 let barHTML = '';
                 if (hasWorldData) {
@@ -1150,9 +1093,9 @@
                         <div class="world-hub-bar glass-box">
                             <div class="bar-title">${story.world_title || 'World Encyclopedia'}</div>
                             <div class="bar-actions">
-                                ${timeline.length > 0 ? `<button class="btn-large" onclick="Router.navigate('timeline/${slug}')"><i class="fas fa-stream"></i> Timeline</button>` : ''}
-                                ${maps.length > 0 ? `<button class="btn-large" onclick="Router.navigate('maps/${slug}')"><i class="fas fa-map-marked-alt"></i> Maps</button>` : ''}
-                                ${lore.length > 0 ? `<button class="btn-large" onclick="Router.navigate('lore/${slug}')"><i class="fas fa-book-dead"></i> Lore</button>` : ''}
+                                ${hubData.timeline.length > 0 ? `<button class="btn-large" onclick="Router.navigate('timeline/${slug}')"><i class="fas fa-stream"></i> Timeline</button>` : ''}
+                                ${hubData.maps.length > 0 ? `<button class="btn-large" onclick="Router.navigate('maps/${slug}')"><i class="fas fa-map-marked-alt"></i> Maps</button>` : ''}
+                                ${hubData.lore.length > 0 ? `<button class="btn-large" onclick="Router.navigate('lore/${slug}')"><i class="fas fa-book-dead"></i> Lore</button>` : ''}
                             </div>
                         </div>`;
                 }
@@ -1175,6 +1118,7 @@
                     </div>`;
             },
 
+            
             gallery: async (slug, charId = null) => {
                 UI.showLoading();
                 
