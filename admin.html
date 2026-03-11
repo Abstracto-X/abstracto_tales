@@ -810,28 +810,42 @@
             },
 
             loadProfile: async () => {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', State.user.id)
-                    .single();
-                
-                if (error || !data) {
-                    UI.showToast('Profile not found.', 'error');
-                    Auth.logout();
-                    return;
-                }
+                try {
+                    let { data, error } = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', State.user.id)
+                        .single();
+                    
+                    // If the profile doesn't exist, automatically generate it
+                    if (error && error.code === 'PGRST116') {
+                        const { data: newProf, error: insErr } = await supabase
+                            .from('profiles')
+                            .insert({ id: State.user.id, role: 'admin', display_name: 'Admin' })
+                            .select().single();
+                            
+                        if (insErr) throw new Error("Could not auto-generate profile: " + insErr.message);
+                        data = newProf;
+                    } else if (error) {
+                        throw error;
+                    }
 
-                if (data.role !== 'admin') {
-                    UI.showToast('Access denied. Admin privileges required.', 'error');
-                    Auth.logout();
-                    return;
-                }
+                    if (data.role !== 'admin') {
+                        throw new Error('Access denied. Admin privileges required.');
+                    }
 
-                State.profile = data;
-                document.getElementById('user-name').textContent = data.display_name || 'Admin';
-                document.getElementById('user-avatar').textContent = (data.display_name || 'A')[0].toUpperCase();
-                Auth.showAdminView();
+                    State.profile = data;
+                    document.getElementById('user-name').textContent = data.display_name || 'Admin';
+                    document.getElementById('user-avatar').textContent = (data.display_name || 'A')[0].toUpperCase();
+                    Auth.showAdminView();
+
+                } catch (err) {
+                    console.error("Profile Error:", err);
+                    document.getElementById('login-error').textContent = err.message;
+                    document.getElementById('login-error').style.display = 'block';
+                    Auth.showLoginView();
+                    // We DO NOT call Auth.logout() here to prevent the infinite reload loop
+                }
             },
 
             showLoginView: () => {
