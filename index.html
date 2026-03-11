@@ -146,50 +146,6 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- LORE LOADING SCREEN --- */
-        #lore-loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #050505; z-index: 9000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
-            padding: 2rem; text-align: center;
-        }
-        
-        #lore-loading-screen.active {
-            opacity: 1; pointer-events: all;
-        }
-        
-        .stylish-spiral {
-            width: 60px; height: 60px;
-            border: 2px solid transparent;
-            border-top-color: var(--accent-color);
-            border-bottom-color: var(--accent-color);
-            border-radius: 50%;
-            animation: elegant-spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-            margin-bottom: 2.5rem;
-            position: relative;
-        }
-        
-        .stylish-spiral::before {
-            content: ''; position: absolute; top: 8px; left: 8px; right: 8px; bottom: 8px;
-            border: 2px solid transparent; border-left-color: #fff; border-right-color: #fff;
-            border-radius: 50%; animation: elegant-spin 1s linear infinite reverse;
-        }
-        
-        @keyframes elegant-spin { 100% { transform: rotate(360deg); } }
-        
-        .lore-loading-content { max-width: 650px; }
-        
-        #loading-lore-title { 
-            font-family: var(--font-header); color: var(--accent-color); 
-            margin-bottom: 1rem; letter-spacing: 2px; font-size: 1.4rem; 
-        }
-        
-        #loading-lore-text { 
-            font-family: var(--font-body); color: #ccc; 
-            line-height: 1.8; font-size: 1.1rem; font-style: italic; 
-        }
-
         /* --- VIEW: HOME --- */
         .story-grid {
             display: grid;
@@ -491,6 +447,69 @@
         .map-control-btn:hover { color: var(--accent-color); border-color: var(--accent-color); }
 
         /* --- MOBILE OPTIMIZATION --- */
+        /* --- LORE LOADING SCREEN --- */
+        #lore-loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(5, 5, 5, 0.95);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 6000; display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+            padding: 2rem;
+        }
+        
+        #lore-loading-screen.active {
+            opacity: 1; pointer-events: all;
+        }
+
+        .lore-loading-card {
+            display: flex; flex-direction: row; max-width: 800px; width: 100%;
+            background: rgba(15, 15, 15, 0.85); overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255, 215, 0, 0.1);
+        }
+
+        .ll-img-container {
+            width: 300px; flex-shrink: 0; background: #000;
+            border-right: 1px solid var(--glass-border);
+        }
+
+        .ll-img-container img {
+            width: 100%; height: 100%; object-fit: cover; opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+
+        .ll-content {
+            padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;
+            flex: 1;
+        }
+
+        .ll-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #ll-title {
+            font-family: var(--font-header); font-size: 1.5rem; color: var(--accent-color);
+            line-height: 1.2;
+        }
+
+        #ll-desc {
+            font-size: 0.95rem; line-height: 1.6; color: #ccc;
+            max-height: 150px; overflow-y: hidden;
+            display: -webkit-box; -webkit-line-clamp: 6; line-clamp: 6; -webkit-box-orient: vertical;
+        }
+
+        .ll-spinner {
+            width: 30px; height: 30px; border: 2px solid rgba(255,215,0,0.2);
+            border-top-color: var(--accent-color); border-radius: 50%;
+            animation: spin 1s linear infinite; flex-shrink: 0;
+        }
+
+        @media (max-width: 768px) {
+            .lore-loading-card { flex-direction: column; }
+            .ll-img-container { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid var(--glass-border); }
+            .ll-content { padding: 1.5rem; }
+        }
+
         @media (max-width: 900px) {
             #app-container { padding: 0.5rem; }
             #main-header { padding: 0.5rem 1rem; height: 60px; }
@@ -571,10 +590,17 @@
     <div id="transition-curtain"></div>
 
     <div id="lore-loading-screen">
-        <div class="stylish-spiral"></div>
-        <div class="lore-loading-content">
-            <h3 id="loading-lore-title">Accessing Archives...</h3>
-            <p id="loading-lore-text">Establishing connection to the Aether...</p>
+        <div class="lore-loading-card glass-box">
+            <div class="ll-img-container">
+                <img id="ll-img" src="" alt="Lore Image">
+            </div>
+            <div class="ll-content">
+                <div class="ll-header">
+                    <h2 id="ll-title">Accessing Archives...</h2>
+                    <div class="ll-spinner"></div>
+                </div>
+                <div class="ll-desc" id="ll-desc">Retrieving aetheric data from the network...</div>
+            </div>
         </div>
     </div>
 
@@ -691,6 +717,34 @@
                 document.getElementById('lightbox-img').src = src;
                 lb.style.display = 'flex'; 
                 setTimeout(() => lb.classList.add('active'), 10);
+            }
+        };
+
+        // ==============================================
+        // LORE PRE-FETCHER
+        // ==============================================
+        const LorePrefetcher = {
+            entries: [],
+            isLoaded: false,
+            
+            init: async () => {
+                // Fetch a bulk array of lore entries globally
+                const { data, error } = await supabaseClient
+                    .from('lore_entries')
+                    .select('title, description, image_url')
+                    .limit(20);
+                    
+                if (!error && data) {
+                    // Filter out entries without images to ensure the UI always looks good
+                    LorePrefetcher.entries = data.filter(entry => entry.image_url && entry.image_url.trim() !== '');
+                    LorePrefetcher.isLoaded = true;
+                }
+            },
+            
+            getRandomEntry: () => {
+                if (!LorePrefetcher.isLoaded || LorePrefetcher.entries.length === 0) return null;
+                const randomIndex = Math.floor(Math.random() * LorePrefetcher.entries.length);
+                return LorePrefetcher.entries[randomIndex];
             }
         };
 
@@ -996,6 +1050,7 @@
             bg: document.getElementById('global-bg'),
             back: document.getElementById('back-container'),
             wp: document.getElementById('wp-toggle-container'),
+            loadingScreen: document.getElementById('lore-loading-screen'),
             
             setBg: (url) => { 
                 if(url) UI.bg.style.backgroundImage = `url('${url}')`; 
@@ -1027,11 +1082,29 @@
             },
             
             showLoading: () => {
-                Render.stage.innerHTML = `
-                    <div class="loading-container">
-                        <div class="spinner"></div>
-                        <div style="color:#888">Loading...</div>
-                    </div>`;
+                const entry = LorePrefetcher.getRandomEntry();
+                const titleEl = document.getElementById('ll-title');
+                const descEl = document.getElementById('ll-desc');
+                const imgEl = document.getElementById('ll-img');
+                const imgContainer = document.querySelector('.ll-img-container');
+
+                if (entry) {
+                    titleEl.textContent = entry.title;
+                    descEl.textContent = entry.description;
+                    imgEl.src = entry.image_url;
+                    imgEl.style.display = 'block';
+                    imgContainer.style.display = 'block';
+                } else {
+                    titleEl.textContent = "Accessing Archives...";
+                    descEl.textContent = "Establishing connection to the aetheric network...";
+                    imgContainer.style.display = 'none';
+                }
+
+                UI.loadingScreen.classList.add('active');
+            },
+
+            hideLoading: () => {
+                UI.loadingScreen.classList.remove('active');
             },
 
             initAdminLink: () => {
@@ -1039,37 +1112,6 @@
                     `<div class="back-btn-wrapper" onclick="window.location.href='admin.html'" title="Admin Panel">
                         <i class="fas fa-cog"></i>
                     </div>`;
-            },
-            
-            showLoreLoading: () => {
-                const screen = document.getElementById('lore-loading-screen');
-                const titleEl = document.getElementById('loading-lore-title');
-                const textEl = document.getElementById('loading-lore-text');
-
-                let availableLore = [];
-                Object.values(Cache.hubs).forEach(hub => {
-                    if (hub.lore && hub.lore.length > 0) {
-                        availableLore.push(...hub.lore);
-                    }
-                });
-
-                if (availableLore.length > 0) {
-                    const randomLore = availableLore[Math.floor(Math.random() * availableLore.length)];
-                    titleEl.textContent = randomLore.title;
-                    const truncatedText = randomLore.description.length > 250 
-                        ? randomLore.description.substring(0, 250) + '...' 
-                        : randomLore.description;
-                    textEl.textContent = `"${truncatedText}"`;
-                } else {
-                    titleEl.textContent = "Traversing the Aether...";
-                    textEl.textContent = "Gathering archival records and establishing secure connections.";
-                }
-
-                screen.classList.add('active');
-            },
-            
-            hideLoreLoading: () => {
-                document.getElementById('lore-loading-screen').classList.remove('active');
             }
         };
 
@@ -1201,7 +1243,7 @@
                     </div>`;
             },
 
-
+            
             gallery: async (slug, charId = null) => {
                 UI.showLoading();
                 
@@ -1494,11 +1536,12 @@
             getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
             
             navigate: (h) => {
-                UI.showLoreLoading();
-                setTimeout(() => window.location.hash = h, 50); 
+                document.body.classList.add('is-transitioning');
+                setTimeout(() => window.location.hash = h, 400); 
             },
             
             handle: () => {
+                // Close any open modals/overlays
                 document.getElementById('lightbox').classList.remove('active');
                 setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
                 document.getElementById('wp-modal').style.display = 'none';
@@ -1508,6 +1551,7 @@
                 const bd = document.querySelector('.sidebar-backdrop');
                 if(bd) bd.classList.remove('active');
                 
+                // Remove focus mode
                 document.body.classList.remove('focus-active');
 
                 const parts = Router.getParts();
@@ -1529,9 +1573,10 @@
                     else await Render.home();
                 })().then(() => {
                     setTimeout(() => {
-                        UI.hideLoreLoading();
+                        document.body.classList.remove('is-transitioning');
+                        UI.hideLoading();
                         document.getElementById('content-stage').scrollTop = 0;
-                    }, 400); 
+                    }, 100);
                 });
             }
         };
@@ -1541,6 +1586,7 @@
         // ==============================================
         window.addEventListener('hashchange', Router.handle);
         window.addEventListener('DOMContentLoaded', () => { 
+            LorePrefetcher.init(); // Fire the pre-fetch immediately in the background
             Router.handle(); 
             Visuals.initDynamicTransparency(); 
             Particles.init();
