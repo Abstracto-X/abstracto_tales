@@ -1244,6 +1244,7 @@
             },
 
             
+            
             gallery: async (slug, charId = null) => {
                 UI.showLoading();
                 
@@ -1538,9 +1539,12 @@
             navigate: (h) => {
                 document.body.classList.add('is-transitioning');
                 setTimeout(() => window.location.hash = h, 400); 
+                document.body.classList.add('is-transitioning');
+                setTimeout(() => window.location.hash = h, 400); 
             },
             
             handle: () => {
+                // Close any open modals/overlays
                 // Close any open modals/overlays
                 document.getElementById('lightbox').classList.remove('active');
                 setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
@@ -1551,6 +1555,7 @@
                 const bd = document.querySelector('.sidebar-backdrop');
                 if(bd) bd.classList.remove('active');
                 
+                // Remove focus mode
                 // Remove focus mode
                 document.body.classList.remove('focus-active');
 
@@ -1576,6 +1581,7 @@
                         document.body.classList.remove('is-transitioning');
                         UI.hideLoading();
                         document.getElementById('content-stage').scrollTop = 0;
+                    }, 100);
                     }, 100);
                 });
             }
