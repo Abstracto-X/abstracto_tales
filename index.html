@@ -38,14 +38,7 @@
             user-select: none;
         }
 
-        /* --- TRANSITION CURTAIN --- */
-        #transition-curtain {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: #000;
-            z-index: 9999; opacity: 0; pointer-events: none;
-            transition: opacity 0.5s ease-in-out;
-        }
-        body.is-transitioning #transition-curtain { opacity: 1; pointer-events: all; }
+
 
         /* --- BACKGROUND --- */
         #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
@@ -446,69 +439,120 @@
         .map-control-btn { width: 40px; height: 40px; background: rgba(20,20,20,0.9); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 50%; cursor: pointer; font-size: 1.2rem; transition: 0.2s; }
         .map-control-btn:hover { color: var(--accent-color); border-color: var(--accent-color); }
 
-        /* --- MOBILE OPTIMIZATION --- */
-        /* --- LORE LOADING SCREEN --- */
-        #lore-loading-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 5, 5, 0.95);
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-            z-index: 6000; display: flex; justify-content: center; align-items: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
-            padding: 2rem;
-        }
-        
-        #lore-loading-screen.active {
-            opacity: 1; pointer-events: all;
-        }
-
-        .lore-loading-card {
-            display: flex; flex-direction: row; max-width: 800px; width: 100%;
-            background: rgba(15, 15, 15, 0.85); overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8), 0 0 30px rgba(255, 215, 0, 0.1);
-        }
-
-        .ll-img-container {
-            width: 300px; flex-shrink: 0; background: #000;
-            border-right: 1px solid var(--glass-border);
-        }
-
-        .ll-img-container img {
-            width: 100%; height: 100%; object-fit: cover; opacity: 0.8;
-            transition: opacity 0.3s;
-        }
-
-        .ll-content {
-            padding: 2.5rem; display: flex; flex-direction: column; justify-content: center;
-            flex: 1;
-        }
-
-        .ll-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-
-        #ll-title {
-            font-family: var(--font-header); font-size: 1.5rem; color: var(--accent-color);
-            line-height: 1.2;
-        }
-
-        #ll-desc {
-            font-size: 0.95rem; line-height: 1.6; color: #ccc;
-            max-height: 150px; overflow-y: hidden;
-            display: -webkit-box; -webkit-line-clamp: 6; line-clamp: 6; -webkit-box-orient: vertical;
-        }
-
-        .ll-spinner {
-            width: 30px; height: 30px; border: 2px solid rgba(255,215,0,0.2);
-            border-top-color: var(--accent-color); border-radius: 50%;
-            animation: spin 1s linear infinite; flex-shrink: 0;
-        }
-
-        @media (max-width: 768px) {
-            .lore-loading-card { flex-direction: column; }
-            .ll-img-container { width: 100%; height: 200px; border-right: none; border-bottom: 1px solid var(--glass-border); }
-            .ll-content { padding: 1.5rem; }
-        }
+/* --- NEW LORE LOADING SCREEN --- */
+#lore-loading-screen {
+    position: absolute;
+    top: 85px; /* Sits below the header */
+    left: 0;
+    width: 100%;
+    height: calc(100% - 85px);
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+    overflow-y: auto;
+}
+#lore-loading-screen.active {
+    opacity: 1;
+    pointer-events: all;
+}
+.lore-loading-card {
+    display: flex;
+    flex-direction: column;
+    max-width: 700px;
+    width: 100%;
+    margin-bottom: 2rem;
+    overflow: hidden;
+}
+.ll-img-container {
+    width: 100%;
+    height: 300px;
+    background: #000;
+    border-bottom: 1px solid var(--glass-border);
+}
+.ll-img-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+}
+.ll-content {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+#ll-title {
+    font-family: var(--font-header);
+    font-size: 2rem;
+    color: var(--accent-color);
+    margin-bottom: 1.5rem;
+    line-height: 1.2;
+}
+#ll-desc {
+    font-size: 1.05rem;
+    line-height: 1.8;
+    color: #e0e0e0;
+    white-space: pre-line;
+}
+/* --- ARCANE SPIRAL ANIMATION --- */
+.arcane-spiral-container {
+    position: relative;
+    width: 70px;
+    height: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-shrink: 0;
+}
+.arcane-ring-outer {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0%, rgba(255, 215, 0, 0.1) 30%, rgba(255, 215, 0, 0.9) 100%);
+    mask-image: radial-gradient(transparent 55%, black 56%);
+    -webkit-mask-image: radial-gradient(transparent 55%, black 56%);
+    animation: spin 1.5s linear infinite;
+}
+.arcane-ring-inner {
+    position: absolute;
+    width: 65%;
+    height: 65%;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, transparent 0%, rgba(255, 255, 255, 0.1) 40%, rgba(255, 215, 0, 0.7) 100%);
+    mask-image: radial-gradient(transparent 50%, black 51%);
+    -webkit-mask-image: radial-gradient(transparent 50%, black 51%);
+    animation: spin-reverse 2s linear infinite;
+}
+.arcane-core {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-color), 0 0 30px #fff;
+    animation: arcane-pulse 1.2s ease-in-out infinite alternate;
+}
+@keyframes spin-reverse { 
+    to { transform: rotate(-360deg); } 
+}
+@keyframes arcane-pulse { 
+    0% { transform: scale(0.7); opacity: 0.6; } 
+    100% { transform: scale(1.3); opacity: 1; } 
+}
+@media (max-width: 768px) {
+    .ll-img-container { height: 200px; }
+    .ll-content { padding: 1.5rem; }
+    #ll-title { font-size: 1.5rem; }
+    #ll-desc { font-size: 0.95rem; }
+}
 
         @media (max-width: 900px) {
             #app-container { padding: 0.5rem; }
@@ -587,23 +631,6 @@
 
     <div class="background-layer" id="global-bg"></div>
     <canvas id="particle-canvas"></canvas>
-    <div id="transition-curtain"></div>
-
-    <div id="lore-loading-screen">
-        <div class="lore-loading-card glass-box">
-            <div class="ll-img-container">
-                <img id="ll-img" src="" alt="Lore Image">
-            </div>
-            <div class="ll-content">
-                <div class="ll-header">
-                    <h2 id="ll-title">Accessing Archives...</h2>
-                    <div class="ll-spinner"></div>
-                </div>
-                <div class="ll-desc" id="ll-desc">Retrieving aetheric data from the network...</div>
-            </div>
-        </div>
-    </div>
-
     <div id="app-container">
         <nav id="main-header" class="glass-box">
             <div id="back-container"></div>
@@ -614,7 +641,26 @@
                 <div id="admin-link-container"></div>
             </div>
         </nav>
-        <div id="content-stage"></div>
+
+        <div id="lore-loading-screen">
+            <div class="lore-loading-card glass-box">
+                <div class="ll-img-container">
+                    <img id="ll-img" src="" alt="Lore Image">
+                </div>
+                <div class="ll-content">
+                    <h2 id="ll-title">Accessing Archives...</h2>
+                    <div class="ll-desc" id="ll-desc">Retrieving aetheric data from the network...</div>
+                </div>
+            </div>
+            
+            <div class="arcane-spiral-container">
+                <div class="arcane-ring-outer"></div>
+                <div class="arcane-ring-inner"></div>
+                <div class="arcane-core"></div>
+            </div>
+        </div>
+
+        <div id="content-stage" style="transition: opacity 0.3s ease;"></div>
     </div>
 
     <div id="wp-modal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:3000; display:none; flex-direction:column; align-items:center; justify-content:center;">
@@ -1096,12 +1142,17 @@
                     titleEl.textContent = entry.title;
                     descEl.textContent = entry.description;
                     imgEl.src = entry.image_url;
-                    imgEl.style.display = 'block';
-                    imgContainer.style.display = 'block';
+                    if (imgContainer) {
+                        imgContainer.style.visibility = 'visible';
+                        imgContainer.style.opacity = '1';
+                    }
                 } else {
                     titleEl.textContent = "Accessing Archives...";
-                    descEl.textContent = "Establishing connection to the aetheric network...";
-                    imgContainer.style.display = 'none';
+                    descEl.textContent = "Retrieving aetheric data from the network...";
+                    if (imgContainer) {
+                        imgContainer.style.visibility = 'hidden';
+                        imgContainer.style.opacity = '0';
+                    }
                 }
 
                 UI.loadingScreen.classList.add('active');
@@ -1547,12 +1598,12 @@
             getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
             
             navigate: (h) => {
-                document.body.classList.add('is-transitioning');
+                // Fade out the content stage
+                document.getElementById('content-stage').style.opacity = '0';
                 setTimeout(() => window.location.hash = h, 400); 
             },
             
             handle: () => {
-                // Close any open modals/overlays
                 document.getElementById('lightbox').classList.remove('active');
                 setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
                 document.getElementById('wp-modal').style.display = 'none';
@@ -1564,8 +1615,6 @@
                 const bd = document.querySelector('.sidebar-backdrop');
                 if(bd) bd.classList.remove('active');
                 
-                // Remove focus mode
-                // Remove focus mode
                 document.body.classList.remove('focus-active');
 
                 const parts = Router.getParts();
@@ -1587,10 +1636,12 @@
                     else await Render.home();
                 })().then(() => {
                     setTimeout(() => {
-                        document.body.classList.remove('is-transitioning');
                         UI.hideLoading();
-                        document.getElementById('content-stage').scrollTop = 0;
-                    }, 100);
+                        const stage = document.getElementById('content-stage');
+                        stage.scrollTop = 0;
+                        // Fade the new content back in
+                        stage.style.opacity = '1';
+                    }, 800);
                 });
             }
         };
@@ -1599,8 +1650,8 @@
         // INITIALIZATION
         // ==============================================
         window.addEventListener('hashchange', Router.handle);
-        window.addEventListener('DOMContentLoaded', () => { 
-            LorePrefetcher.init(); // Fire the pre-fetch immediately in the background
+        window.addEventListener('DOMContentLoaded', async () => { 
+            await LorePrefetcher.init(); // Fire the pre-fetch immediately in the background
             Router.handle(); 
             Visuals.initDynamicTransparency(); 
             Particles.init();
