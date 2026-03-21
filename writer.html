@@ -1,0 +1,3564 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Writer's IDE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+
+    <style>
+        /* ============================================================
+           THEME SYSTEM
+           ============================================================ */
+        :root {
+            /* Dark Theme (Default) */
+            --primary-color: #ffffff;
+            --accent-color: #ffd700;
+            --danger-color: #ff4444;
+            --success-color: #44ff88;
+            --warning-color: #ffaa00;
+            --bg-deepest: #050505;
+            --bg-app: #0a0a0a;
+            --bg-panel: rgba(20, 20, 20, 0.95);
+            --bg-panel-translucent: rgba(15, 15, 15, 0.75);
+            --bg-hover: rgba(255, 255, 255, 0.06);
+            --bg-active: rgba(255, 215, 0, 0.12);
+            --bg-input: rgba(255, 255, 255, 0.05);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(255, 255, 255, 0.25);
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaaaaa;
+            --text-muted: #666666;
+            --text-faint: #444444;
+            --editor-bg: #0a0a0a;
+            --editor-text: #dddddd;
+            --editor-heading-color: var(--primary-color);
+            --editor-font: 'Lora', serif;
+            --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+            --shadow-deep: rgba(0, 0, 0, 0.6);
+            --font-header: 'Cinzel', serif;
+            --font-body: 'Lora', serif;
+            --font-ui: 'Montserrat', sans-serif;
+            --binder-width: 260px;
+            --inspector-width: 310px;
+            --topbar-height: 48px;
+            --bottombar-height: 32px;
+            --transition-speed: 0.25s;
+        }
+
+        /* --- Midnight Blue Theme --- */
+        [data-theme="midnight"] {
+            --bg-deepest: #0a0e1a;
+            --bg-app: #0f1424;
+            --bg-panel: rgba(14, 18, 36, 0.95);
+            --bg-panel-translucent: rgba(10, 14, 26, 0.75);
+            --bg-hover: rgba(100, 140, 255, 0.08);
+            --bg-active: rgba(100, 160, 255, 0.15);
+            --bg-input: rgba(100, 140, 255, 0.06);
+            --border-color: rgba(100, 140, 255, 0.15);
+            --border-hover: rgba(100, 160, 255, 0.3);
+            --text-primary: #c8d4e8;
+            --text-secondary: #8899bb;
+            --text-muted: #556688;
+            --text-faint: #334466;
+            --accent-color: #6ea8fe;
+            --editor-bg: #0f1424;
+            --editor-text: #c0cce0;
+            --editor-heading-color: #e0e8f5;
+            --scrollbar-thumb: rgba(100, 140, 255, 0.2);
+        }
+
+        /* --- Forest Theme --- */
+        [data-theme="forest"] {
+            --bg-deepest: #080e08;
+            --bg-app: #0c140c;
+            --bg-panel: rgba(12, 20, 12, 0.95);
+            --bg-panel-translucent: rgba(8, 14, 8, 0.75);
+            --bg-hover: rgba(80, 180, 80, 0.08);
+            --bg-active: rgba(80, 200, 80, 0.12);
+            --bg-input: rgba(80, 160, 80, 0.06);
+            --border-color: rgba(80, 160, 80, 0.15);
+            --border-hover: rgba(80, 200, 80, 0.3);
+            --text-primary: #c8dcc8;
+            --text-secondary: #88aa88;
+            --text-muted: #557755;
+            --text-faint: #335533;
+            --accent-color: #66cc77;
+            --editor-bg: #0c140c;
+            --editor-text: #c0d4c0;
+            --editor-heading-color: #d8ecd8;
+            --scrollbar-thumb: rgba(80, 160, 80, 0.2);
+        }
+
+        /* --- Sepia Classic Theme --- */
+        [data-theme="sepia"] {
+            --bg-deepest: #2a2118;
+            --bg-app: #352a1f;
+            --bg-panel: rgba(42, 33, 24, 0.97);
+            --bg-panel-translucent: rgba(35, 28, 20, 0.85);
+            --bg-hover: rgba(200, 160, 100, 0.1);
+            --bg-active: rgba(200, 160, 80, 0.18);
+            --bg-input: rgba(200, 160, 100, 0.08);
+            --border-color: rgba(200, 160, 100, 0.2);
+            --border-hover: rgba(200, 160, 100, 0.35);
+            --text-primary: #d4c4a8;
+            --text-secondary: #a89878;
+            --text-muted: #7a6a50;
+            --text-faint: #5a4a38;
+            --accent-color: #d4a44a;
+            --primary-color: #e8d8c0;
+            --editor-bg: #352a1f;
+            --editor-text: #c8b898;
+            --editor-heading-color: #e0d0b8;
+            --editor-font: 'EB Garamond', serif;
+            --scrollbar-thumb: rgba(200, 160, 100, 0.25);
+            --danger-color: #cc6644;
+            --success-color: #88aa55;
+        }
+
+        /* --- Sepia Warm Theme --- */
+        [data-theme="sepia-warm"] {
+            --bg-deepest: #1e1610;
+            --bg-app: #28201a;
+            --bg-panel: rgba(30, 22, 16, 0.97);
+            --bg-panel-translucent: rgba(24, 18, 12, 0.85);
+            --bg-hover: rgba(220, 170, 100, 0.1);
+            --bg-active: rgba(220, 170, 80, 0.15);
+            --bg-input: rgba(220, 170, 100, 0.07);
+            --border-color: rgba(220, 170, 100, 0.18);
+            --border-hover: rgba(220, 170, 100, 0.3);
+            --text-primary: #dcc8a8;
+            --text-secondary: #b09870;
+            --text-muted: #806848;
+            --text-faint: #604830;
+            --accent-color: #e8a830;
+            --primary-color: #f0dcc0;
+            --editor-bg: #28201a;
+            --editor-text: #d0bc98;
+            --editor-heading-color: #e8d4b8;
+            --editor-font: 'Merriweather', serif;
+            --scrollbar-thumb: rgba(220, 170, 100, 0.25);
+            --danger-color: #d06030;
+            --success-color: #80a850;
+        }
+
+        /* --- Parchment Light Theme --- */
+        [data-theme="parchment"] {
+            --bg-deepest: #e8dcc8;
+            --bg-app: #f0e6d4;
+            --bg-panel: rgba(225, 215, 195, 0.97);
+            --bg-panel-translucent: rgba(220, 210, 190, 0.85);
+            --bg-hover: rgba(120, 80, 40, 0.08);
+            --bg-active: rgba(120, 80, 40, 0.12);
+            --bg-input: rgba(120, 80, 40, 0.06);
+            --border-color: rgba(120, 80, 40, 0.2);
+            --border-hover: rgba(120, 80, 40, 0.35);
+            --text-primary: #3a2a1a;
+            --text-secondary: #5a4a38;
+            --text-muted: #8a7a68;
+            --text-faint: #b0a090;
+            --accent-color: #8b5e2f;
+            --primary-color: #2a1a0a;
+            --danger-color: #aa3322;
+            --success-color: #447722;
+            --warning-color: #aa7722;
+            --editor-bg: #f5edd8;
+            --editor-text: #3a2a1a;
+            --editor-heading-color: #2a1a0a;
+            --editor-font: 'EB Garamond', serif;
+            --scrollbar-thumb: rgba(120, 80, 40, 0.25);
+            --shadow-deep: rgba(80, 60, 30, 0.3);
+        }
+
+        /* ============================================================
+           RESET & BASE STYLES
+           ============================================================ */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-deepest);
+            color: var(--text-primary);
+            font-family: var(--font-ui);
+            min-height: 100vh;
+            overflow: hidden;
+            font-size: 13px;
+            transition: background-color 0.4s, color 0.4s;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+        a { color: var(--accent-color); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ============================================================
+           LOADING OVERLAY
+           ============================================================ */
+        #loading-overlay {
+            position: fixed; inset: 0; z-index: 10000;
+            background: var(--bg-deepest);
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 16px;
+            transition: opacity 0.4s;
+        }
+        #loading-overlay.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-text { font-family: var(--font-header); color: var(--accent-color); font-size: 14px; letter-spacing: 2px; }
+
+        /* ============================================================
+           TOAST NOTIFICATIONS
+           ============================================================ */
+        #toast-container {
+            position: fixed; top: 60px; right: 16px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 8px;
+            pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            padding: 10px 18px;
+            border-radius: 8px;
+            font-size: 12px; font-weight: 500;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            animation: toastIn 0.3s ease-out;
+            max-width: 360px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .toast.success { border-left: 3px solid var(--success-color); }
+        .toast.success i { color: var(--success-color); }
+        .toast.error { border-left: 3px solid var(--danger-color); }
+        .toast.error i { color: var(--danger-color); }
+        .toast.info { border-left: 3px solid var(--accent-color); }
+        .toast.info i { color: var(--accent-color); }
+        .toast.fadeOut { animation: toastOut 0.3s ease-in forwards; }
+        @keyframes toastIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px); } }
+
+        /* ============================================================
+           MAIN APP LAYOUT
+           ============================================================ */
+        #app {
+            display: none;
+            width: 100vw; height: 100vh;
+            flex-direction: column;
+        }
+
+        /* --- Top Bar --- */
+        #topbar {
+            height: var(--topbar-height);
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center;
+            padding: 0 12px; gap: 8px;
+            flex-shrink: 0;
+            z-index: 100;
+            transition: background 0.4s, border-color 0.4s;
+        }
+        #topbar .tb-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            width: 32px; height: 32px; border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px; transition: all 0.2s;
+        }
+        #topbar .tb-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+        #topbar .tb-btn.active { color: var(--accent-color); }
+        .tb-divider { width: 1px; height: 24px; background: var(--border-color); flex-shrink:0; }
+        #story-title-bar {
+            font-family: var(--font-header);
+            font-size: 14px; color: var(--accent-color);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            max-width: 300px;
+        }
+        .tb-spacer { flex: 1; }
+        #session-stats {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 10px; color: var(--text-muted);
+            letter-spacing: 0.3px;
+        }
+        #session-stats .stat-item {
+            display: flex; align-items: center; gap: 4px;
+        }
+        #session-stats .stat-item i { font-size: 9px; }
+        #save-indicator {
+            font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 5px;
+            transition: color 0.3s;
+        }
+        #save-indicator.saving { color: var(--warning-color); }
+        #save-indicator.saved { color: var(--success-color); }
+        #save-indicator.error { color: var(--danger-color); }
+
+        /* --- IDE Body --- */
+        #ide-body {
+            flex: 1; display: flex; overflow: hidden;
+        }
+
+        /* ============================================================
+           PANE 1: BINDER (LEFT SIDEBAR)
+           ============================================================ */
+        #binder-pane {
+            width: var(--binder-width);
+            min-width: var(--binder-width);
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border-color);
+            display: flex; flex-direction: column;
+            transition: margin-left var(--transition-speed) ease, opacity var(--transition-speed) ease, background 0.4s, border-color 0.4s;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        #binder-pane.collapsed {
+            margin-left: calc(-1 * var(--binder-width));
+            opacity: 0; pointer-events: none;
+        }
+        .binder-section {
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+        .binder-header {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 6px;
+            flex-shrink: 0;
+        }
+        .binder-header span {
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--text-muted); flex: 1;
+        }
+        .binder-header .bh-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            width: 24px; height: 24px; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; transition: all 0.2s;
+        }
+        .binder-header .bh-btn:hover { color: var(--accent-color); background: var(--bg-hover); }
+        .binder-header .bh-btn:disabled,
+        .header-btn:disabled {
+            opacity: 0.35;
+            cursor: default;
+            pointer-events: none;
+        }
+        .binder-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--bg-deepest);
+            flex-shrink: 0;
+        }
+        .binder-tab {
+            flex: 1;
+            padding: 8px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .binder-tab:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+        .binder-tab.active {
+            color: var(--accent-color);
+            border-bottom-color: var(--accent-color);
+        }
+
+        /* Search bar in binder */
+        #binder-search-wrap {
+            padding: 6px 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        #binder-search {
+            width: 100%; padding: 5px 8px 5px 28px; font-size: 11px;
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary);
+            font-family: var(--font-ui); outline: none;
+            transition: border-color 0.2s;
+        }
+        #binder-search:focus { border-color: var(--accent-color); }
+        #binder-search-wrap { position: relative; }
+        #binder-search-wrap i {
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            font-size: 10px; color: var(--text-muted); pointer-events: none;
+        }
+
+        /* Bookmarks area */
+        #bookmarks-section {
+            max-height: 120px; overflow-y: auto;
+        }
+        #bookmarks-section .section-label {
+            font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px;
+            color: var(--text-muted); padding: 6px 12px 2px; font-weight: 600;
+        }
+        .bookmark-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 4px 12px; cursor: pointer;
+            font-size: 11px; color: var(--text-secondary);
+            transition: background 0.15s;
+        }
+        .bookmark-item:hover { background: var(--bg-hover); color: var(--accent-color); }
+        .bookmark-item i { font-size: 9px; color: var(--accent-color); }
+        .bookmark-item .bm-remove {
+            margin-left: auto; opacity: 0; background: none; border: none;
+            color: var(--text-muted); cursor: pointer; font-size: 9px;
+            transition: opacity 0.15s;
+        }
+        .bookmark-item:hover .bm-remove { opacity: 1; }
+        .bookmark-item .bm-remove:hover { color: var(--danger-color); }
+
+        #binder-tree {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            padding: 6px 0;
+        }
+
+        /* --- Tree Nodes --- */
+        .tree-list { list-style: none; padding: 0; margin: 0; }
+        .tree-list .tree-list { padding-left: 16px; }
+        .tree-item-header {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 10px; cursor: pointer;
+            border-radius: 4px; margin: 1px 6px;
+            transition: background 0.15s;
+            user-select: none;
+            position: relative;
+        }
+        .tree-item-header:hover { background: var(--bg-hover); }
+        .tree-item-header.active { background: var(--bg-active); }
+        .tree-item-header.active .tree-label { color: var(--accent-color); }
+        .tree-item-header.drop-target { background: var(--bg-active); outline: 1px dashed var(--accent-color); }
+        .tree-item-header .tree-chevron {
+            width: 14px; text-align: center; font-size: 9px; color: var(--text-muted);
+            transition: transform 0.2s; flex-shrink: 0;
+        }
+        .tree-item-header .tree-chevron.expanded { transform: rotate(90deg); }
+        .tree-item-header .tree-chevron.hidden-chevron { visibility: hidden; }
+        .tree-item-header .tree-icon { width: 16px; text-align: center; font-size: 12px; flex-shrink: 0; }
+        .tree-item-header .tree-icon.icon-folder { color: #ffcc33; }
+        .tree-item-header .tree-icon.icon-document { color: #88aaff; }
+        .tree-item-header .tree-icon.icon-note { color: #88ddaa; }
+        .tree-item-header .tree-icon.icon-character { color: #ff88cc; }
+        .tree-item-header .tree-icon.icon-location { color: #88ddff; }
+        .tree-item-header .tree-icon.icon-item { color: #ddaa55; }
+        .tree-item-header .tree-icon.icon-trash { color: #888; }
+        .tree-label {
+            flex: 1; font-size: 12px; color: var(--text-secondary);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .tree-item-header .tree-actions-btn {
+            opacity: 0; background: none; border: none; color: var(--text-muted);
+            cursor: pointer; width: 18px; height: 18px; border-radius: 3px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 10px; transition: all 0.15s; flex-shrink: 0;
+        }
+        .tree-item-header:hover .tree-actions-btn { opacity: 1; }
+        .tree-item-header .tree-actions-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .tree-children { overflow: hidden; }
+        .tree-children.collapsed-children { display: none; }
+        .tree-item.drag-ghost { opacity: 0.4; }
+        .tree-item.sortable-chosen .tree-item-header { background: var(--bg-active); }
+        .tree-status-dot {
+            width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+        }
+        .tree-status-dot.status-outline { background: var(--text-muted); }
+        .tree-status-dot.status-draft { background: var(--warning-color); }
+        .tree-status-dot.status-revision { background: #aa88ff; }
+        .tree-status-dot.status-final { background: var(--success-color); }
+        .tree-status-dot.status-published { background: var(--accent-color); }
+
+        /* Search results highlight */
+        .tree-item-header.search-match .tree-label { color: var(--accent-color); font-weight: 600; }
+        .tree-item-header.search-no-match { opacity: 0.3; }
+
+        /* ============================================================
+           PANE 2: EDITOR CANVAS (CENTER)
+           ============================================================ */
+        #editor-pane {
+            flex: 1; display: flex; flex-direction: column;
+            min-width: 0;
+            background: var(--editor-bg);
+            transition: background 0.4s;
+        }
+        #editor-header {
+            padding: 8px 20px; border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 10px;
+            flex-shrink: 0; background: var(--bg-panel-translucent);
+            transition: background 0.4s, border-color 0.4s;
+        }
+        #editor-doc-title {
+            font-family: var(--font-header);
+            font-size: 15px; color: var(--text-primary);
+            background: none; border: none; flex: 1;
+            outline: none; padding: 4px 0;
+        }
+        #editor-doc-title::placeholder { color: var(--text-faint); }
+        .header-btn {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            width: 28px; height: 28px; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 12px; transition: all 0.2s;
+        }
+        .header-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
+        .header-btn.active { color: var(--accent-color); }
+        .header-btn.bookmarked { color: var(--accent-color); }
+
+        /* Target/Goal progress bar */
+        #target-bar-wrap {
+            display: none;
+            padding: 0 20px 6px;
+            background: var(--bg-panel-translucent);
+        }
+        #target-bar-wrap.visible { display: block; }
+        .target-info {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 10px; color: var(--text-muted); margin-bottom: 3px;
+        }
+        .target-bar {
+            width: 100%; height: 4px; background: var(--bg-input);
+            border-radius: 2px; overflow: hidden;
+        }
+        .target-bar-fill {
+            height: 100%; background: var(--accent-color);
+            border-radius: 2px; transition: width 0.4s ease;
+        }
+        .target-bar-fill.complete { background: var(--success-color); }
+
+        #editor-wrapper {
+            flex: 1; display: flex; flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Quill Overrides - using CSS variables */
+        #editor-wrapper .ql-toolbar.ql-snow {
+            border: none; border-bottom: 1px solid var(--border-color);
+            background: var(--bg-panel-translucent);
+            padding: 6px 12px;
+            transition: background 0.4s, border-color 0.4s;
+        }
+        #editor-wrapper .ql-toolbar .ql-stroke { stroke: var(--text-muted); }
+        #editor-wrapper .ql-toolbar .ql-fill { fill: var(--text-muted); }
+        #editor-wrapper .ql-toolbar .ql-picker-label { color: var(--text-muted); }
+        #editor-wrapper .ql-toolbar button:hover .ql-stroke,
+        #editor-wrapper .ql-toolbar .ql-picker-label:hover { stroke: var(--text-primary); color: var(--text-primary); }
+        #editor-wrapper .ql-toolbar button.ql-active .ql-stroke { stroke: var(--accent-color); }
+        #editor-wrapper .ql-toolbar button.ql-active .ql-fill { fill: var(--accent-color); }
+        #editor-wrapper .ql-toolbar .ql-picker-options {
+            background: var(--bg-panel); border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        #editor-wrapper .ql-toolbar .ql-picker-item { color: var(--text-secondary); }
+        #editor-wrapper .ql-toolbar .ql-picker-item:hover { color: var(--accent-color); }
+
+        #editor-wrapper .ql-container.ql-snow {
+            border: none; flex: 1; overflow-y: auto;
+            font-family: var(--editor-font);
+            font-size: 16px; line-height: 1.8;
+        }
+        #editor-wrapper .ql-editor {
+            padding: 30px 60px;
+            color: var(--editor-text);
+            min-height: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            transition: color 0.4s;
+        }
+        #editor-wrapper .ql-editor.ql-blank::before {
+            color: var(--text-faint); font-style: italic;
+        }
+        #editor-wrapper .ql-editor h1,
+        #editor-wrapper .ql-editor h2,
+        #editor-wrapper .ql-editor h3 {
+            font-family: var(--font-header); color: var(--editor-heading-color);
+        }
+        #editor-wrapper .ql-editor blockquote {
+            border-left: 3px solid var(--accent-color);
+            padding-left: 16px; color: var(--text-secondary);
+        }
+        #editor-wrapper .ql-editor a { color: var(--accent-color); }
+
+        /* Focus Mode */
+        body.focus-mode #topbar,
+        body.focus-mode #binder-pane,
+        body.focus-mode #inspector-pane,
+        body.focus-mode #editor-header,
+        body.focus-mode #target-bar-wrap,
+        body.focus-mode #editor-footer,
+        body.focus-mode #bottombar,
+        body.focus-mode .ql-toolbar {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s;
+        }
+        body.focus-mode:hover #topbar,
+        body.focus-mode:hover #editor-footer,
+        body.focus-mode:hover .ql-toolbar {
+            opacity: 0.5;
+            pointer-events: auto;
+        }
+        body.focus-mode #editor-pane { background: var(--bg-deepest); }
+
+        /* Typewriter scroll mode */
+        body.typewriter-mode #editor-wrapper .ql-editor {
+            padding-bottom: 50vh;
+        }
+
+        /* Outline panel (inside editor pane) */
+        #outline-panel {
+            display: none;
+            position: absolute; top: 0; right: 0;
+            width: 220px; height: 100%;
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-color);
+            z-index: 10; overflow-y: auto;
+            padding: 12px;
+        }
+        #outline-panel.visible { display: block; }
+        #outline-panel .outline-title {
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 10px;
+        }
+        .outline-item {
+            padding: 4px 0; font-size: 12px; color: var(--text-secondary);
+            cursor: pointer; transition: color 0.15s;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .outline-item:hover { color: var(--accent-color); }
+        .outline-item.level-2 { padding-left: 12px; font-size: 11px; }
+        .outline-item.level-3 { padding-left: 24px; font-size: 11px; color: var(--text-muted); }
+
+        /* Split view */
+        #split-editor-pane {
+            display: none;
+            flex: 1; flex-direction: column;
+            min-width: 0;
+            background: var(--editor-bg);
+            border-left: 2px solid var(--accent-color);
+        }
+        #split-editor-pane.visible { display: flex; }
+        #split-editor-pane .split-header {
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 8px;
+            background: var(--bg-panel-translucent);
+            font-size: 12px; color: var(--text-secondary);
+        }
+        #split-editor-pane .split-header .split-title {
+            flex: 1; font-family: var(--font-header); font-size: 13px;
+        }
+        #split-editor-pane .split-header button {
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; font-size: 12px; transition: color 0.2s;
+        }
+        #split-editor-pane .split-header button:hover { color: var(--danger-color); }
+        #split-editor-content {
+            flex: 1; overflow-y: auto; padding: 30px 40px;
+            font-family: var(--editor-font); font-size: 15px;
+            line-height: 1.8; color: var(--editor-text);
+            max-width: 700px; margin: 0 auto;
+        }
+
+        #editor-footer {
+            padding: 6px 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex; align-items: center; gap: 16px;
+            font-size: 11px; color: var(--text-muted);
+            flex-shrink: 0;
+            background: var(--bg-panel-translucent);
+            transition: background 0.4s, border-color 0.4s;
+        }
+
+        /* Empty State */
+        #editor-empty-state {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            flex-direction: column; gap: 12px;
+            color: var(--text-faint);
+        }
+        #editor-empty-state i { font-size: 48px; }
+        #editor-empty-state p { font-size: 14px; font-family: var(--font-body); }
+        #editor-empty-state.hidden { display: none; }
+
+        /* ============================================================
+           PANE 3: INSPECTOR (RIGHT SIDEBAR)
+           ============================================================ */
+        #inspector-pane {
+            width: var(--inspector-width);
+            min-width: var(--inspector-width);
+            background: var(--bg-panel);
+            border-left: 1px solid var(--border-color);
+            display: flex; flex-direction: column;
+            transition: margin-right var(--transition-speed) ease, opacity var(--transition-speed) ease, background 0.4s, border-color 0.4s;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        #inspector-pane.collapsed {
+            margin-right: calc(-1 * var(--inspector-width));
+            opacity: 0; pointer-events: none;
+        }
+        .inspector-header {
+            padding: 10px 14px; border-bottom: 1px solid var(--border-color);
+            font-size: 11px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--text-muted); flex-shrink: 0;
+        }
+        #inspector-content {
+            flex: 1; overflow-y: auto; padding: 14px;
+        }
+        #inspector-empty {
+            display: flex; align-items: center; justify-content: center;
+            height: 100%; color: var(--text-faint); font-size: 12px;
+            text-align: center; padding: 20px;
+        }
+        .insp-section { margin-bottom: 18px; }
+        .insp-section-title {
+            font-size: 10px; font-weight: 600; text-transform: uppercase;
+            letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .insp-field { margin-bottom: 10px; }
+        .insp-field label {
+            display: block; font-size: 10px; color: var(--text-muted);
+            margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .insp-field select,
+        .insp-field input[type="text"],
+        .insp-field input[type="number"],
+        .insp-field textarea {
+            width: 100%; padding: 6px 10px; font-size: 12px;
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary);
+            font-family: var(--font-ui); outline: none;
+            transition: border-color 0.2s;
+        }
+        .insp-field select:focus,
+        .insp-field input:focus,
+        .insp-field textarea:focus {
+            border-color: var(--accent-color);
+        }
+        .insp-field select option { background: var(--bg-panel); }
+        .insp-field textarea { resize: vertical; min-height: 60px; line-height: 1.5; }
+
+        .insp-image-preview {
+            width: 100%; aspect-ratio: 16/10; border-radius: 8px;
+            background: var(--bg-input); border: 1px dashed var(--border-color);
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden; cursor: pointer; position: relative;
+            margin-bottom: 6px; transition: border-color 0.2s;
+        }
+        .insp-image-preview:hover { border-color: var(--accent-color); }
+        .insp-image-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .insp-image-preview .placeholder-text {
+            color: var(--text-faint); font-size: 11px; text-align: center;
+        }
+        .insp-image-preview .placeholder-text i { display: block; font-size: 24px; margin-bottom: 6px; }
+        .insp-image-actions { display: flex; gap: 6px; }
+
+        .link-item {
+            display: flex; align-items: center; gap: 8px;
+            padding: 5px 8px; border-radius: 6px;
+            background: var(--bg-input); margin-bottom: 4px;
+            font-size: 11px; transition: background 0.15s;
+        }
+        .link-item:hover { background: var(--bg-hover); }
+        .link-item .link-icon { font-size: 10px; color: var(--text-muted); }
+        .link-item .link-name { flex: 1; color: var(--text-secondary); cursor: pointer; }
+        .link-item .link-name:hover { color: var(--accent-color); }
+        .link-item .link-remove {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 10px; opacity: 0; transition: opacity 0.15s;
+        }
+        .link-item:hover .link-remove { opacity: 1; }
+        .link-item .link-remove:hover { color: var(--danger-color); }
+        .link-search-wrap { position: relative; margin-top: 6px; }
+        .link-search-wrap input {
+            width: 100%; padding: 6px 10px; font-size: 11px;
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary); font-family: var(--font-ui);
+            outline: none;
+        }
+        .link-search-wrap input:focus { border-color: var(--accent-color); }
+        .link-search-results {
+            display: none; position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--bg-panel); border: 1px solid var(--border-color);
+            border-radius: 6px; margin-top: 4px; max-height: 160px;
+            overflow-y: auto; z-index: 50;
+        }
+        .link-search-results.visible { display: block; }
+        .link-search-result {
+            padding: 6px 10px; font-size: 11px; color: var(--text-secondary);
+            cursor: pointer; display: flex; align-items: center; gap: 6px;
+            transition: background 0.15s;
+        }
+        .link-search-result:hover { background: var(--bg-active); color: var(--accent-color); }
+        .link-search-result i { font-size: 10px; color: var(--text-muted); }
+
+        /* Snapshot list */
+        .snapshot-item {
+            display: flex; align-items: center; gap: 6px;
+            padding: 5px 8px; border-radius: 5px;
+            background: var(--bg-input); margin-bottom: 4px;
+            font-size: 10px; color: var(--text-secondary);
+            transition: background 0.15s;
+        }
+        .snapshot-item:hover { background: var(--bg-hover); }
+        .snapshot-item .snap-name { flex: 1; cursor: pointer; }
+        .snapshot-item .snap-name:hover { color: var(--accent-color); }
+        .snapshot-item .snap-date { color: var(--text-muted); font-size: 9px; }
+        .snapshot-item .snap-delete {
+            background: none; border: none; color: var(--text-muted); cursor: pointer;
+            font-size: 9px; opacity: 0; transition: opacity 0.15s;
+        }
+        .snapshot-item:hover .snap-delete { opacity: 1; }
+        .snapshot-item .snap-delete:hover { color: var(--danger-color); }
+
+        /* ============================================================
+           BOTTOM BAR
+           ============================================================ */
+        #bottombar {
+            height: var(--bottombar-height);
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border-color);
+            display: flex; align-items: center;
+            padding: 0 16px; gap: 16px;
+            flex-shrink: 0;
+            font-size: 10px; color: var(--text-muted);
+            transition: background 0.4s, border-color 0.4s;
+        }
+        #bottombar .bar-spacer { flex: 1; }
+        .theme-selector {
+            display: flex; align-items: center; gap: 6px;
+        }
+        .theme-dot {
+            width: 14px; height: 14px; border-radius: 50%;
+            border: 2px solid transparent; cursor: pointer;
+            transition: all 0.2s; position: relative;
+        }
+        .theme-dot:hover { transform: scale(1.2); }
+        .theme-dot.active { border-color: var(--text-primary); }
+        .theme-dot[data-theme="dark"] { background: #1a1a1a; }
+        .theme-dot[data-theme="midnight"] { background: #1a2040; }
+        .theme-dot[data-theme="forest"] { background: #1a2a1a; }
+        .theme-dot[data-theme="sepia"] { background: #3a2a18; }
+        .theme-dot[data-theme="sepia-warm"] { background: #2a1a10; }
+        .theme-dot[data-theme="parchment"] { background: #e8dcc8; }
+
+        /* ============================================================
+           CONTEXT MENU
+           ============================================================ */
+        #context-menu {
+            display: none; position: fixed; z-index: 5000;
+            background: var(--bg-panel); border: 1px solid var(--border-color);
+            border-radius: 8px; padding: 6px 0;
+            min-width: 200px;
+            box-shadow: 0 8px 32px var(--shadow-deep);
+        }
+        #context-menu.visible { display: block; }
+        .ctx-item {
+            padding: 7px 14px; font-size: 12px; color: var(--text-secondary);
+            cursor: pointer; display: flex; align-items: center; gap: 8px;
+            transition: background 0.12s;
+        }
+        .ctx-item:hover { background: var(--bg-hover); }
+        .ctx-item i { width: 16px; text-align: center; font-size: 11px; color: var(--text-muted); }
+        .ctx-item.danger { color: var(--danger-color); }
+        .ctx-item.danger i { color: var(--danger-color); }
+        .ctx-item .shortcut { margin-left: auto; font-size: 9px; color: var(--text-faint); }
+        .ctx-sep { height: 1px; background: var(--border-color); margin: 4px 0; }
+
+        /* ============================================================
+           MODALS
+           ============================================================ */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; z-index: 6000;
+            background: rgba(0,0,0,0.6); align-items: center; justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.visible { display: flex; }
+        .modal-box {
+            background: var(--bg-panel); border: 1px solid var(--border-color);
+            border-radius: 12px; padding: 24px; width: 440px; max-width: 90vw;
+            box-shadow: 0 16px 64px var(--shadow-deep);
+        }
+        .modal-box h3 {
+            font-family: var(--font-header); font-size: 16px;
+            color: var(--text-primary); margin-bottom: 16px;
+        }
+        .modal-box p { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+        .modal-box input[type="text"],
+        .modal-box input[type="number"] {
+            width: 100%; padding: 8px 12px; font-size: 13px;
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 6px; color: var(--text-primary); font-family: var(--font-ui);
+            outline: none; margin-bottom: 16px;
+        }
+        .modal-box input:focus { border-color: var(--accent-color); }
+        .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .btn {
+            padding: 7px 16px; font-size: 12px; font-weight: 500;
+            border: 1px solid var(--border-color); border-radius: 6px;
+            cursor: pointer; font-family: var(--font-ui);
+            transition: all 0.2s; background: var(--bg-hover);
+            color: var(--text-secondary);
+        }
+        .btn:hover { background: var(--bg-active); color: var(--text-primary); }
+        .btn-accent { background: rgba(255,215,0,0.15);             border-color: var(--accent-color); color: var(--accent-color); }
+        .btn-accent:hover { background: rgba(255,215,0,0.25); }
+        .btn-danger { background: rgba(255,68,68,0.1); border-color: var(--danger-color); color: var(--danger-color); }
+        .btn-danger:hover { background: rgba(255,68,68,0.2); }
+
+        /* ============================================================
+           SEARCH ALL DOCUMENTS MODAL
+           ============================================================ */
+        #search-all-modal .search-all-input {
+            width: 100%; padding: 10px 14px; font-size: 14px;
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 8px; color: var(--text-primary);
+            font-family: var(--font-ui); outline: none; margin-bottom: 12px;
+        }
+        #search-all-modal .search-all-input:focus { border-color: var(--accent-color); }
+        #search-all-results {
+            max-height: 400px; overflow-y: auto;
+        }
+        .search-result-item {
+            padding: 10px 12px; border-radius: 6px;
+            cursor: pointer; margin-bottom: 4px;
+            transition: background 0.15s;
+        }
+        .search-result-item:hover { background: var(--bg-hover); }
+        .search-result-title {
+            font-size: 12px; font-weight: 600; color: var(--text-primary);
+            margin-bottom: 3px; display: flex; align-items: center; gap: 6px;
+        }
+        .search-result-title i { font-size: 10px; color: var(--text-muted); }
+        .search-result-excerpt {
+            font-size: 11px; color: var(--text-muted); line-height: 1.5;
+        }
+        .search-result-excerpt mark {
+            background: rgba(255, 215, 0, 0.3); color: var(--text-primary);
+            border-radius: 2px; padding: 0 2px;
+        }
+        .search-result-empty {
+            text-align: center; padding: 30px; color: var(--text-faint);
+            font-size: 12px;
+        }
+
+        /* ============================================================
+           KEYBOARD SHORTCUTS MODAL
+           ============================================================ */
+        .shortcuts-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .shortcut-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 0; font-size: 12px;
+        }
+        .shortcut-item .sc-label { color: var(--text-secondary); }
+        .shortcut-item .sc-keys {
+            display: flex; gap: 3px;
+        }
+        .shortcut-item .sc-key {
+            background: var(--bg-input); border: 1px solid var(--border-color);
+            border-radius: 4px; padding: 2px 6px; font-size: 10px;
+            color: var(--text-muted); font-family: var(--font-ui);
+        }
+
+        /* ============================================================
+           RESPONSIVE
+           ============================================================ */
+        @media (max-width: 1100px) {
+            :root { --binder-width: 220px; --inspector-width: 260px; }
+        }
+        @media (max-width: 860px) {
+            :root { --binder-width: 200px; --inspector-width: 240px; }
+            #editor-wrapper .ql-editor { padding: 20px 30px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">WRITER'S IDE</div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toast-container"></div>
+
+    <!-- Main App -->
+    <div id="app">
+        <!-- Top Bar -->
+        <div id="topbar">
+            <button class="tb-btn" id="btn-toggle-binder" title="Toggle Binder (Ctrl+\\)"><i class="fas fa-columns"></i></button>
+            <div class="tb-divider"></div>
+            <div id="story-title-bar">Writer's IDE</div>
+            <div class="tb-spacer"></div>
+            <div id="session-stats">
+                <div class="stat-item"><i class="fas fa-pen-nib"></i><span id="session-words">0</span> words</div>
+                <div class="stat-item"><i class="fas fa-clock"></i><span id="session-time">0:00</span></div>
+                <div class="stat-item"><i class="fas fa-tachometer-alt"></i><span id="session-wpm">0</span> wpm</div>
+            </div>
+            <div class="tb-divider"></div>
+            <div id="save-indicator"><i class="fas fa-circle"></i> <span>Ready</span></div>
+            <div class="tb-divider"></div>
+            <button class="tb-btn" id="btn-search-all" title="Search All Documents (Ctrl+Shift+F)"><i class="fas fa-search"></i></button>
+            <button class="tb-btn" id="btn-focus-mode" title="Focus Mode (F11)"><i class="fas fa-eye"></i></button>
+            <button class="tb-btn" id="btn-typewriter" title="Typewriter Mode"><i class="fas fa-i-cursor"></i></button>
+            <button class="tb-btn" id="btn-shortcuts-help" title="Keyboard Shortcuts"><i class="fas fa-keyboard"></i></button>
+            <button class="tb-btn" id="btn-toggle-inspector" title="Toggle Inspector (Ctrl+/)"><i class="fas fa-info-circle"></i></button>
+        </div>
+
+        <!-- IDE Body -->
+        <div id="ide-body">
+            <!-- Binder (Left) -->
+            <div id="binder-pane">
+                <div class="binder-header">
+                    <span>Project</span>
+                    <button class="bh-btn" id="btn-add-folder" title="Add Folder"><i class="fas fa-folder-plus"></i></button>
+                    <button class="bh-btn" id="btn-add-doc" title="Add Document"><i class="fas fa-file-plus fas fa-plus"></i></button>
+                </div>
+                <div class="binder-tabs">
+                    <button class="binder-tab active" data-mode="workspace">Work Tree</button>
+                    <button class="binder-tab" data-mode="published">Published Tree</button>
+                </div>
+                <div id="binder-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="binder-search" placeholder="Filter tree...">
+                </div>
+                <!-- Bookmarks -->
+                <div id="bookmarks-section" class="binder-section" style="display:none;">
+                    <div class="section-label"><i class="fas fa-star"></i> Bookmarks</div>
+                    <div id="bookmarks-list"></div>
+                </div>
+                <div id="binder-tree"></div>
+            </div>
+
+            <!-- Editor (Center) -->
+            <div id="editor-pane">
+                <!-- Empty state -->
+                <div id="editor-empty-state">
+                    <i class="fas fa-feather-alt"></i>
+                    <p>Select a document to begin writing</p>
+                </div>
+                <!-- Editor header (hidden when no doc) -->
+                <div id="editor-header" style="display:none;">
+                    <input type="text" id="editor-doc-title" placeholder="Untitled">
+                    <button class="header-btn" id="btn-bookmark" title="Bookmark"><i class="far fa-star"></i></button>
+                    <button class="header-btn" id="btn-outline" title="Outline"><i class="fas fa-list-ol"></i></button>
+                    <button class="header-btn" id="btn-split-view" title="Split View"><i class="fas fa-columns"></i></button>
+                    <button class="header-btn" id="btn-snapshot" title="Take Snapshot"><i class="fas fa-camera"></i></button>
+                </div>
+                <!-- Target bar -->
+                <div id="target-bar-wrap">
+                    <div class="target-info">
+                        <span id="target-label">0 / 0 words</span>
+                        <span id="target-pct">0%</span>
+                    </div>
+                    <div class="target-bar"><div class="target-bar-fill" id="target-bar-fill"></div></div>
+                </div>
+                <!-- Editor wrapper -->
+                <div id="editor-wrapper" style="display:none;">
+                    <div id="editor-quill"></div>
+                    <!-- Outline panel overlay -->
+                    <div id="outline-panel">
+                        <div class="outline-title">Document Outline</div>
+                        <div id="outline-list"></div>
+                    </div>
+                </div>
+                <!-- Editor footer -->
+                <div id="editor-footer" style="display:none;">
+                    <span id="word-count">0 words</span>
+                    <span id="char-count">0 chars</span>
+                    <span id="para-count">0 paragraphs</span>
+                </div>
+            </div>
+
+            <!-- Split View -->
+            <div id="split-editor-pane">
+                <div class="split-header">
+                    <span class="split-title" id="split-title">Split View</span>
+                    <button id="btn-close-split" title="Close Split"><i class="fas fa-times"></i></button>
+                </div>
+                <div id="split-editor-content"></div>
+            </div>
+
+            <!-- Inspector (Right) -->
+            <div id="inspector-pane">
+                <div class="inspector-header">Inspector</div>
+                <div id="inspector-content">
+                    <div id="inspector-empty">
+                        <div>
+                            <i class="fas fa-info-circle" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                            Select a document to view its properties
+                        </div>
+                    </div>
+                    <div id="inspector-fields" style="display:none;">
+                        <!-- Node Type & Status -->
+                        <div class="insp-section" id="insp-properties-section">
+                            <div class="insp-section-title"><i class="fas fa-tag"></i> Properties</div>
+                            <div class="insp-field">
+                                <label id="insp-type-label">Type</label>
+                                <select id="insp-type">
+                                    <option value="document">Document</option>
+                                    <option value="folder">Folder</option>
+                                    <option value="character">Character</option>
+                                    <option value="location">Location</option>
+                                    <option value="note">Note</option>
+                                    <option value="item">Item</option>
+                                </select>
+                            </div>
+                            <div class="insp-field">
+                                <label id="insp-status-label">Status</label>
+                                <select id="insp-status">
+                                    <option value="outline">Outline</option>
+                                    <option value="draft">Draft</option>
+                                    <option value="revision">Revision</option>
+                                    <option value="final">Final</option>
+                                    <option value="published">Published</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Word Target -->
+                        <div class="insp-section" id="insp-target-section">
+                            <div class="insp-section-title"><i class="fas fa-bullseye"></i> Word Target</div>
+                            <div class="insp-field">
+                                <label id="insp-target-label">Target Words</label>
+                                <input type="number" id="insp-target" min="0" step="100" placeholder="e.g. 2000">
+                            </div>
+                        </div>
+                        <!-- Image -->
+                        <div class="insp-section" id="insp-image-section">
+                            <div class="insp-section-title"><i class="fas fa-image"></i> Cover Image</div>
+                            <div class="insp-image-preview" id="insp-image-preview">
+                                <div class="placeholder-text"><i class="fas fa-cloud-upload-alt"></i>Click to set image URL</div>
+                            </div>
+                            <div class="insp-image-actions">
+                                <button class="btn" id="btn-set-image" style="flex:1;font-size:10px;">Set URL</button>
+                                <button class="btn btn-danger" id="btn-clear-image" style="font-size:10px;">Clear</button>
+                            </div>
+                        </div>
+                        <!-- Synopsis -->
+                        <div class="insp-section" id="insp-synopsis-section">
+                            <div class="insp-section-title"><i class="fas fa-align-left"></i> Synopsis</div>
+                            <div class="insp-field">
+                                <label id="insp-synopsis-label">Synopsis</label>
+                                <textarea id="insp-synopsis" rows="3" placeholder="Brief summary..."></textarea>
+                            </div>
+                        </div>
+                        <!-- Notes -->
+                        <div class="insp-section" id="insp-notes-section">
+                            <div class="insp-section-title"><i class="fas fa-sticky-note"></i> Notes</div>
+                            <div class="insp-field">
+                                <label id="insp-notes-label">Notes</label>
+                                <textarea id="insp-notes" rows="4" placeholder="Private notes..."></textarea>
+                            </div>
+                        </div>
+                        <!-- Links -->
+                        <div class="insp-section" id="insp-links-section">
+                            <div class="insp-section-title"><i class="fas fa-link"></i> Linked Nodes</div>
+                            <div id="insp-links-list"></div>
+                            <div class="link-search-wrap">
+                                <input type="text" id="link-search-input" placeholder="Search to link...">
+                                <div class="link-search-results" id="link-search-results"></div>
+                            </div>
+                        </div>
+                        <!-- Snapshots -->
+                        <div class="insp-section" id="insp-snapshots-section">
+                            <div class="insp-section-title"><i class="fas fa-history"></i> Snapshots</div>
+                            <div id="insp-snapshots-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Bar -->
+        <div id="bottombar">
+            <span>Writer's IDE v2.0</span>
+            <div class="bar-spacer"></div>
+            <div class="theme-selector">
+                <span style="margin-right:4px;">Theme:</span>
+                <div class="theme-dot active" data-theme="dark" title="Dark"></div>
+                <div class="theme-dot" data-theme="midnight" title="Midnight Blue"></div>
+                <div class="theme-dot" data-theme="forest" title="Forest"></div>
+                <div class="theme-dot" data-theme="sepia" title="Sepia Classic"></div>
+                <div class="theme-dot" data-theme="sepia-warm" title="Sepia Warm"></div>
+                <div class="theme-dot" data-theme="parchment" title="Parchment Light"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu -->
+    <div id="context-menu">
+        <div class="ctx-item" data-action="rename"><i class="fas fa-pen"></i> Rename <span class="shortcut">F2</span></div>
+        <div class="ctx-item" data-action="add-child-doc"><i class="fas fa-file-alt"></i> Add Document</div>
+        <div class="ctx-item" data-action="add-child-folder"><i class="fas fa-folder"></i> Add Folder</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" data-action="add-character"><i class="fas fa-user"></i> Add Character</div>
+        <div class="ctx-item" data-action="add-location"><i class="fas fa-map-marker-alt"></i> Add Location</div>
+        <div class="ctx-item" data-action="add-note"><i class="fas fa-sticky-note"></i> Add Note</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item" data-action="duplicate"><i class="fas fa-copy"></i> Duplicate</div>
+        <div class="ctx-item" data-action="bookmark-toggle"><i class="fas fa-star"></i> Toggle Bookmark</div>
+        <div class="ctx-sep"></div>
+        <div class="ctx-item danger" data-action="delete"><i class="fas fa-trash"></i> Delete <span class="shortcut">Del</span></div>
+    </div>
+
+    <!-- Modal: Rename -->
+    <div class="modal-overlay" id="modal-rename">
+        <div class="modal-box">
+            <h3>Rename</h3>
+            <input type="text" id="rename-input" placeholder="Enter new name">
+            <div class="modal-actions">
+                <button class="btn" id="rename-cancel">Cancel</button>
+                <button class="btn btn-accent" id="rename-confirm">Rename</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Delete -->
+    <div class="modal-overlay" id="modal-delete">
+        <div class="modal-box">
+            <h3>Confirm Delete</h3>
+            <p id="delete-message">Are you sure you want to delete this item?</p>
+            <div class="modal-actions">
+                <button class="btn" id="delete-cancel">Cancel</button>
+                <button class="btn btn-danger" id="delete-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Image URL -->
+    <div class="modal-overlay" id="modal-image-url">
+        <div class="modal-box">
+            <h3>Set Image URL</h3>
+            <input type="text" id="image-url-input" placeholder="https://example.com/image.jpg">
+            <div class="modal-actions">
+                <button class="btn" id="image-url-cancel">Cancel</button>
+                <button class="btn btn-accent" id="image-url-confirm">Set Image</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Set Target -->
+    <div class="modal-overlay" id="modal-target">
+        <div class="modal-box">
+            <h3>Set Word Target</h3>
+            <input type="number" id="target-input" placeholder="e.g. 2000" min="0" step="100">
+            <div class="modal-actions">
+                <button class="btn" id="target-cancel">Cancel</button>
+                <button class="btn btn-accent" id="target-confirm">Set Target</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Search All Documents -->
+    <div class="modal-overlay" id="search-all-modal">
+        <div class="modal-box" style="width:560px;">
+            <h3><i class="fas fa-search" style="margin-right:8px;"></i>Search All Documents</h3>
+            <input type="text" class="search-all-input" id="search-all-input" placeholder="Type to search across all documents..." autofocus>
+            <div id="search-all-results">
+                <div class="search-result-empty">Start typing to search...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Snapshot Name -->
+    <div class="modal-overlay" id="modal-snapshot">
+        <div class="modal-box">
+            <h3>Save Snapshot</h3>
+            <p>Save a snapshot of the current content. You can restore it later.</p>
+            <input type="text" id="snapshot-name-input" placeholder="Snapshot name (optional)">
+            <div class="modal-actions">
+                <button class="btn" id="snapshot-cancel">Cancel</button>
+                <button class="btn btn-accent" id="snapshot-confirm">Save Snapshot</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Keyboard Shortcuts -->
+    <div class="modal-overlay" id="modal-shortcuts">
+        <div class="modal-box" style="width:560px;">
+            <h3><i class="fas fa-keyboard" style="margin-right:8px;"></i>Keyboard Shortcuts</h3>
+            <div class="shortcuts-grid">
+                <div class="shortcut-item">
+                    <span class="sc-label">Toggle Binder</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">\</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Toggle Inspector</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">/</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Search All</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">Shift</span><span class="sc-key">F</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Focus Mode</span>
+                    <span class="sc-keys"><span class="sc-key">F11</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Save</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">S</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Rename</span>
+                    <span class="sc-keys"><span class="sc-key">F2</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">New Document</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">N</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Bold</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">B</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Italic</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">I</span></span>
+                </div>
+                <div class="shortcut-item">
+                    <span class="sc-label">Take Snapshot</span>
+                    <span class="sc-keys"><span class="sc-key">Ctrl</span><span class="sc-key">Shift</span><span class="sc-key">S</span></span>
+                </div>
+            </div>
+            <div class="modal-actions" style="margin-top:16px;">
+                <button class="btn" id="shortcuts-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Split View Picker -->
+    <div class="modal-overlay" id="modal-split-picker">
+        <div class="modal-box">
+            <h3>Open in Split View</h3>
+            <p>Select a document to view alongside your current editor:</p>
+            <div id="split-picker-list" style="max-height:300px;overflow-y:auto;margin-bottom:16px;"></div>
+            <div class="modal-actions">
+                <button class="btn" id="split-picker-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+/* ================================================================
+       WRITER'S IDE - Supabase Integrated JavaScript
+       ================================================================ */
+    (function() {
+        'use strict';
+
+        // ============================
+        // CONFIG & STATE
+        // ============================
+        const SUPABASE_URL = 'https://gdivyqfhgashkqcqqnas.supabase.co';
+        const SUPABASE_ANON_KEY = 'sb_publishable_pumorCjNkGt1RV_Ygfq30A_IFtVz_Lt';
+        let supabase = null;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentStoryId = urlParams.get('story_id');
+
+        const SAVE_DELAY = 1500;
+        const SEARCH_DELAY = 300;
+        const PUBLISHED_ROOTS = {
+            chapters: 'published_root_chapters',
+            characters: 'published_root_characters',
+            lore: 'published_root_lore',
+            timeline: 'published_root_timeline'
+        };
+
+        let state = {
+            treeMode: 'workspace',
+            nodes: [],
+            nodeMap: {},
+            activeNodeId: null,
+            expandedFolders: new Set(JSON.parse(localStorage.getItem('wIDE_expanded') || '[]')),
+            bookmarks: new Set(JSON.parse(localStorage.getItem('wIDE_bookmarks') || '[]')),
+            saveTimer: null,
+            isDirty: false,
+            quill: null,
+            contextNodeId: null,
+            sessionStartWords: 0,
+            sessionStartTime: Date.now(),
+            sessionTimer: null,
+            splitNodeId: null,
+            currentTheme: localStorage.getItem('wIDE_theme') || 'dark',
+            focusMode: false,
+            typewriterMode: localStorage.getItem('wIDE_typewriter') === 'true',
+            outlineVisible: false,
+        };
+
+        // ============================
+        // DOM REFS
+        // ============================
+        const $ = (sel) => document.querySelector(sel);
+        const $$ = (sel) => document.querySelectorAll(sel);
+
+        const dom = {
+            loadingOverlay: $('#loading-overlay'),
+            app: $('#app'),
+            toastContainer: $('#toast-container'),
+            storyTitle: $('#story-title-bar'),
+            saveIndicator: $('#save-indicator'),
+            sessionWords: $('#session-words'),
+            sessionTime: $('#session-time'),
+            sessionWpm: $('#session-wpm'),
+            btnToggleBinder: $('#btn-toggle-binder'),
+            btnToggleInspector: $('#btn-toggle-inspector'),
+            btnFocusMode: $('#btn-focus-mode'),
+            btnTypewriter: $('#btn-typewriter'),
+            btnSearchAll: $('#btn-search-all'),
+            btnShortcutsHelp: $('#btn-shortcuts-help'),
+            binderPane: $('#binder-pane'),
+            binderTabs: $$('.binder-tab'),
+            binderSearch: $('#binder-search'),
+            binderTree: $('#binder-tree'),
+            bookmarksSection: $('#bookmarks-section'),
+            bookmarksList: $('#bookmarks-list'),
+            btnAddFolder: $('#btn-add-folder'),
+            btnAddDoc: $('#btn-add-doc'),
+            editorPane: $('#editor-pane'),
+            editorEmptyState: $('#editor-empty-state'),
+            editorHeader: $('#editor-header'),
+            editorDocTitle: $('#editor-doc-title'),
+            editorWrapper: $('#editor-wrapper'),
+            editorFooter: $('#editor-footer'),
+            editorQuill: $('#editor-quill'),
+            wordCount: $('#word-count'),
+            charCount: $('#char-count'),
+            paraCount: $('#para-count'),
+            btnBookmark: $('#btn-bookmark'),
+            btnOutline: $('#btn-outline'),
+            btnSplitView: $('#btn-split-view'),
+            btnSnapshot: $('#btn-snapshot'),
+            outlinePanel: $('#outline-panel'),
+            outlineList: $('#outline-list'),
+            targetBarWrap: $('#target-bar-wrap'),
+            targetLabel: $('#target-label'),
+            targetPct: $('#target-pct'),
+            targetBarFill: $('#target-bar-fill'),
+            splitEditorPane: $('#split-editor-pane'),
+            splitTitle: $('#split-title'),
+            splitEditorContent: $('#split-editor-content'),
+            btnCloseSplit: $('#btn-close-split'),
+            inspectorPane: $('#inspector-pane'),
+            inspectorEmpty: $('#inspector-empty'),
+            inspectorFields: $('#inspector-fields'),
+            inspPropertiesSection: $('#insp-properties-section'),
+            inspTargetSection: $('#insp-target-section'),
+            inspImageSection: $('#insp-image-section'),
+            inspSynopsisSection: $('#insp-synopsis-section'),
+            inspNotesSection: $('#insp-notes-section'),
+            inspLinksSection: $('#insp-links-section'),
+            inspSnapshotsSection: $('#insp-snapshots-section'),
+            inspTypeLabel: $('#insp-type-label'),
+            inspStatusLabel: $('#insp-status-label'),
+            inspTargetLabel: $('#insp-target-label'),
+            inspSynopsisLabel: $('#insp-synopsis-label'),
+            inspNotesLabel: $('#insp-notes-label'),
+            inspType: $('#insp-type'),
+            inspStatus: $('#insp-status'),
+            inspTarget: $('#insp-target'),
+            inspSynopsis: $('#insp-synopsis'),
+            inspNotes: $('#insp-notes'),
+            inspImagePreview: $('#insp-image-preview'),
+            inspLinksList: $('#insp-links-list'),
+            linkSearchInput: $('#link-search-input'),
+            linkSearchResults: $('#link-search-results'),
+            inspSnapshotsList: $('#insp-snapshots-list'),
+            btnSetImage: $('#btn-set-image'),
+            btnClearImage: $('#btn-clear-image'),
+            contextMenu: $('#context-menu'),
+            modalRename: $('#modal-rename'),
+            renameInput: $('#rename-input'),
+            modalDelete: $('#modal-delete'),
+            deleteMessage: $('#delete-message'),
+            modalImageUrl: $('#modal-image-url'),
+            imageUrlInput: $('#image-url-input'),
+            modalTarget: $('#modal-target'),
+            targetInput: $('#target-input'),
+            searchAllModal: $('#search-all-modal'),
+            searchAllInput: $('#search-all-input'),
+            searchAllResults: $('#search-all-results'),
+            modalSnapshot: $('#modal-snapshot'),
+            snapshotNameInput: $('#snapshot-name-input'),
+            modalShortcuts: $('#modal-shortcuts'),
+            modalSplitPicker: $('#modal-split-picker'),
+            splitPickerList: $('#split-picker-list'),
+            bottombar: $('#bottombar'),
+        };
+
+        // ============================
+        // TOAST SYSTEM
+        // ============================
+        function toast(message, type = 'info', duration = 3000) {
+            const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
+            const el = document.createElement('div');
+            el.className = `toast ${type}`;
+            el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i>${message}`;
+            dom.toastContainer.appendChild(el);
+            setTimeout(() => {
+                el.classList.add('fadeOut');
+                setTimeout(() => el.remove(), 300);
+            }, duration);
+        }
+
+        // ============================
+        // SAVE INDICATOR
+        // ============================
+        function setSaveStatus(status, text) {
+            dom.saveIndicator.className = status;
+            dom.saveIndicator.querySelector('span').textContent = text;
+        }
+
+        function setLoadingState(isLoading) {
+            dom.loadingOverlay.classList.toggle('hidden', !isLoading);
+            dom.app.style.display = 'flex';
+        }
+
+        function normalizeNodeRecord(node) {
+            if (!node) return node;
+
+            const normalized = { ...node };
+
+            if (typeof normalized.metadata === 'string') {
+                try {
+                    normalized.metadata = JSON.parse(normalized.metadata);
+                } catch (e) {
+                    normalized.metadata = {};
+                }
+            }
+
+            if (!normalized.metadata || typeof normalized.metadata !== 'object') {
+                normalized.metadata = {};
+            }
+
+            if (!normalized.type && normalized.node_type) {
+                normalized.type = normalized.node_type;
+            }
+
+            if (!normalized.node_type && normalized.type) {
+                normalized.node_type = normalized.type;
+            }
+
+            if (!normalized.status && normalized.metadata.status) {
+                normalized.status = normalized.metadata.status;
+            }
+
+            if (!normalized.image_url && normalized.metadata.image_url) {
+                normalized.image_url = normalized.metadata.image_url;
+            }
+
+            if (!normalized.sourceTable) {
+                normalized.sourceTable = 'writer_nodes';
+            }
+
+            if (normalized.original_id === undefined && normalized.sourceTable !== 'writer_nodes') {
+                normalized.original_id = normalized.id;
+            }
+
+            return normalized;
+        }
+
+        function isWorkspaceTree() {
+            return state.treeMode === 'workspace';
+        }
+
+        function isVirtualNode(node) {
+            return !!node && node.sourceTable === 'virtual';
+        }
+
+        function isWorkspaceNode(node) {
+            return !!node && (!node.sourceTable || node.sourceTable === 'writer_nodes');
+        }
+
+        function isPublishedNode(node) {
+            return !!node && !isWorkspaceNode(node) && !isVirtualNode(node);
+        }
+
+        function canEditNodeTitle(node) {
+            return !!node && !isVirtualNode(node);
+        }
+
+        function canEditNodeBody(node) {
+            return !!node && (isWorkspaceNode(node) || ['chapters', 'characters', 'lore_entries', 'timeline_events'].includes(node.sourceTable));
+        }
+
+        function supportsImageField(node) {
+            return !!node && (['characters', 'lore_entries'].includes(node.sourceTable || '') || isWorkspaceNode(node));
+        }
+
+        function getActiveNodeStorageKey(mode = state.treeMode) {
+            return `wIDE_activeNode_${mode}`;
+        }
+
+        function looksLikeHtml(content) {
+            return /<\/?[a-z][\s\S]*>/i.test(content || '');
+        }
+
+        function getPublishedEditorContent() {
+            const text = state.quill ? state.quill.getText().trim() : '';
+            if (!text) return '';
+            return state.quill.root.innerHTML;
+        }
+
+        function getSynopsisConfig(node) {
+            if (!node || isWorkspaceNode(node)) {
+                return { label: 'Synopsis', placeholder: 'Brief summary...', enabled: true };
+            }
+
+            switch (node.sourceTable) {
+                case 'characters':
+                    return { label: 'Role / Title', placeholder: 'e.g. Protagonist, Villain', enabled: true };
+                case 'lore_categories':
+                case 'lore_entries':
+                    return { label: 'Slug', placeholder: 'url-friendly-slug', enabled: true };
+                case 'timeline_events':
+                    return { label: 'Event Date / Era', placeholder: 'e.g. Year 1023, First Age', enabled: true };
+                default:
+                    return null;
+            }
+        }
+
+        function getInspectorConfig(node) {
+            if (!node) {
+                return null;
+            }
+
+            if (isWorkspaceNode(node)) {
+                return {
+                    showProperties: true,
+                    showTarget: true,
+                    showImage: true,
+                    showSynopsis: true,
+                    showNotes: true,
+                    showLinks: true,
+                    showSnapshots: true,
+                    enableType: true,
+                    enableStatus: true,
+                    enableTarget: true,
+                    enableSynopsis: true,
+                    enableNotes: true
+                };
+            }
+
+            if (isVirtualNode(node)) {
+                return {
+                    showProperties: true,
+                    showTarget: false,
+                    showImage: false,
+                    showSynopsis: false,
+                    showNotes: false,
+                    showLinks: false,
+                    showSnapshots: false,
+                    enableType: false,
+                    enableStatus: false,
+                    enableTarget: false,
+                    enableSynopsis: false,
+                    enableNotes: false
+                };
+            }
+
+            if (node.sourceTable === 'chapters') {
+                return {
+                    showProperties: true,
+                    showTarget: false,
+                    showImage: false,
+                    showSynopsis: false,
+                    showNotes: false,
+                    showLinks: false,
+                    showSnapshots: false,
+                    enableType: false,
+                    enableStatus: true,
+                    enableTarget: false,
+                    enableSynopsis: false,
+                    enableNotes: false
+                };
+            }
+
+            return {
+                showProperties: true,
+                showTarget: false,
+                showImage: supportsImageField(node),
+                showSynopsis: !!getSynopsisConfig(node),
+                showNotes: false,
+                showLinks: false,
+                showSnapshots: false,
+                enableType: false,
+                enableStatus: false,
+                enableTarget: false,
+                enableSynopsis: true,
+                enableNotes: false
+            };
+        }
+
+        function setSectionVisible(el, visible) {
+            if (!el) return;
+            el.style.display = visible ? 'block' : 'none';
+        }
+
+        function clearActiveSelection() {
+            state.activeNodeId = null;
+            state.isDirty = false;
+            dom.editorEmptyState.classList.remove('hidden');
+            dom.editorHeader.style.display = 'none';
+            dom.editorWrapper.style.display = 'none';
+            dom.editorFooter.style.display = 'none';
+            dom.targetBarWrap.classList.remove('visible');
+            dom.inspectorEmpty.style.display = 'flex';
+            dom.inspectorFields.style.display = 'none';
+            state.quill.enable(true);
+            setSaveStatus('', '');
+            updateModeUI();
+        }
+
+        function updateModeUI() {
+            dom.binderTabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.mode === state.treeMode);
+            });
+
+            const workspaceTree = isWorkspaceTree();
+            dom.btnAddFolder.disabled = !workspaceTree;
+            dom.btnAddDoc.disabled = !workspaceTree;
+
+            const activeNode = state.activeNodeId ? state.nodeMap[state.activeNodeId] : null;
+            dom.btnSnapshot.disabled = !!activeNode && !isWorkspaceNode(activeNode);
+        }
+
+        function applyNodeEditState(node) {
+            dom.editorDocTitle.readOnly = !canEditNodeTitle(node);
+            state.quill.enable(canEditNodeBody(node));
+        }
+
+        function loadNodeContentIntoEditor(node) {
+            applyNodeEditState(node);
+
+            if (!canEditNodeBody(node) || !node.content) {
+                state.quill.setContents([{ insert: '\n' }], 'silent');
+                return;
+            }
+
+            if (isWorkspaceNode(node)) {
+                try {
+                    const delta = JSON.parse(node.content);
+                    state.quill.setContents(delta, 'silent');
+                    return;
+                } catch (e) {
+                    state.quill.root.innerHTML = node.content;
+                    return;
+                }
+            }
+
+            if (looksLikeHtml(node.content)) {
+                state.quill.clipboard.dangerouslyPasteHTML(node.content, 'silent');
+            } else {
+                state.quill.setText(node.content, 'silent');
+            }
+        }
+
+        function renderNodeContentInSplitView(node) {
+            if (!node || !node.content) {
+                dom.splitEditorContent.innerHTML = '<em style="color:var(--text-faint);">Empty document</em>';
+                return;
+            }
+
+            if (isWorkspaceNode(node)) {
+                try {
+                    const delta = JSON.parse(node.content);
+                    const tempContainer = document.createElement('div');
+                    document.body.appendChild(tempContainer);
+                    const tempQuill = new Quill(tempContainer, { readOnly: true });
+                    tempQuill.setContents(delta);
+                    dom.splitEditorContent.innerHTML = tempQuill.root.innerHTML;
+                    document.body.removeChild(tempContainer);
+                    return;
+                } catch (e) {
+                    dom.splitEditorContent.innerHTML = node.content;
+                    return;
+                }
+            }
+
+            dom.splitEditorContent.innerHTML = looksLikeHtml(node.content)
+                ? node.content
+                : node.content.replace(/\n/g, '<br>');
+        }
+
+        function makeVirtualNode(id, title, sortOrder, parentId = null) {
+            return normalizeNodeRecord({
+                id,
+                original_id: null,
+                parent_id: parentId,
+                title,
+                type: 'folder',
+                status: 'outline',
+                content: '',
+                sort_order: sortOrder,
+                sourceTable: 'virtual',
+                metadata: {}
+            });
+        }
+
+        function mapPublishedRecordToNode(sourceTable, record, extras = {}) {
+            switch (sourceTable) {
+                case 'chapters':
+                    return normalizeNodeRecord({
+                        id: `pub_chapter_${record.id}`,
+                        original_id: record.id,
+                        parent_id: PUBLISHED_ROOTS.chapters,
+                        title: record.title,
+                        content: record.content || '',
+                        type: 'document',
+                        status: record.is_published ? 'published' : 'draft',
+                        sort_order: record.chapter_order || 0,
+                        word_count: record.word_count || 0,
+                        sourceTable,
+                        metadata: {}
+                    });
+                case 'characters':
+                    return normalizeNodeRecord({
+                        id: `pub_character_${record.id}`,
+                        original_id: record.id,
+                        parent_id: PUBLISHED_ROOTS.characters,
+                        title: record.name,
+                        content: record.biography || '',
+                        type: 'character',
+                        status: 'published',
+                        sort_order: record.sort_order || 0,
+                        image_url: record.profile_image_url || '',
+                        sourceTable,
+                        metadata: {
+                            synopsis: record.role_title || ''
+                        }
+                    });
+                case 'lore_categories':
+                    return normalizeNodeRecord({
+                        id: `pub_lore_category_${record.id}`,
+                        original_id: record.id,
+                        parent_id: PUBLISHED_ROOTS.lore,
+                        title: record.name,
+                        content: '',
+                        type: 'folder',
+                        status: 'published',
+                        sort_order: record.sort_order || 0,
+                        sourceTable,
+                        metadata: {
+                            synopsis: record.slug || ''
+                        }
+                    });
+                case 'lore_entries':
+                    return normalizeNodeRecord({
+                        id: `pub_lore_${record.id}`,
+                        original_id: record.id,
+                        parent_id: record.category_id ? `pub_lore_category_${record.category_id}` : PUBLISHED_ROOTS.lore,
+                        title: record.title,
+                        content: record.description || '',
+                        type: 'note',
+                        status: 'published',
+                        sort_order: record.sort_order || 0,
+                        image_url: record.image_url || '',
+                        sourceTable,
+                        metadata: {
+                            synopsis: record.slug || '',
+                            category_id: record.category_id || null,
+                            category_name: extras.categoryName || record.lore_categories?.name || ''
+                        }
+                    });
+                case 'timeline_events':
+                    return normalizeNodeRecord({
+                        id: `pub_timeline_${record.id}`,
+                        original_id: record.id,
+                        parent_id: PUBLISHED_ROOTS.timeline,
+                        title: record.title,
+                        content: record.description || '',
+                        type: 'location',
+                        status: 'published',
+                        sort_order: record.event_order || 0,
+                        sourceTable,
+                        metadata: {
+                            synopsis: record.event_date || ''
+                        }
+                    });
+                default:
+                    return normalizeNodeRecord(record);
+            }
+        }
+
+        // ============================
+        // SUPABASE DATABASE HANDLERS
+        // ============================
+        const DB = {
+            getNodes: async () => {
+                const { data, error } = await supabase
+                    .from('writer_nodes')
+                    .select('*')
+                    .eq('story_id', currentStoryId)
+                    .order('sort_order');
+                if (error) throw error;
+                return (data || []).map(node => normalizeNodeRecord({ ...node, sourceTable: 'writer_nodes' }));
+            },
+            getPublishedNodes: async () => {
+                const [chaptersRes, charactersRes, loreCategoriesRes, loreEntriesRes, timelineRes] = await Promise.all([
+                    supabase.from('chapters').select('*').eq('story_id', currentStoryId).order('chapter_order'),
+                    supabase.from('characters').select('*').eq('story_id', currentStoryId).order('sort_order'),
+                    supabase.from('lore_categories').select('*').eq('story_id', currentStoryId).order('sort_order'),
+                    supabase.from('lore_entries').select('*, lore_categories(id, name, slug)').eq('story_id', currentStoryId).order('sort_order'),
+                    supabase.from('timeline_events').select('*').eq('story_id', currentStoryId).order('event_order')
+                ]);
+
+                const responses = [chaptersRes, charactersRes, loreCategoriesRes, loreEntriesRes, timelineRes];
+                const failed = responses.find(res => res.error);
+                if (failed) throw failed.error;
+
+                const nodes = [
+                    makeVirtualNode(PUBLISHED_ROOTS.chapters, 'Chapters', 0),
+                    makeVirtualNode(PUBLISHED_ROOTS.characters, 'Characters', 1),
+                    makeVirtualNode(PUBLISHED_ROOTS.lore, 'Lore', 2),
+                    makeVirtualNode(PUBLISHED_ROOTS.timeline, 'Timeline', 3)
+                ];
+
+                (chaptersRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('chapters', record)));
+                (charactersRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('characters', record)));
+                (loreCategoriesRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('lore_categories', record)));
+                (loreEntriesRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('lore_entries', record, {
+                    categoryName: record.lore_categories?.name || ''
+                })));
+                (timelineRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('timeline_events', record)));
+
+                return nodes;
+            },
+            getNode: async (target) => {
+                const node = typeof target === 'string' ? state.nodeMap[target] : target;
+                if (!node) throw new Error('Node not found');
+
+                if (isVirtualNode(node)) {
+                    return normalizeNodeRecord(node);
+                }
+
+                if (isWorkspaceNode(node)) {
+                    const { data, error } = await supabase
+                        .from('writer_nodes')
+                        .select('*')
+                        .eq('id', node.id)
+                        .single();
+                    if (error) throw error;
+                    return normalizeNodeRecord({ ...data, sourceTable: 'writer_nodes' });
+                }
+
+                let query = supabase.from(node.sourceTable).select('*').eq('id', node.original_id);
+
+                if (node.sourceTable === 'lore_entries') {
+                    query = supabase
+                        .from('lore_entries')
+                        .select('*, lore_categories(id, name, slug)')
+                        .eq('id', node.original_id);
+                }
+
+                const { data, error } = await query.single();
+                if (error) throw error;
+                return mapPublishedRecordToNode(node.sourceTable, data, {
+                    categoryName: data.lore_categories?.name || node.metadata?.category_name || ''
+                });
+            },
+            saveNode: async (target, record) => {
+                if (target && typeof target === 'object') {
+                    const node = target;
+
+                    if (isVirtualNode(node)) {
+                        return normalizeNodeRecord(node);
+                    }
+
+                    if (isWorkspaceNode(node)) {
+                        const payload = { ...record, updated_at: new Date().toISOString() };
+                        const { data, error } = await supabase
+                            .from('writer_nodes')
+                            .update(payload)
+                            .eq('id', node.id)
+                            .select()
+                            .single();
+                        if (error) throw new Error(error.message);
+                        return normalizeNodeRecord({ ...data, sourceTable: 'writer_nodes' });
+                    }
+
+                    const payload = {};
+
+                    if (node.sourceTable === 'chapters') {
+                        if (record.title !== undefined) payload.title = record.title;
+                        if (record.content !== undefined) payload.content = record.content;
+                        if (record.word_count !== undefined) payload.word_count = record.word_count;
+                        if (record.status !== undefined) payload.is_published = record.status === 'published';
+                        if (record.is_published !== undefined) payload.is_published = !!record.is_published;
+                        if (record.updated_at !== undefined) payload.updated_at = record.updated_at;
+                    } else if (node.sourceTable === 'characters') {
+                        if (record.title !== undefined) payload.name = record.title;
+                        if (record.content !== undefined) payload.biography = record.content;
+                        if (record.image_url !== undefined) payload.profile_image_url = record.image_url;
+                        if (record.synopsis !== undefined) payload.role_title = record.synopsis;
+                    } else if (node.sourceTable === 'lore_categories') {
+                        if (record.title !== undefined) payload.name = record.title;
+                        if (record.synopsis !== undefined) payload.slug = record.synopsis;
+                    } else if (node.sourceTable === 'lore_entries') {
+                        if (record.title !== undefined) payload.title = record.title;
+                        if (record.content !== undefined) payload.description = record.content;
+                        if (record.image_url !== undefined) payload.image_url = record.image_url;
+                        if (record.synopsis !== undefined) payload.slug = record.synopsis;
+                    } else if (node.sourceTable === 'timeline_events') {
+                        if (record.title !== undefined) payload.title = record.title;
+                        if (record.content !== undefined) payload.description = record.content;
+                        if (record.synopsis !== undefined) payload.event_date = record.synopsis;
+                    }
+
+                    if (Object.keys(payload).length === 0) {
+                        return normalizeNodeRecord(node);
+                    }
+
+                    let query = supabase.from(node.sourceTable).update(payload).eq('id', node.original_id).select('*');
+                    if (node.sourceTable === 'lore_entries') {
+                        query = supabase
+                            .from('lore_entries')
+                            .update(payload)
+                            .eq('id', node.original_id)
+                            .select('*, lore_categories(id, name, slug)');
+                    }
+
+                    const { data, error } = await query.single();
+                    if (error) throw new Error(error.message);
+                    return mapPublishedRecordToNode(node.sourceTable, data, {
+                        categoryName: data.lore_categories?.name || node.metadata?.category_name || ''
+                    });
+                }
+
+                if (target) {
+                    const payload = { ...record, updated_at: new Date().toISOString() };
+                    const { data, error } = await supabase
+                        .from('writer_nodes')
+                        .update(payload)
+                        .eq('id', target)
+                        .select()
+                        .single();
+                    if (error) throw new Error(error.message);
+                    return normalizeNodeRecord({ ...data, sourceTable: 'writer_nodes' });
+                }
+
+                const payload = { ...record, story_id: currentStoryId };
+                const { data, error } = await supabase
+                    .from('writer_nodes')
+                    .insert([payload])
+                    .select()
+                    .single();
+                if (error) throw new Error(error.message);
+                return normalizeNodeRecord({ ...data, sourceTable: 'writer_nodes' });
+            },
+            deleteNode: async (target) => {
+                const node = typeof target === 'string' ? state.nodeMap[target] : target;
+                if (!node || isVirtualNode(node)) return;
+
+                if (isWorkspaceNode(node)) {
+                    const { error } = await supabase
+                        .from('writer_nodes')
+                        .delete()
+                        .eq('id', node.id);
+                    if (error) throw error;
+                    return;
+                }
+
+                const { error } = await supabase
+                    .from(node.sourceTable)
+                    .delete()
+                    .eq('id', node.original_id);
+                if (error) throw error;
+            },
+            getLinks: async (nodeId) => {
+                const { data, error } = await supabase
+                    .from('writer_node_links')
+                    .select(`
+                        id,
+                        target_node_id,
+                        target_node:writer_nodes!target_node_id(id, title, type)
+                    `)
+                    .eq('source_node_id', nodeId);
+                if (error) throw error;
+                return data || [];
+            },
+            addLink: async (sourceId, targetId) => {
+                const { error } = await supabase
+                    .from('writer_node_links')
+                    .insert({ source_node_id: sourceId, target_node_id: targetId });
+                if (error) throw error;
+            },
+            removeLink: async (sourceId, targetId) => {
+                const { error } = await supabase
+                    .from('writer_node_links')
+                    .delete()
+                    .match({ source_node_id: sourceId, target_node_id: targetId });
+                if (error) throw error;
+            }
+        };
+
+        // ============================
+        // INITIALIZE QUILL
+        // ============================
+        function initQuill() {
+            state.quill = new Quill('#editor-quill', {
+                theme: 'snow',
+                placeholder: 'Begin writing...',
+                modules: {
+                    toolbar: [
+                        [{ 'header': [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'strike'],
+                        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                        ['blockquote', 'code-block'],
+                        ['link'],
+                        [{ 'align': [] }],
+                        ['clean']
+                    ]
+                }
+            });
+
+            state.quill.on('text-change', () => {
+                if (!state.activeNodeId) return;
+                state.isDirty = true;
+                scheduleSave();
+                updateCounts();
+                updateOutline();
+                updateTargetBar();
+
+                if (state.typewriterMode) {
+                    typewriterScroll();
+                }
+            });
+        }
+
+        function typewriterScroll() {
+            const editor = state.quill.root;
+            const selection = state.quill.getSelection();
+            if (!selection) return;
+            const bounds = state.quill.getBounds(selection.index);
+            if (bounds) {
+                const container = editor.closest('.ql-container');
+                const mid = container.clientHeight / 2;
+                container.scrollTop = bounds.top - mid + container.scrollTop;
+            }
+        }
+
+        // ============================
+        // DATA LOADING
+        // ============================
+        async function loadNodes() {
+            if (!currentStoryId) {
+                toast('No story selected. URL is missing story_id parameter.', 'error');
+                return;
+            }
+
+            try {
+                const data = isWorkspaceTree()
+                    ? await DB.getNodes()
+                    : await DB.getPublishedNodes();
+                state.nodes = data;
+                buildNodeMap();
+                renderTree(dom.binderSearch.value);
+                renderBookmarks();
+                updateModeUI();
+
+                const savedActive = localStorage.getItem(getActiveNodeStorageKey());
+                if (savedActive && state.nodeMap[savedActive]) {
+                    await openNode(savedActive);
+                }
+            } catch (e) {
+                console.error('Failed to load nodes:', e);
+                toast('Failed to load project data', 'error');
+            }
+        }
+
+        function buildNodeMap() {
+            state.nodeMap = {};
+            state.nodes.forEach(n => {
+                const normalized = normalizeNodeRecord(n);
+                state.nodeMap[normalized.id] = normalized;
+            });
+            state.nodes = Object.values(state.nodeMap);
+        }
+
+        function getNodeChildren(parentId) {
+            return state.nodes
+                .filter(n => n.parent_id === parentId)
+                .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+        }
+
+        function getAllDescendants(nodeId) {
+            const result = [];
+            const children = getNodeChildren(nodeId);
+            children.forEach(c => {
+                result.push(c);
+                result.push(...getAllDescendants(c.id));
+            });
+            return result;
+        }
+
+        // ============================
+        // RENDER BINDER TREE
+        // ============================
+        function renderTree(filterText = '') {
+            const rootNodes = getNodeChildren(null);
+            dom.binderTree.innerHTML = '';
+            const ul = document.createElement('ul');
+            ul.className = 'tree-list';
+            rootNodes.forEach(node => {
+                ul.appendChild(renderTreeNode(node, filterText.toLowerCase()));
+            });
+            dom.binderTree.appendChild(ul);
+        }
+
+        function renderTreeNode(node, filterText) {
+            const children = getNodeChildren(node.id);
+            const hasChildren = children.length > 0;
+            const isExpanded = state.expandedFolders.has(node.id);
+            const isActive = node.id === state.activeNodeId;
+
+            const li = document.createElement('li');
+            li.className = 'tree-item';
+            li.dataset.nodeId = node.id;
+            li.draggable = isWorkspaceTree() && isWorkspaceNode(node);
+
+            const matchesFilter = !filterText || (node.title || '').toLowerCase().includes(filterText);
+            const childMatchesFilter = !filterText || children.some(c => nodeTreeContains(c, filterText));
+
+            const header = document.createElement('div');
+            header.className = 'tree-item-header';
+            if (isActive) header.classList.add('active');
+            if (filterText) {
+                if (matchesFilter) header.classList.add('search-match');
+                else if (!childMatchesFilter) header.classList.add('search-no-match');
+            }
+
+            const chevron = document.createElement('span');
+            chevron.className = 'tree-chevron' + (hasChildren ? (isExpanded ? ' expanded' : '') : ' hidden-chevron');
+            chevron.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            if (hasChildren) {
+                chevron.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFolder(node.id);
+                });
+            }
+
+            const icon = document.createElement('span');
+            icon.className = 'tree-icon ' + getIconClass(node.type);
+            icon.innerHTML = `<i class="${getIconName(node.type)}"></i>`;
+
+            const statusDot = document.createElement('span');
+            const st = node.status || 'outline';
+            statusDot.className = `tree-status-dot status-${st}`;
+
+            const label = document.createElement('span');
+            label.className = 'tree-label';
+            label.textContent = node.title || 'Untitled';
+
+            const actionsBtn = document.createElement('button');
+            actionsBtn.className = 'tree-actions-btn';
+            actionsBtn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
+            actionsBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showContextMenu(e, node.id);
+            });
+
+            header.appendChild(chevron);
+            header.appendChild(icon);
+            header.appendChild(statusDot);
+            header.appendChild(label);
+            header.appendChild(actionsBtn);
+
+            header.addEventListener('click', () => openNode(node.id));
+            header.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e, node.id);
+            });
+
+            li.appendChild(header);
+
+            if (hasChildren) {
+                const childUl = document.createElement('ul');
+                childUl.className = 'tree-list tree-children' + (!isExpanded ? ' collapsed-children' : '');
+                children.forEach(child => {
+                    childUl.appendChild(renderTreeNode(child, filterText));
+                });
+                li.appendChild(childUl);
+            }
+
+            setupDragDrop(li, header, node);
+
+            return li;
+        }
+
+        function nodeTreeContains(node, filterText) {
+            if ((node.title || '').toLowerCase().includes(filterText)) return true;
+            return getNodeChildren(node.id).some(c => nodeTreeContains(c, filterText));
+        }
+
+        function getIconClass(nodeType) {
+            const map = {
+                folder: 'icon-folder', document: 'icon-document', note: 'icon-note',
+                character: 'icon-character', location: 'icon-location', item: 'icon-item',
+                trash: 'icon-trash'
+            };
+            return map[nodeType] || 'icon-document';
+        }
+
+        function getIconName(nodeType) {
+            const map = {
+                folder: 'fas fa-folder', document: 'fas fa-file-alt', note: 'fas fa-sticky-note',
+                character: 'fas fa-user', location: 'fas fa-map-marker-alt', item: 'fas fa-cube',
+                trash: 'fas fa-trash'
+            };
+            return map[nodeType] || 'fas fa-file-alt';
+        }
+
+        function getMetaValue(node, key, defaultVal = '') {
+            if (!node || !node.metadata) return defaultVal;
+            return node.metadata[key] !== undefined ? node.metadata[key] : defaultVal;
+        }
+
+        function setMetaValue(node, key, value) {
+            if (!node.metadata) node.metadata = {};
+            node.metadata[key] = value;
+        }
+
+        function toggleFolder(nodeId) {
+            if (state.expandedFolders.has(nodeId)) {
+                state.expandedFolders.delete(nodeId);
+            } else {
+                state.expandedFolders.add(nodeId);
+            }
+            localStorage.setItem('wIDE_expanded', JSON.stringify([...state.expandedFolders]));
+            renderTree(dom.binderSearch.value);
+        }
+
+        function expandToNode(nodeId) {
+            let current = state.nodeMap[nodeId];
+            while (current && current.parent_id) {
+                state.expandedFolders.add(current.parent_id);
+                current = state.nodeMap[current.parent_id];
+            }
+            localStorage.setItem('wIDE_expanded', JSON.stringify([...state.expandedFolders]));
+        }
+
+        // ============================
+        // DRAG & DROP
+        // ============================
+        let dragState = { draggedId: null };
+
+        function setupDragDrop(li, header, node) {
+            if (!isWorkspaceTree() || !isWorkspaceNode(node)) {
+                return;
+            }
+
+            li.addEventListener('dragstart', (e) => {
+                e.stopPropagation();
+                dragState.draggedId = node.id;
+                li.classList.add('drag-ghost');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', node.id);
+            });
+
+            li.addEventListener('dragend', () => {
+                li.classList.remove('drag-ghost');
+                dragState.draggedId = null;
+                $$('.drop-target').forEach(el => el.classList.remove('drop-target'));
+            });
+
+            header.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (dragState.draggedId === node.id) return;
+                header.classList.add('drop-target');
+                e.dataTransfer.dropEffect = 'move';
+            });
+
+            header.addEventListener('dragleave', () => {
+                header.classList.remove('drop-target');
+            });
+
+            header.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                header.classList.remove('drop-target');
+
+                const draggedId = dragState.draggedId;
+                if (!draggedId || draggedId === node.id) return;
+
+                const descendants = getAllDescendants(draggedId);
+                if (descendants.find(d => d.id === node.id)) {
+                    toast('Cannot move a node into its own descendant', 'error');
+                    return;
+                }
+
+                try {
+                    const targetParentId = (node.type === 'folder') ? node.id : node.parent_id;
+                    await DB.saveNode(draggedId, { parent_id: targetParentId });
+                    await loadNodes();
+                    toast('Moved successfully', 'success');
+                } catch (e) {
+                    toast('Move failed', 'error');
+                }
+            });
+        }
+
+        // ============================
+        // OPEN NODE
+        // ============================
+        async function openNode(nodeId) {
+            if (state.isDirty && state.activeNodeId) {
+                await saveCurrentNode();
+            }
+
+            state.activeNodeId = nodeId;
+            localStorage.setItem(getActiveNodeStorageKey(), nodeId);
+
+            const node = state.nodeMap[nodeId];
+            if (!node) return;
+
+            expandToNode(nodeId);
+
+            dom.editorEmptyState.classList.add('hidden');
+            dom.editorHeader.style.display = 'flex';
+            dom.editorWrapper.style.display = 'flex';
+            dom.editorFooter.style.display = 'flex';
+
+            dom.editorDocTitle.value = node.title || '';
+            applyNodeEditState(node);
+            updateBookmarkButton();
+            updateModeUI();
+
+            try {
+                const fullNode = await DB.getNode(node);
+                Object.assign(state.nodeMap[nodeId], fullNode);
+                loadNodeContentIntoEditor(state.nodeMap[nodeId]);
+            } catch (e) {
+                loadNodeContentIntoEditor(node);
+            }
+
+            state.isDirty = false;
+            updateCounts();
+            updateOutline();
+            loadInspector(state.nodeMap[nodeId]);
+            updateTargetBar();
+            renderTree(dom.binderSearch.value);
+
+            state.sessionStartWords = countWords(state.quill.getText());
+        }
+
+        // ============================
+        // SAVE CURRENT NODE
+        // ============================
+        function scheduleSave() {
+            clearTimeout(state.saveTimer);
+            setSaveStatus('saving', 'Saving...');
+            state.saveTimer = setTimeout(() => saveCurrentNode(), SAVE_DELAY);
+        }
+
+        async function saveCurrentNode() {
+            if (!state.activeNodeId || !state.isDirty) return;
+            clearTimeout(state.saveTimer);
+            setSaveStatus('saving', 'Saving...');
+
+            const node = state.nodeMap[state.activeNodeId];
+            if (!node || !canEditNodeBody(node)) {
+                state.isDirty = false;
+                setSaveStatus('saved', '');
+                return;
+            }
+
+            try {
+                const content = isWorkspaceNode(node)
+                    ? JSON.stringify(state.quill.getContents())
+                    : getPublishedEditorContent();
+                const wordCount = countWords(state.quill.getText());
+                
+                const data = {
+                    title: dom.editorDocTitle.value || node.title,
+                    content: content,
+                    word_count: wordCount,
+                    updated_at: new Date().toISOString()
+                };
+
+                const savedNode = await DB.saveNode(node, data);
+                Object.assign(node, savedNode, {
+                    title: data.title,
+                    content,
+                    word_count: wordCount
+                });
+                
+                state.isDirty = false;
+                setSaveStatus('saved', 'Saved');
+                renderTree(dom.binderSearch.value);
+            } catch (e) {
+                setSaveStatus('error', 'Save failed');
+                toast(`Failed to save: ${e.message}`, 'error');
+            }
+        }
+
+        // ============================
+        // WORD/CHAR COUNTS
+        // ============================
+        function countWords(text) {
+            const trimmed = text.trim();
+            if (!trimmed) return 0;
+            return trimmed.split(/\s+/).length;
+        }
+
+        function updateCounts() {
+            if (!state.quill) return;
+            const text = state.quill.getText();
+            const words = countWords(text);
+            const chars = text.length - 1;
+            const paras = text.split('\n').filter(l => l.trim().length > 0).length;
+
+            dom.wordCount.textContent = `${words} words`;
+            dom.charCount.textContent = `${chars} chars`;
+            dom.paraCount.textContent = `${paras} paragraphs`;
+        }
+
+        // ============================
+        // TARGET / GOAL BAR
+        // ============================
+        function updateTargetBar() {
+            if (!state.activeNodeId) return;
+            const node = state.nodeMap[state.activeNodeId];
+            const target = parseInt(getMetaValue(node, 'target', 0));
+
+            if (target > 0) {
+                dom.targetBarWrap.classList.add('visible');
+                const words = countWords(state.quill.getText());
+                const pct = Math.min(100, Math.round((words / target) * 100));
+                dom.targetLabel.textContent = `${words} / ${target} words`;
+                dom.targetPct.textContent = `${pct}%`;
+                dom.targetBarFill.style.width = `${pct}%`;
+                dom.targetBarFill.classList.toggle('complete', pct >= 100);
+            } else {
+                dom.targetBarWrap.classList.remove('visible');
+            }
+        }
+
+        // ============================
+        // SESSION TRACKING
+        // ============================
+        function startSessionTimer() {
+            state.sessionStartTime = Date.now();
+            state.sessionTimer = setInterval(updateSessionStats, 5000);
+            updateSessionStats();
+        }
+
+        function updateSessionStats() {
+            const elapsed = (Date.now() - state.sessionStartTime) / 1000;
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = Math.floor(elapsed % 60);
+            dom.sessionTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            if (state.quill && state.activeNodeId) {
+                const currentWords = countWords(state.quill.getText());
+                const sessionWords = Math.max(0, currentWords - state.sessionStartWords);
+                dom.sessionWords.textContent = sessionWords;
+
+                const wpm = minutes > 0 ? Math.round(sessionWords / minutes) : 0;
+                dom.sessionWpm.textContent = wpm;
+            }
+        }
+
+        // ============================
+        // OUTLINE PANEL
+        // ============================
+        function updateOutline() {
+            if (!state.outlineVisible || !state.quill) return;
+            dom.outlineList.innerHTML = '';
+
+            const editor = state.quill.root;
+            const hTags = editor.querySelectorAll('h1, h2, h3');
+            
+            hTags.forEach(h => {
+                const level = parseInt(h.tagName[1]);
+                const item = document.createElement('div');
+                item.className = `outline-item level-${level}`;
+                item.textContent = h.textContent;
+                item.addEventListener('click', () => {
+                    h.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+                dom.outlineList.appendChild(item);
+            });
+
+            if (hTags.length === 0) {
+                dom.outlineList.innerHTML = '<div style="color:var(--text-faint);font-size:11px;padding:8px 0;">No headings found</div>';
+            }
+        }
+
+        function toggleOutline() {
+            state.outlineVisible = !state.outlineVisible;
+            dom.outlinePanel.classList.toggle('visible', state.outlineVisible);
+            dom.btnOutline.classList.toggle('active', state.outlineVisible);
+            if (state.outlineVisible) updateOutline();
+        }
+
+        // ============================
+        // BOOKMARKS
+        // ============================
+        function toggleBookmark(nodeId) {
+            if (state.bookmarks.has(nodeId)) {
+                state.bookmarks.delete(nodeId);
+            } else {
+                state.bookmarks.add(nodeId);
+            }
+            localStorage.setItem('wIDE_bookmarks', JSON.stringify([...state.bookmarks]));
+            renderBookmarks();
+            updateBookmarkButton();
+        }
+
+        function renderBookmarks() {
+            dom.bookmarksList.innerHTML = '';
+            const validBookmarks = [...state.bookmarks].filter(id => state.nodeMap[id]);
+
+            if (validBookmarks.length === 0) {
+                dom.bookmarksSection.style.display = 'none';
+                return;
+            }
+
+            dom.bookmarksSection.style.display = 'block';
+            validBookmarks.forEach(id => {
+                const node = state.nodeMap[id];
+                const item = document.createElement('div');
+                item.className = 'bookmark-item';
+                item.innerHTML = `
+                    <i class="fas fa-star"></i>
+                    <span>${node.title || 'Untitled'}</span>
+                    <button class="bm-remove" title="Remove bookmark"><i class="fas fa-times"></i></button>
+                `;
+                item.querySelector('span').addEventListener('click', () => openNode(id));
+                item.querySelector('.bm-remove').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleBookmark(id);
+                });
+                dom.bookmarksList.appendChild(item);
+            });
+        }
+
+        function updateBookmarkButton() {
+            if (!state.activeNodeId) return;
+            const isBookmarked = state.bookmarks.has(state.activeNodeId);
+            dom.btnBookmark.classList.toggle('bookmarked', isBookmarked);
+            dom.btnBookmark.innerHTML = isBookmarked
+                ? '<i class="fas fa-star"></i>'
+                : '<i class="far fa-star"></i>';
+        }
+
+        // ============================
+        // INSPECTOR
+        // ============================
+        function loadInspector(node) {
+            if (!node) {
+                dom.inspectorEmpty.style.display = 'flex';
+                dom.inspectorFields.style.display = 'none';
+                return;
+            }
+
+            const config = getInspectorConfig(node);
+            const synopsisConfig = getSynopsisConfig(node);
+
+            dom.inspectorEmpty.style.display = 'none';
+            dom.inspectorFields.style.display = 'block';
+
+            dom.inspType.value = node.type || 'document';
+            dom.inspStatus.value = node.status || 'outline';
+            dom.inspTarget.value = getMetaValue(node, 'target', '') || '';
+            dom.inspSynopsis.value = getMetaValue(node, 'synopsis', '');
+            dom.inspNotes.value = getMetaValue(node, 'notes', '');
+            dom.inspType.disabled = !config.enableType;
+            dom.inspStatus.disabled = !config.enableStatus;
+            dom.inspTarget.disabled = !config.enableTarget;
+            dom.inspSynopsis.disabled = !config.enableSynopsis;
+            dom.inspNotes.disabled = !config.enableNotes;
+            dom.inspSynopsisLabel.textContent = synopsisConfig?.label || 'Synopsis';
+            dom.inspSynopsis.placeholder = synopsisConfig?.placeholder || 'Brief summary...';
+
+            setSectionVisible(dom.inspPropertiesSection, config.showProperties);
+            setSectionVisible(dom.inspTargetSection, config.showTarget);
+            setSectionVisible(dom.inspImageSection, config.showImage);
+            setSectionVisible(dom.inspSynopsisSection, config.showSynopsis);
+            setSectionVisible(dom.inspNotesSection, config.showNotes);
+            setSectionVisible(dom.inspLinksSection, config.showLinks);
+            setSectionVisible(dom.inspSnapshotsSection, config.showSnapshots);
+
+            if (node.image_url) {
+                dom.inspImagePreview.innerHTML = `<img src="${node.image_url}" alt="Cover">`;
+            } else {
+                dom.inspImagePreview.innerHTML = '<div class="placeholder-text"><i class="fas fa-cloud-upload-alt"></i>Click to set image URL</div>';
+            }
+
+            if (config.showLinks && isWorkspaceNode(node)) {
+                renderLinks(node);
+            } else {
+                dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">Available in Workspace tree only</div>';
+            }
+
+            if (config.showSnapshots && isWorkspaceNode(node)) {
+                renderSnapshots(node);
+            } else {
+                dom.inspSnapshotsList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">Available in Workspace tree only</div>';
+            }
+        }
+
+        function saveInspectorField(field, value) {
+            if (!state.activeNodeId) return;
+            const node = state.nodeMap[state.activeNodeId];
+            if (!node || isVirtualNode(node)) return;
+
+            const record = {};
+
+            if (isWorkspaceNode(node)) {
+                if (field === 'type' || field === 'status' || field === 'image_url') {
+                    node[field] = value;
+                    record[field] = value;
+                } else {
+                    setMetaValue(node, field, value);
+                    record.metadata = node.metadata;
+                }
+            } else {
+                if (field === 'image_url') {
+                    if (!supportsImageField(node)) return;
+                    node.image_url = value;
+                    record.image_url = value;
+                } else if (field === 'status') {
+                    if (node.sourceTable !== 'chapters') return;
+                    node.status = value === 'published' ? 'published' : 'draft';
+                    record.status = node.status;
+                } else if (field === 'synopsis') {
+                    if (!getSynopsisConfig(node)) return;
+                    setMetaValue(node, 'synopsis', value);
+                    record.synopsis = value;
+                } else {
+                    return;
+                }
+            }
+
+            DB.saveNode(node, record)
+                .then(savedNode => {
+                    Object.assign(node, savedNode);
+                    loadInspector(node);
+                    if (field === 'type' || field === 'status' || field === 'image_url' || field === 'synopsis') {
+                        renderTree(dom.binderSearch.value);
+                    }
+                    if (field === 'target') updateTargetBar();
+                })
+                .catch(() => toast('Save failed', 'error'));
+        }
+
+        // ============================
+        // LINKS
+        // ============================
+        async function renderLinks(node) {
+            if (!isWorkspaceNode(node)) {
+                dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">Available in Workspace tree only</div>';
+                return;
+            }
+
+            dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">Loading...</div>';
+            try {
+                const linksData = await DB.getLinks(node.id);
+                dom.inspLinksList.innerHTML = '';
+                
+                if (linksData.length === 0) {
+                    dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">No links</div>';
+                    return;
+                }
+
+                linksData.forEach(link => {
+                    const targetInfo = link.target_node;
+                    if (!targetInfo) return;
+                    
+                    const item = document.createElement('div');
+                    item.className = 'link-item';
+                    item.innerHTML = `
+                        <i class="link-icon ${getIconName(targetInfo.type)}"></i>
+                        <span class="link-name">${targetInfo.title || 'Untitled'}</span>
+                        <button class="link-remove"><i class="fas fa-times"></i></button>
+                    `;
+                    item.querySelector('.link-name').addEventListener('click', () => openNode(targetInfo.id));
+                    item.querySelector('.link-remove').addEventListener('click', () => {
+                        removeLink(node.id, targetInfo.id);
+                    });
+                    dom.inspLinksList.appendChild(item);
+                });
+            } catch (e) {
+                dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--danger-color);padding:4px 0;">Failed to load links</div>';
+            }
+        }
+
+        async function addLink(sourceNodeId, targetId) {
+            try {
+                await DB.addLink(sourceNodeId, targetId);
+                renderLinks(state.nodeMap[sourceNodeId]);
+                dom.linkSearchInput.value = '';
+                dom.linkSearchResults.classList.remove('visible');
+            } catch (e) {
+                toast('Failed to add link', 'error');
+            }
+        }
+
+        async function removeLink(sourceNodeId, targetId) {
+            try {
+                await DB.removeLink(sourceNodeId, targetId);
+                renderLinks(state.nodeMap[sourceNodeId]);
+            } catch (e) {
+                toast('Failed to remove link', 'error');
+            }
+        }
+
+        // ============================
+        // SNAPSHOTS
+        // ============================
+        function renderSnapshots(node) {
+            dom.inspSnapshotsList.innerHTML = '';
+            const snapshots = getMetaValue(node, 'snapshots', []);
+            if (!Array.isArray(snapshots) || snapshots.length === 0) {
+                dom.inspSnapshotsList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">No snapshots</div>';
+                return;
+            }
+
+            snapshots.forEach((snap, idx) => {
+                const item = document.createElement('div');
+                item.className = 'snapshot-item';
+                item.innerHTML = `
+                    <span class="snap-name">${snap.name || `Snapshot ${idx + 1}`}</span>
+                    <span class="snap-date">${new Date(snap.date).toLocaleDateString()}</span>
+                    <button class="snap-delete" title="Delete snapshot"><i class="fas fa-times"></i></button>
+                `;
+                item.querySelector('.snap-name').addEventListener('click', () => {
+                    if (confirm('Restore this snapshot? Current content will be overwritten.')) {
+                        restoreSnapshot(snap);
+                    }
+                });
+                item.querySelector('.snap-delete').addEventListener('click', () => {
+                    deleteSnapshot(node, idx);
+                });
+                dom.inspSnapshotsList.appendChild(item);
+            });
+        }
+
+        function takeSnapshot(name) {
+            if (!state.activeNodeId || !state.quill) return;
+            const node = state.nodeMap[state.activeNodeId];
+            if (!isWorkspaceNode(node)) {
+                toast('Snapshots are only available in the Workspace tree', 'info');
+                return;
+            }
+            let snapshots = getMetaValue(node, 'snapshots', []);
+            if (!Array.isArray(snapshots)) snapshots = [];
+
+            const snap = {
+                name: name || `Snapshot ${snapshots.length + 1}`,
+                date: new Date().toISOString(),
+                content: JSON.stringify(state.quill.getContents()),
+                wordCount: countWords(state.quill.getText())
+            };
+
+            snapshots.unshift(snap);
+            if (snapshots.length > 20) snapshots = snapshots.slice(0, 20);
+
+            saveInspectorField('snapshots', snapshots);
+            renderSnapshots(node);
+            toast('Snapshot saved', 'success');
+        }
+
+        function restoreSnapshot(snap) {
+            try {
+                const delta = JSON.parse(snap.content);
+                state.quill.setContents(delta);
+                state.isDirty = true;
+                scheduleSave();
+                toast('Snapshot restored', 'success');
+            } catch {
+                toast('Failed to restore snapshot', 'error');
+            }
+        }
+
+        function deleteSnapshot(node, idx) {
+            let snapshots = getMetaValue(node, 'snapshots', []);
+            snapshots.splice(idx, 1);
+            saveInspectorField('snapshots', snapshots);
+            renderSnapshots(node);
+        }
+
+        // ============================
+        // SPLIT VIEW
+        // ============================
+        function openSplitPicker() {
+            dom.splitPickerList.innerHTML = '';
+            state.nodes.forEach(node => {
+                if (node.id === state.activeNodeId) return;
+                if (node.type === 'folder' || node.type === 'trash') return;
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `
+                    <div class="search-result-title">
+                        <i class="${getIconName(node.type)}"></i>
+                        ${node.title || 'Untitled'}
+                    </div>
+                `;
+                item.addEventListener('click', () => {
+                    openSplitView(node.id);
+                    closeModal(dom.modalSplitPicker);
+                });
+                dom.splitPickerList.appendChild(item);
+            });
+            showModal(dom.modalSplitPicker);
+        }
+
+        async function openSplitView(nodeId) {
+            state.splitNodeId = nodeId;
+            const node = state.nodeMap[nodeId];
+            if (!node) return;
+
+            dom.splitTitle.textContent = node.title || 'Untitled';
+            dom.splitEditorPane.classList.add('visible');
+
+            try {
+                const fullNode = await DB.getNode(node);
+                renderNodeContentInSplitView(fullNode);
+            } catch {
+                dom.splitEditorContent.innerHTML = '<em style="color:var(--text-faint);">Failed to load</em>';
+            }
+        }
+
+        function closeSplitView() {
+            state.splitNodeId = null;
+            dom.splitEditorPane.classList.remove('visible');
+        }
+
+        // ============================
+        // SEARCH ALL DOCUMENTS
+        // ============================
+        let searchAllTimer = null;
+
+        function performSearchAll(query) {
+            dom.searchAllResults.innerHTML = '';
+            if (!query || query.length < 2) {
+                dom.searchAllResults.innerHTML = '<div class="search-result-empty">Type at least 2 characters...</div>';
+                return;
+            }
+
+            const lowerQuery = query.toLowerCase();
+            const results = [];
+
+            state.nodes.forEach(node => {
+                if (node.type === 'folder' || node.type === 'trash') return;
+
+                const titleMatch = (node.title || '').toLowerCase().includes(lowerQuery);
+                let contentText = '';
+                let contentMatch = false;
+                let excerpt = '';
+
+                if (node.content) {
+                    try {
+                        const delta = JSON.parse(node.content);
+                        contentText = delta.ops.map(op => typeof op.insert === 'string' ? op.insert : '').join('');
+                    } catch {
+                        contentText = node.content.replace(/<[^>]+>/g, '');
+                    }
+                    contentMatch = contentText.toLowerCase().includes(lowerQuery);
+
+                    if (contentMatch) {
+                        const idx = contentText.toLowerCase().indexOf(lowerQuery);
+                        const start = Math.max(0, idx - 40);
+                        const end = Math.min(contentText.length, idx + query.length + 40);
+                        excerpt = (start > 0 ? '...' : '') +
+                            contentText.substring(start, end).replace(
+                                new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+                                '<mark>$1</mark>'
+                            ) +
+                            (end < contentText.length ? '...' : '');
+                    }
+                }
+
+                if (titleMatch || contentMatch) {
+                    results.push({ node, titleMatch, contentMatch, excerpt });
+                }
+            });
+
+            if (results.length === 0) {
+                dom.searchAllResults.innerHTML = '<div class="search-result-empty">No results found</div>';
+                return;
+            }
+
+            results.sort((a, b) => (b.titleMatch ? 1 : 0) - (a.titleMatch ? 1 : 0));
+
+            results.forEach(({ node, excerpt }) => {
+                const item = document.createElement('div');
+                item.className = 'search-result-item';
+                item.innerHTML = `
+                    <div class="search-result-title">
+                        <i class="${getIconName(node.type)}"></i>
+                        ${node.title || 'Untitled'}
+                    </div>
+                    ${excerpt ? `<div class="search-result-excerpt">${excerpt}</div>` : ''}
+                `;
+                item.addEventListener('click', () => {
+                    openNode(node.id);
+                    closeModal(dom.searchAllModal);
+                });
+                dom.searchAllResults.appendChild(item);
+            });
+        }
+
+        // ============================
+        // CONTEXT MENU
+        // ============================
+        function showContextMenu(e, nodeId) {
+            state.contextNodeId = nodeId;
+            const menu = dom.contextMenu;
+            const node = state.nodeMap[nodeId];
+
+            menu.querySelectorAll('.ctx-item').forEach(item => {
+                item.style.display = '';
+            });
+
+            const workspaceOnlyActions = ['add-child-doc', 'add-child-folder', 'add-character', 'add-location', 'add-note', 'duplicate'];
+            workspaceOnlyActions.forEach(action => {
+                const item = menu.querySelector(`[data-action="${action}"]`);
+                if (item) item.style.display = isWorkspaceNode(node) && isWorkspaceTree() ? '' : 'none';
+            });
+
+            const renameItem = menu.querySelector('[data-action="rename"]');
+            const deleteItem = menu.querySelector('[data-action="delete"]');
+            if (renameItem) renameItem.style.display = canEditNodeTitle(node) ? '' : 'none';
+            if (deleteItem) deleteItem.style.display = isVirtualNode(node) ? 'none' : '';
+
+            const bmItem = menu.querySelector('[data-action="bookmark-toggle"]');
+            if (bmItem) {
+                bmItem.innerHTML = state.bookmarks.has(nodeId)
+                    ? '<i class="fas fa-star"></i> Remove Bookmark'
+                    : '<i class="far fa-star"></i> Add Bookmark';
+            }
+
+            menu.classList.add('visible');
+            const x = Math.min(e.clientX, window.innerWidth - 220);
+            const y = Math.min(e.clientY, window.innerHeight - 300);
+            menu.style.left = x + 'px';
+            menu.style.top = y + 'px';
+        }
+
+        function hideContextMenu() {
+            dom.contextMenu.classList.remove('visible');
+        }
+
+        async function handleContextAction(action) {
+            const nodeId = state.contextNodeId;
+            if (!nodeId) return;
+            const node = state.nodeMap[nodeId];
+            hideContextMenu();
+
+            if (!node) return;
+
+            switch (action) {
+                case 'rename':
+                    if (!canEditNodeTitle(node)) return;
+                    dom.renameInput.value = node.title || '';
+                    showModal(dom.modalRename);
+                    setTimeout(() => dom.renameInput.focus(), 100);
+                    break;
+                case 'add-child-doc':
+                    if (!isWorkspaceNode(node) || !isWorkspaceTree()) return;
+                    await createNode('document', node.type === 'folder' ? nodeId : node.parent_id);
+                    break;
+                case 'add-child-folder':
+                    if (!isWorkspaceNode(node) || !isWorkspaceTree()) return;
+                    await createNode('folder', node.type === 'folder' ? nodeId : node.parent_id);
+                    break;
+                case 'add-character':
+                    if (!isWorkspaceNode(node) || !isWorkspaceTree()) return;
+                    await createNode('character', node.type === 'folder' ? nodeId : node.parent_id);
+                    break;
+                case 'add-location':
+                    if (!isWorkspaceNode(node) || !isWorkspaceTree()) return;
+                    await createNode('location', node.type === 'folder' ? nodeId : node.parent_id);
+                    break;
+                case 'add-note':
+                    if (!isWorkspaceNode(node) || !isWorkspaceTree()) return;
+                    await createNode('note', node.type === 'folder' ? nodeId : node.parent_id);
+                    break;
+                case 'duplicate':
+                    if (!isWorkspaceNode(node)) return;
+                    await duplicateNode(nodeId);
+                    break;
+                case 'bookmark-toggle':
+                    toggleBookmark(nodeId);
+                    break;
+                case 'delete':
+                    if (isVirtualNode(node)) return;
+                    dom.deleteMessage.textContent = `Are you sure you want to delete "${node.title || 'Untitled'}"?`;
+                    showModal(dom.modalDelete);
+                    break;
+            }
+        }
+
+        // ============================
+        // CREATE / DELETE / DUPLICATE
+        // ============================
+        async function createNode(type, parentId = null) {
+            if (!isWorkspaceTree()) {
+                toast('Creating new records is currently available in the Workspace tree only', 'info');
+                return;
+            }
+
+            const typeNames = {
+                document: 'Untitled Document',
+                folder: 'New Folder',
+                character: 'New Character',
+                location: 'New Location',
+                note: 'New Note',
+                item: 'New Item'
+            };
+
+            try {
+                if (!currentStoryId) {
+                    throw new Error("URL is missing a valid story_id parameter.");
+                }
+
+                const siblings = getNodeChildren(parentId);
+                const sortOrder = siblings.length > 0 ? Math.max(...siblings.map(s => s.sort_order || 0)) + 1 : 0;
+
+                const data = {
+                    title: typeNames[type] || 'Untitled',
+                    type: type,
+                    parent_id: parentId,
+                    sort_order: sortOrder,
+                    content: '',
+                    status: 'outline',
+                    metadata: {}
+                };
+
+                const newNode = await DB.saveNode(null, data);
+
+                if (parentId) {
+                    state.expandedFolders.add(parentId);
+                    localStorage.setItem('wIDE_expanded', JSON.stringify([...state.expandedFolders]));
+                }
+
+                await loadNodes();
+                openNode(newNode.id);
+                toast(`${typeNames[type]} created`, 'success');
+            } catch (e) {
+                console.error("Create Error:", e);
+                toast(`Creation failed: ${e.message}`, 'error', 5000);
+            }
+        }
+
+        async function deleteNode(nodeId) {
+            try {
+                const node = state.nodeMap[nodeId];
+                await DB.deleteNode(node);
+                if (state.activeNodeId === nodeId) {
+                    localStorage.removeItem(getActiveNodeStorageKey());
+                    clearActiveSelection();
+                }
+                state.bookmarks.delete(nodeId);
+                localStorage.setItem('wIDE_bookmarks', JSON.stringify([...state.bookmarks]));
+                await loadNodes();
+                toast('Deleted', 'success');
+            } catch (e) {
+                toast('Failed to delete', 'error');
+            }
+        }
+
+        async function duplicateNode(nodeId) {
+            const node = state.nodeMap[nodeId];
+            if (!node || !isWorkspaceNode(node)) return;
+
+            try {
+                const fullNode = await DB.getNode(nodeId);
+                const siblings = getNodeChildren(node.parent_id);
+                const data = {
+                    title: (node.title || 'Untitled') + ' (Copy)',
+                    type: node.type,
+                    parent_id: node.parent_id,
+                    sort_order: Math.max(...siblings.map(s => s.sort_order || 0), 0) + 1,
+                    content: fullNode.content || '',
+                    status: fullNode.status,
+                    image_url: fullNode.image_url,
+                    metadata: fullNode.metadata || {}
+                };
+                const newNode = await DB.saveNode(null, data);
+                await loadNodes();
+                openNode(newNode.id);
+                toast('Duplicated', 'success');
+            } catch (e) {
+                toast('Failed to duplicate', 'error');
+            }
+        }
+
+        async function renameNode(nodeId, newTitle) {
+            try {
+                const node = state.nodeMap[nodeId];
+                if (!node || !canEditNodeTitle(node)) return;
+
+                const savedNode = await DB.saveNode(node, { title: newTitle });
+                Object.assign(state.nodeMap[nodeId], savedNode, { title: newTitle });
+                if (state.activeNodeId === nodeId) {
+                    dom.editorDocTitle.value = newTitle;
+                }
+                renderTree(dom.binderSearch.value);
+                renderBookmarks();
+                toast('Renamed', 'success');
+            } catch (e) {
+                toast('Rename failed', 'error');
+            }
+        }
+
+        // ============================
+        // MODALS & THEMES
+        // ============================
+        function showModal(modal) { modal.classList.add('visible'); }
+        function closeModal(modal) { modal.classList.remove('visible'); }
+
+        function setTheme(theme) {
+            state.currentTheme = theme;
+            if (theme === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+            } else {
+                document.documentElement.setAttribute('data-theme', theme);
+            }
+            localStorage.setItem('wIDE_theme', theme);
+            $$('.theme-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.dataset.theme === theme);
+            });
+        }
+
+        function toggleFocusMode() {
+            state.focusMode = !state.focusMode;
+            document.body.classList.toggle('focus-mode', state.focusMode);
+            dom.btnFocusMode.classList.toggle('active', state.focusMode);
+        }
+
+        function toggleTypewriterMode() {
+            state.typewriterMode = !state.typewriterMode;
+            document.body.classList.toggle('typewriter-mode', state.typewriterMode);
+            dom.btnTypewriter.classList.toggle('active', state.typewriterMode);
+            localStorage.setItem('wIDE_typewriter', state.typewriterMode);
+        }
+
+        // ============================
+        // EVENT BINDINGS
+        // ============================
+        function bindEvents() {
+            dom.binderTabs.forEach(tab => {
+                tab.addEventListener('click', async () => {
+                    if (tab.dataset.mode === state.treeMode) return;
+
+                    if (state.isDirty && state.activeNodeId) {
+                        await saveCurrentNode();
+                    }
+
+                    state.treeMode = tab.dataset.mode;
+                    clearActiveSelection();
+                    setLoadingState(true);
+                    await loadNodes();
+                    setLoadingState(false);
+                });
+            });
+
+            dom.btnToggleBinder.addEventListener('click', () => {
+                dom.binderPane.classList.toggle('collapsed');
+                dom.btnToggleBinder.classList.toggle('active', !dom.binderPane.classList.contains('collapsed'));
+            });
+
+            dom.btnToggleInspector.addEventListener('click', () => {
+                dom.inspectorPane.classList.toggle('collapsed');
+                dom.btnToggleInspector.classList.toggle('active', !dom.inspectorPane.classList.contains('collapsed'));
+            });
+
+            dom.btnFocusMode.addEventListener('click', toggleFocusMode);
+            dom.btnTypewriter.addEventListener('click', toggleTypewriterMode);
+
+            dom.btnSearchAll.addEventListener('click', () => {
+                showModal(dom.searchAllModal);
+                setTimeout(() => dom.searchAllInput.focus(), 100);
+            });
+
+            dom.btnShortcutsHelp.addEventListener('click', () => showModal(dom.modalShortcuts));
+
+            dom.btnAddFolder.addEventListener('click', () => createNode('folder', null));
+            dom.btnAddDoc.addEventListener('click', () => createNode('document', null));
+
+            dom.binderSearch.addEventListener('input', () => {
+                renderTree(dom.binderSearch.value);
+            });
+
+            dom.editorDocTitle.addEventListener('change', () => {
+                if (state.activeNodeId) {
+                    const newTitle = dom.editorDocTitle.value;
+                    renameNode(state.activeNodeId, newTitle);
+                }
+            });
+
+            dom.btnBookmark.addEventListener('click', () => {
+                if (state.activeNodeId) toggleBookmark(state.activeNodeId);
+            });
+
+            dom.btnOutline.addEventListener('click', toggleOutline);
+            dom.btnSplitView.addEventListener('click', openSplitPicker);
+
+            dom.btnSnapshot.addEventListener('click', () => {
+                const activeNode = state.activeNodeId ? state.nodeMap[state.activeNodeId] : null;
+                if (activeNode && !isWorkspaceNode(activeNode)) {
+                    toast('Snapshots are only available in the Workspace tree', 'info');
+                    return;
+                }
+                dom.snapshotNameInput.value = '';
+                showModal(dom.modalSnapshot);
+                setTimeout(() => dom.snapshotNameInput.focus(), 100);
+            });
+
+            dom.btnCloseSplit.addEventListener('click', closeSplitView);
+
+            dom.inspType.addEventListener('change', () => saveInspectorField('type', dom.inspType.value));
+            dom.inspStatus.addEventListener('change', () => saveInspectorField('status', dom.inspStatus.value));
+            dom.inspTarget.addEventListener('change', () => saveInspectorField('target', dom.inspTarget.value));
+            dom.inspSynopsis.addEventListener('change', () => saveInspectorField('synopsis', dom.inspSynopsis.value));
+            dom.inspNotes.addEventListener('change', () => saveInspectorField('notes', dom.inspNotes.value));
+
+            dom.btnSetImage.addEventListener('click', () => {
+                dom.imageUrlInput.value = '';
+                showModal(dom.modalImageUrl);
+                setTimeout(() => dom.imageUrlInput.focus(), 100);
+            });
+            
+            dom.inspImagePreview.addEventListener('click', () => {
+                dom.imageUrlInput.value = '';
+                showModal(dom.modalImageUrl);
+            });
+            
+            dom.btnClearImage.addEventListener('click', () => {
+                saveInspectorField('image_url', '');
+                dom.inspImagePreview.innerHTML = '<div class="placeholder-text"><i class="fas fa-cloud-upload-alt"></i>Click to set image URL</div>';
+            });
+
+            let linkSearchTimer;
+            dom.linkSearchInput.addEventListener('input', () => {
+                clearTimeout(linkSearchTimer);
+                linkSearchTimer = setTimeout(async () => {
+                    const query = dom.linkSearchInput.value.trim().toLowerCase();
+                    if (query.length < 1) {
+                        dom.linkSearchResults.classList.remove('visible');
+                        return;
+                    }
+                    
+                    dom.linkSearchResults.innerHTML = '';
+                    dom.linkSearchResults.classList.add('visible');
+
+                    const existingLinks = await DB.getLinks(state.activeNodeId);
+                    const existingIds = existingLinks.map(l => l.target_node_id);
+
+                    const results = state.nodes
+                        .filter(n => n.id !== state.activeNodeId && !existingIds.includes(n.id))
+                        .filter(n => (n.title || '').toLowerCase().includes(query))
+                        .slice(0, 10);
+
+                    results.forEach(n => {
+                        const item = document.createElement('div');
+                        item.className = 'link-search-result';
+                        item.innerHTML = `<i class="${getIconName(n.type)}"></i>${n.title || 'Untitled'}`;
+                        item.addEventListener('click', () => {
+                            addLink(state.activeNodeId, n.id);
+                        });
+                        dom.linkSearchResults.appendChild(item);
+                    });
+
+                    if (dom.linkSearchResults.children.length === 0) {
+                        dom.linkSearchResults.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--text-faint);">No matches</div>';
+                    }
+                }, 200);
+            });
+
+            dom.linkSearchInput.addEventListener('blur', () => {
+                setTimeout(() => dom.linkSearchResults.classList.remove('visible'), 200);
+            });
+
+            dom.searchAllInput.addEventListener('input', () => {
+                clearTimeout(searchAllTimer);
+                searchAllTimer = setTimeout(() => {
+                    performSearchAll(dom.searchAllInput.value.trim());
+                }, SEARCH_DELAY);
+            });
+
+            dom.contextMenu.querySelectorAll('.ctx-item').forEach(item => {
+                item.addEventListener('click', () => handleContextAction(item.dataset.action));
+            });
+            
+            document.addEventListener('click', (e) => {
+                if (!dom.contextMenu.contains(e.target)) hideContextMenu();
+            });
+
+            $('#rename-confirm').addEventListener('click', () => {
+                const newTitle = dom.renameInput.value.trim();
+                if (newTitle && state.contextNodeId) {
+                    renameNode(state.contextNodeId, newTitle);
+                }
+                closeModal(dom.modalRename);
+            });
+            $('#rename-cancel').addEventListener('click', () => closeModal(dom.modalRename));
+            dom.renameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') $('#rename-confirm').click();
+                if (e.key === 'Escape') closeModal(dom.modalRename);
+            });
+
+            $('#delete-confirm').addEventListener('click', () => {
+                if (state.contextNodeId) deleteNode(state.contextNodeId);
+                closeModal(dom.modalDelete);
+            });
+            $('#delete-cancel').addEventListener('click', () => closeModal(dom.modalDelete));
+
+            $('#image-url-confirm').addEventListener('click', () => {
+                const url = dom.imageUrlInput.value.trim();
+                if (url) {
+                    saveInspectorField('image_url', url);
+                    dom.inspImagePreview.innerHTML = `<img src="${url}" alt="Cover">`;
+                }
+                closeModal(dom.modalImageUrl);
+            });
+            $('#image-url-cancel').addEventListener('click', () => closeModal(dom.modalImageUrl));
+
+            $('#snapshot-confirm').addEventListener('click', () => {
+                takeSnapshot(dom.snapshotNameInput.value.trim());
+                closeModal(dom.modalSnapshot);
+            });
+            $('#snapshot-cancel').addEventListener('click', () => closeModal(dom.modalSnapshot));
+            dom.snapshotNameInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') $('#snapshot-confirm').click();
+                if (e.key === 'Escape') closeModal(dom.modalSnapshot);
+            });
+
+            $('#shortcuts-close').addEventListener('click', () => closeModal(dom.modalShortcuts));
+            $('#split-picker-cancel').addEventListener('click', () => closeModal(dom.modalSplitPicker));
+
+            dom.searchAllInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') closeModal(dom.searchAllModal);
+            });
+
+            $$('.modal-overlay').forEach(modal => {
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) closeModal(modal);
+                });
+            });
+
+            $$('.theme-dot').forEach(dot => {
+                dot.addEventListener('click', () => setTheme(dot.dataset.theme));
+            });
+
+            document.addEventListener('keydown', handleKeyboard);
+
+            if (state.typewriterMode) {
+                document.body.classList.add('typewriter-mode');
+                dom.btnTypewriter.classList.add('active');
+            }
+        }
+
+        // ============================
+        // KEYBOARD SHORTCUTS
+        // ============================
+        function handleKeyboard(e) {
+            const isCtrl = e.ctrlKey || e.metaKey;
+
+            if (isCtrl && e.key === 's') {
+                e.preventDefault();
+                saveCurrentNode();
+            }
+
+            if (isCtrl && e.key === '\\') {
+                e.preventDefault();
+                dom.btnToggleBinder.click();
+            }
+
+            if (isCtrl && e.key === '/') {
+                e.preventDefault();
+                dom.btnToggleInspector.click();
+            }
+
+            if (isCtrl && e.shiftKey && e.key === 'F') {
+                e.preventDefault();
+                dom.btnSearchAll.click();
+            }
+
+            if (isCtrl && e.shiftKey && e.key === 'S') {
+                e.preventDefault();
+                if (state.activeNodeId) dom.btnSnapshot.click();
+            }
+
+            if (isCtrl && e.key === 'n') {
+                e.preventDefault();
+                createNode('document', null);
+            }
+
+            if (e.key === 'F2' && state.activeNodeId) {
+                e.preventDefault();
+                state.contextNodeId = state.activeNodeId;
+                const node = state.nodeMap[state.activeNodeId];
+                dom.renameInput.value = node.title || '';
+                showModal(dom.modalRename);
+                setTimeout(() => dom.renameInput.focus(), 100);
+            }
+
+            if (e.key === 'F11') {
+                e.preventDefault();
+                toggleFocusMode();
+            }
+
+            if (e.key === 'Escape') {
+                hideContextMenu();
+                $$('.modal-overlay.visible').forEach(m => closeModal(m));
+                if (state.focusMode) toggleFocusMode();
+                if (state.outlineVisible) toggleOutline();
+                closeSplitView();
+            }
+        }
+
+        // ============================
+        // INITIALIZATION
+        // ============================
+        async function init() {
+            try {
+                if (!window.Quill) {
+                    throw new Error('Quill failed to load');
+                }
+
+                if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                    throw new Error('Supabase client failed to load');
+                }
+
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+                initQuill();
+                bindEvents();
+                setTheme(state.currentTheme);
+
+                await loadNodes();
+
+                startSessionTimer();
+            } catch (e) {
+                console.error('Writer IDE initialization failed:', e);
+                toast(`Writer IDE failed to initialize: ${e.message}`, 'error', 6000);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+
+        init();
+    })();
+    </script>
+</body>
+</html>
