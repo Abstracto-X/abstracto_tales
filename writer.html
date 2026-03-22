@@ -1002,7 +1002,12 @@
         <div id="topbar">
             <button class="tb-btn" id="btn-toggle-binder" title="Toggle Binder (Ctrl+\\)"><i class="fas fa-columns"></i></button>
             <div class="tb-divider"></div>
-            <div id="story-title-bar">Writer's IDE</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <div id="story-title-bar">Workspace</div>
+                <select id="global-story-selector" style="background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 4px 8px; font-size: 12px; max-width: 200px; outline: none; cursor: pointer;">
+                    <option value="">Loading stories...</option>
+                </select>
+            </div>
             <div class="tb-spacer"></div>
             <div id="session-stats">
                 <div class="stat-item"><i class="fas fa-pen-nib"></i><span id="session-words">0</span> words</div>
@@ -1368,7 +1373,7 @@
         let supabase = null;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const currentStoryId = urlParams.get('story_id');
+        let currentStoryId = urlParams.get('story_id');
 
         const SAVE_DELAY = 1500;
         const SEARCH_DELAY = 300;
@@ -1411,6 +1416,7 @@
             app: $('#app'),
             toastContainer: $('#toast-container'),
             storyTitle: $('#story-title-bar'),
+            globalStorySelector: $('#global-story-selector'),
             saveIndicator: $('#save-indicator'),
             sessionWords: $('#session-words'),
             sessionTime: $('#session-time'),
@@ -1899,6 +1905,14 @@
         // SUPABASE DATABASE HANDLERS
         // ============================
         const DB = {
+            getStories: async () => {
+                const { data, error } = await supabase
+                    .from('stories')
+                    .select('id, title')
+                    .order('updated_at', { ascending: false });
+                if (error) throw error;
+                return data || [];
+            },
             getNodes: async () => {
                 const { data, error } = await supabase
                     .from('writer_nodes')
@@ -3546,9 +3560,43 @@
                 bindEvents();
                 setTheme(state.currentTheme);
 
-                await loadNodes();
+                const stories = await DB.getStories();
 
-                startSessionTimer();
+                if (stories.length === 0) {
+                    dom.globalStorySelector.innerHTML = '<option value="">No stories found</option>';
+                    dom.globalStorySelector.disabled = true;
+                    toast('You must create a story in the Admin Panel first.', 'warning', 5000);
+                } else {
+                    dom.globalStorySelector.innerHTML = stories.map(s =>
+                        `<option value="${s.id}">${s.title}</option>`
+                    ).join('');
+
+                    if (!currentStoryId || !stories.find(s => s.id === currentStoryId)) {
+                        currentStoryId = stories[0].id;
+                    }
+
+                    dom.globalStorySelector.value = currentStoryId;
+
+                    dom.globalStorySelector.addEventListener('change', async (e) => {
+                        if (state.isDirty && state.activeNodeId) {
+                            await saveCurrentNode();
+                        }
+
+                        currentStoryId = e.target.value;
+
+                        const newUrl = new URL(window.location);
+                        newUrl.searchParams.set('story_id', currentStoryId);
+                        window.history.pushState({}, '', newUrl);
+
+                        clearActiveSelection();
+                        setLoadingState(true);
+                        await loadNodes();
+                        setLoadingState(false);
+                    });
+
+                    await loadNodes();
+                    startSessionTimer();
+                }
             } catch (e) {
                 console.error('Writer IDE initialization failed:', e);
                 toast(`Writer IDE failed to initialize: ${e.message}`, 'error', 6000);

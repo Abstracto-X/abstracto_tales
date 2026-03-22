@@ -19,6 +19,8 @@
         :root {
             --primary-color: #ffffff;
             --accent-color: #ffd700;
+            --success-color: #4caf50;
+            --danger-color: #ff6b6b;
             --glass-bg: rgba(15, 15, 15, 0.70); 
             --glass-border: rgba(255, 255, 255, 0.12);
             --font-header: 'Cinzel', serif;
@@ -52,7 +54,7 @@
         #app-container { 
             position: relative; width: 100%; height: 100%; z-index: 10;
             display: flex; flex-direction: column; padding: 1.5rem 2rem;
-            transition: opacity 0.1s linear;
+            transition: opacity 0.1s linear, padding-right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         /* --- UI UTILITIES --- */
@@ -623,6 +625,256 @@
             .lore-wiki-body { padding: 1.5rem; }
             .lore-wiki-title { font-size: 1.8rem; }
         }
+
+        /* --- AUTH & PROFILE MODALS --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            z-index: 6000; display: none; justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active { display: flex; opacity: 1; }
+
+        .modal-box {
+            background: rgba(15, 15, 15, 0.95);
+            border: 1px solid var(--accent-color); border-radius: 12px;
+            padding: 2.5rem; width: 100%; max-width: 400px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255, 215, 0, 0.1);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute; top: 15px; right: 20px;
+            color: #888; font-size: 1.5rem; cursor: pointer; transition: color 0.2s;
+        }
+        .modal-close:hover { color: var(--danger-color); }
+
+        .modal-title { font-family: var(--font-header); color: var(--primary-color); margin-bottom: 1.5rem; text-align: center; }
+
+        .form-group { margin-bottom: 1.2rem; }
+        .form-label { display: block; font-size: 0.8rem; color: #aaa; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
+        .form-input {
+            width: 100%; padding: 10px 15px; font-family: var(--font-ui); font-size: 0.9rem;
+            background: rgba(0,0,0,0.5); border: 1px solid var(--glass-border);
+            color: #fff; border-radius: 6px; transition: border-color 0.3s;
+            outline: none;
+        }
+        .form-input:focus { border-color: var(--accent-color); }
+
+        .form-btn {
+            width: 100%; padding: 12px; font-family: var(--font-header); font-size: 1rem;
+            background: var(--accent-color); color: #000; border: none; border-radius: 6px;
+            cursor: pointer; transition: all 0.3s; font-weight: bold; letter-spacing: 1px;
+            margin-top: 0.5rem;
+        }
+        .form-btn:hover { box-shadow: 0 0 15px var(--accent-color); transform: translateY(-2px); }
+        .form-btn.secondary { background: transparent; border: 1px solid var(--glass-border); color: #ccc; }
+        .form-btn.secondary:hover { border-color: #fff; color: #fff; box-shadow: none; }
+
+        .auth-switch {
+            text-align: center; margin-top: 1.5rem; font-size: 0.85rem; color: #888; cursor: pointer; transition: color 0.2s;
+        }
+        .auth-switch:hover { color: var(--accent-color); }
+
+        #auth-error, #profile-msg { text-align: center; margin-bottom: 1rem; font-size: 0.85rem; min-height: 1.2em; }
+        #auth-error { color: var(--danger-color); }
+
+        /* --- COMMENTS SECTION --- */
+        .comments-wrapper {
+            margin-top: 3rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--glass-border);
+        }
+        .comments-header {
+            font-family: var(--font-header);
+            font-size: 1.5rem;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+        }
+        .comment-input-area {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1.5rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 1px solid var(--accent-color);
+            flex-shrink: 0;
+        }
+        .comment-textarea {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            color: #fff;
+            padding: 10px;
+            border-radius: 6px;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            resize: vertical;
+            min-height: 80px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .comment-textarea:focus {
+            border-color: var(--accent-color);
+        }
+        .comment-submit-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.5rem;
+        }
+        .comment-login-prompt {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px dashed rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
+            color: #aaa;
+        }
+
+        .comment-thread {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .comment-item {
+            display: flex;
+            gap: 1rem;
+        }
+        .comment-body {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+        .comment-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            gap: 1rem;
+        }
+        .comment-author {
+            font-weight: bold;
+            color: #fff;
+            font-size: 0.95rem;
+        }
+        .comment-author.admin-badge {
+            color: var(--accent-color);
+        }
+        .comment-date {
+            font-size: 0.75rem;
+            color: #666;
+            flex-shrink: 0;
+        }
+        .comment-text {
+            color: #ccc;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        /* --- COMMENTS DRAWER --- */
+        #comments-drawer {
+            position: fixed; top: 0; right: -450px;
+            width: 400px; max-width: 100vw; height: 100vh;
+            background: rgba(10, 10, 12, 0.98); border-left: 1px solid var(--accent-color);
+            z-index: 8000; display: flex; flex-direction: column;
+            transition: right 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: -10px 0 40px rgba(0,0,0,0.8);
+        }
+        #comments-drawer.open { right: 0; }
+        .drawer-header {
+            padding: 1.5rem; border-bottom: 1px solid var(--glass-border);
+            display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5);
+        }
+        .drawer-header h3 { font-family: var(--font-header); color: var(--accent-color); font-size: 1.2rem; margin: 0; }
+        .drawer-close { background: transparent; border: none; color: #888; font-size: 1.5rem; cursor: pointer; transition: color 0.2s; }
+        .drawer-close:hover { color: var(--danger-color); }
+        .drawer-content { flex: 1; overflow-y: auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 2rem; }
+
+        /* --- PARAGRAPH ANNOTATIONS --- */
+        .paragraph-block { position: relative; padding-right: 40px; margin-bottom: 1.5rem; }
+        .para-comment-btn {
+            position: absolute; top: 0; right: 0;
+            background: rgba(255, 215, 0, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color);
+            width: 30px; height: 30px; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; opacity: 0; transition: all 0.3s; transform: translateX(10px);
+        }
+        .paragraph-block:hover .para-comment-btn, .para-comment-btn.has-comments { opacity: 1; transform: translateX(0); }
+        .para-comment-btn:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 15px var(--accent-color); }
+
+        .comment-image-preview { width: 100%; height: 120px; object-fit: contain; background: #000; border-radius: 6px; border: 1px solid var(--accent-color); margin-bottom: 1rem; opacity: 0.8; }
+        .comment-attachment { width: 100%; max-height: 250px; object-fit: contain; background: #000; border-radius: 4px; margin-bottom: 0.8rem; border: 1px solid rgba(255,255,255,0.1); }
+        
+        /* --- IMAGE VOTING --- */
+        .image-vote-container {
+            position: absolute; bottom: 15px; left: 15px;
+            display: flex; align-items: center; gap: 4px;
+            background: rgba(0, 0, 0, 0.5); padding: 4px 12px; border-radius: 30px;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255, 215, 0, 0.2);
+            z-index: 10; transition: all 0.3s;
+        }
+        .image-vote-container:hover { background: rgba(0, 0, 0, 0.8); border-color: var(--accent-color); box-shadow: 0 0 15px rgba(255,215,0,0.2); }
+        .vote-btn { background: transparent; border: none; color: #ccc; cursor: pointer; transition: all 0.2s; font-size: 1.1rem; padding: 4px; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+        .vote-btn.upvote:hover { background: rgba(255, 68, 68, 0.15); color: #ff4444; transform: scale(1.1); }
+        .vote-btn.upvote.active { color: #ff4444; text-shadow: 0 0 10px #ff4444; }
+        .vote-btn.downvote:hover { background: rgba(68, 136, 255, 0.15); color: #4488ff; transform: scale(1.1); }
+        .vote-btn.downvote.active { color: #4488ff; text-shadow: 0 0 10px #4488ff; }
+        .vote-score { color: #fff; font-size: 1rem; font-family: var(--font-header); min-width: 24px; text-align: center; font-weight: bold; margin: 0 4px; }
+        
+        /* --- LIGHTBOX REDESIGN --- */
+        #lightbox {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 9000;
+            display: none; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 0.3s;
+        }
+        #lightbox.active { opacity: 1; }
+        #lightbox-main {
+            position: relative; flex: 1; height: 100%; display: flex;
+            align-items: center; justify-content: center;
+        }
+        #lightbox-img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,1); border: 1px solid rgba(255,215,0,0.2); }
+        .lb-nav {
+            position: absolute; top: 50%; transform: translateY(-50%);
+            background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.3);
+            color: var(--accent-color); width: 50px; height: 50px; border-radius: 50%;
+            font-size: 1.5rem; cursor: pointer; transition: all 0.3s; display: none;
+            align-items: center; justify-content: center; z-index: 100;
+        }
+        .lb-nav:hover { background: var(--accent-color); color: #000; transform: translateY(-50%) scale(1.1); }
+        .lb-prev { left: 40px; }
+        .lb-next { right: 40px; }
+        .lightbox-sidepanel {
+            width: 400px; height: 100%; border-left: 1px solid var(--accent-color);
+            background: rgba(10,10,12,0.95); display: none; flex-direction: column;
+            box-sizing: border-box; overflow-y: auto; padding-bottom: 2rem;
+        }
+        @media (max-width: 900px) {
+            #lightbox { flex-direction: column; }
+            .lightbox-sidepanel { width: 100%; height: 40%; border-left: none; border-top: 1px solid var(--accent-color); }
+            #lightbox-main { height: 60%; }
+            .lb-nav { width: 40px; height: 40px; font-size: 1.2rem; }
+            .lb-prev { left: 10px; }
+            .lb-next { right: 10px; }
+        }
+
+        
+        body.drawer-open #app-container { padding-right: calc(400px + 2rem); }
+        @media (max-width: 900px) {
+            body.drawer-open #app-container { padding-right: 0.5rem; }
+        }
     </style>
 </head>
 <body>
@@ -639,6 +891,7 @@
                 <div id="wp-toggle-container"></div>
                 <div id="audio-toggle-container"></div>
                 <div id="admin-link-container"></div>
+                <div id="auth-link-container"></div>
             </div>
         </nav>
 
@@ -669,9 +922,88 @@
         <button class="btn-large" style="margin-top:1rem; border:1px solid #555; font-size:0.8rem;" onclick="document.getElementById('wp-modal').style.display='none'">Close</button>
     </div>
 
-    <div id="lightbox" onclick="this.classList.remove('active'); setTimeout(()=>this.style.display='none', 300)">
-        <div style="position:absolute; top:20px; right:30px; color:#fff; font-size:2rem; cursor:pointer;">&times;</div>
-        <img id="lightbox-img" src="" onclick="event.stopPropagation()">
+    <div id="lightbox" onclick="Visuals.closeLightbox()">
+        <div id="lightbox-main">
+            <button class="lb-nav lb-prev" onclick="event.stopPropagation(); Visuals.lbPrev()"><i class="fas fa-chevron-left"></i></button>
+            <img id="lightbox-img" src="" onclick="event.stopPropagation()">
+            <button class="lb-nav lb-next" onclick="event.stopPropagation(); Visuals.lbNext()"><i class="fas fa-chevron-right"></i></button>
+            <div id="lightbox-vote-container" class="image-vote-container" style="bottom: 30px; left: 50%; transform: translateX(-50%); display:none;" onclick="event.stopPropagation()"></div>
+        </div>
+        <div id="lightbox-comments" class="lightbox-sidepanel glass-box" onclick="event.stopPropagation()">
+            <div class="drawer-header" style="border-bottom: 1px solid rgba(255,215,0,0.3);">
+                <h3 id="lightbox-title" style="color: var(--accent-color); font-family: var(--font-header); margin:0;">Image Discussion</h3>
+            </div>
+            <div class="drawer-content" style="flex:1;">
+                <div id="lightbox-input-area"></div>
+                <div id="lightbox-thread-area" class="comment-thread"></div>
+            </div>
+        </div>
+        <div style="position:absolute; top:20px; right:30px; color:#fff; font-size:2rem; cursor:pointer; z-index: 9999;" onclick="event.stopPropagation(); Visuals.closeLightbox()">&times;</div>
+    </div>
+
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-close" onclick="UI.closeAuthModal()">&times;</div>
+            <h2 class="modal-title" id="auth-title">Enter the Archives</h2>
+            <div id="auth-error"></div>
+
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="auth-email" class="form-input" placeholder="reader@aether.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="auth-password" class="form-input" placeholder="........">
+            </div>
+
+            <button class="form-btn" id="auth-submit-btn" onclick="UserAuth.handleSubmit()">Sign In</button>
+            <div class="auth-switch" id="auth-switch-btn" onclick="UserAuth.toggleMode()">New to the Archives? Sign up here.</div>
+        </div>
+    </div>
+
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-close" onclick="UI.closeProfileModal()">&times;</div>
+            <h2 class="modal-title">Your Profile</h2>
+            <div id="profile-msg"></div>
+
+            <div style="text-align: center; margin-bottom: 1.5rem;">
+                <img id="profile-avatar-preview" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); margin-bottom: 0.5rem;">
+                <br>
+                <div id="avatar-upload-status" style="font-size: 0.8rem; height: 1.2em; margin-bottom: 0.5rem;"></div>
+                <input type="hidden" id="profile-avatar">
+                <input type="file" id="profile-avatar-file" accept="image/*" style="display: none;" onchange="UserAuth.uploadAvatar(this)">
+                <button type="button" class="btn-large" style="margin: 0 auto; padding: 5px 15px; font-size: 0.8rem;" onclick="document.getElementById('profile-avatar-file').click()"><i class="fas fa-camera"></i> Change Avatar</button>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Display Name</label>
+                <input type="text" id="profile-name" class="form-input" placeholder="Your public name">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Bio</label>
+                <input type="text" id="profile-bio" class="form-input" placeholder="A brief description...">
+            </div>
+
+            <button class="form-btn" onclick="UserAuth.saveProfile()">Save Changes</button>
+            <button class="form-btn secondary" onclick="UserAuth.signOut()" style="margin-top: 1rem;">Sign Out</button>
+        </div>
+    </div>
+
+    <!-- GLOBAL FLOATING COMMENT BUTTON -->
+    <div id="global-comment-btn" class="glass-box" style="display:none; position:fixed; right:20px; top:50%; margin-top:-25px; width:50px; height:50px; border-radius:50%; justify-content:center; align-items:center; cursor:pointer; font-size:1.5rem; color:var(--accent-color); z-index:7000; box-shadow:0 5px 15px rgba(0,0,0,0.5); transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Open Discussion">
+        <i class="fas fa-comment-dots"></i>
+    </div>
+
+    <div id="comments-drawer">
+        <div class="drawer-header">
+            <h3 id="drawer-title">Discussion</h3>
+            <button class="drawer-close" onclick="CommentsManager.closeDrawer()">&times;</button>
+        </div>
+        <div class="drawer-content">
+            <div id="drawer-input-area"></div>
+            <div id="drawer-thread-area" class="comment-thread"></div>
+        </div>
     </div>
 
     <!-- SUPABASE JS SDK -->
@@ -758,11 +1090,61 @@
                     card.addEventListener('mouseleave', () => { card.classList.add('reset-anim'); card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`; });
                 });
             },
+            currentGalleryImages: [],
+            currentLightboxIdx: -1,
             openLightbox: (src) => {
                 const lb = document.getElementById('lightbox'); 
                 document.getElementById('lightbox-img').src = src;
+                document.getElementById('lightbox-comments').style.display = 'none';
+                document.querySelectorAll('.lb-nav').forEach(n => n.style.display = 'none');
+                document.getElementById('lightbox-vote-container').style.display = 'none';
                 lb.style.display = 'flex'; 
                 setTimeout(() => lb.classList.add('active'), 10);
+            },
+            closeLightbox: () => {
+                const lb = document.getElementById('lightbox');
+                lb.classList.remove('active');
+                setTimeout(() => lb.style.display = 'none', 300);
+            },
+            openGalleryLightbox: (idx, images) => {
+                Visuals.currentGalleryImages = images;
+                Visuals.currentLightboxIdx = idx;
+                
+                const lb = document.getElementById('lightbox');
+                document.getElementById('lightbox-comments').style.display = 'flex';
+                document.querySelectorAll('.lb-nav').forEach(n => n.style.display = 'flex');
+                
+                lb.style.display = 'flex'; 
+                setTimeout(() => lb.classList.add('active'), 10);
+                
+                Visuals.updateLightboxView();
+            },
+            lbNext: () => {
+                if(Visuals.currentGalleryImages.length === 0) return;
+                Visuals.currentLightboxIdx = (Visuals.currentLightboxIdx + 1) % Visuals.currentGalleryImages.length;
+                Visuals.updateLightboxView();
+            },
+            lbPrev: () => {
+                if(Visuals.currentGalleryImages.length === 0) return;
+                Visuals.currentLightboxIdx = (Visuals.currentLightboxIdx - 1 + Visuals.currentGalleryImages.length) % Visuals.currentGalleryImages.length;
+                Visuals.updateLightboxView();
+            },
+            updateLightboxView: () => {
+                const imgObj = Visuals.currentGalleryImages[Visuals.currentLightboxIdx];
+                if (!imgObj) return;
+                
+                document.getElementById('lightbox-img').src = imgObj.image_url;
+                
+                const voteC = document.getElementById('lightbox-vote-container');
+                voteC.style.display = 'flex';
+                const cache = Actions.votesCache[imgObj.id] || { score: 0, userVote: 0 };
+                voteC.innerHTML = `
+                    <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${imgObj.id}', 1)"><i class="fas fa-arrow-up"></i></button>
+                    <div class="vote-score">${cache.score}</div>
+                    <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${imgObj.id}', -1)"><i class="fas fa-arrow-down"></i></button>
+                `;
+
+                CommentsManager.openDrawer(imgObj.character_id, 'gallery', 'Image Discussion', { imageUrl: imgObj.image_url }, 'lightbox');
             }
         };
 
@@ -1075,6 +1457,74 @@
         // ==============================================
         const Actions = {
             currentGalleryImages: [],
+            votesCache: {}, // { imageId: { score: 0, userVote: 0 } }
+            
+            fetchVotes: async () => {
+                if(Actions.currentGalleryImages.length === 0) return;
+                const imageIds = Actions.currentGalleryImages.map(img => img.id);
+                
+                try {
+                    const { data: votes, error } = await supabaseClient
+                        .from('image_votes')
+                        .select('image_id, vote_value, user_id')
+                        .in('image_id', imageIds);
+                        
+                    if (error) throw error;
+                    
+                    Actions.votesCache = {};
+                    imageIds.forEach(id => Actions.votesCache[id] = { score: 0, userVote: 0 });
+                    
+                    const userId = UserAuth.user ? UserAuth.user.id : null;
+                    
+                    votes.forEach(v => {
+                        if(Actions.votesCache[v.image_id]) {
+                            Actions.votesCache[v.image_id].score += v.vote_value;
+                            if(userId && v.user_id === userId) {
+                                Actions.votesCache[v.image_id].userVote = v.vote_value;
+                            }
+                        }
+                    });
+                } catch(err) {
+                    console.error('Error fetching votes:', err);
+                }
+            },
+
+            voteImage: async (imageId, value) => {
+                if(!UserAuth.user) {
+                    UI.openAuthModal();
+                    return;
+                }
+                
+                const currentVote = Actions.votesCache[imageId]?.userVote || 0;
+                let newValue = value;
+                
+                if (currentVote === value) {
+                    newValue = 0; // Toggle off
+                }
+                
+                try {
+                    if (newValue === 0) {
+                        await supabaseClient.from('image_votes')
+                            .delete()
+                            .eq('image_id', imageId)
+                            .eq('user_id', UserAuth.user.id);
+                    } else {
+                        await supabaseClient.from('image_votes')
+                            .upsert({ 
+                                image_id: imageId, 
+                                user_id: UserAuth.user.id, 
+                                vote_value: newValue 
+                            }, { onConflict: 'user_id, image_id' });
+                    }
+                    
+                    Actions.votesCache[imageId].score += (newValue - currentVote);
+                    Actions.votesCache[imageId].userVote = newValue;
+                    Actions.renderGalleryGrid();
+                } catch (err) {
+                    console.error('Vote error:', err);
+                    alert('Failed to register vote.');
+                }
+            },
             
             renderGalleryGrid: (shuffle = false) => {
                 let imgs = [...Actions.currentGalleryImages];
@@ -1083,14 +1533,496 @@
                 }
                 if (shuffle) imgs.sort(() => Math.random() - 0.5);
                 
-                document.getElementById('gallery-grid').innerHTML = imgs.map(i => 
-                    `<div class="gallery-item" onclick="Visuals.openLightbox('${i.image_url}')">
-                        <img src="${i.image_url}" loading="lazy">
-                    </div>`
-                ).join('');
+                Actions.filteredImages = imgs;
+                
+                document.getElementById('gallery-grid').innerHTML = imgs.map((i, idx) => {
+                    const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
+                    return `<div class="gallery-item" style="position: relative;">
+                        <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${idx}, Actions.filteredImages)">
+
+                        <div class="image-vote-container" onclick="event.stopPropagation()">
+                            <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
+                            <div class="vote-score">${cache.score}</div>
+                            <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
+                        </div>
+
+                        <button style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); border:1px solid rgba(255,215,0,0.2); color:var(--accent-color); border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:10; transition:all 0.3s;" onmouseover="this.style.background='var(--accent-color)'; this.style.color='#000'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(0,0,0,0.5)'; this.style.color='var(--accent-color)'; this.style.transform='scale(1)';" onclick="event.stopPropagation(); CommentsManager.openDrawer('${i.character_id}', 'gallery', 'Image Discussion', { imageUrl: '${i.image_url}' })" title="Comment on this image">
+                            <i class="fas fa-comment"></i>
+                        </button>
+                    </div>`;
+                }).join('');
             },
             setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
             shuffleGallery: () => Actions.renderGalleryGrid(true),
+        };
+
+        // ==============================================
+        // USER AUTHENTICATION & PROFILE
+        // ==============================================
+        const UserAuth = {
+            user: null,
+            profile: null,
+            mode: 'signin',
+
+            init: async () => {
+                const { data: { session } } = await supabaseClient.auth.getSession();
+                if (session) {
+                    await UserAuth.fetchProfile(session.user);
+                } else {
+                    UI.initAuthLink(null);
+                    UI.initAdminLink();
+                }
+
+                supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                    if (event === 'SIGNED_IN' && session) {
+                        await UserAuth.fetchProfile(session.user);
+                        UI.closeAuthModal();
+                        CommentsManager.refreshRenderedThreads();
+                    } else if (event === 'SIGNED_OUT') {
+                        UserAuth.user = null;
+                        UserAuth.profile = null;
+                        UI.initAuthLink(null);
+                        UI.initAdminLink();
+                        UI.closeProfileModal();
+                        CommentsManager.refreshRenderedThreads();
+                    }
+                });
+            },
+
+            fetchProfile: async (user) => {
+                UserAuth.user = user;
+                const { data, error } = await supabaseClient
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single();
+
+                if (!error && data) {
+                    UserAuth.profile = data;
+                    UI.initAuthLink(data);
+                    UI.initAdminLink();
+                } else {
+                    UserAuth.profile = null;
+                    UI.initAuthLink(null);
+                    UI.initAdminLink();
+                }
+            },
+
+            toggleMode: () => {
+                UserAuth.mode = UserAuth.mode === 'signin' ? 'signup' : 'signin';
+                document.getElementById('auth-title').textContent = UserAuth.mode === 'signin' ? 'Enter the Archives' : 'Join the Archives';
+                document.getElementById('auth-submit-btn').textContent = UserAuth.mode === 'signin' ? 'Sign In' : 'Sign Up';
+                document.getElementById('auth-switch-btn').textContent = UserAuth.mode === 'signin' ? 'New to the Archives? Sign up here.' : 'Already have access? Sign in here.';
+                document.getElementById('auth-error').textContent = '';
+            },
+
+            handleSubmit: async () => {
+                const email = document.getElementById('auth-email').value.trim();
+                const password = document.getElementById('auth-password').value;
+                const errorEl = document.getElementById('auth-error');
+
+                if (!email || !password) {
+                    errorEl.textContent = 'Please fill in all fields.';
+                    return;
+                }
+
+                errorEl.textContent = 'Processing...';
+                errorEl.style.color = '#fff';
+
+                try {
+                    let result;
+                    if (UserAuth.mode === 'signup') {
+                        result = await supabaseClient.auth.signUp({ email, password });
+                        if (result.data?.user && result.data?.user?.identities?.length === 0) {
+                            throw new Error('This email is already registered. Please sign in.');
+                        }
+                    } else {
+                        result = await supabaseClient.auth.signInWithPassword({ email, password });
+                    }
+
+                    if (result.error) throw result.error;
+
+                    errorEl.style.color = 'var(--success-color)';
+                    errorEl.textContent = 'Success!';
+                } catch (err) {
+                    errorEl.style.color = 'var(--danger-color)';
+                    errorEl.textContent = err.message;
+                }
+            },
+
+            signOut: async () => {
+                await supabaseClient.auth.signOut();
+            },
+
+            uploadAvatar: async (fileInput) => {
+                if (!UserAuth.user || !fileInput.files || !fileInput.files[0]) return;
+                
+                const statusEl = document.getElementById('avatar-upload-status');
+                const file = fileInput.files[0];
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${UserAuth.user.id}-${Date.now()}.${fileExt}`;
+                const filePath = `${fileName}`;
+                
+                statusEl.style.color = '#fff';
+                statusEl.textContent = 'Uploading...';
+                
+                // Show preview immediately
+                const previewUrl = URL.createObjectURL(file);
+                document.getElementById('profile-avatar-preview').src = previewUrl;
+                
+                // Upload to Supabase
+                const { error: uploadError } = await supabaseClient.storage
+                    .from('Reader')
+                    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+                    
+                if (uploadError) {
+                    statusEl.style.color = 'var(--danger-color)';
+                    statusEl.textContent = 'Failed: ' + uploadError.message;
+                    fileInput.value = ''; // Reset
+                    return;
+                }
+                
+                const { data: publicUrlData } = supabaseClient.storage
+                    .from('Reader')
+                    .getPublicUrl(filePath);
+                    
+                const avatarUrl = publicUrlData.publicUrl;
+                document.getElementById('profile-avatar').value = avatarUrl;
+                
+                // Immediately save to profile in backend
+                const { error: updateError } = await supabaseClient
+                    .from('profiles')
+                    .update({
+                        avatar_url: avatarUrl,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', UserAuth.user.id);
+                    
+                if (updateError) {
+                    statusEl.style.color = 'var(--danger-color)';
+                    statusEl.textContent = 'Backend error: ' + updateError.message;
+                } else {
+                    statusEl.style.color = 'var(--success-color)';
+                    statusEl.textContent = 'Avatar updated!';
+                    UserAuth.profile.avatar_url = avatarUrl;
+                    UI.initAuthLink(UserAuth.profile);
+                    CommentsManager.refreshRenderedThreads();
+                    setTimeout(() => statusEl.textContent = '', 2000);
+                }
+                fileInput.value = ''; // Reset input
+            },
+
+            saveProfile: async () => {
+                if (!UserAuth.user) return;
+
+                const msgEl = document.getElementById('profile-msg');
+                const name = document.getElementById('profile-name').value.trim();
+                const avatar = document.getElementById('profile-avatar').value.trim();
+                const bio = document.getElementById('profile-bio').value.trim();
+
+                msgEl.style.color = '#fff';
+                msgEl.textContent = 'Saving...';
+
+                const updates = {
+                    display_name: name,
+                    avatar_url: avatar,
+                    bio: bio,
+                    updated_at: new Date().toISOString()
+                };
+
+                const { error } = await supabaseClient
+                    .from('profiles')
+                    .update(updates)
+                    .eq('id', UserAuth.user.id);
+
+                if (error) {
+                    msgEl.style.color = 'var(--danger-color)';
+                    msgEl.textContent = error.message;
+                } else {
+                    msgEl.style.color = 'var(--success-color)';
+                    msgEl.textContent = 'Profile updated successfully!';
+                    UserAuth.profile = { ...UserAuth.profile, ...updates };
+                    UI.initAuthLink(UserAuth.profile);
+                    CommentsManager.refreshRenderedThreads();
+                    setTimeout(() => UI.closeProfileModal(), 1500);
+                }
+            }
+        };
+
+        // ==============================================
+        // COMMENTS MANAGER (DRAWER SYSTEM)
+        // ==============================================
+        const CommentsManager = {
+            activeTargetId: null,
+            activeTargetType: null,
+            activeContext: {},
+            containerPrefix: 'drawer', 
+
+            openDrawer: async (targetId, targetType, title = 'Discussion', context = {}, prefix = 'drawer') => {
+                CommentsManager.activeTargetId = targetId;
+                CommentsManager.activeTargetType = targetType;
+                CommentsManager.activeContext = context;
+                CommentsManager.containerPrefix = prefix;
+                
+                if (prefix === 'drawer') {
+                    const drawer = document.getElementById('comments-drawer');
+                    drawer.classList.add('open');
+                    if (window.innerWidth > 900) { document.body.classList.add('drawer-open'); }
+                    document.getElementById('drawer-title').textContent = title;
+                } else {
+                    const titleEl = document.getElementById(prefix + '-title');
+                    if (titleEl) titleEl.textContent = title;
+                }
+
+                CommentsManager.renderInput();
+                await CommentsManager.loadThread();
+            },
+
+            closeDrawer: () => {
+                if (CommentsManager.containerPrefix === 'drawer') {
+                    document.getElementById('comments-drawer').classList.remove('open');
+                    document.body.classList.remove('drawer-open');
+                }
+                CommentsManager.activeTargetId = null;
+                CommentsManager.activeTargetType = null;
+                CommentsManager.activeContext = {};
+                CommentsManager.containerPrefix = 'drawer';
+            },
+
+            renderInput: () => {
+                const inputArea = document.getElementById(CommentsManager.containerPrefix + '-input-area');
+                if (!inputArea) return;
+                
+                if (UserAuth.user && UserAuth.profile) {
+                    let imageHtml = '';
+                    if (CommentsManager.activeContext.imageUrl) {
+                        imageHtml = `<img src="${CommentsManager.activeContext.imageUrl}" class="comment-image-preview" alt="Referenced Image">`;
+                    }
+
+                    let contextLabel = '';
+                    if (CommentsManager.activeContext.paragraphIndex !== undefined) {
+                        contextLabel = `<div style="font-size:0.75rem; color:var(--accent-color); margin-bottom:0.5rem; text-transform:uppercase;">Commenting on Paragraph ${CommentsManager.activeContext.paragraphIndex + 1}</div>`;
+                    }
+
+                    inputArea.innerHTML = `
+                        <div class="comment-input-area" style="flex-direction: column;">
+                            ${contextLabel}
+                            ${imageHtml}
+                            <div style="display: flex; gap: 1rem; width: 100%;">
+                                <img src="${UserAuth.profile.avatar_url || 'https://via.placeholder.com/40'}" class="comment-avatar">
+                                <div style="flex: 1;">
+                                    <textarea id="${CommentsManager.containerPrefix}-comment-text" class="comment-textarea" placeholder="Share your thoughts..."></textarea>
+                                    <div class="comment-submit-container" style="margin-top: 0.8rem;">
+                                        <button class="btn-large" style="padding: 0.5rem 1.5rem; font-size: 0.8rem;" onclick="CommentsManager.postComment()">Post Comment</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    inputArea.innerHTML = `
+                        <div class="comment-login-prompt">
+                            <p style="margin-bottom: 1rem;">You must enter the Archives to join the discussion.</p>
+                            <button class="btn-large" style="margin: 0 auto; padding: 0.5rem 1.5rem; font-size: 0.8rem;" onclick="UI.openAuthModal()">Sign In</button>
+                        </div>
+                    `;
+                }
+            },
+
+            loadThread: async () => {
+                const threadArea = document.getElementById(CommentsManager.containerPrefix + '-thread-area');
+                if (!threadArea) return;
+                threadArea.innerHTML = '<div style="color: #666; text-align: center;">Loading records...</div>';
+
+                try {
+                    let query = supabaseClient
+                        .from('comments')
+                        .select(`
+                            id, content, created_at, user_id, metadata,
+                            profiles!comments_user_id_fkey ( display_name, avatar_url, role )
+                        `)
+                        .eq('target_id', CommentsManager.activeTargetId)
+                        .eq('target_type', CommentsManager.activeTargetType)
+                        .order('created_at', { ascending: true });
+
+                    if (CommentsManager.activeContext.paragraphIndex !== undefined) {
+                        query = query.contains('metadata', { paragraphIndex: CommentsManager.activeContext.paragraphIndex });
+                    }
+                    if (CommentsManager.containerPrefix === 'lightbox' && CommentsManager.activeContext.imageUrl) {
+                        query = query.contains('metadata', { imageUrl: CommentsManager.activeContext.imageUrl });
+                    }
+
+                    const { data: comments, error } = await query;
+
+                    if (error) throw error;
+
+                    if (!comments || comments.length === 0) {
+                        threadArea.innerHTML = '<div style="color: #666; text-align: center; padding: 1rem 0;">No comments found.</div>';
+                        return;
+                    }
+
+                    let html = '';
+                    comments.forEach((c) => {
+                        const author = c.profiles || {};
+                        const isAdmin = author.role === 'admin';
+                        const dateString = new Date(c.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+                        
+                        let attachmentHtml = '';
+                        if (c.metadata && c.metadata.imageUrl && CommentsManager.containerPrefix !== 'lightbox') {
+                            attachmentHtml = `<img src="${c.metadata.imageUrl}" class="comment-attachment">`;
+                        }
+
+                        const isOwnComment = UserAuth.user && c.user_id === UserAuth.user.id;
+                        let actionHtml = '';
+                        if (isOwnComment) {
+                            actionHtml = `
+                                <div class="comment-actions" style="margin-top:0.5rem; display:flex; gap:10px;">
+                                    <button class="btn-large" style="padding: 2px 8px; font-size: 0.7rem;" onclick="CommentsManager.editComment('${c.id}', \`${Utils.escapeHtml(c.content.replace(/\\/g, '\\\\').replace(/\`/g, '\\`'))}\`)">Edit</button>
+                                    <button class="btn-large" style="padding: 2px 8px; font-size: 0.7rem; background: rgba(255,0,0,0.1); color: #ff6b6b; border-color: #ff6b6b;" onclick="CommentsManager.deleteComment('${c.id}')">Delete</button>
+                                </div>
+                            `;
+                        }
+
+                        html += `
+                            <div class="comment-item" id="comment-${c.id}">
+                                <img src="${author.avatar_url || 'https://via.placeholder.com/40'}" class="comment-avatar">
+                                <div class="comment-body" style="flex:1;">
+                                    <div class="comment-meta">
+                                        <div class="comment-author ${isAdmin ? 'admin-badge' : ''}">
+                                            ${Utils.escapeHtml(author.display_name || 'Anonymous')} ${isAdmin ? '<i class="fas fa-crown" style="font-size:0.7rem; margin-left:4px;"></i>' : ''}
+                                        </div>
+                                        <div class="comment-date">${dateString}</div>
+                                    </div>
+                                    ${attachmentHtml}
+                                    <div class="comment-text" id="comment-text-${c.id}">${Utils.escapeHtml(c.content)}</div>
+                                    ${actionHtml}
+                                    <div id="comment-edit-area-${c.id}" style="display:none; margin-top: 0.8rem;">
+                                        <textarea id="comment-edit-input-${c.id}" class="comment-textarea"></textarea>
+                                        <div style="margin-top: 0.5rem; display:flex; gap:10px;">
+                                            <button class="btn-large" style="padding: 4px 12px; font-size: 0.75rem;" onclick="CommentsManager.saveEdit('${c.id}')">Save</button>
+                                            <button class="btn-large" style="padding: 4px 12px; font-size: 0.75rem; border-color: #888; color: #888;" onclick="CommentsManager.cancelEdit('${c.id}')">Cancel</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    threadArea.innerHTML = html;
+
+                } catch (err) {
+                    console.error('Failed to load comments:', err);
+                    threadArea.innerHTML = '<div style="color: var(--danger-color); text-align: center;">Failed to load discussions.</div>';
+                }
+            },
+
+            postComment: async () => {
+                const inputEl = document.getElementById(CommentsManager.containerPrefix + '-comment-text');
+                const content = inputEl ? inputEl.value.trim() : '';
+
+                if (!content) {
+                    alert('Comment cannot be empty.');
+                    return;
+                }
+
+                try {
+                    const metadata = {};
+                    if (CommentsManager.activeContext.paragraphIndex !== undefined) {
+                        metadata.paragraphIndex = CommentsManager.activeContext.paragraphIndex;
+                    }
+                    if (CommentsManager.activeContext.imageUrl) {
+                        metadata.imageUrl = CommentsManager.activeContext.imageUrl;
+                    }
+
+                    const { error } = await supabaseClient
+                        .from('comments')
+                        .insert({
+                            user_id: UserAuth.user.id,
+                            target_id: CommentsManager.activeTargetId,
+                            target_type: CommentsManager.activeTargetType,
+                            content: content,
+                            metadata: metadata
+                        });
+
+                    if (error) throw error;
+
+                    inputEl.value = '';
+                    await CommentsManager.loadThread();
+                } catch (err) {
+                    console.error('Post error:', err);
+                    alert('Failed to post comment. Please try again.');
+                }
+            },
+
+            refreshRenderedThreads: () => {
+                if (CommentsManager.activeTargetId) {
+                    CommentsManager.renderInput();
+                }
+            },
+
+            editComment: (id, currentContent) => {
+                document.getElementById(`comment-text-${id}`).style.display = 'none';
+                const actionEls = document.querySelector(`#comment-${id} .comment-actions`);
+                if (actionEls) actionEls.style.display = 'none';
+                
+                const editArea = document.getElementById(`comment-edit-area-${id}`);
+                editArea.style.display = 'block';
+                document.getElementById(`comment-edit-input-${id}`).value = currentContent;
+            },
+
+            cancelEdit: (id) => {
+                document.getElementById(`comment-text-${id}`).style.display = 'block';
+                const actionEls = document.querySelector(`#comment-${id} .comment-actions`);
+                if (actionEls) actionEls.style.display = 'flex';
+                
+                document.getElementById(`comment-edit-area-${id}`).style.display = 'none';
+            },
+
+            saveEdit: async (id) => {
+                const newContent = document.getElementById(`comment-edit-input-${id}`).value.trim();
+                if (!newContent) { alert('Comment cannot be empty.'); return; }
+                
+                try {
+                    const { error } = await supabaseClient
+                        .from('comments')
+                        .update({ content: newContent })
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    await CommentsManager.loadThread();
+                } catch (err) {
+                    console.error('Save error:', err);
+                    alert('Failed to update comment.');
+                }
+            },
+
+            deleteComment: async (id) => {
+                if (!confirm('Are you sure you want to delete this comment?')) return;
+                try {
+                    const { error } = await supabaseClient
+                        .from('comments')
+                        .delete()
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    await CommentsManager.loadThread();
+                } catch (err) {
+                    console.error('Delete error:', err);
+                    alert('Failed to delete comment.');
+                }
+            }
+        };
+
+        const Utils = {
+            escapeHtml: (unsafe) => {
+                if (!unsafe) return '';
+                return (unsafe + '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
         };
 
         // ==============================================
@@ -1162,11 +2094,66 @@
                 UI.loadingScreen.classList.remove('active');
             },
 
+            initAuthLink: (userProfile) => {
+                const container = document.getElementById('auth-link-container');
+                if (userProfile) {
+                    container.innerHTML = `
+                        <div class="back-btn-wrapper" onclick="UI.openProfileModal()" title="Profile">
+                            <img src="${userProfile.avatar_url || 'https://via.placeholder.com/32'}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid var(--accent-color);">
+                        </div>`;
+                } else {
+                    container.innerHTML = `
+                        <div class="back-btn-wrapper" onclick="UI.openAuthModal()" title="Sign In">
+                            <i class="fas fa-user-circle" style="font-size: 1.4rem;"></i>
+                        </div>`;
+                }
+            },
+
+            openAuthModal: () => {
+                document.getElementById('auth-error').textContent = '';
+                document.getElementById('auth-error').style.color = 'var(--danger-color)';
+                document.getElementById('auth-password').value = '';
+                const modal = document.getElementById('auth-modal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+            },
+
+            closeAuthModal: () => {
+                const modal = document.getElementById('auth-modal');
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
+            },
+
+            openProfileModal: () => {
+                if (!UserAuth.profile) return;
+                document.getElementById('profile-msg').textContent = '';
+                document.getElementById('profile-msg').style.color = '';
+                document.getElementById('profile-name').value = UserAuth.profile.display_name || '';
+                document.getElementById('profile-avatar').value = UserAuth.profile.avatar_url || '';
+                document.getElementById('profile-bio').value = UserAuth.profile.bio || '';
+                document.getElementById('profile-avatar-preview').src = UserAuth.profile.avatar_url || 'https://via.placeholder.com/100';
+
+                const modal = document.getElementById('profile-modal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+            },
+
+            closeProfileModal: () => {
+                const modal = document.getElementById('profile-modal');
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
+            },
+
             initAdminLink: () => {
-                document.getElementById('admin-link-container').innerHTML = 
-                    `<div class="back-btn-wrapper" onclick="window.location.href='admin.html'" title="Admin Panel">
-                        <i class="fas fa-cog"></i>
-                    </div>`;
+                const container = document.getElementById('admin-link-container');
+                if (UserAuth.profile && UserAuth.profile.role === 'admin') {
+                    container.innerHTML = `
+                        <div class="back-btn-wrapper" onclick="window.location.href='admin.html'" title="Admin Panel">
+                            <i class="fas fa-cog" style="font-size: 1.2rem;"></i>
+                        </div>`;
+                } else {
+                    container.innerHTML = '';
+                }
             }
         };
 
@@ -1342,7 +2329,15 @@
                     
                     const galleryImages = await DB.getCharacterGallery(charId);
                     Actions.currentGalleryImages = galleryImages;
+                    await Actions.fetchVotes();
                     State.filterTag = 'All';
+
+                    // Global floating comment hook
+                    const globalBtn = document.getElementById('global-comment-btn');
+                    if (globalBtn) {
+                        globalBtn.style.display = 'flex';
+                        globalBtn.onclick = () => CommentsManager.openDrawer(charId, 'gallery', character.name + ' Discussion');
+                    }
 
                     // Build unique tags
                     const tags = new Set(['All']); 
@@ -1403,6 +2398,23 @@
                     ? `<button class="btn-large" style="margin:2rem auto 0; font-size:0.8rem" onclick="Router.navigate('read/${slug}/${parseInt(chIdx) + 1}')">Next Chapter</button>` 
                     : '<div style="margin-top:2rem; text-align:center; color:#888">End of updates.</div>';
                 
+                // Process content into annotated paragraphs
+                const rawParagraphs = chapter.content.split('\n').filter(p => p.trim().length > 0);
+                const annotatedContent = rawParagraphs.map((para, idx) => `
+                    <div class="paragraph-block">
+                        <p>${para}</p>
+                        <button class="para-comment-btn" onclick="CommentsManager.openDrawer('${chapter.id}', 'chapter', 'Paragraph ${idx + 1}', { paragraphIndex: ${idx} })" title="Comment on this paragraph">
+                            <i class="fas fa-comment-alt"></i>
+                        </button>
+                    </div>
+                `).join('');
+
+                const globalBtn = document.getElementById('global-comment-btn');
+                if (globalBtn) {
+                    globalBtn.style.display = 'flex';
+                    globalBtn.onclick = () => CommentsManager.openDrawer(chapter.id, 'chapter', 'Chapter Discussion');
+                }
+
                 Render.stage.innerHTML = `
                     <div class="reader-layout">
                         <div class="sidebar-backdrop" onclick="ReaderFeatures.toggleSidebar()"></div>
@@ -1412,6 +2424,7 @@
                         </div>
                         <div class="reader-content glass-box ${ReaderFeatures.fontSize} ${ReaderFeatures.fontFamily}">
                             <div class="reader-toolbar">
+                                <button class="rt-btn" title="General Chapter Comments" onclick="CommentsManager.openDrawer('${chapter.id}', 'chapter', 'Chapter Discussion')"><i class="fas fa-comments"></i></button>
                                 <button class="rt-btn" title="Chapters" onclick="ReaderFeatures.toggleSidebar()"><i class="fas fa-list"></i></button>
                                 <button class="rt-btn" title="Focus" onclick="ReaderFeatures.toggleFocus(this)"><i class="fas fa-expand"></i></button>
                                 <div style="position:relative;">
@@ -1427,7 +2440,7 @@
                                 </div>
                             </div>
                             <h2 style="font-family:var(--font-header); margin-bottom:1.5rem; line-height:1.3;">${chapter.title}</h2>
-                            <div class="chapter-text">${chapter.content.replace(/\n/g, '<br>')}</div>
+                            <div class="chapter-text">${annotatedContent}</div>
                             ${nextBtn}
                         </div>
                     </div>`;
@@ -1487,6 +2500,12 @@
 
                 const categoryName = item.lore_categories ? item.lore_categories.name : 'Uncategorized';
 
+                const globalBtn = document.getElementById('global-comment-btn');
+                if (globalBtn) {
+                    globalBtn.style.display = 'flex';
+                    globalBtn.onclick = () => CommentsManager.openDrawer(item.id, 'lore', 'Lore Discussion');
+                }
+
                 Render.stage.innerHTML = `
                     <div class="lore-wiki-layout">
                         <div class="lore-wiki-header"><img src="${item.image_url || ''}"></div>
@@ -1494,6 +2513,9 @@
                             <div class="lore-wiki-title">${item.title}</div>
                             <div class="lore-wiki-type">${categoryName}</div>
                             <div class="lore-wiki-text">${item.description || ''}</div>
+                            <div style="margin-top: 3rem; text-align: center;">
+                                <button class="btn-large" style="margin: 0 auto;" onclick="CommentsManager.openDrawer('${item.id}', 'lore', 'Lore Discussion')"><i class="fas fa-comments"></i> Open Discussion</button>
+                            </div>
                         </div>
                     </div>`;
             },
@@ -1603,8 +2625,11 @@
             },
             
             handle: () => {
-                document.getElementById('lightbox').classList.remove('active');
-                setTimeout(() => document.getElementById('lightbox').style.display = 'none', 300);
+                CommentsManager.closeDrawer();
+                const globalBtn = document.getElementById('global-comment-btn');
+                if (globalBtn) globalBtn.style.display = 'none';
+
+                Visuals.closeLightbox();
                 document.getElementById('wp-modal').style.display = 'none';
                 
                 if (MapViewer.destroy) MapViewer.destroy();
@@ -1651,11 +2676,11 @@
         window.addEventListener('hashchange', Router.handle);
         window.addEventListener('DOMContentLoaded', async () => { 
             await LorePrefetcher.init(); // Fire the pre-fetch immediately in the background
+            UserAuth.init();
             Router.handle(); 
             Visuals.initDynamicTransparency(); 
             Particles.init();
             AudioController.init();
-            UI.initAdminLink();
         });
     </script>
 </body>
