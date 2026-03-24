@@ -3563,6 +3563,28 @@
 
                 supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+                // --- NEW AUTHENTICATION CHECK ---
+                const { data: { session } } = await supabase.auth.getSession();
+                
+                if (!session) {
+                    console.warn("No active session found. Redirecting to login...");
+                    window.location.href = 'admin.html';
+                    return;
+                }
+
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', session.user.id)
+                    .single();
+
+                if (!profile || profile.role !== 'admin') {
+                    console.warn("User is not an admin. Access denied.");
+                    window.location.href = 'index.html';
+                    return;
+                }
+                // ---------------------------------
+
                 initQuill();
                 bindEvents();
                 setTheme(state.currentTheme);
