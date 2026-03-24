@@ -540,6 +540,13 @@
             flex: 1; display: flex; flex-direction: column;
             overflow: hidden;
             position: relative;
+            min-height: 0;
+        }
+        #editor-quill {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
         }
 
         /* Quill Overrides - using CSS variables */
@@ -567,13 +574,13 @@
             border: none; flex: 1; overflow-y: auto;
             font-family: var(--editor-font);
             font-size: 16px; line-height: 1.8;
+            min-height: 0;
         }
         #editor-wrapper .ql-editor {
             padding: 30px 60px;
             color: var(--editor-text);
             min-height: 100%;
-            max-width: 800px;
-            margin: 0 auto;
+            width: 100%;
             transition: color 0.4s;
         }
         #editor-wrapper .ql-editor.ql-blank::before {
