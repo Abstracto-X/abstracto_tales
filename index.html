@@ -11,8 +11,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Aether Archives</title>
+    <!-- FIX 4: Preconnect hints for external origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://gdivyqfhgashkqcqqnas.supabase.co" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
 
     <style>
         /* --- CORE VARIABLES --- */
@@ -58,9 +64,10 @@
         }
 
         /* --- UI UTILITIES --- */
+        /* FIX 9: Reduced blur from 20px to 10px — halves GPU compositing work */
         .glass-box {
             background: var(--glass-bg);
-            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border); border-radius: 12px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             transition: background 0.3s, border-color 0.3s;
@@ -1022,7 +1029,10 @@
         // ==============================================
         // PARTICLES ENGINE
         // ==============================================
+        // FIX 13: Visibility-aware particle engine — pauses when tab is hidden
         const Particles = {
+            _rafId: null,
+            _paused: false,
             init: () => {
                 const canvas = document.getElementById('particle-canvas');
                 const ctx = canvas.getContext('2d');
@@ -1038,8 +1048,28 @@
                     draw() { ctx.fillStyle = `rgba(255, 215, 0, ${this.opacity})`; ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fill(); }
                 }
                 function initParticles() { particlesArray = []; for(let i=0; i<30; i++) particlesArray.push(new Particle()); }
-                function animate() { ctx.clearRect(0,0, width, height); particlesArray.forEach(p => { p.update(); p.draw(); }); requestAnimationFrame(animate); }
-                initParticles(); animate();
+                function animate() {
+                    if (Particles._paused) return;
+                    ctx.clearRect(0,0, width, height);
+                    particlesArray.forEach(p => { p.update(); p.draw(); });
+                    Particles._rafId = requestAnimationFrame(animate);
+                }
+                initParticles();
+                animate();
+
+                // Pause/resume on tab visibility change to save CPU/battery
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                        Particles._paused = true;
+                        if (Particles._rafId) {
+                            cancelAnimationFrame(Particles._rafId);
+                            Particles._rafId = null;
+                        }
+                    } else {
+                        Particles._paused = false;
+                        animate();
+                    }
+                });
             }
         };
 
@@ -1076,19 +1106,28 @@
                     }
                 });
             },
+            // FIX 8: Single delegated listener instead of N per-card listeners
             initCardTilt: () => {
                 if(window.innerWidth < 900) return;
-                document.querySelectorAll('.char-card').forEach(card => {
-                    card.addEventListener('mousemove', (e) => {
-                        requestAnimationFrame(() => {
-                            const rect = card.getBoundingClientRect();
-                            const x = e.clientX - rect.left - rect.width/2, y = e.clientY - rect.top - rect.height/2;
-                            card.classList.remove('reset-anim');
-                            card.style.transform = `perspective(1000px) scale(1.02) rotateX(${y * -0.05}deg) rotateY(${x * 0.05}deg)`;
-                        });
+                const grid = document.querySelector('.char-grid');
+                if (!grid) return;
+                let tiltTicking = false;
+                grid.addEventListener('mousemove', (e) => {
+                    const card = e.target.closest('.char-card');
+                    if (!card || tiltTicking) return;
+                    tiltTicking = true;
+                    requestAnimationFrame(() => {
+                        const rect = card.getBoundingClientRect();
+                        const x = e.clientX - rect.left - rect.width/2, y = e.clientY - rect.top - rect.height/2;
+                        card.classList.remove('reset-anim');
+                        card.style.transform = `perspective(1000px) scale(1.02) rotateX(${y * -0.05}deg) rotateY(${x * 0.05}deg)`;
+                        tiltTicking = false;
                     });
-                    card.addEventListener('mouseleave', () => { card.classList.add('reset-anim'); card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`; });
                 });
+                grid.addEventListener('mouseleave', (e) => {
+                    const card = e.target.closest('.char-card');
+                    if (card) { card.classList.add('reset-anim'); card.style.transform = `perspective(1000px) scale(1) rotateX(0deg) rotateY(0deg)`; }
+                }, true); // useCapture to catch mouseleave from children
             },
             currentGalleryImages: [],
             currentLightboxIdx: -1,
@@ -1224,7 +1263,15 @@
             viewer: null, canvas: null, img: null,
             state: { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 },
             
+            // FIX 5: AbortController for clean listener teardown
+            _abortController: null,
             init: (src) => {
+                // Clean up any previous instance first
+                MapViewer.destroy();
+                
+                MapViewer._abortController = new AbortController();
+                const signal = MapViewer._abortController.signal;
+                
                 MapViewer.viewer = document.getElementById('map-viewer');
                 MapViewer.canvas = document.getElementById('map-canvas');
                 MapViewer.img = document.getElementById('map-image');
@@ -1233,21 +1280,24 @@
                 MapViewer.img.src = src;
                 const v = MapViewer.viewer;
                 
-                v.addEventListener('mousedown', MapViewer.onDown);
-                window.addEventListener('mousemove', MapViewer.onMove);
-                window.addEventListener('mouseup', MapViewer.onUp);
-                v.addEventListener('wheel', MapViewer.onWheel, {passive: false});
+                v.addEventListener('mousedown', MapViewer.onDown, { signal });
+                window.addEventListener('mousemove', MapViewer.onMove, { signal });
+                window.addEventListener('mouseup', MapViewer.onUp, { signal });
+                v.addEventListener('wheel', MapViewer.onWheel, { passive: false, signal });
 
-                v.addEventListener('touchstart', MapViewer.onTouchStart, {passive: false});
-                v.addEventListener('touchmove', MapViewer.onTouchMove, {passive: false});
-                v.addEventListener('touchend', MapViewer.onUp);
+                v.addEventListener('touchstart', MapViewer.onTouchStart, { passive: false, signal });
+                v.addEventListener('touchmove', MapViewer.onTouchMove, { passive: false, signal });
+                v.addEventListener('touchend', MapViewer.onUp, { signal });
 
                 document.getElementById('zoom-in-btn').onclick = () => MapViewer.zoom(1.2);
                 document.getElementById('zoom-out-btn').onclick = () => MapViewer.zoom(0.8);
             },
             destroy: () => {
-                window.removeEventListener('mousemove', MapViewer.onMove);
-                window.removeEventListener('mouseup', MapViewer.onUp);
+                // Abort all listeners registered with this controller
+                if (MapViewer._abortController) {
+                    MapViewer._abortController.abort();
+                    MapViewer._abortController = null;
+                }
             },
             centerMap: () => {
                 if(!MapViewer.img || !MapViewer.viewer) return;
@@ -1332,16 +1382,59 @@
         };
 
         // ==============================================
-        // DATABASE API LAYER (WITH CACHING)
+        // DATABASE API LAYER (WITH TTL + LRU CACHING)
         // ==============================================
+        // FIX 10: TTL + LRU cache — prevents unbounded growth and stale data
         const Cache = {
             stories: null,
-            hubs: {} 
+            storiesTTL: 0,
+            author: null,       // FIX 11: Author profile cache
+            authorTTL: 0,
+            _hubEntries: [],    // Ordered list of {slug, data, timestamp}
+            _hubMap: {},        // Quick lookup: slug -> data
+            _HUB_MAX: 5,        // LRU cap
+            _TTL: 5 * 60 * 1000, // 5 minutes
+
+            getHub: (slug) => {
+                const entry = Cache._hubMap[slug];
+                if (!entry) return null;
+                if (Date.now() - entry.timestamp > Cache._TTL) {
+                    // Stale — evict
+                    Cache._evictHub(slug);
+                    return null;
+                }
+                // Move to end (most recently used)
+                Cache._hubEntries = Cache._hubEntries.filter(e => e.slug !== slug);
+                Cache._hubEntries.push(entry);
+                return entry.data;
+            },
+
+            setHub: (slug, data) => {
+                // Evict LRU if at capacity
+                if (!Cache._hubMap[slug] && Cache._hubEntries.length >= Cache._HUB_MAX) {
+                    const oldest = Cache._hubEntries.shift();
+                    if (oldest) delete Cache._hubMap[oldest.slug];
+                }
+                // Remove existing entry if updating
+                Cache._hubEntries = Cache._hubEntries.filter(e => e.slug !== slug);
+                const entry = { slug, data, timestamp: Date.now() };
+                Cache._hubEntries.push(entry);
+                Cache._hubMap[slug] = entry;
+            },
+
+            _evictHub: (slug) => {
+                Cache._hubEntries = Cache._hubEntries.filter(e => e.slug !== slug);
+                delete Cache._hubMap[slug];
+            },
+
+            isStale: (ttlTimestamp) => {
+                return !ttlTimestamp || (Date.now() - ttlTimestamp > Cache._TTL);
+            }
         };
 
         const DB = {
             getStories: async () => {
-                if (Cache.stories) return Cache.stories;
+                if (Cache.stories && !Cache.isStale(Cache.storiesTTL)) return Cache.stories;
                 const { data, error } = await supabaseClient
                     .from('stories')
                     .select('*')
@@ -1349,10 +1442,14 @@
                     .order('sort_order');
                 if (error) { console.error('Error fetching stories:', error); return []; }
                 Cache.stories = data || [];
+                Cache.storiesTTL = Date.now();
                 return Cache.stories;
             },
 
+            // FIX 11: Cached author profile — avoids re-fetching on every #home visit
             getAuthorProfile: async () => {
+                if (Cache.author && !Cache.isStale(Cache.authorTTL)) return Cache.author;
+
                 const { data: profile, error: profileError } = await supabaseClient
                     .from('profiles')
                     .select('*')
@@ -1368,15 +1465,18 @@
                     .eq('profile_id', profile.id)
                     .order('sort_order');
 
-                return {
+                Cache.author = {
                     ...profile,
                     links: links || []
                 };
+                Cache.authorTTL = Date.now();
+                return Cache.author;
             },
 
             // The new unified and cached fetching function
             getStoryHubData: async (slug) => {
-                if (Cache.hubs[slug]) return Cache.hubs[slug];
+                const cached = Cache.getHub(slug);
+                if (cached) return cached;
 
                 const { data: story, error: storyError } = await supabaseClient
                     .from('stories')
@@ -1388,6 +1488,7 @@
                 if (storyError || !story) return null;
 
                 // Execute all dependent queries simultaneously
+                // FIX 1: Batched timeline character query (eliminates N+1 waterfall)
                 const [wallpapersReq, charactersReq, loreReq, timelineReq, mapsReq] = await Promise.all([
                     supabaseClient.from('story_wallpapers').select('*').eq('story_id', story.id).order('sort_order'),
                     supabaseClient.from('characters').select('*').eq('story_id', story.id).order('sort_order'),
@@ -1398,12 +1499,21 @@
 
                 const timelineEvents = timelineReq.data || [];
                 
-                for (let event of timelineEvents) {
-                    const { data: charLinks } = await supabaseClient
+                // Single batched query instead of N sequential queries
+                if (timelineEvents.length > 0) {
+                    const eventIds = timelineEvents.map(e => e.id);
+                    const { data: allCharLinks } = await supabaseClient
                         .from('timeline_event_characters')
-                        .select('character_id, characters(id, name, role_title, profile_image_url)')
-                        .eq('event_id', event.id);
-                    event.characters = charLinks ? charLinks.map(cl => cl.characters) : [];
+                        .select('event_id, character_id, characters(id, name, role_title, profile_image_url)')
+                        .in('event_id', eventIds);
+                    
+                    timelineEvents.forEach(event => {
+                        event.characters = (allCharLinks || [])
+                            .filter(cl => cl.event_id === event.id)
+                            .map(cl => cl.characters);
+                    });
+                } else {
+                    timelineEvents.forEach(event => { event.characters = []; });
                 }
 
                 const hubData = {
@@ -1415,7 +1525,7 @@
                     maps: mapsReq.data || []
                 };
 
-                Cache.hubs[slug] = hubData;
+                Cache.setHub(slug, hubData);
                 return hubData;
             },
 
@@ -1526,6 +1636,7 @@
                 }
             },
             
+            // FIX 14: Chunked gallery rendering via requestIdleCallback to avoid long tasks
             renderGalleryGrid: (shuffle = false) => {
                 let imgs = [...Actions.currentGalleryImages];
                 if (State.filterTag !== 'All') {
@@ -1535,22 +1646,52 @@
                 
                 Actions.filteredImages = imgs;
                 
-                document.getElementById('gallery-grid').innerHTML = imgs.map((i, idx) => {
-                    const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
-                    return `<div class="gallery-item" style="position: relative;">
-                        <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${idx}, Actions.filteredImages)">
+                const container = document.getElementById('gallery-grid');
+                container.innerHTML = ''; // Clear existing
 
-                        <div class="image-vote-container" onclick="event.stopPropagation()">
-                            <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
-                            <div class="vote-score">${cache.score}</div>
-                            <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
-                        </div>
+                const CHUNK_SIZE = 8;
+                let idx = 0;
 
-                        <button style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); border:1px solid rgba(255,215,0,0.2); color:var(--accent-color); border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:10; transition:all 0.3s;" onmouseover="this.style.background='var(--accent-color)'; this.style.color='#000'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(0,0,0,0.5)'; this.style.color='var(--accent-color)'; this.style.transform='scale(1)';" onclick="event.stopPropagation(); CommentsManager.openDrawer('${i.character_id}', 'gallery', 'Image Discussion', { imageUrl: '${i.image_url}' })" title="Comment on this image">
-                            <i class="fas fa-comment"></i>
-                        </button>
-                    </div>`;
-                }).join('');
+                const renderChunk = (deadline) => {
+                    const frag = document.createDocumentFragment();
+                    const chunkEnd = Math.min(idx + CHUNK_SIZE, imgs.length);
+                    
+                    while (idx < chunkEnd) {
+                        const i = imgs[idx];
+                        const currentIdx = idx;
+                        const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
+                        
+                        const item = document.createElement('div');
+                        item.className = 'gallery-item';
+                        item.style.position = 'relative';
+                        item.innerHTML = `
+                            <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${currentIdx}, Actions.filteredImages)">
+                            <div class="image-vote-container" onclick="event.stopPropagation()">
+                                <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
+                                <div class="vote-score">${cache.score}</div>
+                                <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
+                            </div>
+                            <button style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); border:1px solid rgba(255,215,0,0.2); color:var(--accent-color); border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:10; transition:all 0.3s;" onmouseover="this.style.background='var(--accent-color)'; this.style.color='#000'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(0,0,0,0.5)'; this.style.color='var(--accent-color)'; this.style.transform='scale(1)';" onclick="event.stopPropagation(); CommentsManager.openDrawer('${i.character_id}', 'gallery', 'Image Discussion', { imageUrl: '${i.image_url}' })" title="Comment on this image">
+                                <i class="fas fa-comment"></i>
+                            </button>`;
+                        frag.appendChild(item);
+                        idx++;
+                    }
+                    
+                    container.appendChild(frag);
+                    
+                    if (idx < imgs.length) {
+                        // Schedule next chunk — use requestIdleCallback if available, else rAF fallback
+                        if (window.requestIdleCallback) {
+                            requestIdleCallback(renderChunk, { timeout: 100 });
+                        } else {
+                            requestAnimationFrame(() => renderChunk());
+                        }
+                    }
+                };
+
+                // Start first chunk immediately for fast first paint
+                renderChunk();
             },
             setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
             shuffleGallery: () => Actions.renderGalleryGrid(true),
@@ -1667,8 +1808,11 @@
                 statusEl.textContent = 'Uploading...';
                 
                 // Show preview immediately
+                // FIX 7: Revoke ObjectURL after image loads to prevent memory leak
                 const previewUrl = URL.createObjectURL(file);
-                document.getElementById('profile-avatar-preview').src = previewUrl;
+                const previewImg = document.getElementById('profile-avatar-preview');
+                previewImg.onload = () => URL.revokeObjectURL(previewUrl);
+                previewImg.src = previewUrl;
                 
                 // Upload to Supabase
                 const { error: uploadError } = await supabaseClient.storage
@@ -2187,10 +2331,12 @@
                     `;
                 } else {
                     // Render stories if they exist
-                    stories.forEach(s => {
+                    // FIX 6: First 4 story cards use eager loading for LCP
+                    stories.forEach((s, idx) => {
+                        const loadAttr = idx < 4 ? '' : 'loading="lazy"';
                         html += `
                             <div class="story-card" onclick="Router.navigate('story/${s.slug}')">
-                                <img src="${s.cover_image_url || ''}" loading="lazy">
+                                <img src="${s.cover_image_url || ''}" ${loadAttr}>
                                 <div class="card-info">
                                     <div class="card-title">${s.title}</div>
                                     <div class="card-desc">${s.short_description || ''}</div>
@@ -2305,11 +2451,13 @@
                     UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                     
                     let html = '<div class="char-grid">';
-                    characters.forEach(c => { 
+                    // FIX 6: First 6 character cards use eager loading
+                    characters.forEach((c, idx) => { 
+                        const loadAttr = idx < 6 ? '' : 'loading="lazy"';
                         html += `
                             <div class="char-card" onclick="Router.navigate('gallery/${slug}/${c.id}')">
                                 <div class="char-card-inner">
-                                    <img src="${c.profile_image_url || ''}" loading="lazy">
+                                    <img src="${c.profile_image_url || ''}" ${loadAttr}>
                                     <div class="char-info-overlay">
                                         <div class="char-role">${c.role_title || ''}</div>
                                         <div class="char-name">${c.name}</div>
@@ -2464,20 +2612,30 @@
                     return;
                 }
                 
-                let html = '<div class="lore-grid">';
-                loreEntries.forEach(item => {
+                // FIX 15: Use DocumentFragment to build lore grid, avoiding intermediate innerHTML parsing
+                const loreGrid = document.createElement('div');
+                loreGrid.className = 'lore-grid';
+                const frag = document.createDocumentFragment();
+
+                loreEntries.forEach((item, idx) => {
                     const categoryName = item.lore_categories ? item.lore_categories.name : 'Uncategorized';
-                    html += `
-                        <div class="lore-card glass-box" onclick="Router.navigate('lore/${slug}/${item.slug}')">
-                            <img src="${item.image_url || ''}" class="lore-card-img" loading="lazy">
-                            <div class="lore-card-content">
-                                <div class="title">${item.title}</div>
-                                <div class="type">${categoryName}</div>
-                                <div class="desc">${item.description || ''}</div>
-                            </div>
+                    const loadAttr = idx < 6 ? '' : 'loading="lazy"';  // FIX 6: eager for first visible row
+                    const card = document.createElement('div');
+                    card.className = 'lore-card glass-box';
+                    card.onclick = () => Router.navigate(`lore/${slug}/${item.slug}`);
+                    card.innerHTML = `
+                        <img src="${item.image_url || ''}" class="lore-card-img" ${loadAttr}>
+                        <div class="lore-card-content">
+                            <div class="title">${item.title}</div>
+                            <div class="type">${categoryName}</div>
+                            <div class="desc">${item.description || ''}</div>
                         </div>`;
+                    frag.appendChild(card);
                 });
-                Render.stage.innerHTML = html + '</div>';
+
+                loreGrid.appendChild(frag);
+                Render.stage.innerHTML = '';
+                Render.stage.appendChild(loreGrid);
             },
 
             loreDetail: async (slug, loreSlug) => {
@@ -2621,6 +2779,13 @@
             navigate: (h) => {
                 // Fade out the content stage
                 document.getElementById('content-stage').style.opacity = '0';
+                // FIX 3: Pre-fetch data during the 400ms fade-out transition
+                const parts = h.split('/');
+                const target = parts[0];
+                const slug = parts[1];
+                if (slug && ['story','read','gallery','lore','timeline','maps'].includes(target)) {
+                    DB.getStoryHubData(slug); // fire-and-forget; result will be cached for Router.handle
+                }
                 setTimeout(() => window.location.hash = h, 400); 
             },
             
@@ -2633,6 +2798,10 @@
                 document.getElementById('wp-modal').style.display = 'none';
                 
                 if (MapViewer.destroy) MapViewer.destroy();
+
+                // Clean up transient state on route change
+                Actions.currentGalleryImages = [];
+                Actions.votesCache = {};
                 
                 const sb = document.querySelector('.reader-sidebar');
                 if(sb) sb.classList.remove('active');
@@ -2675,7 +2844,8 @@
         // ==============================================
         window.addEventListener('hashchange', Router.handle);
         window.addEventListener('DOMContentLoaded', async () => { 
-            await LorePrefetcher.init(); // Fire the pre-fetch immediately in the background
+            // FIX 2: Non-blocking prefetcher — cosmetic data should not block critical path
+            LorePrefetcher.init(); // fire-and-forget (no await)
             UserAuth.init();
             Router.handle(); 
             Visuals.initDynamicTransparency(); 
