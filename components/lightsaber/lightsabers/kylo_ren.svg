@@ -1,0 +1,604 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 400" width="920" height="400">
+  <defs>
+    <!-- ========== GRADIENTS ========== -->
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0c0c0c"/>
+      <stop offset="10%" stop-color="#1c1c1c"/>
+      <stop offset="25%" stop-color="#2a2a2a"/>
+      <stop offset="42%" stop-color="#333"/>
+      <stop offset="55%" stop-color="#373737"/>
+      <stop offset="68%" stop-color="#313131"/>
+      <stop offset="82%" stop-color="#222"/>
+      <stop offset="93%" stop-color="#151515"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+
+    <linearGradient id="wideGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0e0e0e"/>
+      <stop offset="8%" stop-color="#1a1a1a"/>
+      <stop offset="22%" stop-color="#282828"/>
+      <stop offset="40%" stop-color="#323232"/>
+      <stop offset="55%" stop-color="#363636"/>
+      <stop offset="65%" stop-color="#313131"/>
+      <stop offset="80%" stop-color="#252525"/>
+      <stop offset="93%" stop-color="#171717"/>
+      <stop offset="100%" stop-color="#0b0b0b"/>
+    </linearGradient>
+
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#151515"/>
+      <stop offset="18%" stop-color="#353535"/>
+      <stop offset="38%" stop-color="#4a4a4a"/>
+      <stop offset="52%" stop-color="#525252"/>
+      <stop offset="68%" stop-color="#484848"/>
+      <stop offset="84%" stop-color="#2e2e2e"/>
+      <stop offset="100%" stop-color="#121212"/>
+    </linearGradient>
+
+    <linearGradient id="darkBand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#060606"/>
+      <stop offset="30%" stop-color="#181818"/>
+      <stop offset="50%" stop-color="#1e1e1e"/>
+      <stop offset="70%" stop-color="#171717"/>
+      <stop offset="100%" stop-color="#060606"/>
+    </linearGradient>
+
+    <linearGradient id="metalBand" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#1a1a1a"/>
+      <stop offset="15%" stop-color="#3a3a3a"/>
+      <stop offset="35%" stop-color="#505050"/>
+      <stop offset="50%" stop-color="#5c5c5c"/>
+      <stop offset="65%" stop-color="#4e4e4e"/>
+      <stop offset="85%" stop-color="#353535"/>
+      <stop offset="100%" stop-color="#161616"/>
+    </linearGradient>
+
+    <linearGradient id="wingL" x1="0%" y1="10%" x2="100%" y2="90%">
+      <stop offset="0%" stop-color="#586878"/>
+      <stop offset="8%" stop-color="#6a7a8a"/>
+      <stop offset="18%" stop-color="#8a7a6a"/>
+      <stop offset="28%" stop-color="#7a8a7a"/>
+      <stop offset="40%" stop-color="#7878a0"/>
+      <stop offset="52%" stop-color="#a09080"/>
+      <stop offset="64%" stop-color="#80a0a0"/>
+      <stop offset="76%" stop-color="#9080a0"/>
+      <stop offset="88%" stop-color="#80a080"/>
+      <stop offset="100%" stop-color="#6a7a8a"/>
+    </linearGradient>
+
+    <linearGradient id="wingR" x1="100%" y1="10%" x2="0%" y2="90%">
+      <stop offset="0%" stop-color="#586878"/>
+      <stop offset="8%" stop-color="#6a7a8a"/>
+      <stop offset="18%" stop-color="#8a7a6a"/>
+      <stop offset="28%" stop-color="#7a8a7a"/>
+      <stop offset="40%" stop-color="#7878a0"/>
+      <stop offset="52%" stop-color="#a09080"/>
+      <stop offset="64%" stop-color="#80a0a0"/>
+      <stop offset="76%" stop-color="#9080a0"/>
+      <stop offset="88%" stop-color="#80a080"/>
+      <stop offset="100%" stop-color="#6a7a8a"/>
+    </linearGradient>
+
+    <linearGradient id="wingHighlightL" x1="0%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <linearGradient id="wingHighlightR" x1="100%" y1="0%" x2="20%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.08"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="0.02"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.1"/>
+    </linearGradient>
+
+    <linearGradient id="springGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3a3a3a"/>
+      <stop offset="50%" stop-color="#4d4d4d"/>
+      <stop offset="100%" stop-color="#303030"/>
+    </linearGradient>
+
+    <linearGradient id="innerCyl" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#070707"/>
+      <stop offset="35%" stop-color="#141414"/>
+      <stop offset="50%" stop-color="#181818"/>
+      <stop offset="65%" stop-color="#131313"/>
+      <stop offset="100%" stop-color="#070707"/>
+    </linearGradient>
+
+    <linearGradient id="cageFinGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f0f0f"/>
+      <stop offset="20%" stop-color="#222"/>
+      <stop offset="45%" stop-color="#2e2e2e"/>
+      <stop offset="55%" stop-color="#2c2c2c"/>
+      <stop offset="80%" stop-color="#1e1e1e"/>
+      <stop offset="100%" stop-color="#0d0d0d"/>
+    </linearGradient>
+
+    <linearGradient id="screwGrad" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#4a4a4a"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </linearGradient>
+
+    <radialGradient id="screwRadial" cx="45%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#555"/>
+      <stop offset="60%" stop-color="#333"/>
+      <stop offset="100%" stop-color="#1a1a1a"/>
+    </radialGradient>
+
+    <radialGradient id="buttonRadial" cx="45%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#3a3a3a"/>
+      <stop offset="50%" stop-color="#282828"/>
+      <stop offset="100%" stop-color="#151515"/>
+    </radialGradient>
+
+    <linearGradient id="vertHighlight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.04"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.05"/>
+    </linearGradient>
+
+    <!-- ========== FILTERS ========== -->
+    <filter id="noise" x="0%" y="0%" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="1.2" numOctaves="4" seed="5" result="n"/>
+      <feColorMatrix in="n" type="saturate" values="0" result="gn"/>
+      <feBlend in="SourceGraphic" in2="gn" mode="soft-light"/>
+      <feComposite in2="SourceGraphic" operator="in"/>
+    </filter>
+
+    <filter id="insetShadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="b"/>
+      <feOffset dx="0" dy="1" result="o"/>
+      <feFlood flood-color="#000" flood-opacity="0.5" result="f"/>
+      <feComposite in="f" in2="o" operator="in" result="s"/>
+      <feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <filter id="gentleBlur">
+      <feGaussianBlur stdDeviation="0.4"/>
+    </filter>
+
+    <!-- ========== CLIP PATHS ========== -->
+    <clipPath id="mainBodyClip">
+      <rect x="155" y="40" width="90" height="870"/>
+    </clipPath>
+  </defs>
+
+  <g id="lightsaber-hilt" transform="rotate(180 460 200)">
+
+    <!-- ============================================================ -->
+    <!--  SECTION 1: TOP EMITTER NOZZLE                                -->
+    <!-- ============================================================ -->
+    <rect x="185" y="42" width="30" height="8" rx="1.5" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="0.5"/>
+    <rect x="182" y="49" width="36" height="5" rx="1" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.5"/>
+    <rect x="178" y="53" width="44" height="4" rx="1" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <rect x="175" y="56" width="50" height="6" rx="1.5" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.5"/>
+    <!-- Emitter lip ring -->
+    <rect x="172" y="61" width="56" height="4" rx="1" fill="url(#metalBand)" stroke="#111" stroke-width="0.4"/>
+    <!-- Emitter detail lines -->
+    <line x1="187" y1="43" x2="187" y2="50" stroke="#151515" stroke-width="0.3"/>
+    <line x1="213" y1="43" x2="213" y2="50" stroke="#151515" stroke-width="0.3"/>
+    <line x1="200" y1="43" x2="200" y2="50" stroke="#151515" stroke-width="0.3"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 2: UPPER COLLAR / CROSSGUARD MOUNT                  -->
+    <!-- ============================================================ -->
+    <!-- Main collar body -->
+    <rect x="166" y="65" width="68" height="18" rx="2" fill="url(#bodyGrad)" stroke="#0a0a0a" stroke-width="0.6"/>
+    <!-- Wider crossguard mounting collar -->
+    <rect x="156" y="82" width="88" height="95" rx="3" fill="url(#wideGrad)" stroke="#0a0a0a" stroke-width="0.7"/>
+    <!-- Top ring on collar -->
+    <rect x="156" y="82" width="88" height="5" rx="1" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.4"/>
+    <!-- Bottom ring on collar -->
+    <rect x="156" y="172" width="88" height="5" rx="1" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.4"/>
+
+    <!-- Collar vertical panel lines -->
+    <line x1="170" y1="87" x2="170" y2="172" stroke="#0a0a0a" stroke-width="0.5"/>
+    <line x1="230" y1="87" x2="230" y2="172" stroke="#0a0a0a" stroke-width="0.5"/>
+    <line x1="200" y1="87" x2="200" y2="172" stroke="#0d0d0d" stroke-width="0.3" opacity="0.5"/>
+
+    <!-- Collar horizontal detail lines -->
+    <line x1="156" y1="105" x2="244" y2="105" stroke="#111" stroke-width="0.4"/>
+    <line x1="156" y1="150" x2="244" y2="150" stroke="#111" stroke-width="0.4"/>
+
+    <!-- Collar side mounting blocks (where crossguards attach) -->
+    <rect x="154" y="98" width="14" height="58" rx="1.5" fill="#1a1a1a" stroke="#0d0d0d" stroke-width="0.5"/>
+    <rect x="232" y="98" width="14" height="58" rx="1.5" fill="#1a1a1a" stroke="#0d0d0d" stroke-width="0.5"/>
+    <!-- Mount block detail lines -->
+    <line x1="154" y1="110" x2="168" y2="110" stroke="#111" stroke-width="0.3"/>
+    <line x1="154" y1="125" x2="168" y2="125" stroke="#111" stroke-width="0.3"/>
+    <line x1="154" y1="140" x2="168" y2="140" stroke="#111" stroke-width="0.3"/>
+    <line x1="232" y1="110" x2="246" y2="110" stroke="#111" stroke-width="0.3"/>
+    <line x1="232" y1="125" x2="246" y2="125" stroke="#111" stroke-width="0.3"/>
+    <line x1="232" y1="140" x2="246" y2="140" stroke="#111" stroke-width="0.3"/>
+
+    <!-- Mounting screws on collar -->
+    <circle cx="161" cy="103" r="2.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="159.5" y1="103" x2="162.5" y2="103" stroke="#444" stroke-width="0.4"/>
+    <circle cx="239" cy="103" r="2.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="237.5" y1="103" x2="240.5" y2="103" stroke="#444" stroke-width="0.4"/>
+    <circle cx="161" cy="150" r="2.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="159.5" y1="150" x2="162.5" y2="150" stroke="#444" stroke-width="0.4"/>
+    <circle cx="239" cy="150" r="2.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="237.5" y1="150" x2="240.5" y2="150" stroke="#444" stroke-width="0.4"/>
+
+    <!-- Small recessed panel on front of collar -->
+    <rect x="185" y="108" width="30" height="38" rx="1.5" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="0.4"/>
+    <rect x="189" y="112" width="22" height="14" rx="1" fill="#0a0a0a" stroke="#151515" stroke-width="0.3"/>
+    <!-- Small indicator/button on collar -->
+    <circle cx="200" cy="137" r="3" fill="url(#buttonRadial)" stroke="#222" stroke-width="0.4"/>
+    <circle cx="200" cy="137" r="1.5" fill="#2a2a2a"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 3: CROSSGUARD WINGS                                  -->
+    <!-- ============================================================ -->
+
+    <!-- LEFT CROSSGUARD WING -->
+    <g id="crossguard-left">
+      <!-- Main wing shape (trapezoid, angled slightly upward at tip) -->
+      <polygon points="156,108 156,148 38,133 38,103"
+               fill="url(#wingL)" stroke="#4a5a6a" stroke-width="0.8" stroke-linejoin="round"/>
+      <!-- Wing highlight overlay -->
+      <polygon points="156,108 156,148 38,133 38,103"
+               fill="url(#wingHighlightL)" opacity="0.6"/>
+      <!-- Wing top edge bevel highlight -->
+      <line x1="38" y1="103" x2="156" y2="108" stroke="#9aa0a8" stroke-width="0.6" opacity="0.5"/>
+      <!-- Wing bottom edge shadow -->
+      <line x1="38" y1="133" x2="156" y2="148" stroke="#3a4a5a" stroke-width="0.6" opacity="0.5"/>
+      <!-- Wing tip edge -->
+      <line x1="38" y1="103" x2="38" y2="133" stroke="#5a6a7a" stroke-width="0.8"/>
+      <!-- Surface detail lines (striations) -->
+      <line x1="55" y1="105" x2="55" y2="132" stroke="#5a6a7a" stroke-width="0.3" opacity="0.35"/>
+      <line x1="72" y1="106" x2="72" y2="135" stroke="#6a7a8a" stroke-width="0.3" opacity="0.3"/>
+      <line x1="89" y1="106.5" x2="89" y2="138" stroke="#5a6a7a" stroke-width="0.3" opacity="0.35"/>
+      <line x1="106" y1="107" x2="106" y2="141" stroke="#6a7a8a" stroke-width="0.3" opacity="0.3"/>
+      <line x1="123" y1="107.5" x2="123" y2="144" stroke="#5a6a7a" stroke-width="0.3" opacity="0.35"/>
+      <line x1="140" y1="108" x2="140" y2="146" stroke="#6a7a8a" stroke-width="0.3" opacity="0.3"/>
+      <!-- Rainbow iridescent bands -->
+      <line x1="45" y1="108" x2="150" y2="114" stroke="#aa8877" stroke-width="1.5" opacity="0.12"/>
+      <line x1="42" y1="116" x2="153" y2="126" stroke="#7788aa" stroke-width="1.8" opacity="0.1"/>
+      <line x1="40" y1="124" x2="155" y2="138" stroke="#88aa88" stroke-width="1.5" opacity="0.1"/>
+      <line x1="39" y1="129" x2="156" y2="144" stroke="#aa88aa" stroke-width="1.2" opacity="0.08"/>
+    </g>
+
+    <!-- RIGHT CROSSGUARD WING -->
+    <g id="crossguard-right">
+      <polygon points="244,108 244,148 362,133 362,103"
+               fill="url(#wingR)" stroke="#4a5a6a" stroke-width="0.8" stroke-linejoin="round"/>
+      <polygon points="244,108 244,148 362,133 362,103"
+               fill="url(#wingHighlightR)" opacity="0.6"/>
+      <line x1="362" y1="103" x2="244" y2="108" stroke="#9aa0a8" stroke-width="0.6" opacity="0.5"/>
+      <line x1="362" y1="133" x2="244" y2="148" stroke="#3a4a5a" stroke-width="0.6" opacity="0.5"/>
+      <line x1="362" y1="103" x2="362" y2="133" stroke="#5a6a7a" stroke-width="0.8"/>
+      <line x1="345" y1="105" x2="345" y2="132" stroke="#5a6a7a" stroke-width="0.3" opacity="0.35"/>
+      <line x1="328" y1="106" x2="328" y2="135" stroke="#6a7a8a" stroke-width="0.3" opacity="0.3"/>
+      <line x1="311" y1="106.5" x2="311" y2="138" stroke="#5a6a7a" stroke-width="0.3" opacity="0.35"/>
+      <line x1="294" y1="107" x2="294" y2="141" stroke="#6a7a8a" stroke-width="0.3" opacity="0.3"/>
+      <line x1="277" y1="107.5" x2="277" y2="144" stroke="#5a6a7a" stroke-width="0.3" opacity="0.35"/>
+      <line x1="260" y1="108" x2="260" y2="146" stroke="#6a7a8a" stroke-width="0.3" opacity="0.3"/>
+      <line x1="355" y1="108" x2="250" y2="114" stroke="#aa8877" stroke-width="1.5" opacity="0.12"/>
+      <line x1="358" y1="116" x2="247" y2="126" stroke="#7788aa" stroke-width="1.8" opacity="0.1"/>
+      <line x1="360" y1="124" x2="245" y2="138" stroke="#88aa88" stroke-width="1.5" opacity="0.1"/>
+      <line x1="361" y1="129" x2="244" y2="144" stroke="#aa88aa" stroke-width="1.2" opacity="0.08"/>
+    </g>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 4: UPPER BODY CYLINDER                               -->
+    <!-- ============================================================ -->
+    <rect x="164" y="177" width="72" height="130" fill="url(#bodyGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <!-- Cylindrical highlight overlay -->
+    <rect x="164" y="177" width="72" height="130" fill="url(#vertHighlight)" opacity="0.5"/>
+
+    <!-- Vertical seam/panel lines -->
+    <line x1="178" y1="177" x2="178" y2="307" stroke="#090909" stroke-width="0.5"/>
+    <line x1="222" y1="177" x2="222" y2="307" stroke="#090909" stroke-width="0.5"/>
+
+    <!-- Horizontal detail bands -->
+    <rect x="164" y="195" width="72" height="2" fill="#111" opacity="0.6"/>
+    <rect x="164" y="220" width="72" height="2" fill="#111" opacity="0.6"/>
+    <rect x="164" y="250" width="72" height="1.5" fill="#111" opacity="0.5"/>
+    <rect x="164" y="275" width="72" height="1.5" fill="#111" opacity="0.5"/>
+    <rect x="164" y="295" width="72" height="2" fill="#111" opacity="0.6"/>
+
+    <!-- Small hex bolt details -->
+    <circle cx="171" cy="185" r="1.8" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <circle cx="229" cy="185" r="1.8" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <circle cx="171" cy="260" r="1.8" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <circle cx="229" cy="260" r="1.8" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+
+    <!-- Subtle surface weathering marks -->
+    <line x1="185" y1="200" x2="188" y2="202" stroke="#1a1a1a" stroke-width="0.3" opacity="0.5"/>
+    <line x1="210" y1="235" x2="215" y2="236" stroke="#1a1a1a" stroke-width="0.3" opacity="0.5"/>
+    <line x1="195" y1="280" x2="198" y2="282" stroke="#1a1a1a" stroke-width="0.3" opacity="0.4"/>
+
+    <!-- Ring below upper body -->
+    <rect x="162" y="305" width="76" height="5" rx="1" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.4"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 5: CONTROL BOX / SWITCH SECTION                      -->
+    <!-- ============================================================ -->
+    <rect x="164" y="310" width="72" height="95" fill="url(#bodyGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <rect x="164" y="310" width="72" height="95" fill="url(#vertHighlight)" opacity="0.4"/>
+
+    <!-- Side panels -->
+    <rect x="164" y="315" width="11" height="82" rx="1" fill="#111" stroke="#0a0a0a" stroke-width="0.3"/>
+    <rect x="225" y="315" width="11" height="82" rx="1" fill="#111" stroke="#0a0a0a" stroke-width="0.3"/>
+    <!-- Side panel rivet details -->
+    <circle cx="169.5" cy="325" r="1.2" fill="#1e1e1e" stroke="#0d0d0d" stroke-width="0.3"/>
+    <circle cx="169.5" cy="355" r="1.2" fill="#1e1e1e" stroke="#0d0d0d" stroke-width="0.3"/>
+    <circle cx="169.5" cy="385" r="1.2" fill="#1e1e1e" stroke="#0d0d0d" stroke-width="0.3"/>
+    <circle cx="230.5" cy="325" r="1.2" fill="#1e1e1e" stroke="#0d0d0d" stroke-width="0.3"/>
+    <circle cx="230.5" cy="355" r="1.2" fill="#1e1e1e" stroke="#0d0d0d" stroke-width="0.3"/>
+    <circle cx="230.5" cy="385" r="1.2" fill="#1e1e1e" stroke="#0d0d0d" stroke-width="0.3"/>
+
+    <!-- Recessed control panel -->
+    <rect x="180" y="318" width="40" height="55" rx="2" fill="#090909" stroke="#161616" stroke-width="0.5"/>
+    <!-- Inner panel border -->
+    <rect x="183" y="321" width="34" height="49" rx="1.5" fill="#0c0c0c" stroke="#111" stroke-width="0.3"/>
+
+    <!-- Main activation switch/toggle -->
+    <rect x="188" y="326" width="24" height="14" rx="2.5" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="0.5"/>
+    <!-- Switch toggle knob -->
+    <rect x="192" y="329" width="16" height="8" rx="2" fill="url(#buttonRadial)" stroke="#333" stroke-width="0.4"/>
+    <rect x="196" y="331" width="8" height="4" rx="1" fill="#2e2e2e" stroke="#3a3a3a" stroke-width="0.3"/>
+    <!-- Switch highlight -->
+    <line x1="197" y1="332" x2="203" y2="332" stroke="#444" stroke-width="0.3" opacity="0.5"/>
+
+    <!-- Secondary controls -->
+    <rect x="188" y="346" width="24" height="8" rx="1.5" fill="#121212" stroke="#1e1e1e" stroke-width="0.4"/>
+    <circle cx="194" cy="350" r="2" fill="url(#buttonRadial)" stroke="#222" stroke-width="0.3"/>
+    <circle cx="206" cy="350" r="2" fill="url(#buttonRadial)" stroke="#222" stroke-width="0.3"/>
+
+    <!-- Tertiary detail -->
+    <rect x="190" y="358" width="20" height="5" rx="1" fill="#0e0e0e" stroke="#1a1a1a" stroke-width="0.3"/>
+    <line x1="192" y1="360.5" x2="208" y2="360.5" stroke="#1a1a1a" stroke-width="0.4"/>
+
+    <!-- Panel vertical line details -->
+    <line x1="178" y1="318" x2="178" y2="397" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="222" y1="318" x2="222" y2="397" stroke="#0a0a0a" stroke-width="0.4"/>
+
+    <!-- Small data port / connector -->
+    <rect x="186" y="370" width="12" height="4" rx="0.5" fill="#080808" stroke="#151515" stroke-width="0.3"/>
+    <rect x="202" y="370" width="12" height="4" rx="0.5" fill="#080808" stroke="#151515" stroke-width="0.3"/>
+
+    <!-- Ring below control section -->
+    <rect x="162" y="403" width="76" height="5" rx="1" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.4"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 6: SPRING / MECHANICAL MID-SECTION                   -->
+    <!-- ============================================================ -->
+    <rect x="164" y="408" width="72" height="110" fill="url(#bodyGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <rect x="164" y="408" width="72" height="110" fill="url(#vertHighlight)" opacity="0.4"/>
+
+    <!-- Left spring assembly -->
+    <g id="left-spring">
+      <!-- Spring channel/housing -->
+      <rect x="164" y="418" width="10" height="85" rx="1" fill="#111" stroke="#0a0a0a" stroke-width="0.3"/>
+      <!-- Spring coils (individual turns) -->
+      <line x1="165" y1="422" x2="173" y2="424" stroke="#424242" stroke-width="0.9"/>
+      <line x1="165" y1="428" x2="173" y2="430" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="165" y1="434" x2="173" y2="436" stroke="#424242" stroke-width="0.9"/>
+      <line x1="165" y1="440" x2="173" y2="442" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="165" y1="446" x2="173" y2="448" stroke="#424242" stroke-width="0.9"/>
+      <line x1="165" y1="452" x2="173" y2="454" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="165" y1="458" x2="173" y2="460" stroke="#424242" stroke-width="0.9"/>
+      <line x1="165" y1="464" x2="173" y2="466" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="165" y1="470" x2="173" y2="472" stroke="#424242" stroke-width="0.9"/>
+      <line x1="165" y1="476" x2="173" y2="478" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="165" y1="482" x2="173" y2="484" stroke="#424242" stroke-width="0.9"/>
+      <line x1="165" y1="488" x2="173" y2="490" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="165" y1="494" x2="173" y2="496" stroke="#424242" stroke-width="0.9"/>
+      <!-- Spring shadow lines (between coils) -->
+      <line x1="165" y1="425" x2="173" y2="427" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="431" x2="173" y2="433" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="437" x2="173" y2="439" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="443" x2="173" y2="445" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="449" x2="173" y2="451" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="455" x2="173" y2="457" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="461" x2="173" y2="463" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="467" x2="173" y2="469" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="473" x2="173" y2="475" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="479" x2="173" y2="481" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="485" x2="173" y2="487" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="165" y1="491" x2="173" y2="493" stroke="#1a1a1a" stroke-width="0.4"/>
+    </g>
+
+    <!-- Right spring assembly -->
+    <g id="right-spring">
+      <rect x="226" y="418" width="10" height="85" rx="1" fill="#111" stroke="#0a0a0a" stroke-width="0.3"/>
+      <line x1="227" y1="422" x2="235" y2="424" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="428" x2="235" y2="430" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="227" y1="434" x2="235" y2="436" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="440" x2="235" y2="442" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="227" y1="446" x2="235" y2="448" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="452" x2="235" y2="454" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="227" y1="458" x2="235" y2="460" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="464" x2="235" y2="466" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="227" y1="470" x2="235" y2="472" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="476" x2="235" y2="478" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="227" y1="482" x2="235" y2="484" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="488" x2="235" y2="490" stroke="#3e3e3e" stroke-width="0.9"/>
+      <line x1="227" y1="494" x2="235" y2="496" stroke="#424242" stroke-width="0.9"/>
+      <line x1="227" y1="425" x2="235" y2="427" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="431" x2="235" y2="433" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="437" x2="235" y2="439" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="443" x2="235" y2="445" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="449" x2="235" y2="451" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="455" x2="235" y2="457" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="461" x2="235" y2="463" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="467" x2="235" y2="469" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="473" x2="235" y2="475" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="479" x2="235" y2="481" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="485" x2="235" y2="487" stroke="#1a1a1a" stroke-width="0.4"/>
+      <line x1="227" y1="491" x2="235" y2="493" stroke="#1a1a1a" stroke-width="0.4"/>
+    </g>
+
+    <!-- Mid-body central panel lines -->
+    <line x1="180" y1="410" x2="180" y2="516" stroke="#090909" stroke-width="0.5"/>
+    <line x1="220" y1="410" x2="220" y2="516" stroke="#090909" stroke-width="0.5"/>
+
+    <!-- Mid-body horizontal accents -->
+    <rect x="164" y="430" width="72" height="1.5" fill="#111" opacity="0.5"/>
+    <rect x="164" y="470" width="72" height="1.5" fill="#111" opacity="0.5"/>
+    <rect x="164" y="500" width="72" height="1.5" fill="#111" opacity="0.5"/>
+
+    <!-- Small mid-body screws -->
+    <circle cx="176" cy="415" r="1.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <circle cx="224" cy="415" r="1.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <circle cx="176" cy="510" r="1.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <circle cx="224" cy="510" r="1.5" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+
+    <!-- Ring below spring section -->
+    <rect x="162" y="516" width="76" height="5" rx="1" fill="url(#ringGrad)" stroke="#0d0d0d" stroke-width="0.4"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 7: LOWER TRANSITION                                  -->
+    <!-- ============================================================ -->
+    <rect x="164" y="521" width="72" height="55" fill="url(#bodyGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <rect x="164" y="521" width="72" height="55" fill="url(#vertHighlight)" opacity="0.3"/>
+
+    <!-- Transition detail lines -->
+    <line x1="164" y1="538" x2="236" y2="538" stroke="#111" stroke-width="0.4"/>
+    <line x1="164" y1="555" x2="236" y2="555" stroke="#111" stroke-width="0.4"/>
+    <line x1="180" y1="521" x2="180" y2="576" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="220" y1="521" x2="220" y2="576" stroke="#0a0a0a" stroke-width="0.4"/>
+
+    <!-- Side detail boxes -->
+    <rect x="165" y="528" width="8" height="40" rx="1" fill="#111" stroke="#0a0a0a" stroke-width="0.3"/>
+    <rect x="227" y="528" width="8" height="40" rx="1" fill="#111" stroke="#0a0a0a" stroke-width="0.3"/>
+
+    <!-- Transition screws -->
+    <circle cx="169" cy="535" r="1.3" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.2"/>
+    <circle cx="231" cy="535" r="1.3" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.2"/>
+    <circle cx="169" cy="560" r="1.3" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.2"/>
+    <circle cx="231" cy="560" r="1.3" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.2"/>
+
+    <!-- Wide ring / collar above cage -->
+    <rect x="158" y="574" width="84" height="8" rx="1.5" fill="url(#metalBand)" stroke="#0d0d0d" stroke-width="0.5"/>
+    <!-- Ring detail line -->
+    <line x1="158" y1="578" x2="242" y2="578" stroke="#666" stroke-width="0.3" opacity="0.3"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 8: CAGE / OPEN-FIN LOWER SECTION                    -->
+    <!-- ============================================================ -->
+
+    <!-- Inner cylinder visible through cage gaps -->
+    <rect x="183" y="582" width="34" height="280" rx="3" fill="url(#innerCyl)" stroke="#060606" stroke-width="0.4"/>
+    <!-- Inner cylinder detail lines -->
+    <line x1="195" y1="585" x2="195" y2="860" stroke="#111" stroke-width="0.3" opacity="0.5"/>
+    <line x1="205" y1="585" x2="205" y2="860" stroke="#111" stroke-width="0.3" opacity="0.5"/>
+    <line x1="200" y1="585" x2="200" y2="860" stroke="#0d0d0d" stroke-width="0.2" opacity="0.4"/>
+    <!-- Inner cylinder horizontal details -->
+    <line x1="183" y1="620" x2="217" y2="620" stroke="#111" stroke-width="0.3" opacity="0.4"/>
+    <line x1="183" y1="660" x2="217" y2="660" stroke="#111" stroke-width="0.3" opacity="0.4"/>
+    <line x1="183" y1="700" x2="217" y2="700" stroke="#111" stroke-width="0.3" opacity="0.4"/>
+    <line x1="183" y1="740" x2="217" y2="740" stroke="#111" stroke-width="0.3" opacity="0.4"/>
+    <line x1="183" y1="780" x2="217" y2="780" stroke="#111" stroke-width="0.3" opacity="0.4"/>
+    <line x1="183" y1="820" x2="217" y2="820" stroke="#111" stroke-width="0.3" opacity="0.4"/>
+
+    <!-- CAGE VERTICAL FINS -->
+    <!-- Far-left fin (wide, rounded profile) -->
+    <rect x="160" y="582" width="10" height="278" rx="1.5" fill="url(#cageFinGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <line x1="165" y1="582" x2="165" y2="860" stroke="#333" stroke-width="0.3" opacity="0.25"/>
+    <!-- Left-mid fin -->
+    <rect x="174" y="582" width="8" height="278" rx="1" fill="url(#cageFinGrad)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="178" y1="582" x2="178" y2="860" stroke="#333" stroke-width="0.2" opacity="0.2"/>
+    <!-- Left-inner thin fin -->
+    <rect x="186" y="586" width="4" height="274" rx="0.5" fill="#1c1c1c" stroke="#0a0a0a" stroke-width="0.3"/>
+    <!-- Center-left thin fin -->
+    <rect x="194" y="588" width="3" height="272" rx="0.5" fill="#1a1a1a" stroke="#0a0a0a" stroke-width="0.2"/>
+    <!-- Center-right thin fin -->
+    <rect x="203" y="588" width="3" height="272" rx="0.5" fill="#1a1a1a" stroke="#0a0a0a" stroke-width="0.2"/>
+    <!-- Right-inner thin fin -->
+    <rect x="210" y="586" width="4" height="274" rx="0.5" fill="#1c1c1c" stroke="#0a0a0a" stroke-width="0.3"/>
+    <!-- Right-mid fin -->
+    <rect x="218" y="582" width="8" height="278" rx="1" fill="url(#cageFinGrad)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="222" y1="582" x2="222" y2="860" stroke="#333" stroke-width="0.2" opacity="0.2"/>
+    <!-- Far-right fin (wide, rounded profile) -->
+    <rect x="230" y="582" width="10" height="278" rx="1.5" fill="url(#cageFinGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <line x1="235" y1="582" x2="235" y2="860" stroke="#333" stroke-width="0.3" opacity="0.25"/>
+
+    <!-- CAGE HORIZONTAL RING BANDS -->
+    <rect x="158" y="610" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="158" y1="612.5" x2="242" y2="612.5" stroke="#333" stroke-width="0.2" opacity="0.3"/>
+
+    <rect x="158" y="650" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="158" y1="652.5" x2="242" y2="652.5" stroke="#333" stroke-width="0.2" opacity="0.3"/>
+
+    <rect x="158" y="690" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="158" y1="692.5" x2="242" y2="692.5" stroke="#333" stroke-width="0.2" opacity="0.3"/>
+
+    <rect x="158" y="730" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="158" y1="732.5" x2="242" y2="732.5" stroke="#333" stroke-width="0.2" opacity="0.3"/>
+
+    <rect x="158" y="770" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="158" y1="772.5" x2="242" y2="772.5" stroke="#333" stroke-width="0.2" opacity="0.3"/>
+
+    <rect x="158" y="810" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+    <line x1="158" y1="812.5" x2="242" y2="812.5" stroke="#333" stroke-width="0.2" opacity="0.3"/>
+
+    <rect x="158" y="845" width="84" height="5" rx="0.8" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+
+    <!-- Detail screws on cage bands (select bands) -->
+    <circle cx="162" cy="612" r="1" fill="#2a2a2a" stroke="#111" stroke-width="0.2"/>
+    <circle cx="238" cy="612" r="1" fill="#2a2a2a" stroke="#111" stroke-width="0.2"/>
+    <circle cx="162" cy="692" r="1" fill="#2a2a2a" stroke="#111" stroke-width="0.2"/>
+    <circle cx="238" cy="692" r="1" fill="#2a2a2a" stroke="#111" stroke-width="0.2"/>
+    <circle cx="162" cy="772" r="1" fill="#2a2a2a" stroke="#111" stroke-width="0.2"/>
+    <circle cx="238" cy="772" r="1" fill="#2a2a2a" stroke="#111" stroke-width="0.2"/>
+
+    <!-- Cage gap shadows (dark spaces between fins) -->
+    <rect x="170" y="585" width="4" height="275" fill="#050505" opacity="0.7"/>
+    <rect x="226" y="585" width="4" height="275" fill="#050505" opacity="0.7"/>
+
+    <!-- ============================================================ -->
+    <!--  SECTION 9: BOTTOM CAP / POMMEL                               -->
+    <!-- ============================================================ -->
+    <!-- Bottom cage cap ring -->
+    <rect x="158" y="858" width="84" height="8" rx="2" fill="url(#metalBand)" stroke="#0d0d0d" stroke-width="0.5"/>
+    <line x1="158" y1="862" x2="242" y2="862" stroke="#555" stroke-width="0.3" opacity="0.3"/>
+
+    <!-- Pommel body -->
+    <rect x="168" y="866" width="64" height="14" rx="3" fill="url(#bodyGrad)" stroke="#0a0a0a" stroke-width="0.5"/>
+    <line x1="168" y1="873" x2="232" y2="873" stroke="#111" stroke-width="0.3"/>
+
+    <!-- Pommel bottom ring -->
+    <rect x="174" y="879" width="52" height="6" rx="2" fill="url(#darkBand)" stroke="#0a0a0a" stroke-width="0.4"/>
+
+    <!-- Pommel end cap -->
+    <rect x="180" y="884" width="40" height="5" rx="2" fill="#1a1a1a" stroke="#0a0a0a" stroke-width="0.4"/>
+    <rect x="188" y="888" width="24" height="3" rx="1.5" fill="#141414" stroke="#0a0a0a" stroke-width="0.3"/>
+
+    <!-- Bottom screw -->
+    <circle cx="200" cy="890" r="2" fill="url(#screwRadial)" stroke="#0a0a0a" stroke-width="0.3"/>
+    <line x1="198.5" y1="890" x2="201.5" y2="890" stroke="#444" stroke-width="0.4"/>
+    <line x1="200" y1="888.5" x2="200" y2="891.5" stroke="#444" stroke-width="0.4"/>
+
+    <!-- ============================================================ -->
+    <!--  OVERLAY: Subtle cylindrical sheen on main body               -->
+    <!-- ============================================================ -->
+    <rect x="190" y="65" width="15" height="510" rx="2" fill="#ffffff" opacity="0.012"/>
+    <rect x="192" y="65" width="8" height="510" rx="1" fill="#ffffff" opacity="0.012"/>
+
+    <!-- ============================================================ -->
+    <!--  OVERLAY: Edge darkening on body sides                        -->
+    <!-- ============================================================ -->
+    <rect x="162" y="65" width="6" height="515" fill="#000000" opacity="0.075"/>
+    <rect x="232" y="65" width="6" height="515" fill="#000000" opacity="0.075"/>
+
+    <!-- ============================================================ -->
+    <!--  EXTRA DETAILS: Weathering / wear marks                       -->
+    <!-- ============================================================ -->
+    <!-- Scratches and wear -->
+    <line x1="175" y1="130" x2="178" y2="145" stroke="#2a2a2a" stroke-width="0.3" opacity="0.4"/>
+    <line x1="215" y1="200" x2="218" y2="208" stroke="#282828" stroke-width="0.3" opacity="0.35"/>
+    <line x1="190" y1="450" x2="193" y2="462" stroke="#252525" stroke-width="0.3" opacity="0.3"/>
+    <line x1="208" y1="540" x2="210" y2="555" stroke="#282828" stroke-width="0.3" opacity="0.3"/>
+
+    <!-- Very subtle grunge spots -->
+    <circle cx="185" cy="160" r="1" fill="#1e1e1e" opacity="0.3"/>
+    <circle cx="220" cy="290" r="0.8" fill="#1e1e1e" opacity="0.25"/>
+    <circle cx="195" cy="490" r="1.2" fill="#1e1e1e" opacity="0.2"/>
+
+  </g>
+</svg>

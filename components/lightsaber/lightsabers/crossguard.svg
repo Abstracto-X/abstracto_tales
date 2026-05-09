@@ -1,0 +1,27 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 63.3" style="enable-background:new 0 0 450 63.3;">
+  <defs>
+    <linearGradient id="lswCG1" gradientUnits="userSpaceOnUse" x1="187.4" y1="39.6" x2="187.4" y2="14" gradientTransform="matrix(-1 0 0 1 1091.4 0)"><stop offset="0" stop-color="#E6E6E6"/><stop offset=".11" stop-color="#DCDCDC"/><stop offset=".3" stop-color="#C1C1C1"/><stop offset=".54" stop-color="#969696"/><stop offset=".83" stop-color="#5A5A5A"/><stop offset="1" stop-color="#333"/></linearGradient>
+    <linearGradient id="lswCG10" gradientUnits="userSpaceOnUse" x1="262.7" y1="66" x2="262.7" y2="-3.2" gradientTransform="matrix(-1 0 0 1 1091.4 0)"><stop offset="0" stop-color="#444"/><stop offset=".3" stop-color="#5a5a5a"/><stop offset=".5" stop-color="#888"/><stop offset=".68" stop-color="#666"/><stop offset="1" stop-color="#444"/></linearGradient>
+    <linearGradient id="lswCG11" gradientUnits="userSpaceOnUse" x1="37.7" y1="63.3" x2="37.7" y2="0"><stop offset="0" stop-color="#020202"/><stop offset=".5" stop-color="#1C1C1C"/><stop offset="1" stop-color="#020202"/></linearGradient>
+  </defs>
+  <rect x="353.9" y="7.7" fill="#040404" width="88.9" height="48"/>
+  <rect x="132.7" y="14" fill="url(#lswCG1)" width="109.4" height="25.5"/>
+  <rect x="431.3" y="4.6" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="421.9" y="4.6" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="412.7" y="4.6" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="403.4" y="4.9" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="394.1" y="4.6" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="384.6" y="4.6" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="375.7" y="4.9" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <rect x="366.9" y="4.9" fill="#3a3a3a" width="5.7" height="54.8"/>
+  <path fill="#020202" d="M135.2,7.1c.7,0,1.2.5,1.2,1.2v22.1h0v.9s-.5,5.5,3.5,5.5 3.5-5.5,3.5-5.5v-.9h0V8.3c0-.7.5-1.2,1.2-1.2h6.8c.7,0,1.2.5,1.2,1.2v22.1h0v.9s-.5,5.5,3.5,5.5 3.5-5.5,3.5-5.5v-.9h0V8.3c0-.7.5-1.2,1.2-1.2h6.8c.7,0,1.2.5,1.2,1.2v22.1h0V32s-.5,5.5,3.5,5.5 3.5-5.5,3.5-5.5v-1.6h0V8.3c0-.7.5-1.2,1.2-1.2h6.8c.7,0,1.2.5,1.2,1.2v22.1h0V32s-.5,5.5,3.5,5.5 3.5-7,3.5-7V8.3c0-.7.5-1.2,1.2-1.2h6.8c.7,0,1.2.5,1.2,1.2v22.1h0V32s-.5,5.5,3.5,5.5S208,32,208,32v-1.6h0V8.3c0-.7.5-1.2,1.2-1.2h6.8c.7,0,1.2.5,1.2,1.2v22.1h0V32s-.5,5.5,3.5,5.5 3.5-5.5,3.5-5.5v-1.6h0V8.3c0-.7.5-1.2,1.2-1.2h6.8c.7,0,1.2.5,1.2,1.2v22.1h0l0,2.4c0,1.5.5,4.6,3.5,4.6 2.8,0,3.4-2.7,3.5-4.3l0-1.1v-1.6h0V8.3c0-.7.5-1.2,1.2-1.2h29.5v42.3h-21.4v1.6H121.1V7.1H135.2z"/>
+  <path fill="url(#lswCG10)" d="M75.3,1.2v60.7h43.5v-1l4.1-1.5v-.8h164.7v1.7h10.8v-.6l4-1.4v-1h26.7v1.6l3.6,1.6v1H358h2h14.4h8.9h58.1L450,66V-3.2l-8.5,4.5v10.3h-47.8h-3.4L375.4,2s-1.8-.5-4.2-.5-2.4,0-2.4,0h-36.2V3l-3.6,1.6v1.6h-26.7V5.1l-4-1.4V3h-10.8v1.6h-19.4c0,12.3-6.9,24.6-6.9,24.6-8.5,14.1-14.7,17.8-17.8,18.7-1.2.3-2.4.2-2.4.2h-9H123V4l-4.1-1.5V1.2H75.3z M363.9,46.6c0-2.5,2.8-2.3,2.8-2.3h7.8l16.2-20.1h50.8v1.9v10.3v21.9h-54l-13-9.6h-7.8C366.7,48.9,363.9,49.1,363.9,46.6z"/>
+  <path fill="url(#lswCG11)" d="M0,31C.9,5.8,24.2,0,24.2,0l21.3,0,5.3,6.3h5.3l2.9,4.9h9.4L73,8.3V3.7l2.4-1.1v23.8v10.6v23.8L73,59.6v-4.6l-4.6-2.9H59v0L56.1,57v.1h-5.3l0,0-5.3,6.3H24.2S.9,57.6,0,32.3h0c0-.2,0-.5,0-.7C0,31.4,0,31.2,0,31z"/>
+  <rect x="24.3" y="0" fill="#B8B8B8" width=".4" height="63.3"/>
+  <rect x="45" y="0" fill="#B8B8B8" width=".4" height="63.3"/>
+  <rect x="50.9" y="6.3" fill="#B8B8B8" width=".3" height="50.8"/>
+  <rect x="59" y="11.2" fill="#B8B8B8" width=".3" height="40.9"/>
+  <rect x="68.1" y="11.2" fill="#B8B8B8" width=".3" height="40.9"/>
+  <ellipse fill="#590E0E" cx="362.7" cy="12.8" rx="10" ry="9.8"/>
+  <ellipse fill="#B21212" cx="362.7" cy="11.9" rx="10" ry="9"/>
+</svg>

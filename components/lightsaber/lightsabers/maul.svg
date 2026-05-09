@@ -1,0 +1,22 @@
+<svg viewBox="60 60 880 80" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="lswMmainMetal" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#7a7d80"/><stop offset="15%" stop-color="#fff"/><stop offset="40%" stop-color="#95989b"/><stop offset="65%" stop-color="#e0e0e0"/><stop offset="85%" stop-color="#555"/><stop offset="100%" stop-color="#222"/></linearGradient>
+    <linearGradient id="lswMdarkMetal" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#404040"/><stop offset="20%" stop-color="#606060"/><stop offset="50%" stop-color="#2a2a2a"/><stop offset="80%" stop-color="#4a4a4a"/><stop offset="100%" stop-color="#111"/></linearGradient>
+    <linearGradient id="lswMredButton" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ff5555"/><stop offset="40%" stop-color="#cc0000"/><stop offset="100%" stop-color="#550000"/></linearGradient>
+    <linearGradient id="lswMbuttonBase" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#888"/><stop offset="50%" stop-color="#bbb"/><stop offset="100%" stop-color="#444"/></linearGradient>
+    <g id="lswMribbedSection"><rect x="0" y="77" width="60" height="46" fill="url(#lswMmainMetal)"/><rect x="5" y="76" width="4" height="48" fill="url(#lswMdarkMetal)" rx="1"/><rect x="15" y="76" width="4" height="48" fill="url(#lswMdarkMetal)" rx="1"/><rect x="25" y="76" width="4" height="48" fill="url(#lswMdarkMetal)" rx="1"/><rect x="35" y="76" width="4" height="48" fill="url(#lswMdarkMetal)" rx="1"/><rect x="45" y="76" width="4" height="48" fill="url(#lswMdarkMetal)" rx="1"/><rect x="55" y="76" width="4" height="48" fill="url(#lswMdarkMetal)" rx="1"/></g>
+    <g id="lswMemitter"><rect x="120" y="82" width="30" height="36" fill="url(#lswMdarkMetal)"/><polygon points="120,80 90,65 90,135 120,120" fill="url(#lswMmainMetal)"/><polygon points="115,80 95,70 95,130 115,120" fill="url(#lswMdarkMetal)"/><polygon points="115,84 95,74 95,126 115,116" fill="url(#lswMmainMetal)"/><line x1="105" y1="73" x2="105" y2="127" stroke="#111" stroke-width="2"/><rect x="120" y="73" width="8" height="54" fill="url(#lswMmainMetal)" rx="2"/><rect x="135" y="75" width="6" height="50" fill="url(#lswMmainMetal)" rx="2"/><rect x="80" y="60" width="10" height="80" fill="url(#lswMmainMetal)" rx="3"/><rect x="75" y="63" width="6" height="74" fill="url(#lswMdarkMetal)" rx="1"/></g>
+  </defs>
+  <rect x="150" y="80" width="700" height="40" fill="url(#lswMmainMetal)" rx="2"/>
+  <rect x="475" y="78" width="50" height="44" fill="url(#lswMmainMetal)" rx="2"/>
+  <rect x="496" y="75" width="8" height="50" fill="url(#lswMdarkMetal)" rx="2"/>
+  <use href="#lswMribbedSection" x="250"/>
+  <use href="#lswMribbedSection" x="690"/>
+  <use href="#lswMemitter"/>
+  <use href="#lswMemitter" transform="translate(1000,0) scale(-1,1)"/>
+  <g transform="translate(415,68)"><rect x="0" y="4" width="14" height="8" fill="url(#lswMbuttonBase)" rx="2"/><rect x="2" y="0" width="10" height="5" fill="url(#lswMredButton)" rx="1"/></g>
+  <rect x="440" y="96" width="20" height="8" rx="2" fill="url(#lswMdarkMetal)"/>
+  <circle cx="446" cy="100" r="2" fill="#ff3333"/><circle cx="454" cy="100" r="2" fill="#fff"/>
+  <rect x="540" y="96" width="20" height="8" rx="2" fill="url(#lswMdarkMetal)"/>
+  <circle cx="546" cy="100" r="2" fill="#fff"/><circle cx="554" cy="100" r="2" fill="#ff3333"/>
+</svg>

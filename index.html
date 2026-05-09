@@ -895,6 +895,11 @@
             <div id="back-container"></div>
             <div class="logo" onclick="Router.navigate('home')">AETHER</div>
             <div class="header-controls">
+                <div id="saber-link-container">
+                    <div class="back-btn-wrapper" onclick="UI.openSaberModal()" title="Saber Customization">
+                        <i class="fa-solid fa-wand-sparkles" style="font-size: 1.2rem; color: var(--accent-color)"></i>
+                    </div>
+                </div>
                 <div id="wp-toggle-container"></div>
                 <div id="audio-toggle-container"></div>
                 <div id="admin-link-container"></div>
@@ -902,21 +907,36 @@
             </div>
         </nav>
 
-        <div id="lore-loading-screen">
-            <div class="lore-loading-card glass-box">
-                <div class="ll-img-container">
-                    <img id="ll-img" src="" alt="Lore Image">
+        <div id="saber-modal" class="modal-overlay">
+            <div class="modal-box glass-box">
+                <button class="modal-close" onclick="UI.closeSaberModal()"><i class="fas fa-times"></i></button>
+                <h3 class="modal-title">Saber Customization</h3>
+                <div class="form-group">
+                    <label class="form-label">Hilt Style</label>
+                    <select id="saber-hilt" class="form-input" style="background:#111; color:#fff;">
+                        <!-- populated dynamically -->
+                    </select>
                 </div>
-                <div class="ll-content">
-                    <h2 id="ll-title">Accessing Archives...</h2>
-                    <div class="ll-desc" id="ll-desc">Retrieving aetheric data from the network...</div>
+                <div class="form-group">
+                    <label class="form-label">Blade Color</label>
+                    <select id="saber-color" class="form-input" style="background:#111; color:#fff;">
+                        <option value="blue">Blue</option>
+                        <option value="green">Green</option>
+                        <option value="red">Red</option>
+                        <option value="purple">Purple</option>
+                        <option value="yellow">Yellow</option>
+                        <option value="white">White</option>
+                    </select>
                 </div>
-            </div>
-            
-            <div class="arcane-spiral-container">
-                <div class="arcane-ring-outer"></div>
-                <div class="arcane-ring-inner"></div>
-                <div class="arcane-core"></div>
+                <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="saber-unstable" style="width:16px;height:16px;accent-color:var(--accent-color);">
+                    <label for="saber-unstable" class="form-label" style="margin-bottom:0;">Unstable Blade</label>
+                </div>
+                <div class="form-group" style="display:flex; align-items:center; gap:10px;">
+                    <input type="checkbox" id="saber-audio" style="width:16px;height:16px;accent-color:var(--accent-color);">
+                    <label for="saber-audio" class="form-label" style="margin-bottom:0;">Audio Effects</label>
+                </div>
+                <button class="form-btn" onclick="SaberController.saveAndApply()" style="margin-top:1rem;">Apply Customizations</button>
             </div>
         </div>
 
@@ -2170,6 +2190,103 @@
         };
 
         // ==============================================
+        // LIGHTSABER CONTROLLER
+        // ==============================================
+        const SaberController = {
+            widget: null,
+            config: null,
+            init: async () => {
+                try {
+                    const module = await import('./components/lightsaber/lightsaber-widget.js');
+                    const configModule = await import('./components/lightsaber/lightsaber-config.js');
+                    SaberController.config = configModule;
+                    
+                    const saved = JSON.parse(localStorage.getItem('userParamsSaber') || '{}');
+                    const defaults = {
+                        x: 50, y: 50, rotation: 0,
+                        bladeLength: 600, color: 'blue',
+                        hilt: 'obiwan', unstable: false,
+                        audio: true, backgroundImage: '',
+                        showProgress: true, progressLabel: 'Accessing Archives...',
+                        scale: 1
+                    };
+                    
+                    const merged = { ...defaults, ...saved };
+                    SaberController.widget = module.createLightsaber(merged);
+                    SaberController.widget.hide();
+                    
+                    // Populate options in saber-modal
+                    const hiltSelect = document.getElementById('saber-hilt');
+                    if (hiltSelect && configModule.DEMO_HILT_OPTIONS) {
+                        hiltSelect.innerHTML = configModule.DEMO_HILT_OPTIONS.map(opt => `<option value="${opt.value}">${opt.label}</option>`).join('');
+                        if(merged.hilt) hiltSelect.value = merged.hilt;
+                    }
+                    
+                    ['color', 'unstable', 'audio'].forEach(key => {
+                        const el = document.getElementById('saber-' + key);
+                        if (el) {
+                            if (el.type === 'checkbox') el.checked = merged[key];
+                            else el.value = merged[key];
+                        }
+                    });
+                } catch(e) {
+                    console.error("Failed to load Lightsaber module:", e);
+                }
+            },
+            saveAndApply: () => {
+                if(!SaberController.widget) return;
+                const hilt = document.getElementById('saber-hilt').value;
+                const color = document.getElementById('saber-color').value;
+                const unstable = document.getElementById('saber-unstable').checked;
+                const audio = document.getElementById('saber-audio').checked;
+                
+                const prefs = { hilt, color, unstable, audio };
+                localStorage.setItem('userParamsSaber', JSON.stringify(prefs));
+                
+                SaberController.widget.setOptions(prefs);
+                UI.closeSaberModal();
+                
+                // Show a quick demo ignite!
+                SaberController.widget.show();
+                SaberController.widget.ignite();
+                setTimeout(() => {
+                    SaberController.widget.retract();
+                    setTimeout(() => SaberController.widget.hide(), 1000);
+                }, 2000);
+            },
+            showLoading: () => {
+                if (!SaberController.widget) return;
+                SaberController.widget.show();
+                SaberController.widget.setProgress(0, false);
+                
+                SaberController._isDone = false;
+                SaberController._currentProgress = 0;
+                
+                const step = () => {
+                    if (SaberController._isDone) return;
+                    SaberController._currentProgress += (90 - SaberController._currentProgress) * 0.1;
+                    SaberController.widget.setProgress(SaberController._currentProgress, true);
+                    if (SaberController._currentProgress < 89) {
+                        SaberController._animFrame = setTimeout(step, 100);
+                    }
+                };
+                step();
+            },
+            hideLoading: () => {
+                if (!SaberController.widget) return;
+                SaberController._isDone = true;
+                clearTimeout(SaberController._animFrame);
+                
+                SaberController.widget.setProgress(100, true);
+                
+                setTimeout(() => {
+                    SaberController.widget.retract();
+                    setTimeout(() => SaberController.widget.hide(), 1000);
+                }, 800);
+            }
+        };
+
+        // ==============================================
         // UI UTILITIES
         // ==============================================
         const UI = {
@@ -2208,34 +2325,23 @@
             },
             
             showLoading: () => {
-                const entry = LorePrefetcher.getRandomEntry();
-                const titleEl = document.getElementById('ll-title');
-                const descEl = document.getElementById('ll-desc');
-                const imgEl = document.getElementById('ll-img');
-                const imgContainer = document.querySelector('.ll-img-container');
-
-                if (entry) {
-                    titleEl.textContent = entry.title;
-                    descEl.textContent = entry.description;
-                    imgEl.src = entry.image_url;
-                    if (imgContainer) {
-                        imgContainer.style.visibility = 'visible';
-                        imgContainer.style.opacity = '1';
-                    }
-                } else {
-                    titleEl.textContent = "Accessing Archives...";
-                    descEl.textContent = "Retrieving aetheric data from the network...";
-                    if (imgContainer) {
-                        imgContainer.style.visibility = 'hidden';
-                        imgContainer.style.opacity = '0';
-                    }
-                }
-
-                UI.loadingScreen.classList.add('active');
+                SaberController.showLoading();
             },
 
             hideLoading: () => {
-                UI.loadingScreen.classList.remove('active');
+                SaberController.hideLoading();
+            },
+
+            openSaberModal: () => {
+                const modal = document.getElementById('saber-modal');
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+            },
+
+            closeSaberModal: () => {
+                const modal = document.getElementById('saber-modal');
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
             },
 
             initAuthLink: (userProfile) => {
@@ -2844,6 +2950,7 @@
         // ==============================================
         window.addEventListener('hashchange', Router.handle);
         window.addEventListener('DOMContentLoaded', async () => { 
+            await SaberController.init();
             // FIX 2: Non-blocking prefetcher — cosmetic data should not block critical path
             LorePrefetcher.init(); // fire-and-forget (no await)
             UserAuth.init();

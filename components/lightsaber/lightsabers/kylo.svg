@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 1000" width="100%" height="100%">
+  <defs>
+    <linearGradient id="mainBody" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#111111"/>
+      <stop offset="15%" stop-color="#2a2a2a"/>
+      <stop offset="50%" stop-color="#444444"/>
+      <stop offset="85%" stop-color="#2a2a2a"/>
+      <stop offset="100%" stop-color="#0a0a0a"/>
+    </linearGradient>
+    
+    <linearGradient id="darkMetal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#050505"/>
+      <stop offset="50%" stop-color="#222222"/>
+      <stop offset="100%" stop-color="#050505"/>
+    </linearGradient>
+
+    <linearGradient id="heatStainLeft" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7a7a7a"/>
+      <stop offset="25%" stop-color="#4a5266"/>
+      <stop offset="50%" stop-color="#6e4a5c"/>
+      <stop offset="75%" stop-color="#8c7a51"/>
+      <stop offset="100%" stop-color="#222222"/>
+    </linearGradient>
+
+    <linearGradient id="heatStainRight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#222222"/>
+      <stop offset="25%" stop-color="#8c7a51"/>
+      <stop offset="50%" stop-color="#6e4a5c"/>
+      <stop offset="75%" stop-color="#4a5266"/>
+      <stop offset="100%" stop-color="#7a7a7a"/>
+    </linearGradient>
+    
+    <linearGradient id="silverHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#aaaaaa"/>
+      <stop offset="100%" stop-color="#555555"/>
+    </linearGradient>
+  </defs>
+
+<g id="pommel-section">
+    <rect x="195" y="750" width="110" height="190" fill="#050505" />
+    
+    <rect x="235" y="870" width="30" height="40" fill="#222" stroke="#111" stroke-width="2"/>
+    <line x1="235" y1="880" x2="265" y2="880" stroke="#444" stroke-width="2"/>
+    <line x1="235" y1="890" x2="265" y2="890" stroke="#444" stroke-width="2"/>
+    <line x1="235" y1="900" x2="265" y2="900" stroke="#444" stroke-width="2"/>
+
+    <path d="M 180 750 L 170 940 L 205 940 L 215 750 Z" fill="url(#mainBody)" stroke="#0a0a0a" stroke-width="1"/>
+    <path d="M 235 750 L 235 940 L 265 940 L 265 750 Z" fill="url(#mainBody)" stroke="#0a0a0a" stroke-width="1"/>
+    <path d="M 285 750 L 295 940 L 330 940 L 320 750 Z" fill="url(#mainBody)" stroke="#0a0a0a" stroke-width="1"/>
+    
+    <path d="M 165 940 L 180 980 L 320 980 L 335 940 Z" fill="url(#darkMetal)" stroke="#111" stroke-width="2"/>
+    <rect x="180" y="980" width="140" height="10" fill="#111" />
+  </g>
+
+  <g id="lower-grip">
+    <rect x="195" y="380" width="110" height="370" fill="url(#mainBody)" />
+    <path d="M 200 600 Q 210 610 205 620" stroke="#888" stroke-width="1.5" fill="none" />
+    <path d="M 290 550 Q 285 560 295 565" stroke="#888" stroke-width="1.5" fill="none" />
+    <path d="M 205 650 L 210 655 L 208 660" stroke="#888" stroke-width="1" fill="none" />
+    <path d="M 210 500 L 215 515" stroke="#999" stroke-width="1" fill="none" />
+
+    <rect x="200" y="390" width="6" height="350" fill="url(#darkMetal)" stroke="#0a0a0a" stroke-width="1" />
+    <rect x="199" y="450" width="8" height="20" fill="url(#silverHighlight)" rx="2" />
+    <rect x="199" y="680" width="8" height="20" fill="url(#silverHighlight)" rx="2" />
+    <line x1="199" y1="460" x2="207" y2="460" stroke="#222" stroke-width="1" />
+    <line x1="199" y1="690" x2="207" y2="690" stroke="#222" stroke-width="1" />
+    
+    <rect x="247" y="390" width="6" height="350" fill="url(#darkMetal)" stroke="#0a0a0a" stroke-width="1" />
+    <rect x="246" y="440" width="8" height="20" fill="url(#silverHighlight)" rx="2" />
+    <rect x="246" y="700" width="8" height="20" fill="url(#silverHighlight)" rx="2" />
+    <line x1="246" y1="450" x2="254" y2="450" stroke="#222" stroke-width="1" />
+    <line x1="246" y1="710" x2="254" y2="710" stroke="#222" stroke-width="1" />
+
+    <rect x="294" y="390" width="6" height="350" fill="url(#darkMetal)" stroke="#0a0a0a" stroke-width="1" />
+    <rect x="293" y="450" width="8" height="20" fill="url(#silverHighlight)" rx="2" />
+    <rect x="293" y="680" width="8" height="20" fill="url(#silverHighlight)" rx="2" />
+    <line x1="293" y1="460" x2="301" y2="460" stroke="#222" stroke-width="1" />
+    <line x1="293" y1="690" x2="301" y2="690" stroke="#222" stroke-width="1" />
+  </g>
+
+  <g id="switch-section">
+    <rect x="190" y="370" width="120" height="10" fill="url(#mainBody)" />
+    <rect x="185" y="360" width="130" height="10" fill="url(#darkMetal)" />
+    <path d="M 185 360 L 190 340 L 310 340 L 315 360 Z" fill="url(#mainBody)" />
+
+    <rect x="180" y="150" width="140" height="190" fill="url(#mainBody)" rx="5" />
+    
+    <path d="M 175 220 L 175 320 L 195 320 L 205 280 L 295 280 L 305 320 L 325 320 L 325 220 Z" fill="url(#darkMetal)" stroke="#333" stroke-width="2" />
+    <circle cx="185" cy="310" r="3" fill="#555" />
+    <circle cx="315" cy="310" r="3" fill="#555" />
+
+    <rect x="225" y="200" width="50" height="70" fill="#151515" stroke="#333" stroke-width="1" />
+    <rect x="230" y="205" width="40" height="25" fill="url(#silverHighlight)" />
+    <rect x="232" y="207" width="36" height="21" fill="#888" />
+    <path d="M 230 220 L 270 220" stroke="#555" stroke-width="2" />
+    
+    <path d="M 245 280 Q 250 290 248 300" stroke="#600" stroke-width="3" fill="none" />
+
+    <circle cx="250" cy="285" r="12" fill="url(#mainBody)" stroke="#555" stroke-width="2" />
+    <circle cx="250" cy="285" r="8" fill="#0a0a0a" />
+    <circle cx="250" cy="285" r="4" fill="url(#silverHighlight)" />
+    <line x1="250" y1="273" x2="250" y2="278" stroke="#ccc" stroke-width="2" />
+    <line x1="250" y1="292" x2="250" y2="297" stroke="#ccc" stroke-width="2" />
+    <line x1="238" y1="285" x2="243" y2="285" stroke="#ccc" stroke-width="2" />
+    <line x1="257" y1="285" x2="262" y2="285" stroke="#ccc" stroke-width="2" />
+
+    <rect x="240" y="305" width="20" height="15" fill="#111" />
+  </g>
+
+  <g id="crossguards">
+    <rect x="160" y="150" width="30" height="40" fill="url(#darkMetal)" />
+    <rect x="310" y="150" width="30" height="40" fill="url(#darkMetal)" />
+    <rect x="150" y="145" width="15" height="50" fill="url(#mainBody)" rx="2" />
+    <rect x="335" y="145" width="15" height="50" fill="url(#mainBody)" rx="2" />
+
+    <path d="M 150 140 L 40 140 L 60 200 L 150 200 Z" fill="url(#heatStainLeft)" />
+    <path d="M 60 145 L 30 145 L 30 195 L 68 195 Z" fill="#050505" />
+    <path d="M 40 140 L 60 200" stroke="#fff" stroke-width="1.5" opacity="0.6" />
+
+    <path d="M 350 140 L 460 140 L 440 200 L 350 200 Z" fill="url(#heatStainRight)" />
+    <path d="M 440 145 L 470 145 L 470 195 L 432 195 Z" fill="#050505" />
+    <path d="M 460 140 L 440 200" stroke="#fff" stroke-width="1.5" opacity="0.6" />
+  </g>
+
+  <g id="main-emitter">
+    <path d="M 215 150 L 215 40 L 285 40 L 285 150 Z" fill="url(#mainBody)" />
+    <rect x="210" y="60" width="80" height="8" fill="url(#darkMetal)" />
+    <rect x="210" y="80" width="80" height="8" fill="url(#darkMetal)" />
+    
+    <path d="M 210 120 L 210 20 Q 250 40 290 20 L 290 120 Z" fill="url(#mainBody)" opacity="0.9" />
+    <path d="M 210 20 Q 250 40 290 20" stroke="#888" stroke-width="1.5" fill="none" />
+    
+    <path d="M 230 40 L 230 15 L 270 15 L 270 40 Z" fill="url(#darkMetal)" />
+    <rect x="225" y="10" width="50" height="5" fill="#111" />
+  </g>
+</svg>
