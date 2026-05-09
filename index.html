@@ -2195,6 +2195,61 @@
         const SaberController = {
             widget: null,
             config: null,
+            _animFrame: null,
+            _hideTimer: null,
+            _resetTimer: null,
+            _animationToken: 0,
+            getBackgroundImage: () => {
+                const bg = document.getElementById('global-bg');
+                if (!bg) return '';
+                const raw = bg.style.backgroundImage || '';
+                const match = raw.match(/url\(["']?(.*?)["']?\)/);
+                return match ? match[1] : '';
+            },
+            getBladeLength: () => Math.max(320, Math.min(Math.round(window.innerWidth * 0.82), 1400)),
+            clearAnimation: () => {
+                if (SaberController._animFrame) {
+                    cancelAnimationFrame(SaberController._animFrame);
+                    SaberController._animFrame = null;
+                }
+                clearTimeout(SaberController._hideTimer);
+                clearTimeout(SaberController._resetTimer);
+                SaberController._hideTimer = null;
+                SaberController._resetTimer = null;
+            },
+            animateProgressTo: (target, duration, onComplete) => {
+                if (!SaberController.widget) return;
+                SaberController.clearAnimation();
+                const start = SaberController.widget.getProgress();
+                const delta = target - start;
+                const token = ++SaberController._animationToken;
+                const startTime = performance.now();
+                const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+                const step = (now) => {
+                    if (!SaberController.widget || token !== SaberController._animationToken) return;
+                    const t = Math.min((now - startTime) / duration, 1);
+                    const value = start + (delta * easeOutCubic(t));
+                    SaberController.widget.setProgress(value, false);
+
+                    if (t < 1) {
+                        SaberController._animFrame = requestAnimationFrame(step);
+                        return;
+                    }
+
+                    SaberController._animFrame = null;
+                    if (onComplete) onComplete();
+                };
+
+                SaberController._animFrame = requestAnimationFrame(step);
+            },
+            syncWidgetBackdrop: () => {
+                if (!SaberController.widget) return;
+                SaberController.widget.setOptions({
+                    backgroundImage: SaberController.getBackgroundImage(),
+                    bladeLength: SaberController.getBladeLength()
+                });
+            },
             init: async () => {
                 try {
                     const module = await import('./components/lightsaber/lightsaber-widget.js');
@@ -2203,10 +2258,10 @@
                     
                     const saved = JSON.parse(localStorage.getItem('userParamsSaber') || '{}');
                     const defaults = {
-                        x: 50, y: 50, rotation: 0,
-                        bladeLength: 600, color: 'blue',
+                        x: 9, y: 92, rotation: 0,
+                        bladeLength: SaberController.getBladeLength(), color: 'blue',
                         hilt: 'obiwan', unstable: false,
-                        audio: true, backgroundImage: '',
+                        audio: true, backgroundImage: SaberController.getBackgroundImage(),
                         showProgress: true, progressLabel: 'Accessing Archives...',
                         scale: 1
                     };
@@ -2256,33 +2311,25 @@
             },
             showLoading: () => {
                 if (!SaberController.widget) return;
-                SaberController.widget.show();
+                SaberController.clearAnimation();
+                SaberController.syncWidgetBackdrop();
                 SaberController.widget.setProgress(0, false);
-                
-                SaberController._isDone = false;
-                SaberController._currentProgress = 0;
-                
-                const step = () => {
-                    if (SaberController._isDone) return;
-                    SaberController._currentProgress += (90 - SaberController._currentProgress) * 0.1;
-                    SaberController.widget.setProgress(SaberController._currentProgress, true);
-                    if (SaberController._currentProgress < 89) {
-                        SaberController._animFrame = setTimeout(step, 100);
-                    }
-                };
-                step();
+                SaberController.widget.show();
+                SaberController.animateProgressTo(92, 2400);
             },
             hideLoading: () => {
                 if (!SaberController.widget) return;
-                SaberController._isDone = true;
-                clearTimeout(SaberController._animFrame);
-                
-                SaberController.widget.setProgress(100, true);
-                
-                setTimeout(() => {
-                    SaberController.widget.retract();
-                    setTimeout(() => SaberController.widget.hide(), 1000);
-                }, 800);
+                SaberController.animateProgressTo(100, 360, () => {
+                    SaberController._hideTimer = setTimeout(() => {
+                        if (!SaberController.widget) return;
+                        SaberController.widget.hide();
+                        const tokenAtHide = SaberController._animationToken;
+                        SaberController._resetTimer = setTimeout(() => {
+                            if (!SaberController.widget || tokenAtHide !== SaberController._animationToken) return;
+                            SaberController.widget.setProgress(0, false);
+                        }, 650);
+                    }, 180);
+                });
             }
         };
 
@@ -2296,7 +2343,10 @@
             loadingScreen: document.getElementById('lore-loading-screen'),
             
             setBg: (url) => { 
-                if(url) UI.bg.style.backgroundImage = `url('${url}')`; 
+                if(url) {
+                    UI.bg.style.backgroundImage = `url('${url}')`;
+                    SaberController.syncWidgetBackdrop();
+                }
             },
             
             setBackButton: (act, lbl) => {

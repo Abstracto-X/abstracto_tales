@@ -116,7 +116,7 @@ const WIDGET_CSS = `
   height: 28px;
   width: 0%;
   border-radius: 0 14px 14px 0;
-  transition: width 0.05s linear;
+  transition: width 0.016s linear;
   overflow: visible;
 }
 
@@ -125,7 +125,7 @@ const WIDGET_CSS = `
   height: 28px;
   width: 0%;
   border-radius: 14px 0 0 14px;
-  transition: width 0.05s linear;
+  transition: width 0.016s linear;
   overflow: visible;
   margin-left: auto;
 }
@@ -475,7 +475,7 @@ const WIDGET_CSS = `
   height: 100%;
   width: 0%;
   border-radius: 2px;
-  transition: width 0.05s linear;
+  transition: width 0.016s linear;
 }
 `;
 
@@ -1019,16 +1019,17 @@ export function createLightsaber(options = {}) {
       el.bgBright.style.opacity = '0';
       return;
     }
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    const xPct = opts.x;
-    const yPct = opts.y;
-    const outerX = Math.min(90, 25 + pct * 0.5);
-    const outerY = Math.min(45, 10 + pct * 0.3);
+    const theta = (opts.rotation * Math.PI) / 180;
+    const scaledBladeLength = opts.bladeLength * opts.scale * (pct / 100);
+    const midpointX = opts.x + (Math.cos(theta) * scaledBladeLength * 0.5 / window.innerWidth) * 100;
+    const midpointY = opts.y + (Math.sin(theta) * scaledBladeLength * 0.5 / window.innerHeight) * 100;
+    const outerX = Math.min(92, 16 + pct * 0.55);
+    const outerY = Math.min(52, 10 + pct * 0.24);
+    const verticalLift = Math.min(10, 3 + pct * 0.04);
 
     el.bgBright.style.opacity = (pct / 100).toFixed(3);
-    el.bgBright.style.setProperty('--gel-x', `${xPct}%`);
-    el.bgBright.style.setProperty('--gel-y', `${yPct}%`);
+    el.bgBright.style.setProperty('--gel-x', `${midpointX}%`);
+    el.bgBright.style.setProperty('--gel-y', `${midpointY - verticalLift}%`);
     el.bgBright.style.setProperty('--gel-outer-x', `${outerX}vmin`);
     el.bgBright.style.setProperty('--gel-outer-y', `${outerY}vmin`);
   }
