@@ -928,6 +928,13 @@
                         <option value="white">White</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Loader Mode</label>
+                    <select id="saber-mode" class="form-input" style="background:#111; color:#fff;">
+                        <option value="vertical">Vertical</option>
+                        <option value="horizontal">Horizontal</option>
+                    </select>
+                </div>
                 <div class="form-group" style="display:flex; align-items:center; gap:10px;">
                     <input type="checkbox" id="saber-unstable" style="width:16px;height:16px;accent-color:var(--accent-color);">
                     <label for="saber-unstable" class="form-label" style="margin-bottom:0;">Unstable Blade</label>
@@ -2192,6 +2199,8 @@
         // ==============================================
         // LIGHTSABER CONTROLLER
         // ==============================================
+        const default_behavior_lightsaber = 'vertical';
+
         const SaberController = {
             widget: null,
             config: null,
@@ -2199,6 +2208,7 @@
             _hideTimer: null,
             _resetTimer: null,
             _animationToken: 0,
+            currentMode: default_behavior_lightsaber,
             getBackgroundImage: () => {
                 const bg = document.getElementById('global-bg');
                 if (!bg) return '';
@@ -2206,7 +2216,32 @@
                 const match = raw.match(/url\(["']?(.*?)["']?\)/);
                 return match ? match[1] : '';
             },
-            getBladeLength: () => Math.max(320, Math.min(Math.round(window.innerWidth * 0.82), 1400)),
+            normalizeMode: (mode) => mode === 'horizontal' ? 'horizontal' : 'vertical',
+            getBladeLength: (mode = SaberController.currentMode) => {
+                const normalized = SaberController.normalizeMode(mode);
+                return normalized === 'horizontal'
+                    ? Math.max(420, Math.min(Math.round(window.innerWidth * 0.68), 980))
+                    : Math.max(440, Math.min(Math.round(window.innerHeight * 0.72), 900));
+            },
+            getLayoutForMode: (mode = SaberController.currentMode) => {
+                const normalized = SaberController.normalizeMode(mode);
+                if (normalized === 'horizontal') {
+                    return {
+                        mode: normalized,
+                        x: 50,
+                        y: 88,
+                        rotation: 0,
+                        bladeLength: SaberController.getBladeLength(normalized)
+                    };
+                }
+                return {
+                    mode: normalized,
+                    x: 50,
+                    y: 62,
+                    rotation: -90,
+                    bladeLength: SaberController.getBladeLength(normalized)
+                };
+            },
             clearAnimation: () => {
                 if (SaberController._animFrame) {
                     cancelAnimationFrame(SaberController._animFrame);
@@ -2245,9 +2280,13 @@
             },
             syncWidgetBackdrop: () => {
                 if (!SaberController.widget) return;
+                const layout = SaberController.getLayoutForMode(SaberController.currentMode);
                 SaberController.widget.setOptions({
+                    x: layout.x,
+                    y: layout.y,
+                    rotation: layout.rotation,
                     backgroundImage: SaberController.getBackgroundImage(),
-                    bladeLength: SaberController.getBladeLength()
+                    bladeLength: layout.bladeLength
                 });
             },
             init: async () => {
@@ -2257,16 +2296,30 @@
                     SaberController.config = configModule;
                     
                     const saved = JSON.parse(localStorage.getItem('userParamsSaber') || '{}');
+                    const mode = SaberController.normalizeMode(saved.mode || default_behavior_lightsaber);
+                    const layout = SaberController.getLayoutForMode(mode);
+                    SaberController.currentMode = mode;
                     const defaults = {
-                        x: 9, y: 92, rotation: 0,
-                        bladeLength: SaberController.getBladeLength(), color: 'blue',
+                        mode,
+                        x: layout.x, y: layout.y, rotation: layout.rotation,
+                        bladeLength: layout.bladeLength, color: 'blue',
                         hilt: 'obiwan', unstable: false,
                         audio: true, backgroundImage: SaberController.getBackgroundImage(),
-                        showProgress: true, progressLabel: 'Accessing Archives...',
+                        showProgress: false, progressLabel: 'Accessing Archives...',
                         scale: 1
                     };
                     
-                    const merged = { ...defaults, ...saved };
+                    const merged = {
+                        ...defaults,
+                        ...saved,
+                        mode: defaults.mode,
+                        x: defaults.x,
+                        y: defaults.y,
+                        rotation: defaults.rotation,
+                        bladeLength: defaults.bladeLength,
+                        backgroundImage: defaults.backgroundImage,
+                        showProgress: false
+                    };
                     SaberController.widget = module.createLightsaber(merged);
                     SaberController.widget.hide();
                     
@@ -2277,7 +2330,7 @@
                         if(merged.hilt) hiltSelect.value = merged.hilt;
                     }
                     
-                    ['color', 'unstable', 'audio'].forEach(key => {
+                    ['color', 'mode', 'unstable', 'audio'].forEach(key => {
                         const el = document.getElementById('saber-' + key);
                         if (el) {
                             if (el.type === 'checkbox') el.checked = merged[key];
@@ -2292,17 +2345,29 @@
                 if(!SaberController.widget) return;
                 const hilt = document.getElementById('saber-hilt').value;
                 const color = document.getElementById('saber-color').value;
+                const mode = SaberController.normalizeMode(document.getElementById('saber-mode').value);
                 const unstable = document.getElementById('saber-unstable').checked;
                 const audio = document.getElementById('saber-audio').checked;
                 
-                const prefs = { hilt, color, unstable, audio };
+                const prefs = { hilt, color, mode, unstable, audio };
+                const layout = SaberController.getLayoutForMode(mode);
+                SaberController.currentMode = mode;
                 localStorage.setItem('userParamsSaber', JSON.stringify(prefs));
                 
-                SaberController.widget.setOptions(prefs);
+                SaberController.widget.setOptions({
+                    ...prefs,
+                    x: layout.x,
+                    y: layout.y,
+                    rotation: layout.rotation,
+                    bladeLength: layout.bladeLength,
+                    backgroundImage: SaberController.getBackgroundImage(),
+                    showProgress: false
+                });
                 UI.closeSaberModal();
                 
                 // Show a quick demo ignite!
                 SaberController.widget.show();
+                SaberController.widget.setProgress(0, false);
                 SaberController.widget.ignite();
                 setTimeout(() => {
                     SaberController.widget.retract();

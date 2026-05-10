@@ -1000,7 +1000,7 @@ export function createLightsaber(options = {}) {
     el.progressText.style.color = pct > 0 ? c.glow : '#888';
     el.progressBarFill.style.width = pct + '%';
     el.emitterGlow.style.opacity = pct > 0 ? 0.6 + (pct / 100) * 0.4 : 0;
-    el.ambient.style.opacity = (pct / 100) * 0.5;
+    el.ambient.style.opacity = (pct / 100) * 0.85;
 
     // Gel lighting
     updateGelLighting(pct, c);
@@ -1014,22 +1014,35 @@ export function createLightsaber(options = {}) {
   }
 
   function updateGelLighting(pct, c) {
-    if (!opts.backgroundImage) return;
     if (pct <= 0) {
       el.bgBright.style.opacity = '0';
       return;
     }
+    const cfg = HILT_CONFIGS[opts.hilt] || HILT_CONFIGS.obiwan;
     const theta = (opts.rotation * Math.PI) / 180;
-    const scaledBladeLength = opts.bladeLength * opts.scale * (pct / 100);
-    const midpointX = opts.x + (Math.cos(theta) * scaledBladeLength * 0.5 / window.innerWidth) * 100;
-    const midpointY = opts.y + (Math.sin(theta) * scaledBladeLength * 0.5 / window.innerHeight) * 100;
-    const outerX = Math.min(92, 16 + pct * 0.55);
-    const outerY = Math.min(52, 10 + pct * 0.24);
-    const verticalLift = Math.min(10, 3 + pct * 0.04);
+    const scaledBladeLength = opts.bladeLength * opts.scale;
+    const scaledHiltWidth = cfg.hiltWidth * opts.scale;
+    const scaledGroupWidth = scaledHiltWidth + scaledBladeLength * (cfg.isDouble ? 2 : 1);
+    const groupCenterX = (opts.x / 100) * window.innerWidth;
+    const groupCenterY = (opts.y / 100) * window.innerHeight;
+    const emitterOffset = cfg.isDouble ? 0 : (-scaledGroupWidth / 2) + scaledHiltWidth;
+    const bladeMidOffset = emitterOffset + (scaledBladeLength * (pct / 100) * 0.5);
+    const midpointX = ((groupCenterX + Math.cos(theta) * bladeMidOffset) / window.innerWidth) * 100;
+    const midpointY = ((groupCenterY + Math.sin(theta) * bladeMidOffset) / window.innerHeight) * 100;
+    const outerX = Math.min(120, 34 + pct * 0.86);
+    const outerY = Math.min(78, 18 + pct * 0.48);
+    const verticalLift = Math.min(18, 4 + pct * 0.08);
+    const rgb = hexToRgb(c.glow);
+    const gelY = midpointY - verticalLift;
 
-    el.bgBright.style.opacity = (pct / 100).toFixed(3);
+    el.ambient.style.background =
+      `radial-gradient(ellipse ${outerX}vmin ${outerY}vmin at ${midpointX}% ${gelY}%, rgba(${rgb.r},${rgb.g},${rgb.b},0.28) 0%, rgba(${rgb.r},${rgb.g},${rgb.b},0.14) 38%, transparent 78%)`;
+
+    if (!opts.backgroundImage) return;
+
+    el.bgBright.style.opacity = Math.min(1, 0.16 + (pct / 100) * 0.96).toFixed(3);
     el.bgBright.style.setProperty('--gel-x', `${midpointX}%`);
-    el.bgBright.style.setProperty('--gel-y', `${midpointY - verticalLift}%`);
+    el.bgBright.style.setProperty('--gel-y', `${gelY}%`);
     el.bgBright.style.setProperty('--gel-outer-x', `${outerX}vmin`);
     el.bgBright.style.setProperty('--gel-outer-y', `${outerY}vmin`);
   }
