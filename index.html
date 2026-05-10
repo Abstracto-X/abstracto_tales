@@ -1577,6 +1577,17 @@
                 return data || [];
             },
 
+            getLatestGalleryImages: async (storyId, limit = 10, offset = 0) => {
+                const { data, error } = await supabaseClient
+                    .from('character_gallery_images')
+                    .select('*, characters!inner(story_id, name)')
+                    .eq('characters.story_id', storyId)
+                    .order('created_at', { ascending: false })
+                    .range(offset, offset + limit - 1);
+                if (error) { console.error('Error fetching latest gallery:', error); return []; }
+                return data || [];
+            },
+
             getLoreEntry: async (storyId, loreSlug) => {
                 const { data, error } = await supabaseClient
                     .from('lore_entries')
@@ -1656,7 +1667,33 @@
                     
                     Actions.votesCache[imageId].score += (newValue - currentVote);
                     Actions.votesCache[imageId].userVote = newValue;
-                    Actions.renderGalleryGrid();
+                    
+                    const container = document.getElementById('gallery-grid');
+                    if (container) {
+                        Actions.renderGalleryGrid();
+                    } else {
+                        // Update DOM nodes directly for latest images grid
+                        const scoreEl = document.getElementById(`vote-score-${imageId}`);
+                        if (scoreEl) scoreEl.innerText = Actions.votesCache[imageId].score;
+                        
+                        const itemContainer = scoreEl?.parentElement;
+                        if (itemContainer) {
+                            const upBtn = itemContainer.querySelector('.upvote');
+                            const downBtn = itemContainer.querySelector('.downvote');
+                            if (upBtn) upBtn.className = `vote-btn upvote ${newValue === 1 ? 'active' : ''}`;
+                            if (downBtn) downBtn.className = `vote-btn downvote ${newValue === -1 ? 'active' : ''}`;
+                        }
+                    }
+
+                    // If lightbox is open and displaying this image, update it
+                    const lb = document.getElementById('lightbox');
+                    if (lb && lb.classList.contains('active')) {
+                        const imgObj = Visuals.currentGalleryImages[Visuals.currentLightboxIdx];
+                        if (imgObj && imgObj.id === imageId) {
+                            Visuals.updateLightboxView();
+                        }
+                    }
+
                 } catch (err) {
                     console.error('Vote error:', err);
                     alert('Failed to register vote.');
@@ -1674,6 +1711,7 @@
                 Actions.filteredImages = imgs;
                 
                 const container = document.getElementById('gallery-grid');
+                if (!container) return;
                 container.innerHTML = ''; // Clear existing
 
                 const CHUNK_SIZE = 8;
@@ -1722,6 +1760,55 @@
             },
             setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
             shuffleGallery: () => Actions.renderGalleryGrid(true),
+
+            isLoadingMore: false,
+            loadMoreLatestImages: async (storyId) => {
+                if (Actions.isLoadingMore) return;
+                Actions.isLoadingMore = true;
+                const btn = document.getElementById('load-more-latest-btn');
+                if (btn) btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                
+                const offset = Actions.latestGalleryImages.length;
+                const newImages = await DB.getLatestGalleryImages(storyId, 10, offset);
+                
+                if (!newImages || newImages.length === 0) {
+                    if (btn) btn.style.display = 'none';
+                    Actions.isLoadingMore = false;
+                    return;
+                }
+                
+                Actions.latestGalleryImages = Actions.latestGalleryImages.concat(newImages);
+                Actions.currentGalleryImages = Actions.latestGalleryImages;
+                await Actions.fetchVotes(); // Re-fetch votes for the new set
+                
+                const grid = document.getElementById('latest-gallery-grid');
+                if (grid) {
+                    newImages.forEach((i, idx) => {
+                        const globalIdx = offset + idx;
+                        const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
+                        const div = document.createElement('div');
+                        div.className = 'gallery-item';
+                        div.style.position = 'relative';
+                        div.innerHTML = `
+                            <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5; pointer-events: none;">${i.characters?.name || 'Unknown'}</div>
+                            <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${globalIdx}, Actions.latestGalleryImages)">
+                            <div class="image-vote-container" onclick="event.stopPropagation()">
+                                <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
+                                <span class="vote-score" id="vote-score-${i.id}">${cache.score}</span>
+                                <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
+                            </div>
+                        `;
+                        grid.appendChild(div);
+                    });
+                }
+                
+                if (newImages.length < 10) {
+                    if (btn) btn.style.display = 'none';
+                } else {
+                    if (btn) btn.innerHTML = 'Load More';
+                }
+                Actions.isLoadingMore = false;
+            }
         };
 
         // ==============================================
@@ -2671,7 +2758,8 @@
                     // Character grid view
                     UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                     
-                    let html = '<div class="char-grid">';
+                    let html = '<h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Characters</h2>';
+                    html += '<div class="char-grid" style="margin-bottom: 3rem;">';
                     // FIX 6: First 6 character cards use eager loading
                     characters.forEach((c, idx) => { 
                         const loadAttr = idx < 6 ? '' : 'loading="lazy"';
@@ -2687,7 +2775,42 @@
                                 </div>
                             </div>`; 
                     });
-                    Render.stage.innerHTML = html + '</div>'; 
+                    html += '</div>';
+
+                    // Fetch and append Latest Images below Characters
+                    const latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
+                    Actions.latestGalleryImages = latestImages;
+                    Actions.currentGalleryImages = latestImages;
+                    await Actions.fetchVotes();
+
+                    if (latestImages && latestImages.length > 0) {
+                        html += `
+                            <div style="margin-bottom: 2rem;">
+                                <h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Recently Added</h2>
+                                <div class="sub-gallery-grid" id="latest-gallery-grid">
+                        `;
+                        latestImages.forEach((i, idx) => {
+                            const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
+                            html += `
+                                    <div class="gallery-item" style="position: relative;">
+                                        <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5; pointer-events: none;">${i.characters?.name || 'Unknown'}</div>
+                                        <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${idx}, Actions.latestGalleryImages)">
+                                        <div class="image-vote-container" onclick="event.stopPropagation()">
+                                            <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
+                                            <span class="vote-score" id="vote-score-${i.id}">${cache.score}</span>
+                                            <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
+                                        </div>
+                                    </div>
+                            `;
+                        });
+                        html += `
+                                </div>
+                                ${latestImages.length === 10 ? `<div style="text-align: center; margin-top: 1rem;"><button id="load-more-latest-btn" class="btn-large" onclick="Actions.loadMoreLatestImages('${story.id}')">Load More</button></div>` : ''}
+                            </div>
+                        `;
+                    }
+
+                    Render.stage.innerHTML = html; 
                     Visuals.initCardTilt();
                 } else {
                     // Individual character profile
