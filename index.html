@@ -887,6 +887,146 @@
         @media (max-width: 900px) {
             body.drawer-open #app-container { padding-right: 0.5rem; }
         }
+        /* MAP OVERLAY STYLES */
+        #map-svg-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            overflow: visible;
+        }
+        #map-nodes-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+        }
+        .map-node {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: auto;
+            cursor: pointer;
+            box-shadow: 0 0 5px var(--accent-color);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .map-node:hover {
+            transform: translate(-50%, -50%) scale(1.5);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+        .map-node.active {
+            background: #fff;
+            box-shadow: 0 0 20px var(--accent-color), 0 0 8px #fff;
+            transform: translate(-50%, -50%) scale(2);
+        }
+        .map-node-label {
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.6rem;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .map-node:hover .map-node-label, .map-node.active .map-node-label {
+            opacity: 1;
+        }
+        .map-edge {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.15);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: stroke 0.3s, stroke-width 0.3s;
+        }
+        .map-edge.route-glow {
+            stroke: #fff;
+            stroke-width: 5;
+            filter: drop-shadow(0 0 12px var(--accent-color)) drop-shadow(0 0 4px #fff);
+            stroke-dasharray: 12 12;
+            animation: dash-flow 0.8s linear infinite, path-pulse 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes path-pulse {
+            0% { filter: drop-shadow(0 0 8px var(--accent-color)); }
+            100% { filter: drop-shadow(0 0 18px var(--accent-color)) drop-shadow(0 0 6px #fff); }
+        }
+        @keyframes dash-flow {
+            to { stroke-dashoffset: -20; }
+        }
+
+        /* ROUTING UI */
+        .routing-panel {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 280px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .routing-panel input {
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-family: var(--font-body);
+        }
+        .routing-panel input:focus {
+            border-color: var(--accent-color);
+            outline: none;
+        }
+        .routing-itinerary {
+            margin-top: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 10px;
+            display: none;
+        }
+        .routing-itinerary.active {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .itinerary-step {
+            font-size: 0.8rem;
+            color: #ccc;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .itinerary-step::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: var(--accent-color);
+            border-radius: 50%;
+        }
+        .itinerary-step.origin::before { background: #4caf50; }
+        .itinerary-step.destination::before { background: #ff5252; }
     </style>
 </head>
 <body>
@@ -1294,13 +1434,14 @@
         const MapViewer = {
             viewer: null, canvas: null, img: null,
             state: { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 },
-            
-            // FIX 5: AbortController for clean listener teardown
             _abortController: null,
+            
+            mapData: null,
+            graph: null,
+            mapHeight: 4000,
+
             init: (src) => {
-                // Clean up any previous instance first
                 MapViewer.destroy();
-                
                 MapViewer._abortController = new AbortController();
                 const signal = MapViewer._abortController.signal;
                 
@@ -1308,15 +1449,18 @@
                 MapViewer.canvas = document.getElementById('map-canvas');
                 MapViewer.img = document.getElementById('map-image');
                 MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 };
-                MapViewer.img.onload = () => MapViewer.centerMap();
-                MapViewer.img.src = src;
-                const v = MapViewer.viewer;
                 
+                MapViewer.img.onload = () => {
+                    MapViewer.centerMap();
+                    MapViewer.loadMapData();
+                };
+                MapViewer.img.src = src;
+                
+                const v = MapViewer.viewer;
                 v.addEventListener('mousedown', MapViewer.onDown, { signal });
                 window.addEventListener('mousemove', MapViewer.onMove, { signal });
                 window.addEventListener('mouseup', MapViewer.onUp, { signal });
                 v.addEventListener('wheel', MapViewer.onWheel, { passive: false, signal });
-
                 v.addEventListener('touchstart', MapViewer.onTouchStart, { passive: false, signal });
                 v.addEventListener('touchmove', MapViewer.onTouchMove, { passive: false, signal });
                 v.addEventListener('touchend', MapViewer.onUp, { signal });
@@ -1324,8 +1468,244 @@
                 document.getElementById('zoom-in-btn').onclick = () => MapViewer.zoom(1.2);
                 document.getElementById('zoom-out-btn').onclick = () => MapViewer.zoom(0.8);
             },
+            
+            loadMapData: async () => {
+                try {
+                    const res = await fetch('data/map_project.json');
+                    if (!res.ok) throw new Error('Network response was not ok');
+                    const data = await res.json();
+                    MapViewer.mapData = data;
+                    MapViewer.renderMapData();
+                    MapViewer.buildGraph();
+                } catch (err) {
+                    console.error("Failed to load map data:", err);
+                }
+            },
+            
+            renderMapData: () => {
+                if (!MapViewer.mapData) return;
+                const { nodes, edges } = MapViewer.mapData;
+                const svgLayer = document.getElementById('map-svg-layer');
+                const nodesLayer = document.getElementById('map-nodes-layer');
+                const datalist = document.getElementById('planet-datalist');
+                
+                svgLayer.innerHTML = '';
+                nodesLayer.innerHTML = '';
+                datalist.innerHTML = '';
+
+                let svgContent = '';
+                edges.forEach(edge => {
+                    if (!edge.geometry || edge.geometry.length === 0) return;
+                    let d = `M ${edge.geometry[0].x} ${MapViewer.mapHeight - edge.geometry[0].y}`;
+                    for(let i=1; i<edge.geometry.length; i++) {
+                        d += ` L ${edge.geometry[i].x} ${MapViewer.mapHeight - edge.geometry[i].y}`;
+                    }
+                    svgContent += `<path d="${d}" class="map-edge" id="${edge.id}"></path>`;
+                });
+                svgLayer.innerHTML = svgContent;
+
+                nodes.forEach(node => {
+                    const flippedY = MapViewer.mapHeight - node.y;
+                    const el = document.createElement('div');
+                    el.className = 'map-node';
+                    el.id = node.id;
+                    el.style.left = `${node.x}px`;
+                    el.style.top = `${flippedY}px`;
+                    el.innerHTML = `<div class="map-node-label">${node.name}</div>`;
+                    el.onclick = () => {
+                        const originIn = document.getElementById('route-origin');
+                        const destIn = document.getElementById('route-dest');
+                        if (!originIn.value) originIn.value = node.name;
+                        else if (!destIn.value && originIn.value !== node.name) destIn.value = node.name;
+                    };
+                    nodesLayer.appendChild(el);
+
+                    const opt = document.createElement('option');
+                    opt.value = node.name;
+                    datalist.appendChild(opt);
+                });
+            },
+            
+            buildGraph: () => {
+                const graph = {};
+                if (!MapViewer.mapData) return;
+                MapViewer.mapData.nodes.forEach(n => graph[n.id] = { node: n, edges: [] });
+                MapViewer.mapData.edges.forEach(e => {
+                    if (graph[e.source] && graph[e.target]) {
+                        let weight = 0;
+                        for(let i=1; i<e.geometry.length; i++) {
+                            const dx = e.geometry[i].x - e.geometry[i-1].x;
+                            const dy = e.geometry[i].y - e.geometry[i-1].y;
+                            weight += Math.hypot(dx, dy);
+                        }
+                        graph[e.source].edges.push({ target: e.target, edgeId: e.id, weight });
+                        graph[e.target].edges.push({ target: e.source, edgeId: e.id, weight });
+                    }
+                });
+                MapViewer.graph = graph;
+            },
+            
+            calculateRoute: () => {
+                if (!MapViewer.graph) return;
+                const originName = document.getElementById('route-origin').value.trim().toLowerCase();
+                const destName = document.getElementById('route-dest').value.trim().toLowerCase();
+                if (!originName || !destName) return;
+
+                const nodes = MapViewer.mapData.nodes;
+                const sourceNode = nodes.find(n => n.name.toLowerCase() === originName);
+                const targetNode = nodes.find(n => n.name.toLowerCase() === destName);
+                if (!sourceNode || !targetNode) {
+                    alert("Invalid origin or destination.");
+                    return;
+                }
+
+                const distances = {};
+                const previous = {};
+                const pq = new Set(Object.keys(MapViewer.graph));
+                
+                for(let v of pq) {
+                    distances[v] = Infinity;
+                    previous[v] = null;
+                }
+                distances[sourceNode.id] = 0;
+
+                while(pq.size > 0) {
+                    let minNode = null;
+                    for(let v of pq) {
+                        if (minNode === null || distances[v] < distances[minNode]) {
+                            minNode = v;
+                        }
+                    }
+                    if (distances[minNode] === Infinity) break;
+                    if (minNode === targetNode.id) break;
+                    
+                    pq.delete(minNode);
+
+                    MapViewer.graph[minNode].edges.forEach(neighbor => {
+                        if (pq.has(neighbor.target)) {
+                            let alt = distances[minNode] + neighbor.weight;
+                            if (alt < distances[neighbor.target]) {
+                                distances[neighbor.target] = alt;
+                                previous[neighbor.target] = { node: minNode, edgeId: neighbor.edgeId };
+                            }
+                        }
+                    });
+                }
+
+                if (previous[targetNode.id] === null && sourceNode.id !== targetNode.id) {
+                    alert("No route found.");
+                    return;
+                }
+
+                const pathEdges = [];
+                const pathNodes = [];
+                let curr = targetNode.id;
+                while (curr) {
+                    pathNodes.unshift(curr);
+                    const prev = previous[curr];
+                    if (prev) {
+                        pathEdges.unshift(prev.edgeId);
+                        curr = prev.node;
+                    } else {
+                        curr = null;
+                    }
+                }
+
+                MapViewer.drawRoute(pathNodes, pathEdges);
+            },
+            
+            drawRoute: (pathNodes, pathEdges) => {
+                document.querySelectorAll('.map-node.active').forEach(el => el.classList.remove('active'));
+                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow'));
+
+                pathNodes.forEach(nid => {
+                    const el = document.getElementById(nid);
+                    if (el) el.classList.add('active');
+                });
+                pathEdges.forEach(eid => {
+                    const el = document.getElementById(eid);
+                    if (el) el.classList.add('route-glow');
+                });
+
+                const container = document.getElementById('routing-itinerary');
+                container.classList.add('active');
+                container.innerHTML = '';
+                pathNodes.forEach((nid, i) => {
+                    const node = MapViewer.mapData.nodes.find(n => n.id === nid);
+                    if (!node) return;
+                    let cls = 'itinerary-step';
+                    if (i === 0) cls += ' origin';
+                    else if (i === pathNodes.length - 1) cls += ' destination';
+                    container.innerHTML += `<div class="${cls}">${node.name}</div>`;
+                });
+
+                MapViewer.zoomToRoute(pathNodes);
+            },
+            
+            zoomToRoute: (pathNodes) => {
+                if (pathNodes.length === 0) return;
+                let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                pathNodes.forEach(nid => {
+                    const n = MapViewer.mapData.nodes.find(n => n.id === nid);
+                    if (n) {
+                        const flippedY = MapViewer.mapHeight - n.y;
+                        if (n.x < minX) minX = n.x;
+                        if (n.x > maxX) maxX = n.x;
+                        if (flippedY < minY) minY = flippedY;
+                        if (flippedY > maxY) maxY = flippedY;
+                    }
+                });
+                
+                const padding = 200;
+                minX -= padding; maxX += padding;
+                minY -= padding; maxY += padding;
+                const routeW = maxX - minX;
+                const routeH = maxY - minY;
+                
+                const vw = MapViewer.viewer.clientWidth;
+                const vh = MapViewer.viewer.clientHeight;
+                
+                const targetScale = Math.min(vw / routeW, vh / routeH, 3);
+                const targetX = (vw / 2) - ((minX + routeW / 2) * targetScale);
+                const targetY = (vh / 2) - ((minY + routeH / 2) * targetScale);
+
+                const startScale = MapViewer.state.scale;
+                const startX = MapViewer.state.x;
+                const startY = MapViewer.state.y;
+                
+                const duration = 1200;
+                const startTime = performance.now();
+
+                const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+
+                const animate = (time) => {
+                    let progress = (time - startTime) / duration;
+                    if (progress > 1) progress = 1;
+                    const e = easeOutCubic(progress);
+
+                    MapViewer.state.scale = startScale + (targetScale - startScale) * e;
+                    MapViewer.state.x = startX + (targetX - startX) * e;
+                    MapViewer.state.y = startY + (targetY - startY) * e;
+                    
+                    MapViewer.clamp();
+                    MapViewer.update();
+
+                    if (progress < 1) requestAnimationFrame(animate);
+                };
+                requestAnimationFrame(animate);
+            },
+
+            zoomToNode: (nodeName) => {
+                if (!MapViewer.mapData) return;
+                const name = nodeName.trim().toLowerCase();
+                if (!name) return;
+                const node = MapViewer.mapData.nodes.find(n => n.name.toLowerCase() === name);
+                if (node) {
+                    MapViewer.zoomToRoute([node.id]);
+                }
+            },
+
             destroy: () => {
-                // Abort all listeners registered with this controller
                 if (MapViewer._abortController) {
                     MapViewer._abortController.abort();
                     MapViewer._abortController = null;
@@ -3115,10 +3495,23 @@
                         <div class="map-viewer" id="map-viewer">
                             <div class="map-canvas" id="map-canvas">
                                 <img src="${primary.image_url}" id="map-image" draggable="false">
+                                <svg id="map-svg-layer"></svg>
+                                <div id="map-nodes-layer"></div>
                             </div>
                             <div class="map-controls">
                                 <button class="map-control-btn" id="zoom-in-btn"><i class="fas fa-plus"></i></button>
                                 <button class="map-control-btn" id="zoom-out-btn"><i class="fas fa-minus"></i></button>
+                            </div>
+                            <div class="routing-panel shadow-box">
+                                <h3 style="margin: 0 0 10px 0; font-size: 1rem; color: var(--accent-color);">Navicomputer</h3>
+                                <div style="margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px;">
+                                    <input type="text" id="planet-search" placeholder="Search Planet..." list="planet-datalist" onchange="MapViewer.zoomToNode(this.value)">
+                                </div>
+                                <input type="text" id="route-origin" placeholder="Origin (e.g. Alderaan)" list="planet-datalist">
+                                <input type="text" id="route-dest" placeholder="Destination (e.g. Coruscant)" list="planet-datalist">
+                                <datalist id="planet-datalist"></datalist>
+                                <button class="btn-large" style="width: 100%; padding: 8px; font-size: 0.8rem;" onclick="MapViewer.calculateRoute()">Plot Course</button>
+                                <div id="routing-itinerary" class="routing-itinerary"></div>
                             </div>
                         </div>
                     </div>`;
