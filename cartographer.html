@@ -1104,6 +1104,10 @@ const ProjectPicker = {
             State.isDirty = false;
             
             SaveIndicator.setSaved();
+
+            // <--- LOAD AUTOSAVE HERE --->
+            LocalDraftManager.load();
+
             MapEngine.loadProject(proj);
             Contributors.refresh();
             StatusBar.updateStats();
@@ -1200,12 +1204,96 @@ const UserMenu = {
 };
 
 // ==============================================
+// LOCAL DRAFT MANAGER (Autosave)
+// ==============================================
+const LocalDraftManager = {
+    getKey: () => `cartographer_draft_${State.currentProject?.id}_${State.user?.id}`,
+    
+    save: () => {
+        if (!State.currentProject || !State.user) return;
+        const draft = {
+            nodes: State.nodes.filter(n => n._localAction),
+            edges: State.edges.filter(e => e._localAction)
+        };
+        if (draft.nodes.length === 0 && draft.edges.length === 0) {
+            localStorage.removeItem(LocalDraftManager.getKey());
+        } else {
+            localStorage.setItem(LocalDraftManager.getKey(), JSON.stringify(draft));
+        }
+    },
+    
+    load: () => {
+        if (!State.currentProject || !State.user) return;
+        const raw = localStorage.getItem(LocalDraftManager.getKey());
+        if (!raw) return;
+        
+        try {
+            const draft = JSON.parse(raw);
+            let restoredCount = 0;
+
+            // Restore Nodes
+            draft.nodes.forEach(dn => {
+                if (dn._localAction === 'ADD') {
+                    State.nodes.push(dn);
+                    restoredCount++;
+                } else if (dn._localAction === 'UPDATE' || dn._localAction === 'DELETE') {
+                    const idx = State.nodes.findIndex(n => n.id === dn.id);
+                    if (idx >= 0) { State.nodes[idx] = dn; restoredCount++; }
+                }
+            });
+
+            // Restore Edges
+            draft.edges.forEach(de => {
+                if (de._localAction === 'ADD') {
+                    State.edges.push(de);
+                    restoredCount++;
+                } else if (de._localAction === 'UPDATE' || de._localAction === 'DELETE') {
+                    const idx = State.edges.findIndex(e => e.id === de.id);
+                    if (idx >= 0) { State.edges[idx] = de; restoredCount++; }
+                }
+            });
+            
+            if (restoredCount > 0) {
+                State.isDirty = true;
+                // Force UI to show "Unsaved" state
+                document.getElementById('save-dot').classList.remove('saving'); 
+                document.getElementById('save-text').textContent = 'Unsaved (Local Draft)'; 
+                document.getElementById('save-text').style.color = 'var(--warning-color)';
+                Toast.show(`Restored ${restoredCount} unsaved local changes.`, 'info');
+            }
+        } catch(e) {
+            console.error('Failed to parse local drafts', e);
+            localStorage.removeItem(LocalDraftManager.getKey());
+        }
+    },
+    
+    clear: () => {
+        if (!State.currentProject || !State.user) return;
+        localStorage.removeItem(LocalDraftManager.getKey());
+    },
+
+    discardAndReload: () => {
+        if (!confirm("Are you sure you want to delete your unsaved draft? This cannot be undone.")) return;
+        LocalDraftManager.clear();
+        Modal.close();
+        ProjectPicker.select(State.currentProject.id); // Reload from DB
+        Toast.show("Local draft discarded.", "info");
+    }
+};
+
+// ==============================================
 // SAVE INDICATOR
 // ==============================================
 const SaveIndicator = {
     setSaving: () => { document.getElementById('save-dot').classList.add('saving'); document.getElementById('save-text').textContent = 'Saving…'; document.getElementById('save-text').style.color = 'var(--warning-color)'; },
     setSaved: () => { document.getElementById('save-dot').classList.remove('saving'); document.getElementById('save-text').textContent = 'Saved'; document.getElementById('save-text').style.color = 'var(--success-color)'; State.isDirty = false; },
-    setUnsaved: () => { document.getElementById('save-dot').classList.remove('saving'); document.getElementById('save-text').textContent = 'Unsaved'; document.getElementById('save-text').style.color = 'var(--text-muted)'; State.isDirty = true; }
+    setUnsaved: () => { 
+        document.getElementById('save-dot').classList.remove('saving'); 
+        document.getElementById('save-text').textContent = 'Unsaved'; 
+        document.getElementById('save-text').style.color = 'var(--text-muted)'; 
+        State.isDirty = true; 
+        LocalDraftManager.save(); // <--- AUTOSAVE HOOK
+    }
 };
 
 // ==============================================
@@ -1694,15 +1782,21 @@ const SaveManager = {
                         State.edges = State.edges.filter(x => x.id !== e.id); 
                     }
                 }
-                SaveIndicator.setSaved(); Toast.show('All changes live in archives', 'success'); MapEngine.renderAll();
+                SaveIndicator.setSaved(); 
+                LocalDraftManager.clear();
+                Toast.show('All changes live in archives', 'success'); MapEngine.renderAll();
             } catch(e) { SaveIndicator.setUnsaved(); Toast.show(`Save failed: ${e.message}`, 'error'); }
         } else {
-            // CONTRIBUTOR: Show Sandbox Modal
+            // Contributor Submit
             Modal.open('Submit Changes for Review', `
                 <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">You have <strong>${localNodes.length + localEdges.length}</strong> pending changes. Submit them to the Admin queue to be merged into the live map.</p>
                 <div class="form-group"><label class="form-label">Title of Changes</label><input type="text" id="req-title" class="form-input" placeholder="e.g. Added planets to Outer Rim"></div>
                 <div class="form-group"><label class="form-label">Notes (Optional)</label><textarea id="req-notes" class="form-textarea" placeholder="Any specific lore reasons?"></textarea></div>
-            `, `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" onclick="SaveManager.submitRequest()"><i class="fas fa-paper-plane"></i> Send Request</button>`);
+            `, `
+                <button class="btn btn-danger" style="margin-right:auto;" onclick="LocalDraftManager.discardAndReload()"><i class="fas fa-trash"></i> Discard Draft</button>
+                <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+                <button class="btn btn-primary" onclick="SaveManager.submitRequest()"><i class="fas fa-paper-plane"></i> Send Request</button>
+            `);
         }
     },
 
@@ -1734,6 +1828,9 @@ const SaveManager = {
                 const { error: itemsErr } = await supabaseClient.from('map_request_items').insert(items); 
                 if (itemsErr) throw itemsErr; 
             }
+
+            // <--- CLEAR AUTOSAVE UPON SUCCESS --->
+            LocalDraftManager.clear();
 
             Modal.close();
             Toast.show('Changes submitted! Reloading map to fetch Ghosts...', 'success');

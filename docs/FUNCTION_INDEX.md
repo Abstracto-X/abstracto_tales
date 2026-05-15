@@ -240,6 +240,13 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ### `ModeManager` (Interaction Modes)
 - `set(mode)` — Switches between `'select'`, `'place'`, `'trace'` modes. Updates toolbar, status bar, cursor, and clears selection layer.
 
+### `LocalDraftManager` (Autosave System)
+- `getKey()` — Generates a unique `localStorage` key based on the current project and user ID.
+- `save()` — Stashes all nodes/edges with the `_localAction` tag into `localStorage`.
+- `load()` — Restores unsaved local changes upon map load, reinjecting them into the active `State`.
+- `clear()` — Wipes the local draft from browser memory upon successful cloud save/submission.
+- `discardAndReload()` — Prompts to delete the local draft and reload the map from the live database.
+
 ### `SnippingTool` (OCR & Planet Placement - External `js/SnippingTool.js`)
 - `init()` — Initializes the Tesseract OCR worker.
 - `activate(latlng)` — Displays the snipping overlay for the user to select map text.
