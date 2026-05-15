@@ -11,7 +11,7 @@
 - **Storage:** Supabase Storage (public buckets)
 - **Schema:** `public` (all application tables live here)
 - **Security Model:** Row Level Security (RLS) enabled on all tables
-- **Role System:** Two roles — `admin` and `reader` (stored in `public.profiles.role`)
+- **Role System:** Three roles — `admin`, `cartographer`, and `reader` (stored in `public.profiles.role`)
 - **Admin check:** The `public.is_admin()` helper function is used in all write policies
 - **New User Flow:** Every new Supabase Auth user automatically gets a `public.profiles` row created via the `on_auth_user_created` trigger. New users are assigned the `reader` role by default. Admin role must be granted manually via SQL.
 
@@ -48,7 +48,7 @@ Extends `auth.users`. One row per authenticated user.
 | `display_name` | TEXT | Auto-generated on signup as email prefix |
 | `avatar_url` | TEXT | |
 | `bio` | TEXT | |
-| `role` | TEXT | `'reader'` (default) or `'admin'` |
+| `role` | TEXT | `'reader'` (default), `'cartographer'`, or `'admin'` |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | Auto-updated via trigger |
 
@@ -268,13 +268,23 @@ Map images associated with a story.
 |---|---|---|
 | `id` | UUID (PK) | |
 | `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `slug` | TEXT UNIQUE | URL-safe identifier for the cartographer tool |
 | `map_name` | TEXT | |
 | `image_url` | TEXT | From `maps` storage bucket |
 | `is_primary` | BOOLEAN | Default FALSE |
+| `width` | INTEGER | Cartographer coordinate width. Default `4000` |
+| `height` | INTEGER | Cartographer coordinate height. Default `4000` |
+| `is_published` | BOOLEAN | Default FALSE. Controls public visibility of the interactive map |
 | `sort_order` | INTEGER | Default 0 |
+| `created_by` | UUID | FK → `profiles(id)`. Identifies the original map creator |
 | `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | Auto-updated via trigger |
 
-**Key note:** While basic map metadata is stored in this table, the advanced interactive features (hyperlane splines, routing nodes, and pathing data) are served from a high-fidelity static JSON file at `/data/map_project.json`. This file is consumed by the `MapViewer` for client-side routing.
+**Key notes:**
+- This is the canonical parent table for both reader-facing maps and `cartographer.html`.
+- `story_id` should be treated as required for cartographer-created maps so they appear in the main Reader/Admin flows.
+- `width` and `height` are required by the cartographer editor to restore the correct coordinate space for uploaded maps.
+- The advanced route demo in `index.html` can still consume a separate high-fidelity static JSON file at `/data/map_project.json`.
 
 ---
 
@@ -334,6 +344,52 @@ Relational links between writer nodes (e.g. a character referenced in a location
 | `created_at` | TIMESTAMPTZ | |
 
 **Constraint:** `UNIQUE(source_node_id, target_node_id, link_type)`
+
+---
+
+### 3.18 `public.map_requests`
+
+Handles map change requests submitted by contributors.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `map_id` | UUID | FK → `maps(id)` CASCADE DELETE |
+| `user_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
+| `title` | TEXT | Title of the request |
+| `reason` | TEXT | Justification for the request |
+| `status` | TEXT | `pending`, `approved`, `rejected`, `conflict` |
+| `feedback` | TEXT | Admin feedback |
+| `created_at` | TIMESTAMPTZ | |
+| `updated_at` | TIMESTAMPTZ | |
+
+---
+
+### 3.19 `public.map_request_items`
+
+Tracks individual changes within a map request.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID (PK) | |
+| `request_id` | UUID | FK → `map_requests(id)` CASCADE DELETE |
+| `action` | TEXT | `ADD`, `UPDATE`, `DELETE` |
+| `entity_type` | TEXT | `NODE`, `EDGE`, `MAP` |
+| `entity_id` | UUID | ID of the affected entity |
+| `proposed_data` | JSONB | Details of the proposed change |
+| `created_at` | TIMESTAMPTZ | |
+
+### Row Level Security (RLS) Policies
+
+#### `map_requests`
+- **Admins:** Full access.
+- **Contributors:** Can read and insert their own requests.
+- **Cartographers:** Can see any Request Ticket linked to a map they have access to.
+
+#### `map_request_items`
+- **Admins:** Full access.
+- **Contributors:** Can read and insert items linked to their own requests.
+- **Cartographers:** Can see the specific items/data inside tickets linked to maps they have access to.
 
 ---
 
@@ -517,6 +573,9 @@ stories
   ├── timeline_events (1:many)
   │     └── timeline_event_characters (many:many → characters)
   ├── maps (1:many)
+  │     ├── map_nodes (1:many)
+  │     ├── map_edges (1:many)
+  │     └── map_changelog (1:many)
   └── writer_nodes (tree, 1:many recursive)
         └── writer_node_links (many:many between nodes)
 
@@ -591,24 +650,11 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 
 ## 11. Cartographer Tables (Collaborative Map Editor)
 
-### `map_projects`
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID PK | `gen_random_uuid()` |
-| `story_id` | UUID (nullable) | FK → `stories(id)` SET NULL. NULL = global map |
-| `title` | TEXT NOT NULL | Project name |
-| `slug` | TEXT UNIQUE NOT NULL | URL-safe identifier |
-| `image_url` | TEXT | Base map image URL (from `map-images` bucket) |
-| `width` / `height` | INTEGER DEFAULT 4000 | Map coordinate space (derived from uploaded image dimensions) |
-| `is_published` | BOOLEAN DEFAULT FALSE | |
-| `created_by` | UUID | FK → `profiles(id)` |
-| `created_at` / `updated_at` | TIMESTAMPTZ | Auto-managed |
-
 ### `map_nodes`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `map_project_id` | UUID NOT NULL | FK → `map_projects(id)` CASCADE |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
 | `name` | TEXT NOT NULL | Planet/location name |
 | `x` / `y` | DOUBLE PRECISION | Map coordinates |
 | `region` / `sector` | TEXT | Optional metadata |
@@ -619,7 +665,7 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `map_project_id` | UUID NOT NULL | FK → `map_projects(id)` CASCADE |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
 | `source_node_id` / `target_node_id` | UUID NOT NULL | FK → `map_nodes(id)` CASCADE |
 | `source_name` / `target_name` | TEXT | Denormalized for display |
 | `geometry` | JSONB | Array of `{x, y}` waypoints |
@@ -631,7 +677,7 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `map_project_id` | UUID NOT NULL | FK → `map_projects(id)` CASCADE |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
 | `user_id` | UUID NOT NULL | FK → `profiles(id)` |
 | `action` | TEXT NOT NULL | `'add_node'`, `'edit_node'`, `'delete_node'`, `'add_edge'`, `'delete_edge'` |
 | `entity_type` | TEXT NOT NULL | `'node'` or `'edge'` |
@@ -642,18 +688,18 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 - `is_cartographer()` — Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
 
 ### RLS Policies
-- **map_projects**: Public SELECT when `is_published = true`. Cartographer SELECT/INSERT/UPDATE/DELETE via `is_cartographer()`.
-- **map_nodes / map_edges**: Public SELECT when parent project is published. Cartographer full CRUD via `is_cartographer()`.
+- **maps**: Existing reader/admin access remains, and cartographer uses this same table as its parent map source.
+- **map_nodes / map_edges**: Public SELECT when parent map is reader-visible as needed. Cartographer full CRUD via `is_cartographer()`.
 - **map_changelog**: Cartographer SELECT/INSERT only via `is_cartographer()`.
 
-### Storage Bucket: `map-images`
-- Public read, authenticated write. Used for base map image uploads.
+### Storage Bucket: `maps`
+- Public read, authenticated write. Used for story map images and cartographer base map uploads.
 
 ### Indexes
-- `idx_map_projects_slug`, `idx_map_nodes_project`, `idx_map_edges_project`, `idx_map_edges_source`, `idx_map_edges_target`, `idx_map_changelog_project`, `idx_map_changelog_user`.
+- `idx_maps_story`, `idx_maps_slug`, `idx_map_nodes_map`, `idx_map_edges_map`, `idx_map_edges_source`, `idx_map_edges_target`, `idx_map_changelog_map`, `idx_map_changelog_user`.
 
 ### Triggers
-- `set_map_projects_updated_at`, `set_map_nodes_updated_at`, `set_map_edges_updated_at` — All reuse existing `update_timestamp()` function.
+- `set_maps_updated_at`, `set_map_nodes_updated_at`, `set_map_edges_updated_at` — All reuse existing `update_timestamp()` function where present.
 
 ### Promote a user to cartographer
 ```sql

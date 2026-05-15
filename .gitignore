@@ -14,3 +14,5 @@ modularize.py
 sql_migration_cartographer.sql
 migrate_map_data.html
 /_cartographer_build
+docs/migrate_mapdata.js
+docs/map_project.json

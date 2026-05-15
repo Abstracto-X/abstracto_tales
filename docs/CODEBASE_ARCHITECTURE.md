@@ -14,7 +14,7 @@ The restricted administrative portal used by the author to manage all content fo
 A specialized, distraction-free writing environment (IDE) tailored for the author to draft content. It integrates a rich-text editor (Quill.js) with features like word targets, focus mode, typewriter scrolling, document snapshots, and split-view editing. It organizes both draft (Workspace) nodes and published elements into a hierarchical tree, reading and saving directly to the Supabase backend.
 
 ### `cartographer.html` (Collaborative Map Editor)
-A collaborative map editing SPA where users with the `cartographer` or `admin` role can create map projects, place planet nodes, and draw hyperlane paths on uploaded map images. Built on Leaflet.js (CRS.Simple) with Supabase-backed persistence. Features per-user color-coded contributions, a planet name autocomplete powered by `sw_planets.csv`, a changelog activity log, and multi-project support with dynamic coordinate spaces derived from uploaded image dimensions.
+A collaborative map editing SPA where users with the `cartographer` or `admin` role can create story-linked maps, place planet nodes, and draw hyperlane paths on uploaded map images. Built on Leaflet.js (CRS.Simple) with Supabase-backed persistence. Features per-user color-coded contributions, a planet name autocomplete powered by `sw_planets.csv`, a changelog activity log, and multi-map support with dynamic coordinate spaces derived from uploaded image dimensions stored on the shared `maps` table.
 
 ---
 
@@ -81,16 +81,18 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 - `State` *(Object)* — Primary global state container.
   - `user` *(Object | null)* — Authenticated user. Set after login.
   - `profile` *(Object | null)* — User's profile row. Must have `role` of `'cartographer'` or `'admin'`.
-  - `currentProject` *(Object | null)* — The active `map_projects` row. Changes when switching projects.
-  - `projects` *(Array)* — Cached list of all map projects.
-  - `nodes` *(Array)* — All `map_nodes` for the current project.
-  - `edges` *(Array)* — All `map_edges` for the current project.
+  - `currentProject` *(Object | null)* — The active `maps` row used as the editor’s canonical parent record. Changes when switching maps.
+  - `projects` *(Array)* — Cached list of available shared `maps` rows.
+  - `stories` *(Array)* — Cached stories list used to require `story_id` when admins create new maps.
+  - `nodes` *(Array)* — All `map_nodes` for the current map.
+  - `edges` *(Array)* — All `map_edges` for the current map.
   - `mode` *(String)* — Current interaction mode: `'select'`, `'place'`, or `'trace'`.
   - `traceQueue` *(Array)* — Ordered list of nodes selected during trace mode before path finalization.
   - `isDirty` *(Boolean)* — Whether there are unsaved local changes.
   - `contributors` *(Object)* — Map of contributor user IDs to assigned display colors.
   - `undoStack` / `redoStack` *(Array)* — Client-side undo/redo history.
 - `MapEngine` *(Object)* — Leaflet.js map controller managing layers, rendering, and Catmull-Rom spline interpolation.
+- `Hub` *(Object)* — Post-login landing controller for map discovery, role-aware actions, and contribution status previews before entering the editor.
 - `PlanetDB` *(Object)* — In-memory index of `sw_planets.csv` entries for autocomplete suggestions.
   - `entries` *(Array)* — Parsed planet records with `name`, `sector`, `region`, `grid` fields.
 
@@ -139,9 +141,12 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 1. **`DOMContentLoaded` Event Listener:**
    - Binds login form submit handler.
    - `Auth.init()` checks session, subscribes to auth state changes, routes to login view if no session.
-2. **Post-Authentication (`Auth.loadProfile` -> `Auth.showEditor`):**
+2. **Post-Authentication (`Auth.loadProfile` -> `Hub.show`):**
    - Verifies profile `role IN ('cartographer','admin')`.
-   - `App.init()` bootstraps: `ContextMenu.init()`, `MapEngine.init()` (Leaflet CRS.Simple), `Keyboard.init()` (V/P/T shortcuts), `PlanetDB.load()` (CSV autocomplete), `Particles.init()`, `ProjectPicker.refresh()` (auto-selects first project).
+   - Populates shared user UI elements for both the hub and editor chrome.
+   - Renders the Cartography Hub with active map cards, contribution status tab, and role-sensitive create/propose actions.
+3. **Editor Entry (`Hub.openMap` or admin create flow -> `Auth.showEditor`):**
+   - `App.init()` bootstraps: `ContextMenu.init()`, `MapEngine.init()` (Leaflet CRS.Simple), `Keyboard.init()` (V/P/T shortcuts), `PlanetDB.load()` (CSV autocomplete), `Particles.init()`, `DB.getStories()` (for story-linked map creation), `ProjectPicker.refresh()` (auto-selects first available map).
 
 ---
 
@@ -154,7 +159,7 @@ The authentication pattern is strictly **Session-Based**:
 - **`index.html`**: Users log in (`signInWithPassword`) or register. Their session cookie determines permissions (e.g., leaving comments, liking gallery images).
 - **`admin.html`**: Enforces strict role-based access control. Upon gaining a session, it queries `profiles` to check if `role === 'admin'`. If not, access isn't granted locally. `admin.html` relies on Supabase Row Level Security (RLS) to physically protect data on the backend.
 - **`writer.html`**: Doesn't explicitly check or manage auth, implicitly relying on the active session cookie established by `admin.html` allowing the DB queries to pass RLS.
-- **`cartographer.html`**: Enforces role-based access control, accepting `role IN ('cartographer', 'admin')`. Uses the `is_cartographer()` SQL function for RLS on `map_projects`, `map_nodes`, `map_edges`, and `map_changelog` tables.
+- **`cartographer.html`**: Enforces role-based access control, accepting `role IN ('cartographer', 'admin')`. It now uses the shared `maps` table as the parent source for hub/editor records, alongside `map_nodes`, `map_edges`, and `map_changelog` for topology/editor data.
 
 ### Database Query Conventions
 In all files, Supabase data access is encapsulated in module objects (`DB` object).
@@ -178,4 +183,15 @@ Media assets are managed using Supabase Storage buckets.
 - `MapViewer.buildComponents()` now derives connected hyperlane clusters after graph construction so isolated worlds can be recognized without extra fetches.
 - `MapViewer.edgeLengthIndex` caches polyline lengths for each lane so nearest-exit snapping and route totals reuse the same geometry measurements.
 - When a selected world has no registered lane links, `MapViewer.calculateRoute()` falls back to a hybrid route that snaps to the nearest linked world or point on a hyperlane, renders a cyan straight-line off-lane segment, and adds itinerary/summary advisory copy warning that the remaining approach uses unregistered travel.
+
+### `cartographer.html` Updates
+
+#### Sandbox/Hub Wiring
+- **Sandbox Editor:** Introduced a staging system for contributors to propose changes to maps. Changes are saved locally and submitted as "Submission Tickets" for admin review.
+- **Hub Dashboard:** Added a "My Contributions" tab for contributors to view their pending, approved, and rejected requests.
+- **Coordinate Fixes:** Y-axis coordinates now align with a true Cartesian plane.
+
+#### Security Enhancements
+- **Database Lockdown:** Non-admins can no longer directly modify `map_nodes` and `map_edges`. All changes must go through the new moderation queue.
+- **Request Tables:** Added `map_requests` and `map_request_items` tables to handle proposed changes.
 

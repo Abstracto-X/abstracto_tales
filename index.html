@@ -4686,8 +4686,9 @@
                     <div class="map-layout">
                         <div class="map-selector glass-box">${btns}</div>
                         <div class="map-workspace">
-                            <div class="map-stage">
-                                <div class="map-topbar">
+                            <div class="map-column-left" style="display: flex; flex-direction: column; gap: 0.85rem; min-width: 0;">
+                                <div class="map-stage">
+                                    <div class="map-topbar">
                                     <div class="map-topbar-group">
                                         <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
                                         <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
@@ -4704,14 +4705,26 @@
                                     </div>
                                 </div>
                                 <div class="map-controls">
+                                    <button class="map-control-btn cartographer-link" type="button" title="Access Cartographer Terminal" onclick="window.open('cartographer.html', '_blank')" style="color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); margin-bottom: 12px;"><i class="fab fa-galactic-republic"></i></button>
                                     <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
                                     <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
                                     <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
                                     <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
                                 </div>
                             </div>
-                            <div class="routing-panel shadow-box">
-                                <h3>Navicomputer</h3>
+                            <div class="map-promo-block shadow-box" style="padding: 20px; text-align: center; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
+                                <h3 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 10px;">Help Chart the Galaxy</h3>
+                                <p style="font-family: var(--font-body); line-height: 1.6; max-width: 800px; margin: 0 auto 15px auto;">
+                                    Want to contribute to the first navigable map database in Star Wars? You can propose new maps, add undocumented planets, and chart hyperlanes easily through the Cartographer Terminal. Collaborate with millions of Star Wars fans around the globe to map a galaxy far, far away!
+                                </p>
+                                <button class="form-btn primary" onclick="window.open('cartographer.html', '_blank')" style="font-size: 1.1em; padding: 10px 24px;">
+                                    <i class="fab fa-galactic-republic" style="margin-right: 8px;"></i> Access Cartographer Terminal
+                                </button>
+                                ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.85em; margin-top: 15px; font-style: italic;">Note: You need to be registered in order to contribute. Please create a profile or sign in.</p>'}
+                            </div>
+                        </div>
+                        <div class="routing-panel shadow-box">
+                            <h3>Navicomputer</h3>
                                 <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
 
                                 <div class="routing-status" id="routing-status">Loading navicomputer...</div>

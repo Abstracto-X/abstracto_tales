@@ -183,6 +183,77 @@ main { flex: 1; position: relative; display: flex; overflow: hidden; }
 .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,215,0,0.2); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ── Hub View ── */
+#hub-view {
+    display: none;
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 2rem;
+}
+.hub-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    background: rgba(10, 10, 12, 0.6);
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+    min-height: 80vh;
+}
+.hub-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+}
+.hub-title { font-family: var(--font-header); font-size: 2rem; color: var(--accent-color); letter-spacing: 2px; }
+.hub-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-top: 0.5rem; letter-spacing: 1px; text-transform: uppercase; }
+
+.hub-tabs { display: flex; gap: 1.5rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem; }
+.hub-tab { background: transparent; border: none; color: var(--text-secondary); font-family: var(--font-header); font-size: 1.1rem; cursor: pointer; transition: 0.2s; position: relative; }
+.hub-tab:hover { color: var(--text-primary); }
+.hub-tab.active { color: var(--accent-color); }
+.hub-tab.active::after { content: ''; position: absolute; bottom: -1rem; left: 0; width: 100%; height: 2px; background: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+
+.hub-tab-content { display: none; }
+.hub-tab-content.active { display: block; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Map Grid */
+.map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+.map-card {
+    background: rgba(0,0,0,0.4); border: 1px solid var(--border-default); border-radius: 12px;
+    overflow: hidden; cursor: pointer; transition: all 0.3s; display: flex; flex-direction: column;
+}
+.map-card:hover { transform: translateY(-5px); border-color: var(--accent-color); box-shadow: 0 15px 30px rgba(0,0,0,0.5), 0 0 15px rgba(255,215,0,0.1); }
+.map-card-img { width: 100%; height: 160px; object-fit: cover; background: #111; border-bottom: 1px solid var(--border-subtle); }
+.map-card-body { padding: 1.2rem; flex: 1; display: flex; flex-direction: column; }
+.map-card-title { font-family: var(--font-header); font-size: 1.2rem; color: #fff; margin-bottom: 0.3rem; }
+.map-card-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; display: flex; gap: 10px; align-items: center; }
+.map-card-actions { margin-top: auto; display: flex; gap: 0.5rem; }
+
+/* Special Add Card */
+.map-card.add-card { border: 1px dashed var(--border-default); background: rgba(255,255,255,0.02); justify-content: center; align-items: center; text-align: center; padding: 2rem; min-height: 250px; }
+.map-card.add-card:hover { background: rgba(255,215,0,0.05); border-color: var(--accent-color); border-style: solid; }
+.map-card.add-card i { font-size: 3rem; color: var(--text-muted); margin-bottom: 1rem; transition: 0.3s; }
+.map-card.add-card:hover i { color: var(--accent-color); transform: scale(1.1); }
+
+/* Contributions Table */
+.contrib-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.contrib-table th { text-align: left; padding: 1rem; border-bottom: 1px solid var(--border-default); color: var(--text-secondary); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; }
+.contrib-table td { padding: 1rem; border-bottom: 1px solid var(--border-subtle); }
+.contrib-table tr:hover td { background: rgba(255,255,255,0.02); }
+.status-pill { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+.status-pending { background: rgba(251, 191, 36, 0.2); color: var(--warning-color); border: 1px solid rgba(251, 191, 36, 0.4); }
+.status-approved { background: rgba(68, 255, 136, 0.2); color: var(--success-color); border: 1px solid rgba(68, 255, 136, 0.4); }
+.status-rejected { background: rgba(255, 68, 68, 0.2); color: var(--danger-color); border: 1px solid rgba(255, 68, 68, 0.4); }
+
 /* ── Leaflet overrides ── */
 .leaflet-container { background: var(--bg-deepest) !important; font-family: var(--font-ui) !important; }
 .leaflet-control-zoom a { background: var(--bg-raised) !important; color: var(--text-secondary) !important; border-color: var(--border-default) !important; width: 30px !important; height: 30px !important; line-height: 30px !important; }
@@ -235,6 +306,43 @@ main { flex: 1; position: relative; display: flex; overflow: hidden; }
 ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
 ::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 10px; }
 * { scrollbar-width: thin; scrollbar-color: rgba(255,215,0,0.3) rgba(0,0,0,0.2); }
+
+/* Ghost Element Animations */
+.ghost-add { 
+    animation: ghost-pulse-add 1.5s infinite alternate !important; 
+    pointer-events: auto; 
+}
+.ghost-update { 
+    animation: ghost-pulse-update 1.5s infinite alternate !important; 
+    pointer-events: auto; 
+}
+.ghost-delete { 
+    opacity: 0.3 !important; 
+    stroke-opacity: 0.3 !important; 
+    fill-opacity: 0.3 !important; 
+    pointer-events: auto; 
+    stroke-dasharray: 4,4 !important;
+}
+
+@keyframes ghost-pulse-add { 
+    0% { opacity: 0.3; stroke-opacity: 0.3; fill-opacity: 0.3; } 
+    100% { opacity: 0.8; stroke-opacity: 0.8; fill-opacity: 0.8; } 
+}
+@keyframes ghost-pulse-update { 
+    0% { opacity: 0.5; stroke-opacity: 0.5; fill-opacity: 0.5; filter: drop-shadow(0 0 2px var(--warning-color)); } 
+    100% { opacity: 1; stroke-opacity: 1; fill-opacity: 1; filter: drop-shadow(0 0 8px var(--warning-color)); } 
+}
+
+.pending-badge {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning-color);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    text-align: center;
+    margin-top: 8px;
+}
 
 /* Save status */
 .save-indicator { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
@@ -289,6 +397,52 @@ main { flex: 1; position: relative; display: flex; overflow: hidden; }
                     <a href="index.html" style="color:#666; font-size:0.8rem; text-decoration:none;">
                         <i class="fas fa-arrow-left"></i> Back to Reader
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUB VIEW -->
+    <div id="hub-view">
+        <div class="hub-container">
+            <header class="hub-header">
+                <div>
+                    <h1 class="hub-title">Cartography Hub</h1>
+                    <div class="hub-subtitle">Welcome back, <span id="hub-user-name">Explorer</span></div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <button class="btn btn-secondary" onclick="window.location.href='index.html'"><i class="fas fa-book-open"></i> Back to Reader</button>
+                    <button class="btn btn-secondary" onclick="Auth.logout()"><i class="fas fa-sign-out-alt"></i> Logout</button>
+                </div>
+            </header>
+
+            <div class="hub-tabs">
+                <button class="hub-tab active" onclick="Hub.switchTab('maps', this)">Active Maps</button>
+                <button class="hub-tab" onclick="Hub.switchTab('contribs', this)">My Contributions <span id="hub-pending-count" style="background:var(--warning-color); color:#000; font-size:0.6rem; padding:2px 6px; border-radius:10px; vertical-align:top; margin-left:4px; display:none;">0</span></button>
+            </div>
+
+            <div id="tab-maps" class="hub-tab-content active">
+                <div class="map-grid" id="hub-map-grid">
+                    <!-- Maps will be injected here via JS -->
+                </div>
+            </div>
+
+            <div id="tab-contribs" class="hub-tab-content">
+                <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-default); border-radius: 12px; overflow: hidden;">
+                    <table class="contrib-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Request Type</th>
+                                <th>Target Map</th>
+                                <th>Status</th>
+                                <th>Feedback</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hub-contrib-list">
+                            <!-- Contributions injected via JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -457,6 +611,7 @@ const State = {
     profile: null,
     currentProject: null,
     projects: [],
+    stories: [],
     nodes: [],
     edges: [],
     mode: 'select', // select | place | trace
@@ -464,7 +619,9 @@ const State = {
     isDirty: false,
     contributors: {},
     undoStack: [],
-    redoStack: []
+    redoStack: [],
+    stagedDeletes: { nodes: [], edges: [] },
+    stagedUpdates: { nodes: [], edges: [] }
 };
 
 // ==============================================
@@ -529,7 +686,7 @@ const Modal = {
 };
 
 // ==============================================
-// AUTH
+// AUTH (Updated for Hub)
 // ==============================================
 const Auth = {
     init: async () => {
@@ -547,9 +704,14 @@ const Auth = {
             if (error) throw error;
             if (!data || !['admin','cartographer'].includes(data.role)) throw new Error('Access denied. Cartographer or Admin role required.');
             State.profile = data;
+
+            // Populate user info globally
             document.getElementById('user-display-name').textContent = data.display_name || 'User';
             document.getElementById('user-avatar-small').textContent = (data.display_name || 'U')[0].toUpperCase();
-            Auth.showEditor();
+            document.getElementById('hub-user-name').textContent = data.display_name || 'Explorer';
+
+            // Route to Hub instead of directly to Editor
+            Hub.show();
         } catch (err) {
             console.error('Profile Error:', err);
             document.getElementById('login-error').textContent = err.message;
@@ -557,11 +719,17 @@ const Auth = {
             Auth.showLogin();
         }
     },
-    showLogin: () => { document.getElementById('login-view').style.display = 'block'; document.getElementById('editor-view').style.display = 'none'; },
+    showLogin: () => {
+        document.getElementById('login-view').style.display = 'block';
+        document.getElementById('editor-view').style.display = 'none';
+        document.getElementById('hub-view').style.display = 'none';
+    },
     showEditor: () => {
         document.getElementById('login-view').style.display = 'none';
-        document.getElementById('editor-view').style.display = 'block';
-        App.init();
+        document.getElementById('hub-view').style.display = 'none';
+        document.getElementById('editor-view').style.display = 'flex';
+        // Initialize the app if not already done
+        return App.init();
     },
     login: async (email, password) => {
         UI.showLoading();
@@ -573,66 +741,219 @@ const Auth = {
 };
 
 // ==============================================
+// HUB CONTROLLER
+// ==============================================
+const Hub = {
+    show: async () => {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('editor-view').style.display = 'none';
+        document.getElementById('hub-view').style.display = 'block';
+
+        UI.showLoading();
+        await Hub.renderMaps();
+        await Hub.renderContributions();
+        UI.hideLoading();
+    },
+
+    switchTab: (tabId, btnElement) => {
+        document.querySelectorAll('.hub-tab').forEach((button) => button.classList.remove('active'));
+        document.querySelectorAll('.hub-tab-content').forEach((content) => content.classList.remove('active'));
+        btnElement.classList.add('active');
+        document.getElementById(`tab-${tabId}`).classList.add('active');
+    },
+
+    renderMaps: async () => {
+        const grid = document.getElementById('hub-map-grid');
+        grid.innerHTML = '';
+        try {
+            State.projects = await DB.getProjects();
+        } catch (error) {
+            grid.innerHTML = `<div style="color:var(--danger-color); padding: 1rem;">Failed to load maps.</div>`;
+            return;
+        }
+
+        let html = '';
+        State.projects.forEach((project) => {
+            const mapName = project.map_name || project.title || 'Untitled Map';
+            html += `
+                <div class="map-card" onclick="Hub.openMap('${project.id}')">
+                    <img src="${project.image_url || 'https://via.placeholder.com/400x200?text=Map'}" class="map-card-img" alt="Map Cover">
+                    <div class="map-card-body">
+                        <div class="map-card-title">${Utils.escapeHtml(mapName)}</div>
+                        <div class="map-card-meta"><span>${Number(project.width)||4000}×${Number(project.height)||4000}</span></div>
+                        <div class="map-card-actions">
+                            <button class="btn btn-secondary btn-sm" style="width:100%"><i class="fas fa-edit"></i> Enter Editor</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (State.profile.role === 'admin') {
+            html += `
+                <div class="map-card add-card" onclick="Hub.startCreateMapFlow()">
+                    <i class="fas fa-plus-circle"></i><h3 style="color:#fff;font-family:var(--font-header);">Create Base Map</h3>
+                </div>`;
+        } else {
+            html += `
+                <div class="map-card add-card" onclick="Hub.showProposeModal()">
+                    <i class="fas fa-map-marked-alt"></i><h3 style="color:#fff;font-family:var(--font-header);">Propose New Map</h3>
+                </div>`;
+        }
+        grid.innerHTML = html;
+    },
+
+    openMap: async (projectId) => {
+        await Auth.showEditor();
+        await ProjectPicker.select(projectId);
+    },
+
+    startCreateMapFlow: async () => {
+        await Auth.showEditor();
+        ProjectPicker.showCreateModal();
+    },
+
+    renderContributions: async () => {
+        const tbody = document.getElementById('hub-contrib-list');
+        const badgeSpan = document.getElementById('hub-pending-count');
+        
+        try {
+            const { data, error } = await supabaseClient.from('map_requests')
+                .select('*, maps(map_name)')
+                .eq('user_id', State.user.id)
+                .order('created_at', { ascending: false });
+                
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="padding:1.5rem; text-align:center; color:var(--text-muted);">No contribution requests yet.</td></tr>`;
+                badgeSpan.style.display = 'none';
+                return;
+            }
+
+            const pendingCount = data.filter(d => d.status === 'pending').length;
+            if (pendingCount > 0) {
+                badgeSpan.textContent = pendingCount;
+                badgeSpan.style.display = 'inline-block';
+            } else {
+                badgeSpan.style.display = 'none';
+            }
+
+            tbody.innerHTML = data.map(req => `
+                <tr>
+                    <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                    <td><strong>${Utils.escapeHtml(req.title)}</strong></td>
+                    <td>${req.maps ? Utils.escapeHtml(req.maps.map_name) : 'New Base Map'}</td>
+                    <td><span class="status-pill status-${req.status}">${req.status}</span></td>
+                    <td style="color:var(--text-muted); font-size:0.8rem;">${Utils.escapeHtml(req.feedback || '--')}</td>
+                </tr>
+            `).join('');
+
+        } catch (err) {
+            console.error(err);
+            tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger-color);">Error loading requests.</td></tr>`;
+        }
+    },
+
+    showProposeModal: () => {
+        Modal.open('Propose New Base Map', `
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">As a cartographer, you can propose entirely new regions. Your request will be sent to the Admin queue for review.</p>
+            <div class="form-group"><label class="form-label">Proposed Map Title</label><input type="text" class="form-input" id="prop-title" placeholder="e.g. Deep Core Sector"></div>
+            <div class="form-group"><label class="form-label">Reason / Lore Justification</label><textarea class="form-textarea" id="prop-reason" placeholder="Why should this map be added to the archives?"></textarea></div>
+        `, `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="Hub.submitProposal()"><i class="fas fa-paper-plane"></i> Submit Proposal</button>`);
+    },
+
+    submitProposal: async () => {
+        const title = document.getElementById('prop-title').value.trim();
+        const reason = document.getElementById('prop-reason').value.trim();
+        if (!title) { Toast.show('Title required', 'warning'); return; }
+
+        const btn = document.querySelector('.modal-footer .btn-primary');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+        btn.disabled = true;
+
+        try {
+            const { error } = await supabaseClient.from('map_requests').insert({
+                user_id: State.user.id,
+                title: `New Map: ${title}`,
+                reason: reason,
+                status: 'pending'
+            });
+            if (error) throw error;
+            
+            Modal.close();
+            Toast.show('Proposal sent to Admin queue!', 'success');
+            Hub.renderContributions(); // Refresh the table
+        } catch (err) {
+            Toast.show(err.message, 'error');
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Submit Proposal';
+            btn.disabled = false;
+        }
+    }
+};
+
+
+// ==============================================
 // DATABASE
 // ==============================================
 const DB = {
-    getProjects: async () => {
-        const { data } = await supabaseClient.from('map_projects').select('*').order('created_at', { ascending: false });
+    getStories: async () => { const { data, error } = await supabaseClient.from('stories').select('id, title, slug, sort_order').order('sort_order'); if (error) throw error; return data || []; },
+    getProjects: async () => { const { data, error } = await supabaseClient.from('maps').select('*, stories(id, title, slug)').order('created_at', { ascending: false }); if (error) throw error; return data || []; },
+    createProject: async (proj) => { const { data, error } = await supabaseClient.from('maps').insert(proj).select('*, stories(id, title, slug)').single(); if (error) throw error; return data; },
+    updateProject: async (id, updates) => { const { error } = await supabaseClient.from('maps').update(updates).eq('id', id); if (error) throw error; },
+    
+    getNodes: async (projectId) => { const { data, error } = await supabaseClient.from('map_nodes').select('*').eq('map_id', projectId).order('created_at'); if (error) throw error; return data || []; },
+    getEdges: async (projectId) => { const { data, error } = await supabaseClient.from('map_edges').select('*').eq('map_id', projectId).order('created_at'); if (error) throw error; return data || []; },
+    
+    getPendingItems: async (mapId) => {
+        const { data, error } = await supabaseClient
+            .from('map_request_items')
+            .select('*, map_requests!inner(id, map_id, status, user_id, profiles(display_name))')
+            .eq('map_requests.map_id', mapId)
+            .eq('map_requests.status', 'pending');
+        if (error) { console.error('Error fetching pending items', error); return []; }
         return data || [];
     },
-    createProject: async (proj) => {
-        const { data, error } = await supabaseClient.from('map_projects').insert({ ...proj, created_by: State.user.id }).select().single();
-        if (error) throw error;
-        return data;
-    },
-    updateProject: async (id, updates) => {
-        const { error } = await supabaseClient.from('map_projects').update(updates).eq('id', id);
-        if (error) throw error;
-    },
-    getNodes: async (projectId) => {
-        const { data } = await supabaseClient.from('map_nodes').select('*').eq('map_project_id', projectId).order('created_at');
-        return data || [];
-    },
-    getEdges: async (projectId) => {
-        const { data } = await supabaseClient.from('map_edges').select('*').eq('map_project_id', projectId).order('created_at');
-        return data || [];
-    },
+
     saveNode: async (node) => {
-        const { data, error } = await supabaseClient.from('map_nodes').upsert(node).select().single();
-        if (error) throw error;
-        return data;
+        // Strict Serialization: Drops all client-side _state flags
+        const payload = { id: node.id, map_id: node.map_id, name: node.name, x: node.x, y: node.y, region: node.region || '', sector: node.sector || '', color: node.color, created_by: node.created_by };
+        const { data, error } = await supabaseClient.from('map_nodes').upsert(payload).select().single();
+        if (error) throw error; return data;
     },
-    deleteNode: async (id) => {
-        const { error } = await supabaseClient.from('map_nodes').delete().eq('id', id);
-        if (error) throw error;
-    },
+    deleteNode: async (id) => { const { error } = await supabaseClient.from('map_nodes').delete().eq('id', id); if (error) throw error; },
+    
     saveEdge: async (edge) => {
-        const { data, error } = await supabaseClient.from('map_edges').upsert(edge).select().single();
-        if (error) throw error;
-        return data;
+        // Strict Serialization
+        const payload = { id: edge.id, map_id: edge.map_id, source_node_id: edge.source_node_id, target_node_id: edge.target_node_id, source_name: edge.source_name, target_name: edge.target_name, geometry: edge.geometry, edge_type: edge.edge_type, color: edge.color, created_by: edge.created_by };
+        const { data, error } = await supabaseClient.from('map_edges').upsert(payload).select().single();
+        if (error) throw error; return data;
     },
-    deleteEdge: async (id) => {
-        const { error } = await supabaseClient.from('map_edges').delete().eq('id', id);
-        if (error) throw error;
-    },
+    deleteEdge: async (id) => { const { error } = await supabaseClient.from('map_edges').delete().eq('id', id); if (error) throw error; },
+    
     logChange: async (action, entityType, entityId, oldData, newData) => {
         if (!State.currentProject) return;
-        try {
-            await supabaseClient.from('map_changelog').insert({
-                map_project_id: State.currentProject.id,
-                user_id: State.user.id,
-                action, entity_type: entityType, entity_id: entityId,
-                old_data: oldData, new_data: newData
-            });
-        } catch(e) { console.warn('Changelog write failed:', e); }
+        try { await supabaseClient.from('map_changelog').insert({ map_id: State.currentProject.id, user_id: State.user.id, action, entity_type: entityType, entity_id: entityId, old_data: oldData, new_data: newData }); } catch(e) {}
     },
     getChangelog: async (projectId, limit = 50) => {
-        const { data } = await supabaseClient.from('map_changelog')
-            .select('*, profiles:user_id(display_name)')
-            .eq('map_project_id', projectId)
-            .order('created_at', { ascending: false })
-            .limit(limit);
-        return data || [];
+        const { data } = await supabaseClient.from('map_changelog').select('*, profiles:user_id(display_name)').eq('map_id', projectId).order('created_at', { ascending: false }).limit(limit); return data || [];
+    },
+
+    withdrawItem: async (reqItemId, reqId) => {
+        // Delete the item
+        const { error } = await supabaseClient.from('map_request_items').delete().eq('id', reqItemId);
+        if (error) throw error;
+        
+        // Orphan Cleanup: Check if the request ticket is now empty
+        const { count } = await supabaseClient.from('map_request_items')
+            .select('*', { count: 'exact', head: true })
+            .eq('request_id', reqId);
+            
+        if (count === 0) {
+            await supabaseClient.from('map_requests').delete().eq('id', reqId);
+            console.log('Orphaned request ticket cleaned up.');
+        }
     }
 };
 
@@ -691,8 +1012,8 @@ const ProjectPicker = {
         }
         list.innerHTML = State.projects.map(p => `
             <div class="dropdown-item ${State.currentProject?.id === p.id ? 'active' : ''}" onclick="ProjectPicker.select('${p.id}')">
-                <i class="fas fa-map" style="margin-right:6px;opacity:0.5;"></i>${Utils.escapeHtml(p.title)}
-                ${p.is_published ? '<i class="fas fa-globe" style="margin-left:6px;color:var(--success-color);font-size:0.65rem;" title="Published"></i>' : ''}
+                <i class="fas fa-map" style="margin-right:6px;opacity:0.5;"></i>${Utils.escapeHtml(p.map_name || p.title || 'Untitled Map')}
+                ${p.is_primary ? '<i class="fas fa-star" style="margin-left:6px;color:var(--success-color);font-size:0.65rem;" title="Primary"></i>' : ''}
             </div>
         `).join('');
     },
@@ -703,17 +1024,52 @@ const ProjectPicker = {
         UI.showLoading();
         try {
             State.currentProject = proj;
-            document.getElementById('project-name-display').textContent = proj.title;
-            State.nodes = await DB.getNodes(id);
-            State.edges = await DB.getEdges(id);
-            State.undoStack = [];
-            State.redoStack = [];
+            document.getElementById('project-name-display').textContent = proj.map_name || proj.title || 'Untitled Map';
+            
+            const fetchedNodes = await DB.getNodes(id);
+            const fetchedEdges = await DB.getEdges(id);
+            
+            // Map LIVE state
+            const liveNodes = fetchedNodes.map(n => ({ ...n, _live: true, _localAction: null, _pendingAction: null }));
+            const liveEdges = fetchedEdges.map(e => ({ ...e, _live: true, _localAction: null, _pendingAction: null }));
+            
+            // Map PENDING state (Ghosts)
+            const pendingItems = await DB.getPendingItems(id);
+            const pendingNodes = [];
+            const pendingEdges = [];
+            
+            pendingItems.forEach(item => {
+                const reqData = item.map_requests;
+                const meta = {
+                    _reqItemId: item.id,
+                    _reqId: reqData.id,
+                    _reqUserId: reqData.user_id,
+                    _reqUserName: reqData.profiles?.display_name || 'Unknown'
+                };
+
+                if (item.action === 'ADD' && item.proposed_data) {
+                    const entity = { ...item.proposed_data, _live: false, _localAction: null, _pendingAction: 'ADD', ...meta };
+                    if (item.entity_type === 'NODE') pendingNodes.push(entity);
+                    if (item.entity_type === 'EDGE') pendingEdges.push(entity);
+                } else if (item.action === 'UPDATE' || item.action === 'DELETE') {
+                    const targetList = item.entity_type === 'NODE' ? liveNodes : liveEdges;
+                    const target = targetList.find(t => t.id === item.entity_id);
+                    if (target) {
+                        target._pendingAction = item.action;
+                        Object.assign(target, meta);
+                    }
+                }
+            });
+
+            State.nodes = [...liveNodes, ...pendingNodes];
+            State.edges = [...liveEdges, ...pendingEdges];
             State.isDirty = false;
+            
             SaveIndicator.setSaved();
             MapEngine.loadProject(proj);
             Contributors.refresh();
             StatusBar.updateStats();
-            Toast.show(`Loaded: ${proj.title}`, 'success');
+            Toast.show(`Loaded: ${proj.map_name || proj.title || 'Map'}`, 'success');
         } catch(e) {
             Toast.show('Failed to load project', 'error');
             console.error(e);
@@ -722,10 +1078,21 @@ const ProjectPicker = {
     },
     showCreateModal: () => {
         document.getElementById('project-menu').classList.remove('open');
+        if (State.stories.length === 0) {
+            Toast.show('Create a story in admin before adding a map here.', 'warning');
+            return;
+        }
         Modal.open('New Map Project', `
             <div class="form-group">
-                <label class="form-label">Project Title</label>
-                <input type="text" class="form-input" id="new-proj-title" placeholder="e.g. Star Wars Galaxy" required>
+                <label class="form-label">Linked Story</label>
+                <select class="form-select" id="new-proj-story" required>
+                    <option value="">Select a story...</option>
+                    ${State.stories.map((story) => `<option value="${story.id}">${Utils.escapeHtml(story.title)}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Map Name</label>
+                <input type="text" class="form-input" id="new-proj-title" placeholder="e.g. Galactic Map Political" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Base Map Image</label>
@@ -733,23 +1100,25 @@ const ProjectPicker = {
                 <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Map dimensions will be read from the uploaded image.</div>
             </div>
             <div class="form-group">
-                <label class="form-label"><input type="checkbox" id="new-proj-published" style="margin-right:6px;accent-color:var(--accent-color);">Published (visible to readers)</label>
+                <label class="form-label"><input type="checkbox" id="new-proj-primary" style="margin-right:6px;accent-color:var(--accent-color);">Primary Map for this story</label>
             </div>
         `, `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
             <button class="btn btn-primary" onclick="ProjectPicker.create()"><i class="fas fa-plus"></i> Create</button>`);
     },
     create: async () => {
         const title = document.getElementById('new-proj-title').value.trim();
+        const storyId = document.getElementById('new-proj-story').value;
         if (!title) { Toast.show('Title is required', 'warning'); return; }
+        if (!storyId) { Toast.show('Story selection is required', 'warning'); return; }
         const fileInput = document.getElementById('new-proj-image');
-        const published = document.getElementById('new-proj-published').checked;
+        const isPrimary = document.getElementById('new-proj-primary').checked;
         UI.showLoading();
         try {
             let imageUrl = null;
             let w = 4000, h = 4000;
             if (fileInput.files.length > 0) {
                 const file = fileInput.files[0];
-                imageUrl = await Utils.uploadImage(file, 'map-images');
+                imageUrl = await Utils.uploadImage(file, 'maps');
                 // Read image dimensions
                 const dims = await new Promise((resolve) => {
                     const img = new Image();
@@ -760,8 +1129,14 @@ const ProjectPicker = {
                 w = dims.width; h = dims.height;
             }
             const proj = await DB.createProject({
-                title, slug: Utils.slugify(title) + '-' + Date.now().toString(36),
-                image_url: imageUrl, width: w, height: h, is_published: published
+                story_id: storyId,
+                map_name: title,
+                slug: Utils.slugify(title) + '-' + Utils.uuid().slice(0,6), // Added
+                image_url: imageUrl,
+                width: w,
+                height: h,
+                is_primary: isPrimary,
+                created_by: State.user.id // Added
             });
             Modal.close();
             await ProjectPicker.refresh();
@@ -895,177 +1270,107 @@ const Particles = {
 
 
 // ==============================================
-// MAP ENGINE (Leaflet CRS.Simple)
+// MAP ENGINE (Y-Axis Fixed)
 // ==============================================
 const MapEngine = {
-    map: null,
-    imageOverlay: null,
-    nodesLayer: null,
-    edgesLayer: null,
-    selectionLayer: null,
-
+    map: null, imageOverlay: null, nodesLayer: null, edgesLayer: null, selectionLayer: null,
     init: () => {
-        const map = L.map('map-container', {
-            crs: L.CRS.Simple,
-            minZoom: -3,
-            maxZoom: 4,
-            zoomControl: true,
-            attributionControl: false,
-            zoomSnap: 0.25,
-            wheelPxPerZoomLevel: 120
-        });
+        const map = L.map('map-container', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, attributionControl: false, zoomSnap: 0.25, wheelPxPerZoomLevel: 120 });
         MapEngine.map = map;
-        MapEngine.nodesLayer = L.layerGroup().addTo(map);
-        MapEngine.edgesLayer = L.layerGroup().addTo(map);
-        MapEngine.selectionLayer = L.layerGroup().addTo(map);
-
-        // Track mouse for coords display
-        map.on('mousemove', (e) => {
-            const pt = e.latlng;
-            StatusBar.setCoords(pt.lng, -pt.lat);
-        });
+        MapEngine.nodesLayer = L.layerGroup().addTo(map); MapEngine.edgesLayer = L.layerGroup().addTo(map); MapEngine.selectionLayer = L.layerGroup().addTo(map);
+        // FIX: Removed negative from pt.lat
+        map.on('mousemove', (e) => { const pt = e.latlng; StatusBar.setCoords(pt.lng, pt.lat); });
         map.on('zoomend', () => StatusBar.setZoom(MapEngine.getZoomFraction()));
-        map.on('click', MapEngine.onClick);
-        map.on('contextmenu', MapEngine.onContextMenu);
-        // Set initial view
-        map.setView([0, 0], 0);
+        map.on('click', MapEngine.onClick); map.on('contextmenu', MapEngine.onContextMenu);
+        // FIX: Positive center
+        map.setView([2000, 2000], -1); 
     },
-
-    getZoomFraction: () => {
-        const z = MapEngine.map.getZoom();
-        return Math.pow(2, z);
-    },
-
+    getZoomFraction: () => Math.pow(2, MapEngine.map.getZoom()),
     loadProject: (proj) => {
         MapEngine.clear();
+        const width = Number(proj.width) || 4000;
+        const height = Number(proj.height) || 4000;
         if (proj.image_url) {
-            const bounds = [[0, 0], [-proj.height, proj.width]];
+            // FIX: Positive bounds
+            const bounds = [[0, 0], [height, width]];
             MapEngine.imageOverlay = L.imageOverlay(proj.image_url, bounds).addTo(MapEngine.map);
             MapEngine.map.fitBounds(bounds);
         } else {
-            MapEngine.map.setView([-2000, 2000], -1);
+            MapEngine.map.setView([2000, 2000], -1);
         }
-        // Render existing data
         MapEngine.renderAll();
     },
-
-    clear: () => {
-        if (MapEngine.imageOverlay) { MapEngine.map.removeLayer(MapEngine.imageOverlay); MapEngine.imageOverlay = null; }
-        MapEngine.nodesLayer.clearLayers();
-        MapEngine.edgesLayer.clearLayers();
-        MapEngine.selectionLayer.clearLayers();
-    },
-
+    clear: () => { if (MapEngine.imageOverlay) { MapEngine.map.removeLayer(MapEngine.imageOverlay); MapEngine.imageOverlay = null; } MapEngine.nodesLayer.clearLayers(); MapEngine.edgesLayer.clearLayers(); MapEngine.selectionLayer.clearLayers(); },
     renderAll: () => {
-        MapEngine.nodesLayer.clearLayers();
-        MapEngine.edgesLayer.clearLayers();
-        // Render edges first (below nodes)
+        MapEngine.nodesLayer.clearLayers(); MapEngine.edgesLayer.clearLayers();
         for (const edge of State.edges) MapEngine.renderEdge(edge);
-        // Render nodes
         for (const node of State.nodes) MapEngine.renderNode(node);
         StatusBar.updateStats();
     },
-
     renderNode: (node) => {
         const color = node.color || getContributorColor(node.created_by);
-        const marker = L.circleMarker([-node.y, node.x], {
-            radius: 5,
-            fillColor: color,
-            fillOpacity: 0.9,
-            color: '#fff',
-            weight: 1.5,
-            opacity: 0.8
+        const action = node._pendingAction || node._localAction;
+        
+        let styleClass = '';
+        let strokeColor = '#fff';
+        let fillOpacity = 0.9;
+        
+        if (action === 'ADD') { styleClass = 'ghost-add'; fillOpacity = 0.4; }
+        if (action === 'UPDATE') { styleClass = 'ghost-update'; strokeColor = 'var(--warning-color)'; }
+        if (action === 'DELETE') { styleClass = 'ghost-delete'; strokeColor = '#ff4444'; fillColor = '#ff4444'; }
+        
+        const marker = L.circleMarker([node.y, node.x], { 
+            radius: 5, fillColor: action === 'DELETE' ? '#ff4444' : color, 
+            fillOpacity, color: strokeColor, weight: 1.5, className: styleClass
         });
         marker._nodeData = node;
-
-        // Tooltip with name
-        marker.bindTooltip(node.name, {
-            permanent: false,
-            direction: 'top',
-            offset: [0, -8],
-            className: 'node-tooltip'
-        });
-
-        marker.on('click', (e) => {
-            L.DomEvent.stopPropagation(e);
-            if (State.mode === 'select') PlanetEditor.openPopup(node, marker);
-            else if (State.mode === 'trace') TraceMode.addNode(node);
-        });
-        marker.on('contextmenu', (e) => {
-            L.DomEvent.stopPropagation(e);
-            ContextMenu.show(e.originalEvent, node);
-        });
-
-        marker.addTo(MapEngine.nodesLayer);
-        return marker;
+        marker.bindTooltip(node.name + (action ? ` (${action})` : ''), { permanent: false, direction: 'top', offset: [0, -8], className: 'node-tooltip' });
+        marker.on('click', (e) => { L.DomEvent.stopPropagation(e); if (State.mode === 'select') PlanetEditor.openPopup(node, marker); else if (State.mode === 'trace' && !action) TraceMode.addNode(node); });
+        marker.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); if(!action) ContextMenu.show(e.originalEvent, node); });
+        marker.addTo(MapEngine.nodesLayer); return marker;
     },
-
+    
     renderEdge: (edge) => {
         const color = edge.color || getContributorColor(edge.created_by);
         const points = edge.geometry || [];
         if (points.length < 2) return;
-        const latlngs = points.map(p => [-p.y, p.x]);
+        
+        const action = edge._pendingAction || edge._localAction;
+        let styleClass = '';
+        let lineColor = color;
+        
+        if (action === 'ADD') { styleClass = 'ghost-add'; }
+        if (action === 'UPDATE') { styleClass = 'ghost-update'; lineColor = 'var(--warning-color)'; }
+        if (action === 'DELETE') { styleClass = 'ghost-delete'; lineColor = '#ff4444'; }
 
-        let line;
-        if (edge.edge_type === 'curved' && points.length > 2) {
-            // Catmull-Rom spline
-            const smooth = MapEngine.catmullRom(latlngs, 20);
-            line = L.polyline(smooth, { color, weight: 2, opacity: 0.7, dashArray: null });
-        } else {
-            line = L.polyline(latlngs, { color, weight: 2, opacity: 0.7 });
-        }
+        const options = { color: lineColor, weight: 2, opacity: 0.7, className: styleClass };
+        const latlngs = points.map(p => [p.y, p.x]);
+        let line = (edge.edge_type === 'curved' && points.length > 2) ? L.polyline(MapEngine.catmullRom(latlngs, 20), options) : L.polyline(latlngs, options);
+        
         line._edgeData = edge;
-
-        // Tooltip
-        const label = [edge.source_name, edge.target_name].filter(Boolean).join(' → ');
+        const label = [edge.source_name, edge.target_name].filter(Boolean).join(' → ') + (action ? ` (${action})` : '');
         if (label) line.bindTooltip(label, { sticky: true, direction: 'top', opacity: 0.9 });
-
-        line.on('click', (e) => {
-            L.DomEvent.stopPropagation(e);
-            if (State.mode === 'select') EdgeEditor.showInfo(edge);
-        });
-        line.on('contextmenu', (e) => {
-            L.DomEvent.stopPropagation(e);
-            ContextMenu.showEdge(e.originalEvent, edge);
-        });
-
-        line.addTo(MapEngine.edgesLayer);
-        return line;
+        line.on('click', (e) => { L.DomEvent.stopPropagation(e); if (State.mode === 'select') EdgeEditor.showInfo(edge); });
+        line.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); if(!action) ContextMenu.showEdge(e.originalEvent, edge); });
+        line.addTo(MapEngine.edgesLayer); return line;
     },
-
     catmullRom: (pts, segments = 20) => {
         if (pts.length < 2) return pts;
         const result = [];
         for (let i = 0; i < pts.length - 1; i++) {
-            const p0 = pts[Math.max(0, i - 1)];
-            const p1 = pts[i];
-            const p2 = pts[i + 1];
-            const p3 = pts[Math.min(pts.length - 1, i + 2)];
+            const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
             for (let t = 0; t < segments; t++) {
-                const f = t / segments;
-                const f2 = f * f, f3 = f2 * f;
+                const f = t / segments, f2 = f * f, f3 = f2 * f;
                 const lat = 0.5 * ((2*p1[0]) + (-p0[0]+p2[0])*f + (2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*f2 + (-p0[0]+3*p1[0]-3*p2[0]+p3[0])*f3);
                 const lng = 0.5 * ((2*p1[1]) + (-p0[1]+p2[1])*f + (2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*f2 + (-p0[1]+3*p1[1]-3*p2[1]+p3[1])*f3);
                 result.push([lat, lng]);
             }
         }
-        result.push(pts[pts.length - 1]);
-        return result;
+        result.push(pts[pts.length - 1]); return result;
     },
-
-    onClick: (e) => {
-        if (State.mode === 'place') PlaceMode.placeAt(e.latlng);
-    },
-
-    onContextMenu: (e) => {
-        e.originalEvent.preventDefault();
-    },
-
-    findMarkerForNode: (nodeId) => {
-        let found = null;
-        MapEngine.nodesLayer.eachLayer(m => { if (m._nodeData && m._nodeData.id === nodeId) found = m; });
-        return found;
-    }
+    onClick: (e) => { if (State.mode === 'place') PlaceMode.placeAt(e.latlng); },
+    onContextMenu: (e) => { e.originalEvent.preventDefault(); },
+    findMarkerForNode: (nodeId) => { let found = null; MapEngine.nodesLayer.eachLayer(m => { if (m._nodeData && m._nodeData.id === nodeId) found = m; }); return found; }
 };
 
 // ==============================================
@@ -1087,80 +1392,59 @@ const ModeManager = {
 };
 
 // ==============================================
-// PLACE MODE
+// PLACE & EDITORS (Sandboxed logic)
 // ==============================================
 const PlaceMode = {
     placeAt: async (latlng) => {
         const x = Math.round(latlng.lng * 10) / 10;
-        const y = Math.round(-latlng.lat * 10) / 10;
-        const color = getContributorColor(State.user.id);
-        const tempId = Utils.uuid();
-
-        const node = {
-            id: tempId,
-            map_project_id: State.currentProject.id,
-            name: 'New Planet',
-            x, y,
-            region: '', sector: '',
-            color,
-            created_by: State.user.id,
-            created_at: new Date().toISOString()
-        };
-
-        // Add locally first
+        const y = Math.round(latlng.lat * 10) / 10;
+        const node = { id: Utils.uuid(), map_id: State.currentProject.id, name: 'New Planet', x, y, region: '', sector: '', color: getContributorColor(State.user.id), created_by: State.user.id, created_at: new Date().toISOString(), _live: false, _localAction: 'ADD' };
         State.nodes.push(node);
         const marker = MapEngine.renderNode(node);
-        StatusBar.updateStats();
-        SaveIndicator.setUnsaved();
-
-        // Open popup immediately for naming
+        StatusBar.updateStats(); SaveIndicator.setUnsaved();
         PlanetEditor.openPopup(node, marker, true);
     }
 };
 
-// ==============================================
-// PLANET EDITOR (popup on node click/place)
-// ==============================================
 const PlanetEditor = {
     openPopup: (node, marker, isNew = false) => {
         const color = node.color || getContributorColor(node.created_by);
-        const contribName = node.created_by === State.user?.id ? 'You' : 'Contributor';
+        const isLocked = node._pendingAction; // In moderation queue
+        const isOwner = node._reqUserId === State.user?.id;
+        
+        let actionsHtml = `<div class="popup-actions"><button class="btn-save" id="popup-save-btn">Keep</button><button class="btn-delete" id="popup-delete-btn"><i class="fas fa-trash"></i></button></div>`;
+        
+        if (isLocked) {
+            if (isOwner) {
+                actionsHtml = `<div class="pending-badge"><i class="fas fa-hourglass-half"></i> Your Proposed ${node._pendingAction}<br><button class="btn-delete" style="width:100%; margin-top:8px; border-color:var(--warning-color); color:var(--warning-color);" onclick="SaveManager.withdraw('${node._reqItemId}', '${node._reqId}')"><i class="fas fa-undo"></i> Withdraw Edit</button></div>`;
+            } else {
+                actionsHtml = `<div class="pending-badge"><i class="fas fa-lock"></i> Pending ${node._pendingAction}<br><span style="font-size:0.65rem">(By ${Utils.escapeHtml(node._reqUserName || 'Another user')})</span></div>`;
+            }
+        }
+
         const content = document.createElement('div');
         content.className = 'popup-content';
         content.innerHTML = `
             <div class="popup-header">${isNew ? 'NEW PLANET' : 'EDIT PLANET'}</div>
-            <input type="text" id="popup-name" value="${Utils.escapeHtml(node.name)}" placeholder="Planet name..." autocomplete="off">
+            <input type="text" id="popup-name" value="${Utils.escapeHtml(node.name)}" placeholder="Planet name..." autocomplete="off" ${isLocked ? 'disabled' : ''}>
             <div id="popup-autocomplete" class="autocomplete-list" style="display:none;position:relative;"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
-                <input type="text" id="popup-region" value="${Utils.escapeHtml(node.region||'')}" placeholder="Region">
-                <input type="text" id="popup-sector" value="${Utils.escapeHtml(node.sector||'')}" placeholder="Sector">
+                <input type="text" id="popup-region" value="${Utils.escapeHtml(node.region||'')}" placeholder="Region" ${isLocked ? 'disabled' : ''}>
+                <input type="text" id="popup-sector" value="${Utils.escapeHtml(node.sector||'')}" placeholder="Sector" ${isLocked ? 'disabled' : ''}>
             </div>
-            <div class="popup-actions">
-                <button class="btn-save" id="popup-save-btn">Save</button>
-                <button class="btn-delete" id="popup-delete-btn"><i class="fas fa-trash" style="font-size:0.7rem"></i></button>
-            </div>
-            <div class="contributor-info"><span class="dot" style="background:${color}"></span>${contribName}</div>`;
-
-        const popup = L.popup({ closeOnClick: false, autoClose: false, maxWidth: 260, minWidth: 220, className: '' })
-            .setLatLng(marker.getLatLng())
-            .setContent(content)
-            .openOn(MapEngine.map);
-
-        // Focus name input
+            ${actionsHtml}
+            <div class="contributor-info"><span class="dot" style="background:${color}"></span>${node.created_by === State.user?.id ? 'You' : 'Contributor'}</div>`;
+        const popup = L.popup({ closeOnClick: false, autoClose: false, maxWidth: 260, minWidth: 220, className: '' }).setLatLng(marker.getLatLng()).setContent(content).openOn(MapEngine.map);
         setTimeout(() => {
-            const nameInput = document.getElementById('popup-name');
-            if (nameInput) { nameInput.focus(); if (isNew) nameInput.select(); }
-            // Autocomplete
-            PlanetEditor.bindAutocomplete(nameInput);
-            // Save
-            document.getElementById('popup-save-btn').onclick = () => PlanetEditor.save(node, popup);
-            // Delete
-            document.getElementById('popup-delete-btn').onclick = () => PlanetEditor.delete(node, popup);
-            // Enter to save
-            nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') PlanetEditor.save(node, popup); });
+            const ni = document.getElementById('popup-name'); if (ni) { ni.focus(); if (isNew) ni.select(); }
+            PlanetEditor.bindAutocomplete(ni);
+            const saveBtn = document.getElementById('popup-save-btn');
+            const delBtn = document.getElementById('popup-delete-btn');
+            if(saveBtn) saveBtn.onclick = () => PlanetEditor.save(node, popup);
+            if(delBtn) delBtn.onclick = () => PlanetEditor.delete(node, popup);
+            ni.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !isLocked) PlanetEditor.save(node, popup); });
         }, 50);
     },
-
     bindAutocomplete: (input) => {
         if (!input) return;
         input.addEventListener('input', () => {
@@ -1189,173 +1473,112 @@ const PlanetEditor = {
             if (box && !box.contains(e.target) && e.target !== input) box.style.display = 'none';
         }, { once: false });
     },
-
     save: async (node, popup) => {
-        const name = document.getElementById('popup-name')?.value.trim() || 'Unnamed';
-        const region = document.getElementById('popup-region')?.value.trim() || '';
-        const sector = document.getElementById('popup-sector')?.value.trim() || '';
-        const oldData = { name: node.name, region: node.region, sector: node.sector };
-        const isNew = !node._persisted;
-        node.name = name;
-        node.region = region;
-        node.sector = sector;
-        popup.remove();
-        MapEngine.renderAll();
-        SaveIndicator.setUnsaved();
-
-        try {
-            const saved = await DB.saveNode(node);
-            // Update local with server-assigned ID if needed
-            const idx = State.nodes.findIndex(n => n.id === node.id);
-            if (idx >= 0) { State.nodes[idx] = { ...saved, _persisted: true }; }
-            await DB.logChange(isNew ? 'add_node' : 'edit_node', 'node', saved.id, isNew ? null : oldData, { name, region, sector });
-            Toast.show(isNew ? `Placed: ${name}` : `Updated: ${name}`, 'success');
-        } catch(e) {
-            Toast.show(`Save failed: ${e.message}`, 'error');
+        node.name = document.getElementById('popup-name')?.value.trim() || 'Unnamed';
+        node.region = document.getElementById('popup-region')?.value.trim() || '';
+        node.sector = document.getElementById('popup-sector')?.value.trim() || '';
+        popup.remove(); 
+        
+        if (State.profile.role === 'admin') {
+            try {
+                const saved = await DB.saveNode(node);
+                Object.assign(node, saved, { _live: true, _localAction: null });
+                Toast.show(`Updated: ${node.name}`, 'success');
+            } catch(e) { Toast.show(`Save failed: ${e.message}`, 'error'); }
+        } else {
+            // Contributor Sandbox State
+            if (!node._localAction) node._localAction = 'UPDATE';
+            Toast.show(`Edit staged locally`, 'info');
+            SaveIndicator.setUnsaved();
         }
+        MapEngine.renderAll();
     },
-
     delete: async (node, popup) => {
         popup.remove();
-        State.nodes = State.nodes.filter(n => n.id !== node.id);
-        // Also remove edges referencing this node
-        const affectedEdges = State.edges.filter(e => e.source_node_id === node.id || e.target_node_id === node.id);
-        State.edges = State.edges.filter(e => e.source_node_id !== node.id && e.target_node_id !== node.id);
-        MapEngine.renderAll();
-        SaveIndicator.setUnsaved();
-
-        try {
-            // Edges cascade-delete on server, but we still log
-            for (const edge of affectedEdges) {
-                await DB.logChange('delete_edge', 'edge', edge.id, { source: edge.source_name, target: edge.target_name }, null);
+        if (State.profile.role === 'admin') {
+            State.nodes = State.nodes.filter(n => n.id !== node.id);
+            State.edges = State.edges.filter(e => e.source_node_id !== node.id && e.target_node_id !== node.id);
+            try { await DB.deleteNode(node.id); Toast.show(`Removed: ${node.name}`, 'info'); } catch(e) {}
+        } else {
+            if (node._localAction === 'ADD') {
+                // If it was just added locally, delete it entirely
+                State.nodes = State.nodes.filter(n => n.id !== node.id);
+            } else {
+                // If it's a live node, mark it as staged for deletion
+                node._localAction = 'DELETE';
+                SaveIndicator.setUnsaved();
+                Toast.show('Deletion staged', 'warning');
             }
-            await DB.deleteNode(node.id);
-            await DB.logChange('delete_node', 'node', node.id, { name: node.name }, null);
-            Toast.show(`Removed: ${node.name}`, 'info');
-        } catch(e) {
-            Toast.show(`Delete failed: ${e.message}`, 'error');
         }
+        MapEngine.renderAll();
     }
 };
 
-// ==============================================
-// EDGE EDITOR
-// ==============================================
 const EdgeEditor = {
     showInfo: (edge) => {
-        const color = edge.color || getContributorColor(edge.created_by);
-        const src = edge.source_name || 'Unknown';
-        const tgt = edge.target_name || 'Unknown';
-        const points = edge.geometry || [];
-        let dist = 0;
-        for (let i = 1; i < points.length; i++) {
-            const dx = points[i].x - points[i-1].x, dy = points[i].y - points[i-1].y;
-            dist += Math.sqrt(dx*dx + dy*dy);
-        }
+        // FIX: removed negative Y
+        const pts = edge.geometry || []; const midPt = pts[Math.floor(pts.length / 2)] || pts[0];
         const content = `<div class="popup-content">
             <div class="popup-header">HYPERLANE</div>
-            <div class="popup-route-info"><strong>${Utils.escapeHtml(src)}</strong> → <strong>${Utils.escapeHtml(tgt)}</strong></div>
-            <div class="popup-route-info" style="font-size:0.72rem;color:var(--text-muted);">Distance: ${Math.round(dist)} · Points: ${points.length} · Type: ${edge.edge_type}</div>
-            <div class="popup-actions">
-                <button class="btn-delete" onclick="EdgeEditor.delete('${edge.id}')"><i class="fas fa-trash"></i> Delete</button>
-            </div>
-            <div class="contributor-info"><span class="dot" style="background:${color}"></span>Contributor</div>
+            <div class="popup-route-info"><strong>${Utils.escapeHtml(edge.source_name)}</strong> → <strong>${Utils.escapeHtml(edge.target_name)}</strong></div>
+            <div class="popup-actions"><button class="btn-delete" onclick="EdgeEditor.delete('${edge.id}')"><i class="fas fa-trash"></i> Delete</button></div>
         </div>`;
-        const midIdx = Math.floor(points.length / 2);
-        const midPt = points[midIdx] || points[0];
-        if (midPt) L.popup({ maxWidth: 260, minWidth: 200 }).setLatLng([-midPt.y, midPt.x]).setContent(content).openOn(MapEngine.map);
+        if (midPt) L.popup({ maxWidth: 260 }).setLatLng([midPt.y, midPt.x]).setContent(content).openOn(MapEngine.map);
     },
-
     delete: async (edgeId) => {
         const edge = State.edges.find(e => e.id === edgeId);
         State.edges = State.edges.filter(e => e.id !== edgeId);
-        MapEngine.map.closePopup();
-        MapEngine.renderAll();
-        SaveIndicator.setUnsaved();
-        try {
-            await DB.deleteEdge(edgeId);
-            if (edge) await DB.logChange('delete_edge', 'edge', edgeId, { source: edge.source_name, target: edge.target_name }, null);
-            Toast.show('Path removed', 'info');
-        } catch(e) { Toast.show(`Delete failed: ${e.message}`, 'error'); }
+        MapEngine.map.closePopup(); MapEngine.renderAll(); SaveIndicator.setUnsaved();
+        if (State.profile.role === 'admin') {
+            try { await DB.deleteEdge(edgeId); Toast.show('Path removed', 'info'); } catch(e) {}
+        } else if (edge && edge._persisted) {
+            State.stagedDeletes.edges.push(edge);
+            Toast.show('Path deletion staged', 'warning');
+        }
     }
 };
 
-// ==============================================
-// TRACE MODE
-// ==============================================
 const TraceMode = {
     addNode: (node) => {
-        // Check if already in queue
-        if (State.traceQueue.find(n => n.id === node.id)) {
-            Toast.show('Node already in path', 'warning');
-            return;
-        }
+        if (State.traceQueue.find(n => n.id === node.id)) return;
         State.traceQueue.push(node);
-        // Visual feedback: show sequence number
-        const num = State.traceQueue.length;
-        const icon = L.divIcon({ className: 'selection-number', html: `${num}`, iconSize: [20, 20], iconAnchor: [10, 10] });
-        L.marker([-node.y, node.x], { icon, interactive: false }).addTo(MapEngine.selectionLayer);
-
-        // Draw preview line
+        // FIX: Removed negative Y
+        const icon = L.divIcon({ className: 'selection-number', html: `${State.traceQueue.length}`, iconSize: [20, 20], iconAnchor: [10, 10] });
+        L.marker([node.y, node.x], { icon, interactive: false }).addTo(MapEngine.selectionLayer);
         if (State.traceQueue.length >= 2) {
-            const pts = State.traceQueue.map(n => [-n.y, n.x]);
+            const pts = State.traceQueue.map(n => [n.y, n.x]);
             MapEngine.selectionLayer.eachLayer(l => { if (l instanceof L.Polyline) MapEngine.selectionLayer.removeLayer(l); });
             L.polyline(pts, { color: getContributorColor(State.user.id), weight: 2, opacity: 0.6, dashArray: '8,6' }).addTo(MapEngine.selectionLayer);
         }
-
         StatusBar.setMode('trace');
-        document.getElementById('status-hint').textContent = `Path: ${State.traceQueue.length} nodes selected · Double-click last node or press Enter to confirm · ESC to cancel`;
     },
-
     finish: async () => {
-        if (State.traceQueue.length < 2) { Toast.show('Need at least 2 nodes for a path', 'warning'); TraceMode.cancel(); return; }
-        const color = getContributorColor(State.user.id);
-        const nodes = [...State.traceQueue];
-        TraceMode.cancel(); // Clear selection visuals
-
-        // Create edges between consecutive nodes
+        if (State.traceQueue.length < 2) { TraceMode.cancel(); return; }
+        const nodes = [...State.traceQueue]; TraceMode.cancel();
+        
         for (let i = 0; i < nodes.length - 1; i++) {
             const src = nodes[i], tgt = nodes[i + 1];
-            // Check if edge already exists
-            const exists = State.edges.find(e =>
-                (e.source_node_id === src.id && e.target_node_id === tgt.id) ||
-                (e.source_node_id === tgt.id && e.target_node_id === src.id)
-            );
-            if (exists) continue;
+            if (State.edges.find(e => (e.source_node_id === src.id && e.target_node_id === tgt.id) || (e.source_node_id === tgt.id && e.target_node_id === src.id))) continue;
 
-            const edge = {
-                id: Utils.uuid(),
-                map_project_id: State.currentProject.id,
-                source_node_id: src.id,
-                target_node_id: tgt.id,
-                source_name: src.name,
-                target_name: tgt.name,
-                geometry: [{ x: src.x, y: src.y }, { x: tgt.x, y: tgt.y }],
-                edge_type: 'straight',
-                color,
-                created_by: State.user.id,
-                created_at: new Date().toISOString()
-            };
+            if (State.profile.role === 'admin') {
+                if (!src._live) { const s = await DB.saveNode(src); Object.assign(src, s, { _live: true, _localAction: null }); }
+                if (!tgt._live) { const t = await DB.saveNode(tgt); Object.assign(tgt, t, { _live: true, _localAction: null }); }
+            }
+
+            const edge = { id: Utils.uuid(), map_id: State.currentProject.id, source_node_id: src.id, target_node_id: tgt.id, source_name: src.name, target_name: tgt.name, geometry: [{ x: src.x, y: src.y }, { x: tgt.x, y: tgt.y }], edge_type: 'straight', color: getContributorColor(State.user.id), created_by: State.user.id, _live: false, _localAction: 'ADD' };
             State.edges.push(edge);
-
-            try {
-                const saved = await DB.saveEdge(edge);
-                const idx = State.edges.findIndex(e => e.id === edge.id);
-                if (idx >= 0) State.edges[idx] = saved;
-                await DB.logChange('add_edge', 'edge', saved.id, null, { source: src.name, target: tgt.name });
-            } catch(e) { console.error('Edge save failed:', e); }
+            
+            if (State.profile.role === 'admin') {
+                try {
+                    const saved = await DB.saveEdge(edge);
+                    const idx = State.edges.findIndex(e => e.id === edge.id);
+                    if (idx >= 0) Object.assign(State.edges[idx], saved, { _live: true, _localAction: null });
+                } catch(e) { console.error(e); }
+            }
         }
-
-        MapEngine.renderAll();
-        SaveIndicator.setUnsaved();
-        Toast.show(`Path created: ${nodes.length} nodes, ${nodes.length - 1} segments`, 'success');
+        MapEngine.renderAll(); SaveIndicator.setUnsaved();
     },
-
-    cancel: () => {
-        State.traceQueue = [];
-        MapEngine.selectionLayer.clearLayers();
-        StatusBar.setMode('trace');
-    }
+    cancel: () => { State.traceQueue = []; MapEngine.selectionLayer.clearLayers(); StatusBar.setMode('trace'); }
 };
 
 // ==============================================
@@ -1429,27 +1652,77 @@ const Keyboard = {
 };
 
 // ==============================================
-// SAVE MANAGER
+// SAVE MANAGER (The Master Router)
 // ==============================================
 const SaveManager = {
     save: async () => {
-        if (!State.currentProject) { Toast.show('No project open', 'warning'); return; }
-        SaveIndicator.setSaving();
-        try {
-            // Batch save all nodes and edges
-            for (const node of State.nodes) {
-                if (!node._persisted) {
-                    const saved = await DB.saveNode(node);
-                    const idx = State.nodes.findIndex(n => n.id === node.id);
-                    if (idx >= 0) State.nodes[idx] = { ...saved, _persisted: true };
+        if (!State.currentProject) return;
+        
+        // Find all local actions
+        const localNodes = State.nodes.filter(n => n._localAction);
+        const localEdges = State.edges.filter(e => e._localAction);
+        
+        if (localNodes.length === 0 && localEdges.length === 0) { SaveIndicator.setSaved(); return; }
+
+        if (State.profile.role === 'admin') {
+            SaveIndicator.setSaving();
+            try {
+                for (const n of localNodes) {
+                    if (n._localAction === 'ADD' || n._localAction === 'UPDATE') { const s = await DB.saveNode(n); Object.assign(n, s, { _live: true, _localAction: null }); }
+                    if (n._localAction === 'DELETE') { await DB.deleteNode(n.id); State.nodes = State.nodes.filter(x => x.id !== n.id); }
                 }
-            }
-            SaveIndicator.setSaved();
-            Toast.show('All changes saved', 'success');
-        } catch(e) {
-            SaveIndicator.setUnsaved();
-            Toast.show(`Save failed: ${e.message}`, 'error');
+                for (const e of localEdges) {
+                    if (e._localAction === 'ADD' || e._localAction === 'UPDATE') { const s = await DB.saveEdge(e); Object.assign(e, s, { _live: true, _localAction: null }); }
+                    if (e._localAction === 'DELETE') { await DB.deleteEdge(e.id); State.edges = State.edges.filter(x => x.id !== e.id); }
+                }
+                SaveIndicator.setSaved(); Toast.show('All changes live in archives', 'success'); MapEngine.renderAll();
+            } catch(e) { SaveIndicator.setUnsaved(); Toast.show(`Save failed: ${e.message}`, 'error'); }
+        } else {
+            // Contributor Submit
+            Modal.open('Submit Changes for Review', `
+                <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">You have <strong>${localNodes.length + localEdges.length}</strong> pending changes. Submit them to the Admin queue to be merged into the live map.</p>
+                <div class="form-group"><label class="form-label">Title of Changes</label><input type="text" id="req-title" class="form-input" placeholder="e.g. Added planets to Outer Rim"></div>
+                <div class="form-group"><label class="form-label">Notes (Optional)</label><textarea id="req-notes" class="form-textarea" placeholder="Any specific lore reasons?"></textarea></div>
+            `, `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" onclick="SaveManager.submitRequest()"><i class="fas fa-paper-plane"></i> Send Request</button>`);
         }
+    },
+
+    submitRequest: async () => {
+        const title = document.getElementById('req-title').value.trim();
+        if (!title) { Toast.show('Title is required', 'warning'); return; }
+        const btn = document.querySelector('.modal-footer .btn-primary'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...'; btn.disabled = true;
+
+        try {
+            const { data: request, error: reqErr } = await supabaseClient.from('map_requests').insert({ map_id: State.currentProject.id, user_id: State.user.id, title, reason: document.getElementById('req-notes').value.trim(), status: 'pending' }).select().single();
+            if (reqErr) throw reqErr;
+
+            const items = [];
+            State.nodes.filter(n => n._localAction).forEach(n => {
+                if (n._localAction === 'DELETE') items.push({ request_id: request.id, action: 'DELETE', entity_type: 'NODE', entity_id: n.id });
+                else items.push({ request_id: request.id, action: n._localAction, entity_type: 'NODE', entity_id: n._live ? n.id : null, proposed_data: n });
+            });
+            State.edges.filter(e => e._localAction).forEach(e => {
+                if (e._localAction === 'DELETE') items.push({ request_id: request.id, action: 'DELETE', entity_type: 'EDGE', entity_id: e.id });
+                else items.push({ request_id: request.id, action: e._localAction, entity_type: 'EDGE', entity_id: e._live ? e.id : null, proposed_data: e });
+            });
+
+            if (items.length > 0) { const { error } = await supabaseClient.from('map_request_items').insert(items); if (error) throw error; }
+
+            Modal.close();
+            Toast.show('Changes submitted! Reloading map to fetch Ghosts...', 'success');
+            setTimeout(() => ProjectPicker.select(State.currentProject.id), 1000);
+        } catch (err) { Toast.show(`Failed: ${err.message}`, 'error'); btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Request'; btn.disabled = false; }
+    },
+
+    withdraw: async (reqItemId, reqId) => {
+        if (!confirm("Withdraw this proposed change?")) return;
+        MapEngine.map.closePopup(); UI.showLoading();
+        try {
+            await DB.withdrawItem(reqItemId, reqId);
+            Toast.show('Change withdrawn successfully.', 'info');
+            await ProjectPicker.select(State.currentProject.id);
+        } catch (err) { Toast.show(`Failed to withdraw: ${err.message}`, 'error'); }
+        UI.hideLoading();
     }
 };
 
@@ -1481,6 +1754,7 @@ const App = {
         });
 
         // Load projects
+        State.stories = await DB.getStories();
         await ProjectPicker.refresh();
         if (State.projects.length > 0) {
             await ProjectPicker.select(State.projects[0].id);

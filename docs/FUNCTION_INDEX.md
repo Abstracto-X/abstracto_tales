@@ -197,10 +197,20 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ### `Auth` (Access Control)
 - `init()` — Checks session, subscribes to auth state changes.
-- `loadProfile()` — Fetches profile, verifies `role IN ('cartographer', 'admin')`.
+- `loadProfile()` — Fetches profile, verifies `role IN ('cartographer', 'admin')`, populates shared user chrome, and routes authenticated users into the hub.
 - `login(email, password)` — Authenticates via `signInWithPassword`.
 - `logout()` — Signs out and reloads.
-- `showLogin() / showEditor()` — Toggles between login and editor views.
+- `showLogin() / showEditor()` — Toggles between login, hub, and editor views as needed.
+
+### `Hub` (Post-Login Landing View)
+- `show()` — Displays the hub, hides login/editor, and loads map cards plus contribution status data.
+- `switchTab(tabId, btnElement)` — Swaps between the Active Maps and My Contributions tabs.
+- `renderMaps()` — Renders project cards plus the role-dependent create/propose action card.
+- `openMap(projectId)` — Enters the editor for a selected map project.
+- `startCreateMapFlow()` — Takes admins from the hub into the editor and immediately opens the new-project modal.
+- `renderContributions()` — Displays the contributor's pending, approved, and rejected requests.
+- `showProposeModal()` — Opens the modal for proposing a new map.
+- `submitProposal()` — Submits a new map proposal to the admin queue.
 
 ### `DB` (Supabase Data Access)
 - `getProjects()` / `createProject(proj)` / `updateProject(id, updates)` — CRUD for `map_projects`.
@@ -268,7 +278,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `init()` — Registers: `V` (select), `P` (place), `T` (trace), `ESC` (cancel), `Enter` (finish trace), `Ctrl+S` (save).
 
 ### `SaveManager` (Persistence)
-- `save()` — Batch-saves all unpersisted nodes to Supabase.
+- `save()` — Handles saving changes. Admins save directly; contributors stage changes for review.
+- `submitRequest()` — Bundles staged changes into a "Submission Ticket" and submits it to the admin queue.
 
 ### `Particles` (Background Animation)
 - `init()` — Canvas-based floating particle animation (same pattern as admin.html).
