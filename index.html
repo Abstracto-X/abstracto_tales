@@ -1004,6 +1004,12 @@
             stroke-dasharray: 12 12;
             animation: dash-flow 0.8s linear infinite, path-pulse 1.5s ease-in-out infinite alternate;
         }
+        .map-edge.route-glow.route-glow-reverse {
+            animation: dash-flow-reverse 0.8s linear infinite, path-pulse 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes dash-flow-reverse {
+            to { stroke-dashoffset: 20; } /* Positive offset reverses the flow */
+        }
         .map-offlane {
             fill: none;
             stroke: #72d7ff;
@@ -1707,6 +1713,76 @@
         // ==============================================
         // MAP VIEWER ENGINE
         // ==============================================
+        class MinPriorityQueue {
+            constructor() {
+                this.heap = [];
+            }
+            
+            enqueue(node, priority) {
+                this.heap.push({ node, priority });
+                this.bubbleUp();
+            }
+            
+            dequeue() {
+                const min = this.heap[0];
+                const end = this.heap.pop();
+                if (this.heap.length > 0) {
+                    this.heap[0] = end;
+                    this.sinkDown();
+                }
+                return min;
+            }
+            
+            isEmpty() {
+                return this.heap.length === 0;
+            }
+            
+            bubbleUp() {
+                let idx = this.heap.length - 1;
+                const element = this.heap[idx];
+                while (idx > 0) {
+                    let parentIdx = Math.floor((idx - 1) / 2);
+                    let parent = this.heap[parentIdx];
+                    if (element.priority >= parent.priority) break;
+                    this.heap[parentIdx] = element;
+                    this.heap[idx] = parent;
+                    idx = parentIdx;
+                }
+            }
+            
+            sinkDown() {
+                let idx = 0;
+                const length = this.heap.length;
+                const element = this.heap[0];
+                while (true) {
+                    let leftChildIdx = 2 * idx + 1;
+                    let rightChildIdx = 2 * idx + 2;
+                    let leftChild, rightChild;
+                    let swap = null;
+
+                    if (leftChildIdx < length) {
+                        leftChild = this.heap[leftChildIdx];
+                        if (leftChild.priority < element.priority) {
+                            swap = leftChildIdx;
+                        }
+                    }
+                    if (rightChildIdx < length) {
+                        rightChild = this.heap[rightChildIdx];
+                        if (
+                            (swap === null && rightChild.priority < element.priority) ||
+                            (swap !== null && rightChild.priority < leftChild.priority)
+                        ) {
+                            swap = rightChildIdx;
+                        }
+                    }
+                    if (swap === null) break;
+                    this.heap[idx] = this.heap[swap];
+                    this.heap[swap] = element;
+                    idx = swap;
+                }
+            }
+        }
+
         const MapViewer = {
             viewer: null, canvas: null, img: null,
             ui: {},
@@ -2135,46 +2211,47 @@
                 return [];
             },
 
-            runDijkstra: (sourceId, targetId) => {
+            runDijkstra: (sourceId, targetId, componentId = null) => {
                 if (!MapViewer.graph?.[sourceId] || !MapViewer.graph?.[targetId]) return null;
 
                 const distances = {};
                 const previous = {};
-                const pq = new Set(Object.keys(MapViewer.graph));
+                const pq = new MinPriorityQueue();
 
-                for (const v of pq) {
+                const targetNodes = componentId && MapViewer.componentIndex[componentId]
+                    ? MapViewer.componentIndex[componentId].nodeIds
+                    : Object.keys(MapViewer.graph);
+
+                targetNodes.forEach(v => {
                     distances[v] = Infinity;
                     previous[v] = null;
-                }
+                });
+
                 distances[sourceId] = 0;
+                pq.enqueue(sourceId, 0);
 
-                while (pq.size > 0) {
-                    let minNode = null;
-                    for (const v of pq) {
-                        if (minNode === null || distances[v] < distances[minNode]) {
-                            minNode = v;
-                        }
-                    }
+                while (!pq.isEmpty()) {
+                    const { node: minNode, priority: currentDist } = pq.dequeue();
 
-                    if (minNode === null || distances[minNode] === Infinity) break;
                     if (minNode === targetId) break;
+                    if (currentDist > distances[minNode]) continue;
 
-                    pq.delete(minNode);
                     MapViewer.graph[minNode].edges.forEach(neighbor => {
-                        if (!pq.has(neighbor.target)) return;
                         const alt = distances[minNode] + neighbor.weight;
-                        if (alt < distances[neighbor.target]) {
+                        if (alt < (distances[neighbor.target] ?? Infinity)) {
                             distances[neighbor.target] = alt;
                             previous[neighbor.target] = { node: minNode, edgeId: neighbor.edgeId };
+                            pq.enqueue(neighbor.target, alt);
                         }
                     });
                 }
 
-                if (distances[targetId] === Infinity) return null;
+                if (distances[targetId] === Infinity || distances[targetId] === undefined) return null;
 
                 const pathEdges = [];
                 const pathNodes = [];
                 let curr = targetId;
+                
                 while (curr) {
                     pathNodes.unshift(curr);
                     const prev = previous[curr];
@@ -2213,7 +2290,7 @@
 
                     originAccess.entryOptions.forEach(originOption => {
                         destinationAccess.entryOptions.forEach(destinationOption => {
-                            const routeCore = MapViewer.runDijkstra(originOption.nodeId, destinationOption.nodeId);
+                            const routeCore = MapViewer.runDijkstra(originOption.nodeId, destinationOption.nodeId, componentId);
                             if (!routeCore) return;
 
                             const totalDistance = originAccess.offlaneDistance
@@ -2303,7 +2380,7 @@
                 MapViewer.routeState.accessPoints = { origin: null, destination: null };
                 MapViewer.routeState.isHybrid = false;
                 MapViewer.routeState.advisory = '';
-                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow'));
+                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
                 MapViewer.renderRouteOverlay();
                 MapViewer.syncInputs();
                 MapViewer.refreshNodeStates();
@@ -2365,7 +2442,7 @@
             },
 
             drawRoute: (pathNodes, pathEdges, options = {}) => {
-                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow'));
+                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
                 MapViewer.routeState.pathNodes = [...pathNodes];
                 MapViewer.routeState.pathEdges = [...pathEdges];
                 MapViewer.routeState.totalDistance = options.totalDistance ?? MapViewer.computeTotalDistance(pathEdges);
@@ -2382,9 +2459,18 @@
                     const el = document.getElementById(nid);
                     if (el) el.classList.add('active');
                 });
-                pathEdges.forEach(eid => {
+                pathEdges.forEach((eid, idx) => {
                     const el = document.getElementById(eid);
-                    if (el) el.classList.add('route-glow');
+                    if (el) {
+                        el.classList.add('route-glow');
+                        const edgeData = MapViewer.edgeIndex[eid];
+                        // If the edge's origin source doesn't match the node we are departing from, we are traversing it backwards
+                        if (edgeData && edgeData.source !== pathNodes[idx]) {
+                            el.classList.add('route-glow-reverse');
+                        } else {
+                            el.classList.remove('route-glow-reverse');
+                        }
+                    }
                 });
                 MapViewer.renderRouteOverlay();
 
@@ -2451,7 +2537,7 @@
 
             clearRoute: () => {
                 MapViewer.routeState = MapViewer.createEmptyRouteState();
-                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow'));
+                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
                 MapViewer.renderRouteOverlay();
                 MapViewer.syncInputs();
                 MapViewer.refreshNodeStates();
@@ -2475,7 +2561,7 @@
                 MapViewer.routeState.accessPoints = { origin: null, destination: null };
                 MapViewer.routeState.isHybrid = false;
                 MapViewer.routeState.advisory = '';
-                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow'));
+                document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
                 MapViewer.renderRouteOverlay();
                 MapViewer.syncInputs();
                 MapViewer.refreshNodeStates();
@@ -2634,19 +2720,42 @@
                 const overlayParts = [];
                 const seenMarkers = new Set();
                 MapViewer.routeState.offlaneSegments.forEach(segment => {
-                    if (!segment?.distance || !segment.access) return;
+                    if (!segment?.access) return;
                     const node = MapViewer.nodeIndex[segment.nodeId];
                     if (!node) return;
 
                     const nodeY = MapViewer.mapHeight - node.y;
                     const accessY = MapViewer.mapHeight - segment.access.y;
-                    overlayParts.push(`<path class="map-offlane" d="M ${node.x} ${nodeY} L ${segment.access.x} ${accessY}"></path>`);
+                    
+                    // 1. Draw the primary off-lane dashed corridor
+                    if (segment.distance > 0) {
+                        overlayParts.push(`<path class="map-offlane" d="M ${node.x} ${nodeY} L ${segment.access.x} ${accessY}"></path>`);
+                    }
 
-                    const markerKey = `${segment.role}:${segment.access.x}:${segment.access.y}`;
-                    if (seenMarkers.has(markerKey)) return;
-                    seenMarkers.add(markerKey);
-                    overlayParts.push(`<circle class="map-exit-marker" cx="${segment.access.x}" cy="${accessY}" r="12"></circle>`);
-                    overlayParts.push(`<text class="map-exit-label" x="${segment.access.x + 22}" y="${accessY - 16}">${Utils.escapeHtml(segment.role === 'origin' ? 'Exit' : 'Approach')}</text>`);
+                    // 2. FILL THE GAP: If intercepting mid-edge, draw a bridge to the routing node
+                    if (segment.access.kind === 'edge' && MapViewer.routeState.pathNodes.length > 0) {
+                        const entryNodeId = segment.role === 'origin' 
+                            ? MapViewer.routeState.pathNodes[0] 
+                            : MapViewer.routeState.pathNodes[MapViewer.routeState.pathNodes.length - 1];
+                        const entryNode = MapViewer.nodeIndex[entryNodeId];
+                        
+                        if (entryNode) {
+                            const entryY = MapViewer.mapHeight - entryNode.y;
+                            // Matches the visual style of the main glowing route, flowing correctly
+                            const reverseClass = segment.role === 'destination' ? 'route-glow-reverse' : '';
+                            overlayParts.push(`<path d="M ${segment.access.x} ${accessY} L ${entryNode.x} ${entryY}" class="map-edge route-glow ${reverseClass}" style="stroke-width: 5; fill: none; pointer-events: none;"></path>`);
+                        }
+                    }
+
+                    // 3. Draw Labels/Markers
+                    if (segment.distance > 0 || segment.access.kind === 'edge') {
+                        const markerKey = `${segment.role}:${segment.access.x}:${segment.access.y}`;
+                        if (!seenMarkers.has(markerKey)) {
+                            seenMarkers.add(markerKey);
+                            overlayParts.push(`<circle class="map-exit-marker" cx="${segment.access.x}" cy="${accessY}" r="12"></circle>`);
+                            overlayParts.push(`<text class="map-exit-label" x="${segment.access.x + 22}" y="${accessY - 16}">${Utils.escapeHtml(segment.role === 'origin' ? 'Exit' : 'Approach')}</text>`);
+                        }
+                    }
                 });
 
                 overlay.innerHTML = overlayParts.join('');
