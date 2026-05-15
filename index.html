@@ -1819,8 +1819,11 @@
                 name: ''
             },
 
-            init: ({ src, mapName }) => {
-                MapViewer.destroy();
+            init: ({ id, src, mapName, width, height }) => {
+                if (MapViewer._abortController) {
+                    MapViewer.destroy();
+                }
+                
                 MapViewer._abortController = new AbortController();
                 const signal = MapViewer._abortController.signal;
 
@@ -1851,20 +1854,18 @@
                     setDestBtn: document.getElementById('set-destination-btn'),
                     activeMapChip: document.getElementById('active-map-chip')
                 };
+                
                 MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 };
+                MapViewer.currentMap = { id, src, name: mapName || 'Map', width: width || 4000, height: height || 4000 };
+                MapViewer.mapHeight = height || 4000;
+                MapViewer.mapData = null;
+                MapViewer.routeState = MapViewer.createEmptyRouteState();
+                MapViewer.selectedNodeId = null;
 
                 MapViewer.bindUI(signal);
                 MapViewer.applyDisplayState();
                 MapViewer.img.onload = () => {
                     MapViewer.centerMap();
-                    if (MapViewer.routeState.pathNodes.length > 0) {
-                        MapViewer.drawRoute(MapViewer.routeState.pathNodes, MapViewer.routeState.pathEdges, {
-                            totalDistance: MapViewer.routeState.totalDistance,
-                            preserveStatus: true
-                        });
-                    } else if (MapViewer.selectedNodeId) {
-                        MapViewer.zoomToRoute([MapViewer.selectedNodeId]);
-                    }
                 };
 
                 MapViewer.setMapSource(src, mapName || 'Map');
@@ -1911,37 +1912,88 @@
 
                 ui.selectorButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
-                        MapViewer.setMapSource(btn.dataset.src, btn.dataset.mapName || btn.textContent.trim());
+                        MapViewer.init({
+                            id: btn.dataset.id,
+                            src: btn.dataset.src,
+                            mapName: btn.dataset.mapName || btn.textContent.trim(),
+                            width: parseInt(btn.dataset.width) || 4000,
+                            height: parseInt(btn.dataset.height) || 4000
+                        });
                     }, { signal });
                 });
             },
 
             loadMapData: async () => {
+                const statusBox = document.getElementById('routing-status');
                 try {
-                    if (MapViewer.mapData) {
+                    statusBox.innerHTML = 'Running Map Diagnostic...';
+                    const mapId = MapViewer.currentMap.id;
+
+                    // 1. CREATE VISUAL DIAGNOSTIC OVERLAY
+                    const diag = document.createElement('div');
+                    diag.style.cssText = "position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:99999; color:#44ff88; font-family:monospace; padding:30px; overflow-y:auto; font-size: 1.1rem;";
+                    diag.innerHTML = `<h2 style="color:#ffd700;">🗺️ MAP DIAGNOSTIC TOOL</h2><hr style="border-color:#44ff88; margin:15px 0;">`;
+                    diag.innerHTML += `<p>► Target Map ID: <strong>${mapId || '<span style="color:#ff4444">UNDEFINED!</span>'}</strong></p>`;
+                    document.getElementById('map-viewer').appendChild(diag);
+
+                    if (!mapId) throw new Error("Map ID is missing from the initialization call.");
+
+                    // 2. FETCH DATA DIRECTLY
+                    diag.innerHTML += `<p style="color:#888;">► Fetching data from Supabase...</p>`;
+                    const [nodesRes, edgesRes] = await Promise.all([
+                        supabaseClient.from('map_nodes').select('*').eq('map_id', mapId),
+                        supabaseClient.from('map_edges').select('*').eq('map_id', mapId)
+                    ]);
+
+                    // 3. LOG RESULTS VISUALLY
+                    diag.innerHTML += `<p>► Nodes Error: ${JSON.stringify(nodesRes.error || 'None')}</p>`;
+                    diag.innerHTML += `<p>► Nodes Count Returned: <strong>${nodesRes.data ? nodesRes.data.length : 'NULL'}</strong></p>`;
+                    diag.innerHTML += `<p>► Edges Count Returned: <strong>${edgesRes.data ? edgesRes.data.length : 'NULL'}</strong></p>`;
+
+                    // 4. DIAGNOSE ROOT CAUSE
+                    diag.innerHTML += `<hr style="border-color:#44ff88; margin:15px 0;"><h3 style="color:#ffd700;">🔍 SYSTEM ANALYSIS:</h3>`;
+                    
+                    if (nodesRes.data && nodesRes.data.length === 0) {
+                        diag.innerHTML += `<p style="color:#ff4444; font-weight:bold; line-height: 1.5;">❌ ERROR: Zero nodes returned.</p> 
+                        <p style="color:#ccc;">If Cartographer sees nodes but Reader doesn't, this is 100% a Supabase RLS (Row Level Security) block. <br><br>
+                        <strong>How to fix:</strong><br>
+                        1. Ensure this map has 'is_published' checked in your admin panel.<br>
+                        2. Check your Supabase database. Ensure 'map_nodes' and 'map_edges' have a policy allowing Public SELECTs.</p>`;
+                    } else if (nodesRes.data && nodesRes.data.length > 0) {
+                        const sample = nodesRes.data[0];
+                        diag.innerHTML += `<p style="color:#44ff88; font-weight:bold;">✅ SUCCESS: Data is flowing to the Reader!</p>`;
+                        diag.innerHTML += `<p>First node found: ${sample.name} (x: ${sample.x}, y: ${sample.y})</p>`;
+                        
+                        if (sample.x === undefined || sample.y === undefined) {
+                            diag.innerHTML += `<p style="color:#ff4444;">❌ ERROR: Node coordinates (x,y) are missing or misnamed!</p>`;
+                        }
+                    }
+
+                    // 5. ATTEMPT TO RENDER ANYWAY
+                    const nData = nodesRes.data || [];
+                    const mappedEdges = (edgesRes.data || []).map(e => ({
+                        ...e, source: e.source_node_id, target: e.target_node_id, sourceName: e.source_name, targetName: e.target_name
+                    }));
+
+                    MapViewer.mapData = { nodes: nData, edges: mappedEdges };
+                    
+                    diag.innerHTML += `<br><button style="padding:10px 20px; background:#ffd700; color:#000; border:none; cursor:pointer; font-weight:bold;" onclick="this.parentElement.remove()">Close Diagnostic & Try Rendering</button>`;
+                    
+                    if (nData.length > 0) {
                         MapViewer.renderMapData();
                         MapViewer.buildGraph();
-                        return MapViewer.mapData;
+                        statusBox.innerHTML = 'Diagnostic complete. Navicomputer online.';
+                    } else {
+                        statusBox.innerHTML = 'Navicomputer offline: No data.';
                     }
 
-                    if (!MapViewer._mapDataPromise) {
-                        MapViewer._mapDataPromise = fetch('data/map_project.json');
-                    }
+                    return MapViewer.mapData;
 
-                    const res = await MapViewer._mapDataPromise;
-                    if (!res.ok) throw new Error('Network response was not ok');
-                    const data = await res.json();
-                    MapViewer.mapData = data;
-                    MapViewer.renderMapData();
-                    MapViewer.buildGraph();
-                    return data;
                 } catch (err) {
-                    console.error("Failed to load map data:", err);
-                    MapViewer.setStatus('The navicomputer could not load its route data. Try re-opening the map view.', 'error');
-                    return null;
+                    console.error(err);
+                    statusBox.innerHTML = 'Error: ' + err.message;
                 }
             },
-
             renderMapData: () => {
                 if (!MapViewer.mapData) return;
                 const { nodes, edges } = MapViewer.mapData;
@@ -3049,6 +3101,20 @@
                 Cache.storiesTTL = Date.now();
                 return Cache.stories;
             },
+
+            // --- ADD THESE TWO NEW FUNCTIONS EXACTLY AS THEY ARE IN CARTOGRAPHER ---
+            getMapNodes: async (mapId) => {
+                const { data, error } = await supabaseClient.from('map_nodes').select('*').eq('map_id', mapId).order('created_at');
+                if (error) throw error;
+                return data || [];
+            },
+            
+            getMapEdges: async (mapId) => {
+                const { data, error } = await supabaseClient.from('map_edges').select('*').eq('map_id', mapId).order('created_at');
+                if (error) throw error;
+                return data || [];
+            },
+            // ------------------------------------------------------------------------
 
             // FIX 11: Cached author profile — avoids re-fetching on every #home visit
             getAuthorProfile: async () => {
@@ -4677,7 +4743,8 @@
 
                 let btns = '';
                 maps.forEach(m => {
-                    btns += `<button class="map-selector-btn ${m.is_primary ? 'active' : ''}" data-src="${m.image_url}" data-map-name="${Utils.escapeHtml(m.map_name)}">${Utils.escapeHtml(m.map_name)}</button>`;
+                    // Added: dataset id, width, height for DB fetching
+                    btns += `<button class="map-selector-btn ${m.is_primary ? 'active' : ''}" data-id="${m.id}" data-src="${m.image_url}" data-map-name="${Utils.escapeHtml(m.map_name)}" data-width="${m.width || 4000}" data-height="${m.height || 4000}">${Utils.escapeHtml(m.map_name)}</button>`;
                 });
                 
                 const primary = maps.find(m => m.is_primary) || maps[0];
@@ -4689,42 +4756,42 @@
                             <div class="map-column-left" style="display: flex; flex-direction: column; gap: 0.85rem; min-width: 0;">
                                 <div class="map-stage">
                                     <div class="map-topbar">
-                                    <div class="map-topbar-group">
-                                        <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
-                                        <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
+                                        <div class="map-topbar-group">
+                                            <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
+                                            <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
+                                        </div>
+                                        <div class="map-topbar-group">
+                                            <div class="map-chip" id="active-map-chip">${Utils.escapeHtml(primary.map_name)}</div>
+                                        </div>
                                     </div>
-                                    <div class="map-topbar-group">
-                                        <div class="map-chip" id="active-map-chip">${Utils.escapeHtml(primary.map_name)}</div>
+                                    <div class="map-viewer" id="map-viewer">
+                                        <div class="map-canvas" id="map-canvas">
+                                            <img src="${primary.image_url}" id="map-image" draggable="false">
+                                            <svg id="map-svg-layer"></svg>
+                                            <div id="map-nodes-layer"></div>
+                                        </div>
+                                    </div>
+                                    <div class="map-controls">
+                                        <button class="map-control-btn cartographer-link" type="button" title="Access Cartographer Terminal" onclick="window.open('cartographer.html', '_blank')" style="color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); margin-bottom: 12px;"><i class="fab fa-galactic-republic"></i></button>
+                                        <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
+                                        <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                                        <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
+                                        <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
                                     </div>
                                 </div>
-                                <div class="map-viewer" id="map-viewer">
-                                    <div class="map-canvas" id="map-canvas">
-                                        <img src="${primary.image_url}" id="map-image" draggable="false">
-                                        <svg id="map-svg-layer"></svg>
-                                        <div id="map-nodes-layer"></div>
-                                    </div>
-                                </div>
-                                <div class="map-controls">
-                                    <button class="map-control-btn cartographer-link" type="button" title="Access Cartographer Terminal" onclick="window.open('cartographer.html', '_blank')" style="color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); margin-bottom: 12px;"><i class="fab fa-galactic-republic"></i></button>
-                                    <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
-                                    <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
-                                    <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
-                                    <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
+                                <div class="map-promo-block shadow-box" style="padding: 20px; text-align: center; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
+                                    <h3 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 10px;">Help Chart the Galaxy</h3>
+                                    <p style="font-family: var(--font-body); line-height: 1.6; max-width: 800px; margin: 0 auto 15px auto;">
+                                        Want to contribute to the first navigable map database in Star Wars? You can propose new maps, add undocumented planets, and chart hyperlanes easily through the Cartographer Terminal. Collaborate with millions of Star Wars fans around the globe to map a galaxy far, far away!
+                                    </p>
+                                    <button class="form-btn primary" onclick="window.open('cartographer.html', '_blank')" style="font-size: 1.1em; padding: 10px 24px;">
+                                        <i class="fab fa-galactic-republic" style="margin-right: 8px;"></i> Access Cartographer Terminal
+                                    </button>
+                                    ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.85em; margin-top: 15px; font-style: italic;">Note: You need to be registered in order to contribute. Please create a profile or sign in.</p>'}
                                 </div>
                             </div>
-                            <div class="map-promo-block shadow-box" style="padding: 20px; text-align: center; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
-                                <h3 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 10px;">Help Chart the Galaxy</h3>
-                                <p style="font-family: var(--font-body); line-height: 1.6; max-width: 800px; margin: 0 auto 15px auto;">
-                                    Want to contribute to the first navigable map database in Star Wars? You can propose new maps, add undocumented planets, and chart hyperlanes easily through the Cartographer Terminal. Collaborate with millions of Star Wars fans around the globe to map a galaxy far, far away!
-                                </p>
-                                <button class="form-btn primary" onclick="window.open('cartographer.html', '_blank')" style="font-size: 1.1em; padding: 10px 24px;">
-                                    <i class="fab fa-galactic-republic" style="margin-right: 8px;"></i> Access Cartographer Terminal
-                                </button>
-                                ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.85em; margin-top: 15px; font-style: italic;">Note: You need to be registered in order to contribute. Please create a profile or sign in.</p>'}
-                            </div>
-                        </div>
-                        <div class="routing-panel shadow-box">
-                            <h3>Navicomputer</h3>
+                            <div class="routing-panel shadow-box">
+                                <h3>Navicomputer</h3>
                                 <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
 
                                 <div class="routing-status" id="routing-status">Loading navicomputer...</div>
@@ -4773,7 +4840,13 @@
                         </div>
                     </div>`;
                 
-                setTimeout(() => MapViewer.init({ src: primary.image_url, mapName: primary.map_name }), 50);
+                setTimeout(() => MapViewer.init({ 
+                    id: primary.id, 
+                    src: primary.image_url, 
+                    mapName: primary.map_name, 
+                    width: parseInt(primary.width) || 4000, 
+                    height: parseInt(primary.height) || 4000 
+                }), 50);
             }
         };
 

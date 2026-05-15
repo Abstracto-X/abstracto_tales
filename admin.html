@@ -418,7 +418,7 @@
     </div>
 
     <!-- LOGIN VIEW -->
-    <div id="login-view">
+    <div id="login-view" style="display:none;">
         <div class="login-container">
             <div class="login-box">
                 <div class="login-logo">AETHER</div>
@@ -711,7 +711,10 @@
                 
                 if (session) {
                     State.user = session.user;
-                    await Auth.loadProfile();
+                    const success = await Auth.loadProfile();
+                    if (!success) {
+                        Auth.showLoginView();
+                    }
                 } else {
                     Auth.showLoginView();
                 }
@@ -750,13 +753,16 @@
                     State.profile = data;
                     document.getElementById('user-name').textContent = data.display_name || 'Admin';
                     document.getElementById('user-avatar').textContent = (data.display_name || 'A')[0].toUpperCase();
+                    document.getElementById('login-error').style.display = 'none';
                     Auth.showAdminView();
+                    return true;
 
                 } catch (err) {
                     console.error("Profile Error:", err);
+                    State.profile = null;
                     document.getElementById('login-error').textContent = err.message;
                     document.getElementById('login-error').style.display = 'block';
-                    Auth.showLoginView();
+                    return false;
                     // We DO NOT call Auth.logout() here to prevent the infinite reload loop
                 }
             },
@@ -1073,24 +1079,33 @@
             },
 
             approveMapRequest: async (reqId) => {
+                // Fetch the request to get the user_id for attribution
+                const { data: request } = await supabaseClient.from('map_requests').select('*').eq('id', reqId).single();
                 const items = await DB.getRequestItems(reqId);
                 
-                // 1. Process all items sequentially
+                // 1. Process all items and inject into the Live Activity Log
                 for (const item of items) {
                     const data = item.proposed_data;
+                    const entityType = item.entity_type.toLowerCase();
+                    const actionName = item.action === 'ADD' ? `add_${entityType}` : item.action === 'UPDATE' ? `edit_${entityType}` : `delete_${entityType}`;
+
                     if (item.entity_type === 'NODE') {
                         if (item.action === 'ADD' || item.action === 'UPDATE') {
                             const payload = { id: data.id, map_id: data.map_id, name: data.name, x: data.x, y: data.y, region: data.region || '', sector: data.sector || '', color: data.color, created_by: data.created_by };
                             await supabaseClient.from('map_nodes').upsert(payload);
+                            await supabaseClient.from('map_changelog').insert({ map_id: data.map_id, user_id: request.user_id, action: actionName, entity_type: 'node', entity_id: data.id, new_data: payload });
                         } else if (item.action === 'DELETE') {
                             await supabaseClient.from('map_nodes').delete().eq('id', item.entity_id);
+                            await supabaseClient.from('map_changelog').insert({ map_id: request.map_id, user_id: request.user_id, action: actionName, entity_type: 'node', entity_id: item.entity_id });
                         }
                     } else if (item.entity_type === 'EDGE') {
                         if (item.action === 'ADD' || item.action === 'UPDATE') {
                             const payload = { id: data.id, map_id: data.map_id, source_node_id: data.source_node_id, target_node_id: data.target_node_id, source_name: data.source_name, target_name: data.target_name, geometry: data.geometry, edge_type: data.edge_type, color: data.color, created_by: data.created_by };
                             await supabaseClient.from('map_edges').upsert(payload);
+                            await supabaseClient.from('map_changelog').insert({ map_id: data.map_id, user_id: request.user_id, action: actionName, entity_type: 'edge', entity_id: data.id, new_data: payload });
                         } else if (item.action === 'DELETE') {
                             await supabaseClient.from('map_edges').delete().eq('id', item.entity_id);
+                            await supabaseClient.from('map_changelog').insert({ map_id: request.map_id, user_id: request.user_id, action: actionName, entity_type: 'edge', entity_id: item.entity_id });
                         }
                     }
                 }

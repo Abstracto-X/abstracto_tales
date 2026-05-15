@@ -7,6 +7,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ## 1. `index.html` (Reader Frontend)
 
 ### `Router` (Navigation & Views)
+- `handle()` - Also wraps `UI.hideLoading()` in both success and error completion paths so stage fade-in still completes if the saber widget throws during teardown.
 - `handle()` — Reads the current window hash and dispatches to the correct view renderer, now guarding route completions so stale or failed renders cannot leave the stage hidden or loader stuck.
 - `navigate(path)` — Programmatically changes the URL hash and triggers a route update, short-circuiting same-route clicks into a safe re-render instead of waiting on a `hashchange` that will never fire.
 - `getParts()` — Helper to break down the hash into view and ID parameters (e.g., `#story/123`).
@@ -46,11 +47,15 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `showLoading() / hideLoading()` — Proxies to `SaberController` to control the global full-screen lightsaber transition overlay.
 - `openSaberModal() / closeSaberModal()` — Controls the lightsaber preferences modal.
 - `toast(message, type, duration)` — Displays a temporary notification popup (success, error, info).
-- `applyCustomColors(settings)` — Injects CSS variables into the `:root` to theme the site dynamically.
-- `renderStoryCard(story)` — Returns the HTML block for a story display card.
-- `renderChapterList(chapters)` — Returns the HTML list of chapters for the story view.
+- `applyCustomColors(settings)` - Injects CSS variables into the `:root` to theme the site dynamically.
+- `renderStoryCard(story)` - Returns the HTML block for a story display card.
+- `renderChapterList(chapters)` - Returns the HTML list of chapters for the story view.
+
+- `initAuthLink(userProfile)` â€” Renders the far-right header auth slot as either a sign-in button or the current reader avatar/profile trigger.
 
 ### `SaberController` (Lightsaber Loading Widget)
+- `animateProgressTo(target, duration, onComplete)` - Defensively parses widget progress and guards `getProgress` / `setProgress` calls so malformed saber state cannot crash the animation loop before `onComplete()` runs.
+- `hideLoading()` - Also wraps widget `hide()` and reset progress calls so loader teardown still finishes even if the saber widget misbehaves.
 - `init()` — Dynamically imports and initializes the lightsaber widget logic, applying either the default or saved loader mode, hiding the separate progress bar overlay, and seeding its illumination backdrop from the current reader background image.
 - `saveAndApply()` — Captures reader customizations from the modal, including loader mode, applies them to the widget, caches to `localStorage`, and triggers a demo ignition.
 -`showLoading()` — Activates the overlay, syncs the current background image and responsive blade length into the widget, and runs a smooth `requestAnimationFrame`-driven sweep toward the near-complete state while the saber widget brightens the full viewport and concentrates extra glow at the emitter, blade body, and tip.
@@ -59,15 +64,15 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ### `MapViewer` (Interactive Map & Routing)
 - `MinPriorityQueue` — Lightweight binary heap class providing `enqueue`, `dequeue`, and `isEmpty` methods for the pathfinding engine.
-- `init()` — Initializes the transform-based panning/zooming engine and sets up the SVG/HTML overlay containers.
-- `loadMapData()` — Fetches the `map_project.json` file and triggers graph construction and rendering.
+- `init()` - Initializes the transform-based panning/zooming engine for a specific Supabase map record, resetting route state, clearing stale overlays, and setting up the SVG/HTML overlay containers.
+- `loadMapData()` - Fetches `map_nodes` and `map_edges` for the active `map_id` from Supabase, remaps edge foreign keys into the reader routing shape, and triggers graph construction and rendering.
 - `renderMapData()` — Generates SVG paths for hyperlanes, route-overlay groups, and DOM elements for planet nodes, performing Y-axis inversion.
 - `buildGraph()` — Converts the node and edge data into an adjacency list for pathfinding and seeds cached lane lengths.
 - `calculateRoute()` — Executes normal Dijkstra routing for linked worlds, or falls back to hybrid nearest-exit routing when one or both selected worlds are isolated.
 - `drawRoute(pathNodes, pathEdges, options)` — Highlights the active path, renders any off-lane overlay segments, and populates itinerary/summary UI for both standard and hybrid routes. Now includes logic for flow direction animation on hyperlanes.
-- `zoomToRoute(pathNodes)` — Cinematic camera animation that zooms and pans to frame the entire selected route.
+- `bindUI()` - Wires the route inputs, search actions, map selector buttons, and layer toggles to the map controller. Selector clicks fully reinitialize the navicomputer for the chosen map record.
 - `zoomToNode(nodeName)` — Locates a node by name and triggers zoomToRoute to focus the camera on it.
-- `measureGeometry(geometry)` — Calculates the total Euclidean distance of a polyline geometry.
+- `setMapSource(src, mapName)` - Swaps the visible map image, updates the active selector chip, and refreshes the reader-facing status for the current map.
 - `getClosestPointOnSegment(point, start, end)` — Geometric helper to find the nearest point on a line segment to a given coordinate.
 - `getCandidateComponentsForHybridRoute(sourceNode, targetNode)` — Determines which connected components to consider for routing between potentially isolated worlds.
 - `renderRouteOverlay()` — Generates the SVG overlay for off-lane corridors, mid-edge junctions, and navigation markers.
@@ -100,8 +105,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ## 2. `admin.html` (CMS / Admin Panel)
 
 ### `Auth` (Administrative Access)
-- `init()` — Configures session listening and routing to login if no session is active.
-- `loadProfile()` — Fetches the user's profile and verifies their role is exactly `'admin'`.
+- `init()` - Restores any existing Supabase session before revealing the login screen, then subscribes to auth state changes for seamless cross-tab login/logout handling.
+- `loadProfile()` - Fetches the user's profile, verifies their role is exactly `'admin'`, updates the shell chrome, and returns a success boolean so `init()` can decide whether to reveal the login view.
 - `signIn(email, password)` — Authenticates against Supabase and awaits profile validation.
 - `signOut()` — Ends the Supabase session and locks the system.
 - `showLoginView() / showAdminView()` — Toggles between the lock screen and the main CMS dashboard.
@@ -113,7 +118,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - **Lore**: `getLoreCategories(storyId)`, `saveLoreCategory(data)`, `getLoreEntries(categoryId)`, `saveLoreEntry(data)`.
 - **Timeline**: `getTimelineEvents()`, `saveTimelineEvent(data)`, `deleteTimelineEvent(id)`.
 - **Media**: `getMaps()`, `saveMap()`, `getWallpapers()`, `saveWallpaper()`, `getGallery()`, `saveGalleryImage()`.
-- **Map Requests**: `getMapRequests()`, `getRequestItems(reqId)`, `updateRequestStatus(reqId, status, feedback)`, `deleteMapRequest(reqId)`, `approveMapRequest(reqId)`.
+- **Map Requests**: `getMapRequests()`, `getRequestItems(reqId)`, `updateRequestStatus(reqId, status, feedback)`, `deleteMapRequest(reqId)`, `approveMapRequest(reqId)` (Applies changes to live tables and logs activity to `map_changelog`).
 - **Settings**: `getSettings()`, `saveSettings(data)`.
 
 ### `Utils` (Shared Utilities)
@@ -198,8 +203,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ## 4. `cartographer.html` (Collaborative Map Editor)
 
 ### `Auth` (Access Control)
-- `init()` — Checks session, subscribes to auth state changes.
-- `loadProfile()` — Fetches profile, verifies `role IN ('cartographer', 'admin')`, populates shared user chrome, and routes authenticated users into the hub.
+- `init()` - Checks for an existing Supabase session before revealing the login view, then subscribes to auth state changes so shared sessions feel seamless across tabs/pages.
+- `loadProfile()` - Fetches profile, verifies `role IN ('cartographer', 'admin')`, populates shared user chrome, routes authenticated users into the hub, and returns a success boolean for the session bootstrap flow.
 - `login(email, password)` — Authenticates via `signInWithPassword`.
 - `logout()` — Signs out and reloads.
 - `showLogin() / showEditor()` — Toggles between login, hub, and editor views as needed.
@@ -220,6 +225,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `getEdges(projectId)` / `saveEdge(edge)` / `deleteEdge(id)` — CRUD for `map_edges`.
 - `logChange(action, entityType, entityId, oldData, newData)` — Inserts audit entry into `map_changelog`.
 - `getChangelog(projectId, limit)` — Fetches recent changelog entries with contributor display names.
+- `withdrawItem(reqItemId, reqId)` — Removes a proposed change from a request and cleans up the parent ticket if it becomes empty.
 
 ### `MapEngine` (Leaflet.js Controller)
 - `init()` — Creates the Leaflet CRS.Simple map with custom zoom settings, binds click/contextmenu/mousemove events.
@@ -234,23 +240,29 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ### `ModeManager` (Interaction Modes)
 - `set(mode)` — Switches between `'select'`, `'place'`, `'trace'` modes. Updates toolbar, status bar, cursor, and clears selection layer.
 
-### `PlaceMode` (Planet Placement)
-- `placeAt(latlng)` — Creates a new node at the clicked coordinates, adds it to state, renders it, and opens the naming popup.
+### `SnippingTool` (OCR & Planet Placement - External `js/SnippingTool.js`)
+- `init()` — Initializes the Tesseract OCR worker.
+- `activate(latlng)` — Displays the snipping overlay for the user to select map text.
+- `onMouseUp(e)` — Captures the selected canvas area, runs OCR, fuzzy matches via `PlanetDB`, and creates a node.
+- `createPlanet(name, matchData)` — Standard node creation with data pre-fill.
+
+### `PathDrawer` (Advanced Spline Routing - External `js/PathDrawer.js`)
+- `addNode(node)` — Adds a node to the trace queue with sequence numbering.
+- `startCurving()` — Transitions to curvable spline mode with draggable control points (max 3).
+- `refreshCurveVisuals()` — Real-time update of the pending spline curve.
+- `finalize(isCurved)` — Saves the geometry (multi-point if curved) as an edge.
+
+### `PlaceMode` (Overwritten by `SnippingTool`)
+- `placeAt(latlng)` — Triggers the `SnippingTool` activation.
+
+### `TraceMode` (Overwritten by `PathDrawer`)
+- `addNode(node)`, `finish()`, `cancel()` — Mapped to `PathDrawer` methods.
 
 ### `PlanetEditor` (Node CRUD Popup)
 - `openPopup(node, marker, isNew)` — Opens a Leaflet popup with name/region/sector fields, autocomplete, save/delete buttons.
 - `bindAutocomplete(input)` — Binds the planet name input to `PlanetDB.search()` for CSV-based suggestions.
-- `save(node, popup)` — Persists node changes to Supabase, logs changelog entry.
-- `delete(node, popup)` — Removes node and cascading edges, logs changelog entries.
-
-### `EdgeEditor` (Path Info & Deletion)
-- `showInfo(edge)` — Opens a popup showing source→target, distance, point count, and delete button.
-- `delete(edgeId)` — Removes edge from state and DB, logs changelog.
-
-### `TraceMode` (Path Drawing)
-- `addNode(node)` — Appends a node to the trace queue, shows sequence markers and preview polyline.
-- `finish()` — Creates edges between consecutive queued nodes, saves to DB, logs changelog.
-- `cancel()` — Clears trace queue and selection layer visuals.
+- `save(node, popup)` — Persists node changes to Supabase.
+- `delete(node, popup)` — Removes node and cascading edges.
 
 ### `ProjectPicker` (Project Management)
 - `toggle()` — Opens/closes the project dropdown menu.
@@ -279,9 +291,22 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ### `Keyboard` (Shortcuts)
 - `init()` — Registers: `V` (select), `P` (place), `T` (trace), `ESC` (cancel), `Enter` (finish trace), `Ctrl+S` (save).
 
-### `SaveManager` (Persistence)
-- `save()` — Handles saving changes. Admins save directly; contributors stage changes for review.
-- `submitRequest()` — Bundles staged changes into a "Submission Ticket" and submits it to the admin queue.
+// ==============================================
+// SAVE MANAGER (The Master Router)
+// ==============================================
+const SaveManager = {
+    save: async () => {
+        // ... (existing code)
+    },
+
+    submitRequest: async () => {
+        // ... (existing code)
+        // Helper to strip all local UI tracking states so the JSON is pristine
+        const clean = (obj) => { ... };
+        // ... (existing code)
+    },
+    // ...
+};
 
 ### `Particles` (Background Animation)
 - `init()` — Canvas-based floating particle animation (same pattern as admin.html).
@@ -293,3 +318,4 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `timeAgo(d)` — Relative time formatting (e.g. "3m ago").
 - `uuid()` — Generates a v4 UUID.
 - `getContributorColor(userId)` — Deterministic hash-based color from a 12-color palette.
+

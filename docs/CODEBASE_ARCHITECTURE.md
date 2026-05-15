@@ -33,11 +33,12 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
     - `author` *(Object | null)* — Cached author profile with `authorTTL` timestamp.
     - `_hubEntries` *(Array)* — LRU-ordered list of cached story hub data (max 5 entries, 5-min TTL).
     - `_hubMap` *(Object)* — Quick slug-to-hub lookup dictionary.
-- - `SaberController` *(Object)* — Global manager for the Lightsaber widget loading transition. Encapsulates widget state, user customization, active-background illumination syncing, full-viewport saber glow/backdrop brightening, and `localStorage` syncing for reader preferences (`userParamsSaber`).
-- `MapViewer` *(Object)* — Advanced interactive map engine.
-    - `mapData` *(Object | null)* — Loaded node and edge data from `map_project.json`.
-    - `graph` *(Object | null)* — Adjacency list used for Dijkstra pathfinding.
-    - `mapHeight` *(Number)* — Internal coordinate space height (4000px) used for Y-axis inversion.
+- `MapViewer` *(Object)* - Advanced interactive map engine.
+    - `mapData` *(Object | null)* - Loaded node and edge data for the currently selected Supabase map record.
+    - `currentMap` *(Object)* - Active reader map metadata including Supabase `id`, image `src`, display `name`, and coordinate `width` / `height`.
+    - `graph` *(Object | null)* - Adjacency list used for Dijkstra pathfinding.
+    - `mapHeight` *(Number)* - Internal coordinate space height (4000px) used for Y-axis inversion.
+- `MinPriorityQueue` *(Class)* - Lightweight binary heap implementation for Dijkstra pathfinding.
 - `MinPriorityQueue` *(Class)* — Lightweight binary heap implementation for Dijkstra pathfinding.
 - `default_behavior_lightsaber` *(String)* — Sets the site-wide default loader orientation (`'vertical'` or `'horizontal'`) used when the reader has not saved a personal saber mode preference yet.
 - `Particles` *(Object)* — Background particle engine.
@@ -108,17 +109,19 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
    - Global `DB.getSettings()` call applies custom CSS variables from the backend.
    - Global `DB.getWallpapers()` call checks for custom main background.
     - `Particles.init()` starts the dynamic background canvas.
-    - `Router.handle()` executes the initial route (e.g., `#home`), with same-route re-renders and guarded completion so failed or stale async route work cannot leave the reader stage blank.
-    - **Map Initialization:** When the maps view is rendered, `MapViewer.init()` bootstraps the canvas, after which `MapViewer.loadMapData()` asynchronously fetches the high-fidelity routing JSON to populate interactive layers.
+    - `Router.handle()` executes the initial route (e.g., `#home`), with same-route re-renders, guarded completion, and defensive loader teardown so failed or stale async work cannot leave the reader stage blank or trapped beneath a stuck lightsaber overlay.
+    - **Map Initialization:** When the maps view is rendered, `Render.maps()` passes the selected map row's `id`, image URL, and coordinate dimensions into `MapViewer.init()`, after which `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` for that specific `map_id`.
+2. **Reader Header Chrome:**
+   - The top-right header controls combine utility shortcuts (saber settings, wallpaper/audio toggles, admin shortcut when applicable), a static contributor badge with a hover/focus popover crediting the Vesper collaboration, and the auth/profile slot managed by `UI.initAuthLink()`.
 
 ### `admin.html`
 1. **`DOMContentLoaded` Event Listener:**
-   - Sets up mobile sidebar toggle and internal sidebar navigation link click listeners.
    - `Auth.init()` executes:
+     - Keeps `#login-view` hidden by default so shared-domain Supabase sessions can restore without a visible login flash.
      - Checks session via `supabaseClient.auth.getSession()`.
-     - Subscribes to auth state changes.
-     - Routes to login view if no session.
-     - If session exists, calls `Auth.loadProfile()` to ensure `role === 'admin'`.
+     - If session exists, calls `Auth.loadProfile()` and only reveals the login view when profile validation fails.
+     - Subscribes to auth state changes so cross-tab sign-in/out events can swap between the admin shell and login screen.
+     - Subscribes to auth state changes so cross-tab sign-in/out events can swap between the admin shell and login screen.
    - `UI.applyAdminWallpaper()` fetches and sets custom admin background.
    - `Particles.init()` starts the background effects.
 2. **Post-Authentication (`Auth.loadProfile` -> `Auth.showAdminView`):**
@@ -140,7 +143,8 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 ### `cartographer.html`
 1. **`DOMContentLoaded` Event Listener:**
    - Binds login form submit handler.
-   - `Auth.init()` checks session, subscribes to auth state changes, routes to login view if no session.
+   - `Auth.init()` keeps `#login-view` hidden by default, checks for a shared Supabase session first, and only reveals the login screen when no valid session/profile is available.
+   - Subscribes to auth state changes so sign-in/out from any tab can move between the login view, hub, and editor correctly.
 2. **Post-Authentication (`Auth.loadProfile` -> `Hub.show`):**
    - Verifies profile `role IN ('cartographer','admin')`.
    - Populates shared user UI elements for both the hub and editor chrome.
@@ -173,12 +177,13 @@ In all files, Supabase data access is encapsulated in module objects (`DB` objec
 ### Storage Conventions
 Media assets are managed using Supabase Storage buckets.
 - **`Utils.uploadImage(file, bucket, folderPath)`**: A standard utility function handles uploading. It typically uses unique IDs (like `Date.now()`) for naming, performs `supabase.storage.from(bucket).upload()`, and immediately fetches the public URL via `.getPublicUrl()` to save back into database rows (covers, avatars, wallpapers, maps).
-
 ### Reader Map Conventions
 - The `maps` route now renders as a two-pane workspace: a panoramic map stage plus a dedicated navicomputer panel instead of a minimal overlay form.
-- `MapViewer.init()` now binds navicomputer controls and layer toggles as part of map bootstrapping before the routing JSON is consumed.
+- Map selector buttons carry each map row's `id`, `width`, and `height` so the reader can fully swap both the background image and the underlying route graph.
+- `MapViewer.init()` now binds navicomputer controls and layer toggles as part of map bootstrapping, resets any active route state, and reloads topology for the selected Supabase map record.
 - `MapViewer` owns map switching, node selection, route plotting, inline routing status, route summaries, and itinerary generation.
 - `MapViewer.routeState` persists selected endpoints plus computed route metadata, while `MapViewer.displayState` stores reader-facing layer toggles such as labels and hyperlanes.
+- `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` by `map_id`, then remaps edge foreign-key fields into the legacy `source` / `target` shape expected by the routing engine.
 - Map reader controls include layer toggles for labels and hyperlanes, explicit route actions (`Plot`, `Swap`, `Clear`, `Center Route`), and responsive layout behavior for smaller screens.
 - `MapViewer.buildComponents()` now derives connected hyperlane clusters after graph construction so isolated worlds can be recognized without extra fetches.
 - `MapViewer.edgeLengthIndex` caches polyline lengths for each lane so nearest-exit snapping and route totals reuse the same geometry measurements.
@@ -187,11 +192,13 @@ Media assets are managed using Supabase Storage buckets.
 ### `cartographer.html` Updates
 
 #### Sandbox/Hub Wiring
-- **Sandbox Editor:** Introduced a staging system for contributors to propose changes to maps. Changes are saved locally and submitted as "Submission Tickets" for admin review.
+- **Sandbox Editor:** Introduced a staging system for contributors to propose changes to maps. Changes are saved locally and submitted as "Submission Tickets" for admin review. The `SaveManager.submitRequest` method includes a `clean()` helper to strip local UI tracking states before submission.
 - **Hub Dashboard:** Added a "My Contributions" tab for contributors to view their pending, approved, and rejected requests.
 - **Coordinate Fixes:** Y-axis coordinates now align with a true Cartesian plane.
 
-#### Security Enhancements
+#### Security Enhancements & Activity Logging
 - **Database Lockdown:** Non-admins can no longer directly modify `map_nodes` and `map_edges`. All changes must go through the new moderation queue.
 - **Request Tables:** Added `map_requests` and `map_request_items` tables to handle proposed changes.
+- **Activity Log:** Admin approvals in `admin.html` and direct admin edits in `cartographer.html` now automatically log activity to the `map_changelog` table via `DB.logChange`, ensuring a visible history in the map's Activity Log.
+
 

@@ -354,7 +354,7 @@ Handles map change requests submitted by contributors.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `map_id` | UUID | FK → `maps(id)` CASCADE DELETE |
+| `map_id` | UUID | FK → `maps(id)` CASCADE DELETE. Nullable for "New Map" proposals. |
 | `user_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
 | `title` | TEXT | Title of the request |
 | `reason` | TEXT | Justification for the request |
@@ -710,9 +710,12 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 - `is_cartographer()` — Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
 
 ### RLS Policies
-- **maps**: Existing reader/admin access remains, and cartographer uses this same table as its parent map source.
-- **map_nodes / map_edges**: Public SELECT when parent map is reader-visible as needed. Cartographer full CRUD via `is_cartographer()`.
-- **map_changelog**: Cartographer SELECT/INSERT only via `is_cartographer()`.
+
+    maps: Public SELECT for published maps. Admins: Full CRUD. Cartographers: SELECT all.
+
+    map_nodes / map_edges: Public SELECT for nodes/edges belonging to published maps. Admins: Full CRUD. Cartographers: SELECT only (Writes must go through map_requests).
+
+    map_requests / map_request_items: Admins: Full CRUD. Cartographers: SELECT (for maps they can access) and INSERT (to submit new requests).
 
 ### Storage Bucket: `maps`
 - Public read, authenticated write. Used for story map images and cartographer base map uploads.

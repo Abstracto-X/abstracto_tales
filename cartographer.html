@@ -8,6 +8,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    
+    <!-- OCR & Fuzzy Matching Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0"></script>
+    
     <style>
     :root {
     --primary-color: #ffffff;
@@ -388,7 +393,7 @@ main { flex: 1; position: relative; display: flex; overflow: hidden; }
     <div id="toast-container"></div>
 
     <!-- LOGIN VIEW -->
-    <div id="login-view">
+    <div id="login-view" style="display:none;">
         <div class="login-container">
             <div class="login-box">
                 <div class="login-logo">AETHER</div>
@@ -594,6 +599,8 @@ main { flex: 1; position: relative; display: flex; overflow: hidden; }
     <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/SnippingTool.js"></script>
+    <script src="js/PathDrawer.js"></script>
     <script>
     // ==============================================
 // SUPABASE CLIENT
@@ -705,8 +712,13 @@ const Modal = {
 const Auth = {
     init: async () => {
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) { State.user = session.user; await Auth.loadProfile(); }
-        else Auth.showLogin();
+        if (session) {
+            State.user = session.user;
+            const success = await Auth.loadProfile();
+            if (!success) {
+                Auth.showLogin();
+            }
+        } else Auth.showLogin();
         supabaseClient.auth.onAuthStateChange(async (ev, session) => {
             if (ev === 'SIGNED_IN' && session) { State.user = session.user; await Auth.loadProfile(); }
             else if (ev === 'SIGNED_OUT') { State.user = null; State.profile = null; Auth.showLogin(); }
@@ -723,14 +735,17 @@ const Auth = {
             document.getElementById('user-display-name').textContent = data.display_name || 'User';
             document.getElementById('user-avatar-small').textContent = (data.display_name || 'U')[0].toUpperCase();
             document.getElementById('hub-user-name').textContent = data.display_name || 'Explorer';
+            document.getElementById('login-error').style.display = 'none';
 
             // Route to Hub instead of directly to Editor
             Hub.show();
+            return true;
         } catch (err) {
             console.error('Profile Error:', err);
+            State.profile = null;
             document.getElementById('login-error').textContent = err.message;
             document.getElementById('login-error').style.display = 'block';
-            Auth.showLogin();
+            return false;
         }
     },
     showLogin: () => {
@@ -747,9 +762,18 @@ const Auth = {
     },
     login: async (email, password) => {
         UI.showLoading();
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        // Destructure 'data' alongside 'error'
+        const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
         UI.hideLoading();
-        if (error) { document.getElementById('login-error').textContent = error.message; document.getElementById('login-error').style.display = 'block'; }
+        if (error) { 
+            document.getElementById('login-error').textContent = error.message; 
+            document.getElementById('login-error').style.display = 'block'; 
+        } else if (data?.session) {
+            // Force the UI transition manually on success
+            document.getElementById('login-error').style.display = 'none';
+            State.user = data.session.user;
+            await Auth.loadProfile();
+        }
     },
     logout: async () => { await supabaseClient.auth.signOut(); window.location.reload(); }
 };
@@ -1357,7 +1381,7 @@ const MapEngine = {
         if (action === 'UPDATE') { styleClass = 'ghost-update'; lineColor = 'var(--warning-color)'; }
         if (action === 'DELETE') { styleClass = 'ghost-delete'; lineColor = '#ff4444'; }
 
-        const options = { color: lineColor, weight: 2, opacity: 0.7, className: styleClass };
+        const options = { color: lineColor, weight: 4, opacity: 0.95, className: styleClass };
         const latlngs = points.map(p => [p.y, p.x]);
         let line = (edge.edge_type === 'curved' && points.length > 2) ? L.polyline(MapEngine.catmullRom(latlngs, 20), options) : L.polyline(latlngs, options);
         
@@ -1408,17 +1432,7 @@ const ModeManager = {
 // ==============================================
 // PLACE & EDITORS (Sandboxed logic)
 // ==============================================
-const PlaceMode = {
-    placeAt: async (latlng) => {
-        const x = Math.round(latlng.lng * 10) / 10;
-        const y = Math.round(latlng.lat * 10) / 10;
-        const node = { id: Utils.uuid(), map_id: State.currentProject.id, name: 'New Planet', x, y, region: '', sector: '', color: getContributorColor(State.user.id), created_by: State.user.id, created_at: new Date().toISOString(), _live: false, _localAction: 'ADD' };
-        State.nodes.push(node);
-        const marker = MapEngine.renderNode(node);
-        StatusBar.updateStats(); SaveIndicator.setUnsaved();
-        PlanetEditor.openPopup(node, marker, true);
-    }
-};
+// PlaceMode is now handled by SnippingTool.js
 
 const PlanetEditor = {
     openPopup: (node, marker, isNew = false) => {
@@ -1552,52 +1566,8 @@ const EdgeEditor = {
     }
 };
 
-const TraceMode = {
-    addNode: (node) => {
-        if (State.traceQueue.find(n => n.id === node.id)) return;
-        State.traceQueue.push(node);
-        // FIX: Removed negative Y
-        const icon = L.divIcon({ className: 'selection-number', html: `${State.traceQueue.length}`, iconSize: [20, 20], iconAnchor: [10, 10] });
-        L.marker([node.y, node.x], { icon, interactive: false }).addTo(MapEngine.selectionLayer);
-        if (State.traceQueue.length >= 2) {
-            const pts = State.traceQueue.map(n => [n.y, n.x]);
-            MapEngine.selectionLayer.eachLayer(l => { if (l instanceof L.Polyline) MapEngine.selectionLayer.removeLayer(l); });
-            L.polyline(pts, { color: getContributorColor(State.user.id), weight: 2, opacity: 0.6, dashArray: '8,6' }).addTo(MapEngine.selectionLayer);
-        }
-        StatusBar.setMode('trace');
-    },
-    finish: async () => {
-        if (State.traceQueue.length < 2) { TraceMode.cancel(); return; }
-        const nodes = [...State.traceQueue]; TraceMode.cancel();
-        
-        for (let i = 0; i < nodes.length - 1; i++) {
-            const src = nodes[i], tgt = nodes[i + 1];
-            if (State.edges.find(e => (e.source_node_id === src.id && e.target_node_id === tgt.id) || (e.source_node_id === tgt.id && e.target_node_id === src.id))) continue;
+// TraceMode is now handled by PathDrawer.js
 
-            if (State.profile.role === 'admin') {
-                if (!src._live) { const s = await DB.saveNode(src); Object.assign(src, s, { _live: true, _localAction: null }); }
-                if (!tgt._live) { const t = await DB.saveNode(tgt); Object.assign(tgt, t, { _live: true, _localAction: null }); }
-            }
-
-            const edge = { id: Utils.uuid(), map_id: State.currentProject.id, source_node_id: src.id, target_node_id: tgt.id, source_name: src.name, target_name: tgt.name, geometry: [{ x: src.x, y: src.y }, { x: tgt.x, y: tgt.y }], edge_type: 'straight', color: getContributorColor(State.user.id), created_by: State.user.id, _live: false, _localAction: 'ADD' };
-            State.edges.push(edge);
-            
-            if (State.profile.role === 'admin') {
-                try {
-                    const saved = await DB.saveEdge(edge);
-                    const idx = State.edges.findIndex(e => e.id === edge.id);
-                    if (idx >= 0) Object.assign(State.edges[idx], saved, { _live: true, _localAction: null });
-                } catch(e) { console.error(e); }
-            }
-        }
-        MapEngine.renderAll(); SaveIndicator.setUnsaved();
-    },
-    cancel: () => { State.traceQueue = []; MapEngine.selectionLayer.clearLayers(); StatusBar.setMode('trace'); }
-};
-
-// ==============================================
-// CONTEXT MENU
-// ==============================================
 const ContextMenu = {
     el: null,
     init: () => {
@@ -1609,6 +1579,20 @@ const ContextMenu = {
     },
     show: (e, node) => {
         e.preventDefault();
+        
+        // NEW LOGIC: Intercept for TraceMode
+        if (State.mode === 'trace' && State.traceQueue.find(n => n.id === node.id)) {
+            ContextMenu.el.innerHTML = `
+                <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.finalize(false)"><i class="fas fa-arrows-alt-h" style="width:18px;"></i> Draw Straight</div>
+                <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.startCurving()"><i class="fas fa-bezier-curve" style="width:18px;"></i> Draw Curved</div>
+                <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.cancel()" style="color:var(--danger-color);"><i class="fas fa-times" style="width:18px;"></i> Cancel</div>`;
+            
+            ContextMenu.el.style.display = 'block';
+            ContextMenu.el.style.left = e.pageX + 'px';
+            ContextMenu.el.style.top = e.pageY + 'px';
+            return;
+        }
+
         ContextMenu.el.innerHTML = `
             <div class="context-menu-item" onclick="ContextMenu.action('edit','${node.id}')"><i class="fas fa-edit" style="width:18px;"></i> Edit</div>
             <div class="context-menu-item" onclick="ContextMenu.action('setOrigin','${node.id}')"><i class="fas fa-play" style="width:18px;"></i> Start Path Here</div>
@@ -1659,7 +1643,13 @@ const Keyboard = {
                 else ModeManager.set('select');
                 MapEngine.map.closePopup();
             }
-            else if (e.key === 'Enter' && State.mode === 'trace' && State.traceQueue.length >= 2) TraceMode.finish();
+            else if (e.key === 'Enter') {
+                if (State.mode === 'trace' && PathDrawer.state === 'CURVING') {
+                    PathDrawer.finalize(true);
+                } else if (State.mode === 'trace' && State.traceQueue.length >= 2) {
+                    PathDrawer.finalize(false);
+                }
+            }
             else if (e.ctrlKey && e.key === 's') { e.preventDefault(); SaveManager.save(); }
         });
     }
@@ -1672,27 +1662,42 @@ const SaveManager = {
     save: async () => {
         if (!State.currentProject) return;
         
-        // Find all local actions
         const localNodes = State.nodes.filter(n => n._localAction);
         const localEdges = State.edges.filter(e => e._localAction);
-        
         if (localNodes.length === 0 && localEdges.length === 0) { SaveIndicator.setSaved(); return; }
 
         if (State.profile.role === 'admin') {
+            // ADMIN: Direct push + Activity Log updates
             SaveIndicator.setSaving();
             try {
                 for (const n of localNodes) {
-                    if (n._localAction === 'ADD' || n._localAction === 'UPDATE') { const s = await DB.saveNode(n); Object.assign(n, s, { _live: true, _localAction: null }); }
-                    if (n._localAction === 'DELETE') { await DB.deleteNode(n.id); State.nodes = State.nodes.filter(x => x.id !== n.id); }
+                    if (n._localAction === 'ADD' || n._localAction === 'UPDATE') { 
+                        const s = await DB.saveNode(n); 
+                        await DB.logChange(n._localAction === 'ADD' ? 'add_node' : 'edit_node', 'node', s.id, null, s);
+                        Object.assign(n, s, { _live: true, _localAction: null }); 
+                    }
+                    if (n._localAction === 'DELETE') { 
+                        await DB.deleteNode(n.id); 
+                        await DB.logChange('delete_node', 'node', n.id, n, null);
+                        State.nodes = State.nodes.filter(x => x.id !== n.id); 
+                    }
                 }
                 for (const e of localEdges) {
-                    if (e._localAction === 'ADD' || e._localAction === 'UPDATE') { const s = await DB.saveEdge(e); Object.assign(e, s, { _live: true, _localAction: null }); }
-                    if (e._localAction === 'DELETE') { await DB.deleteEdge(e.id); State.edges = State.edges.filter(x => x.id !== e.id); }
+                    if (e._localAction === 'ADD' || e._localAction === 'UPDATE') { 
+                        const s = await DB.saveEdge(e); 
+                        await DB.logChange(e._localAction === 'ADD' ? 'add_edge' : 'edit_edge', 'edge', s.id, null, s);
+                        Object.assign(e, s, { _live: true, _localAction: null }); 
+                    }
+                    if (e._localAction === 'DELETE') { 
+                        await DB.deleteEdge(e.id); 
+                        await DB.logChange('delete_edge', 'edge', e.id, e, null);
+                        State.edges = State.edges.filter(x => x.id !== e.id); 
+                    }
                 }
                 SaveIndicator.setSaved(); Toast.show('All changes live in archives', 'success'); MapEngine.renderAll();
             } catch(e) { SaveIndicator.setUnsaved(); Toast.show(`Save failed: ${e.message}`, 'error'); }
         } else {
-            // Contributor Submit
+            // CONTRIBUTOR: Show Sandbox Modal
             Modal.open('Submit Changes for Review', `
                 <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">You have <strong>${localNodes.length + localEdges.length}</strong> pending changes. Submit them to the Admin queue to be merged into the live map.</p>
                 <div class="form-group"><label class="form-label">Title of Changes</label><input type="text" id="req-title" class="form-input" placeholder="e.g. Added planets to Outer Rim"></div>
@@ -1707,25 +1712,38 @@ const SaveManager = {
         const btn = document.querySelector('.modal-footer .btn-primary'); btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...'; btn.disabled = true;
 
         try {
+            // 1. Create the Ticket
             const { data: request, error: reqErr } = await supabaseClient.from('map_requests').insert({ map_id: State.currentProject.id, user_id: State.user.id, title, reason: document.getElementById('req-notes').value.trim(), status: 'pending' }).select().single();
             if (reqErr) throw reqErr;
+
+            // Helper to strip all local UI tracking states so the JSON is pristine
+            const clean = (obj) => { const c = { ...obj }; delete c._live; delete c._localAction; delete c._pendingAction; delete c._reqItemId; delete c._reqId; delete c._reqUserId; delete c._reqUserName; return c; };
 
             const items = [];
             State.nodes.filter(n => n._localAction).forEach(n => {
                 if (n._localAction === 'DELETE') items.push({ request_id: request.id, action: 'DELETE', entity_type: 'NODE', entity_id: n.id });
-                else items.push({ request_id: request.id, action: n._localAction, entity_type: 'NODE', entity_id: n._live ? n.id : null, proposed_data: n });
+                else items.push({ request_id: request.id, action: n._localAction, entity_type: 'NODE', entity_id: n._live ? n.id : null, proposed_data: clean(n) });
             });
             State.edges.filter(e => e._localAction).forEach(e => {
                 if (e._localAction === 'DELETE') items.push({ request_id: request.id, action: 'DELETE', entity_type: 'EDGE', entity_id: e.id });
-                else items.push({ request_id: request.id, action: e._localAction, entity_type: 'EDGE', entity_id: e._live ? e.id : null, proposed_data: e });
+                else items.push({ request_id: request.id, action: e._localAction, entity_type: 'EDGE', entity_id: e._live ? e.id : null, proposed_data: clean(e) });
             });
 
-            if (items.length > 0) { const { error } = await supabaseClient.from('map_request_items').insert(items); if (error) throw error; }
+            // 2. Attach the Items to the Ticket
+            if (items.length > 0) { 
+                const { error: itemsErr } = await supabaseClient.from('map_request_items').insert(items); 
+                if (itemsErr) throw itemsErr; 
+            }
 
             Modal.close();
             Toast.show('Changes submitted! Reloading map to fetch Ghosts...', 'success');
             setTimeout(() => ProjectPicker.select(State.currentProject.id), 1000);
-        } catch (err) { Toast.show(`Failed: ${err.message}`, 'error'); btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Request'; btn.disabled = false; }
+            
+        } catch (err) { 
+            Toast.show(`Failed: ${err.message}`, 'error'); 
+            btn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Request'; 
+            btn.disabled = false; 
+        }
     },
 
     withdraw: async (reqItemId, reqId) => {
