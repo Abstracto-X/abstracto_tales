@@ -1924,76 +1924,37 @@
             },
 
             loadMapData: async () => {
-                const statusBox = document.getElementById('routing-status');
                 try {
-                    statusBox.innerHTML = 'Running Map Diagnostic...';
-                    const mapId = MapViewer.currentMap.id;
+                    MapViewer.setStatus('Loading navicomputer data...', 'info');
+                    if (!MapViewer.currentMap || !MapViewer.currentMap.id) throw new Error("No Map ID provided to Navicomputer.");
 
-                    // 1. CREATE VISUAL DIAGNOSTIC OVERLAY
-                    const diag = document.createElement('div');
-                    diag.style.cssText = "position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:99999; color:#44ff88; font-family:monospace; padding:30px; overflow-y:auto; font-size: 1.1rem;";
-                    diag.innerHTML = `<h2 style="color:#ffd700;">🗺️ MAP DIAGNOSTIC TOOL</h2><hr style="border-color:#44ff88; margin:15px 0;">`;
-                    diag.innerHTML += `<p>► Target Map ID: <strong>${mapId || '<span style="color:#ff4444">UNDEFINED!</span>'}</strong></p>`;
-                    document.getElementById('map-viewer').appendChild(diag);
+                    // Sequential fetch exactly mirroring Cartographer's working logic
+                    const nodesData = await DB.getMapNodes(MapViewer.currentMap.id);
+                    const edgesData = await DB.getMapEdges(MapViewer.currentMap.id);
 
-                    if (!mapId) throw new Error("Map ID is missing from the initialization call.");
-
-                    // 2. FETCH DATA DIRECTLY
-                    diag.innerHTML += `<p style="color:#888;">► Fetching data from Supabase...</p>`;
-                    const [nodesRes, edgesRes] = await Promise.all([
-                        supabaseClient.from('map_nodes').select('*').eq('map_id', mapId),
-                        supabaseClient.from('map_edges').select('*').eq('map_id', mapId)
-                    ]);
-
-                    // 3. LOG RESULTS VISUALLY
-                    diag.innerHTML += `<p>► Nodes Error: ${JSON.stringify(nodesRes.error || 'None')}</p>`;
-                    diag.innerHTML += `<p>► Nodes Count Returned: <strong>${nodesRes.data ? nodesRes.data.length : 'NULL'}</strong></p>`;
-                    diag.innerHTML += `<p>► Edges Count Returned: <strong>${edgesRes.data ? edgesRes.data.length : 'NULL'}</strong></p>`;
-
-                    // 4. DIAGNOSE ROOT CAUSE
-                    diag.innerHTML += `<hr style="border-color:#44ff88; margin:15px 0;"><h3 style="color:#ffd700;">🔍 SYSTEM ANALYSIS:</h3>`;
-                    
-                    if (nodesRes.data && nodesRes.data.length === 0) {
-                        diag.innerHTML += `<p style="color:#ff4444; font-weight:bold; line-height: 1.5;">❌ ERROR: Zero nodes returned.</p> 
-                        <p style="color:#ccc;">If Cartographer sees nodes but Reader doesn't, this is 100% a Supabase RLS (Row Level Security) block. <br><br>
-                        <strong>How to fix:</strong><br>
-                        1. Ensure this map has 'is_published' checked in your admin panel.<br>
-                        2. Check your Supabase database. Ensure 'map_nodes' and 'map_edges' have a policy allowing Public SELECTs.</p>`;
-                    } else if (nodesRes.data && nodesRes.data.length > 0) {
-                        const sample = nodesRes.data[0];
-                        diag.innerHTML += `<p style="color:#44ff88; font-weight:bold;">✅ SUCCESS: Data is flowing to the Reader!</p>`;
-                        diag.innerHTML += `<p>First node found: ${sample.name} (x: ${sample.x}, y: ${sample.y})</p>`;
-                        
-                        if (sample.x === undefined || sample.y === undefined) {
-                            diag.innerHTML += `<p style="color:#ff4444;">❌ ERROR: Node coordinates (x,y) are missing or misnamed!</p>`;
-                        }
-                    }
-
-                    // 5. ATTEMPT TO RENDER ANYWAY
-                    const nData = nodesRes.data || [];
-                    const mappedEdges = (edgesRes.data || []).map(e => ({
-                        ...e, source: e.source_node_id, target: e.target_node_id, sourceName: e.source_name, targetName: e.target_name
+                    // Remap edge schema to match what Dijkstra's algorithm requires
+                    const mappedEdges = edgesData.map(e => ({
+                        ...e,
+                        source: e.source_node_id,
+                        target: e.target_node_id,
+                        sourceName: e.source_name,
+                        targetName: e.target_name
                     }));
 
-                    MapViewer.mapData = { nodes: nData, edges: mappedEdges };
+                    MapViewer.mapData = { nodes: nodesData, edges: mappedEdges };
                     
-                    diag.innerHTML += `<br><button style="padding:10px 20px; background:#ffd700; color:#000; border:none; cursor:pointer; font-weight:bold;" onclick="this.parentElement.remove()">Close Diagnostic & Try Rendering</button>`;
+                    MapViewer.renderMapData();
+                    MapViewer.buildGraph();
+                    MapViewer.setStatus('Navicomputer online.', 'success');
                     
-                    if (nData.length > 0) {
-                        MapViewer.renderMapData();
-                        MapViewer.buildGraph();
-                        statusBox.innerHTML = 'Diagnostic complete. Navicomputer online.';
-                    } else {
-                        statusBox.innerHTML = 'Navicomputer offline: No data.';
-                    }
-
                     return MapViewer.mapData;
-
                 } catch (err) {
-                    console.error(err);
-                    statusBox.innerHTML = 'Error: ' + err.message;
+                    console.error("Failed to load map data from DB:", err);
+                    MapViewer.setStatus('The navicomputer could not load route data for this region. ' + (err.message || ''), 'error');
+                    return null;
                 }
             },
+
             renderMapData: () => {
                 if (!MapViewer.mapData) return;
                 const { nodes, edges } = MapViewer.mapData;
