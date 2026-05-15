@@ -11,3 +11,6 @@ AGENTS.md
 map_editor_codebase_context.md
 map_editor_codebase_context.md
 modularize.py
+sql_migration_cartographer.sql
+migrate_map_data.html
+/_cartographer_build

@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartographer — Aether Archives</title>
+    <meta name="description" content="Collaborative galactic map editor for Aether Archives">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+    :root {
+    --primary-color: #ffffff;
+    --accent-color: #ffd700;
+    --danger-color: #ff4444;
+    --success-color: #44ff88;
+    --info-color: #60a5fa;
+    --warning-color: #fbbf24;
+    --glass-bg: rgba(15, 15, 15, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --font-header: 'Cinzel', serif;
+    --font-body: 'Lora', serif;
+    --font-ui: 'Montserrat', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --toolbar-h: 52px;
+    --status-h: 30px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --bg-deepest: #050505;
+    --bg-base: #0c0c0c;
+    --bg-raised: rgba(8, 8, 8, 0.88);
+    --bg-elevated: rgba(15, 15, 15, 0.95);
+    --border-subtle: rgba(255,255,255,0.06);
+    --border-default: rgba(255,255,255,0.12);
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: var(--font-ui); background: var(--bg-deepest); color: var(--text-primary); overflow: hidden; -webkit-font-smoothing: antialiased; }
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Background ── */
+.background-layer { position: fixed; top:0; left:0; width:100%; height:100%; z-index:-2; background: radial-gradient(ellipse at 20% 50%, rgba(25,25,55,0.9) 0%, #050505 70%); }
+#particle-canvas { position: fixed; top:0; left:0; width:100%; height:100%; z-index:-1; pointer-events: none; }
+
+/* ── Login ── */
+.login-container { min-height:100vh; display:flex; justify-content:center; align-items:center; padding:2rem; }
+.login-box { background: rgba(10,10,12,0.85); backdrop-filter: blur(24px); border:1px solid var(--glass-border); border-top: 2px solid rgba(255,215,0,0.35); border-radius: 20px; padding: 3rem; width:100%; max-width:420px; text-align:center; box-shadow: 0 30px 80px rgba(0,0,0,0.5); }
+.login-logo { font-family: var(--font-header); font-size: 2.2rem; color: var(--accent-color); letter-spacing: 6px; margin-bottom: 0.3rem; text-shadow: 0 0 20px rgba(255,215,0,0.4); }
+.login-subtitle { color: #555; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 3px; margin-bottom: 2.5rem; }
+.login-error { background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.4); color: var(--danger-color); padding: 0.8rem; border-radius: 8px; margin-bottom: 1.2rem; font-size: 0.84rem; display: none; }
+
+/* ── Forms ── */
+.form-group { margin-bottom: 1.2rem; text-align: left; }
+.form-label { display: block; margin-bottom: 0.4rem; color: #999; font-size: 0.82rem; font-weight: 500; letter-spacing: 0.5px; }
+.form-input, .form-select { width:100%; padding: 0.7rem 0.9rem; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-family: var(--font-ui); font-size: 0.9rem; transition: border-color 0.25s; }
+.form-input:focus, .form-select:focus { outline: none; border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(255,215,0,0.08); }
+.form-select option { background: #111; }
+.form-textarea { min-height: 100px; resize: vertical; width:100%; padding: 0.7rem; background: rgba(0,0,0,0.35); border: 1px solid var(--glass-border); border-radius: 8px; color: #fff; font-family: var(--font-ui); font-size: 0.9rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* ── Buttons ── */
+.btn { padding: 0.6rem 1.2rem; font-family: var(--font-ui); font-size: 0.85rem; border: none; border-radius: 6px; cursor: pointer; transition: all 0.25s; display: inline-flex; align-items: center; gap: 0.5rem; }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent-color); color: #000; font-weight: 600; }
+.btn-primary:hover { box-shadow: 0 0 20px rgba(255,215,0,0.5); transform: translateY(-2px); }
+.btn-secondary { background: rgba(255,255,255,0.06); color: #ccc; border: 1px solid var(--glass-border); }
+.btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.btn-danger { background: rgba(255,68,68,0.15); color: var(--danger-color); border: 1px solid rgba(255,68,68,0.3); }
+.btn-danger:hover { background: var(--danger-color); color: #fff; }
+.btn-sm { padding: 0.35rem 0.75rem; font-size: 0.75rem; }
+
+/* ── Toolbar ── */
+#toolbar { height: var(--toolbar-h); background: var(--bg-raised); backdrop-filter: blur(24px); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; border-bottom: 1px solid var(--border-default); z-index: 1000; user-select: none; }
+.toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 8px; }
+.logo-text { font-family: var(--font-header); font-size: 1rem; color: var(--accent-color); letter-spacing: 3px; cursor: default; text-shadow: 0 0 12px rgba(255,215,0,0.3); white-space: nowrap; }
+.separator { width: 1px; height: 26px; background: var(--border-default); margin: 0 4px; }
+
+/* Mode group */
+.mode-group { display: flex; gap: 2px; background: rgba(0,0,0,0.3); border-radius: var(--radius-md); padding: 3px; border: 1px solid var(--border-subtle); }
+.mode-btn { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border: none; border-radius: 5px; background: transparent; color: var(--text-secondary); font-size: 0.78rem; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.mode-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); }
+.mode-btn.active { background: var(--accent-color); color: #000; box-shadow: 0 1px 8px rgba(255,215,0,0.3); }
+.mode-btn svg { flex-shrink: 0; opacity: 0.7; }
+.mode-btn.active svg { opacity: 1; }
+.mode-btn kbd { font-family: var(--font-mono); font-size: 0.62rem; background: rgba(255,255,255,0.1); padding: 1px 5px; border-radius: 3px; opacity: 0.6; }
+.mode-btn.active kbd { background: rgba(0,0,0,0.2); opacity: 0.8; }
+
+/* Action buttons */
+.action-group { display: flex; gap: 3px; }
+.action-btn { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border: 1px solid var(--border-subtle); border-radius: 6px; background: rgba(0,0,0,0.2); color: var(--text-secondary); cursor: pointer; transition: all 0.15s; position: relative; }
+.action-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-primary); border-color: var(--border-default); }
+.action-btn:active { transform: scale(0.93); }
+.action-btn.save-btn { border-color: rgba(255,215,0,0.2); }
+.action-btn.save-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+
+/* Toolbar dropdowns */
+.toolbar-dropdown { position: relative; }
+.toolbar-dropdown-btn { display: flex; align-items: center; gap: 6px; padding: 5px 12px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle); border-radius: 6px; color: var(--text-secondary); font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: all 0.15s; max-width: 180px; }
+.toolbar-dropdown-btn:hover { color: var(--text-primary); border-color: var(--border-default); }
+.toolbar-dropdown-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dropdown-menu { position: absolute; top: calc(100% + 6px); right: 0; min-width: 220px; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-md); box-shadow: 0 12px 40px rgba(0,0,0,0.6); z-index: 2000; display: none; overflow: hidden; max-height: 350px; overflow-y: auto; }
+.dropdown-menu.open { display: block; }
+.dropdown-item { padding: 10px 14px; font-size: 0.82rem; color: var(--text-secondary); cursor: pointer; transition: all 0.12s; border-bottom: 1px solid var(--border-subtle); }
+.dropdown-item:last-child { border-bottom: none; }
+.dropdown-item:hover { background: rgba(255,215,0,0.08); color: var(--accent-color); }
+.dropdown-item.active { color: var(--accent-color); background: rgba(255,215,0,0.06); }
+.dropdown-header { padding: 8px 14px; font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid var(--border-subtle); }
+
+/* User menu */
+.user-btn { display: flex; align-items: center; gap: 6px; padding: 4px 10px 4px 4px; background: rgba(0,0,0,0.2); border: 1px solid var(--border-subtle); border-radius: 20px; color: var(--text-secondary); font-size: 0.78rem; font-family: inherit; cursor: pointer; transition: all 0.15s; }
+.user-btn:hover { border-color: var(--border-default); color: var(--text-primary); }
+.user-avatar-small { width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-color), #b8960a); display: flex; align-items: center; justify-content: center; font-weight: bold; color: #000; font-size: 0.7rem; flex-shrink: 0; }
+
+/* ── Map ── */
+main { flex: 1; position: relative; display: flex; overflow: hidden; }
+#map-container { flex: 1; background: var(--bg-deepest); }
+
+/* ── Status bar ── */
+#status-bar { height: var(--status-h); background: var(--bg-raised); border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 0.7rem; color: var(--text-muted); z-index: 1000; user-select: none; }
+.status-left, .status-center, .status-right { display: flex; align-items: center; gap: 12px; }
+.status-badge { background: var(--accent-color); color: #000; padding: 2px 8px; border-radius: 3px; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.05em; }
+#status-coords { font-family: var(--font-mono); font-size: 0.66rem; }
+#status-hint { color: var(--text-muted); font-style: italic; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#status-zoom { font-family: var(--font-mono); font-size: 0.66rem; }
+.stats { display: flex; align-items: center; gap: 6px; font-size: 0.7rem; color: var(--text-muted); font-family: var(--font-mono); }
+.stats-sep { opacity: 0.4; }
+
+/* ── Contributors panel ── */
+.contributors-panel { position: absolute; bottom: 40px; right: 14px; z-index: 800; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-lg); padding: 10px 14px; min-width: 160px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); backdrop-filter: blur(16px); }
+.contributors-panel h4 { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.contributor-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; font-size: 0.78rem; color: var(--text-secondary); }
+.contributor-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ── Changelog drawer ── */
+.changelog-drawer { position: fixed; top: 0; right: -340px; width: 340px; height: 100vh; background: var(--bg-elevated); border-left: 1px solid var(--border-default); z-index: 1100; transition: right 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; box-shadow: -8px 0 40px rgba(0,0,0,0.4); }
+.changelog-drawer.open { right: 0; }
+.changelog-header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem; border-bottom: 1px solid var(--border-default); }
+.changelog-header h3 { font-family: var(--font-header); font-size: 1rem; color: var(--accent-color); }
+.changelog-close { background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; transition: color 0.2s; }
+.changelog-close:hover { color: var(--danger-color); }
+.changelog-list { flex: 1; overflow-y: auto; padding: 0.8rem; }
+.changelog-item { display: flex; gap: 10px; padding: 10px 8px; border-bottom: 1px solid var(--border-subtle); font-size: 0.8rem; }
+.changelog-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.changelog-item .details { flex: 1; }
+.changelog-item .action-text { color: var(--text-secondary); }
+.changelog-item .time-text { color: var(--text-muted); font-size: 0.7rem; margin-top: 2px; }
+.changelog-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 1050; }
+.changelog-backdrop.active { display: block; }
+
+/* ── Toast ── */
+#toast-container { position: fixed; bottom: 44px; right: 16px; display: flex; flex-direction: column-reverse; gap: 8px; z-index: 9999; pointer-events: none; }
+.toast { display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); font-size: 0.8rem; box-shadow: 0 8px 24px rgba(0,0,0,0.4); pointer-events: auto; animation: toast-in 0.25s ease-out; max-width: 340px; }
+.toast.toast-out { animation: toast-out 0.2s ease-in forwards; }
+.toast-icon { flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; }
+.toast.success .toast-icon { background: var(--success-color); color: #000; }
+.toast.info .toast-icon { background: var(--info-color); color: #000; }
+.toast.warning .toast-icon { background: var(--warning-color); color: #000; }
+.toast.error .toast-icon { background: var(--danger-color); color: #000; }
+.toast.success { border-left: 3px solid var(--success-color); }
+.toast.error { border-left: 3px solid var(--danger-color); }
+.toast.warning { border-left: 3px solid var(--warning-color); }
+.toast.info { border-left: 3px solid var(--info-color); }
+@keyframes toast-in { from { opacity:0; transform: translateY(8px) scale(0.96); } to { opacity:1; transform: translateY(0) scale(1); } }
+@keyframes toast-out { from { opacity:1; transform: translateY(0) scale(1); } to { opacity:0; transform: translateY(8px) scale(0.96); } }
+
+/* ── Modal ── */
+.modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1200; display: none; justify-content: center; align-items: center; padding: 2rem; }
+.modal-overlay.active { display: flex; }
+.modal-content { background: rgba(14,14,14,0.97); backdrop-filter: blur(24px); border: 1px solid var(--glass-border); border-top: 2px solid rgba(255,215,0,0.4); border-radius: 16px; width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 25px 80px rgba(0,0,0,0.6); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--glass-border); }
+.modal-title { font-family: var(--font-header); font-size: 1.15rem; color: var(--accent-color); }
+.modal-close { background: none; border: none; color: #555; font-size: 1.5rem; cursor: pointer; transition: all 0.2s; line-height: 1; }
+.modal-close:hover { color: var(--danger-color); transform: rotate(90deg); }
+.modal-body { padding: 1.5rem; }
+.modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--glass-border); display: flex; justify-content: flex-end; gap: 0.8rem; }
+
+/* ── Loading ── */
+.loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 3000; }
+.loading-overlay.active { display: flex; }
+.spinner { width: 40px; height: 40px; border: 3px solid rgba(255,215,0,0.2); border-top-color: var(--accent-color); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Leaflet overrides ── */
+.leaflet-container { background: var(--bg-deepest) !important; font-family: var(--font-ui) !important; }
+.leaflet-control-zoom a { background: var(--bg-raised) !important; color: var(--text-secondary) !important; border-color: var(--border-default) !important; width: 30px !important; height: 30px !important; line-height: 30px !important; }
+.leaflet-control-zoom a:hover { background: rgba(255,255,255,0.08) !important; color: var(--text-primary) !important; }
+.leaflet-popup-content-wrapper { background: var(--bg-elevated); color: var(--text-primary); border-radius: var(--radius-lg); border: 1px solid var(--border-default); box-shadow: 0 8px 32px rgba(0,0,0,0.5); padding: 0; }
+.leaflet-popup-content { margin: 0 !important; min-width: 200px; }
+.leaflet-popup-tip { background: var(--bg-elevated); border: 1px solid var(--border-default); }
+.leaflet-popup-close-button { color: var(--text-muted) !important; font-size: 18px !important; top: 6px !important; right: 8px !important; }
+.leaflet-popup-close-button:hover { color: var(--text-primary) !important; }
+
+/* Popup content */
+.popup-content { padding: 12px; display: flex; flex-direction: column; gap: 0; }
+.popup-content .popup-header { font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; font-weight: 600; }
+.popup-content input { padding: 7px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border-default); background: rgba(0,0,0,0.3); color: var(--text-primary); font-family: inherit; font-size: 0.82rem; outline: none; width: 100%; }
+.popup-content input:focus { border-color: var(--accent-color); box-shadow: 0 0 0 2px rgba(255,215,0,0.15); }
+.popup-content .popup-actions { display: flex; gap: 6px; margin-top: 8px; }
+.popup-content .btn-save { flex: 1; padding: 6px 12px; border-radius: var(--radius-sm); background: var(--accent-color); color: #000; border: none; cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 600; }
+.popup-content .btn-save:hover { box-shadow: 0 0 12px rgba(255,215,0,0.4); }
+.popup-content .btn-delete { padding: 6px 12px; border-radius: var(--radius-sm); background: rgba(255,68,68,0.1); color: var(--danger-color); border: 1px solid rgba(255,68,68,0.2); cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 500; }
+.popup-content .btn-delete:hover { background: rgba(255,68,68,0.2); }
+.popup-content .contributor-info { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+.popup-content .contributor-info .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; }
+
+/* Route popup */
+.popup-route-info { font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 4px; padding: 4px 0; }
+
+/* Selection rings (trace mode) */
+.selection-ring { animation: ring-pulse 1.5s ease-in-out infinite; }
+@keyframes ring-pulse { 0%, 100% { stroke-opacity: 1; } 50% { stroke-opacity: 0.5; } }
+.selection-number { background: var(--accent-color) !important; color: #000 !important; border: none !important; border-radius: 50% !important; width: 20px !important; height: 20px !important; line-height: 20px !important; text-align: center !important; font-size: 0.7rem !important; font-weight: 700 !important; padding: 0 !important; box-shadow: 0 2px 8px rgba(255,215,0,0.4) !important; font-family: var(--font-mono) !important; }
+.selection-number::before { display: none !important; }
+
+/* Curve control points */
+.curve-control-point { background: var(--warning-color) !important; border: 2px solid #fff !important; border-radius: 50% !important; box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important; cursor: grab !important; }
+.curve-control-point:active { cursor: grabbing !important; }
+
+/* Context menu */
+.context-menu { position: absolute; z-index: 10000; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-md); padding: 4px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); min-width: 170px; }
+.context-menu-item { padding: 9px 14px; cursor: pointer; color: var(--text-primary); font-size: 0.8rem; border-radius: var(--radius-sm); transition: background 0.15s; }
+.context-menu-item:hover { background: rgba(255,215,0,0.12); color: var(--accent-color); }
+
+/* Autocomplete */
+.autocomplete-list { position: absolute; z-index: 10001; background: var(--bg-elevated); border: 1px solid var(--border-default); border-radius: var(--radius-sm); max-height: 160px; overflow-y: auto; box-shadow: 0 4px 16px rgba(0,0,0,0.5); }
+.autocomplete-item { padding: 6px 10px; font-size: 0.78rem; color: var(--text-secondary); cursor: pointer; }
+.autocomplete-item:hover, .autocomplete-item.active { background: rgba(255,215,0,0.08); color: var(--accent-color); }
+.autocomplete-item .region-tag { font-size: 0.65rem; color: var(--text-muted); margin-left: 6px; }
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(255,215,0,0.3); border-radius: 10px; }
+* { scrollbar-width: thin; scrollbar-color: rgba(255,215,0,0.3) rgba(0,0,0,0.2); }
+
+/* Save status */
+.save-indicator { display: flex; align-items: center; gap: 5px; font-size: 0.7rem; }
+.save-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success-color); transition: background 0.3s; }
+.save-dot.saving { background: var(--warning-color); animation: pulse-dot 0.8s infinite; }
+@keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .mode-btn span { display: none; }
+    .mode-btn kbd { display: none; }
+    .toolbar-dropdown-btn span { max-width: 100px; }
+    #status-hint { max-width: 150px; }
+    .contributors-panel { display: none; }
+}
+
+    </style>
+</head>
+<body>
+    <div class="background-layer"></div>
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- LOADING -->
+    <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast-container"></div>
+
+    <!-- LOGIN VIEW -->
+    <div id="login-view">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-logo">AETHER</div>
+                <div class="login-subtitle">Cartographer</div>
+                <div class="login-error" id="login-error"></div>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-input" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-input" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.8rem;">
+                        <i class="fas fa-sign-in-alt"></i> Sign In
+                    </button>
+                </form>
+                <div style="margin-top:1.5rem">
+                    <a href="index.html" style="color:#666; font-size:0.8rem; text-decoration:none;">
+                        <i class="fas fa-arrow-left"></i> Back to Reader
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDITOR VIEW -->
+    <div id="editor-view" style="display:none;">
+        <div id="app">
+            <!-- Toolbar -->
+            <header id="toolbar">
+                <div class="toolbar-left">
+                    <span class="logo-text">CARTOGRAPHER</span>
+                    <div class="separator"></div>
+                    <div class="mode-group">
+                        <button id="mode-select" class="mode-btn active" title="Select & Edit (V)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z"/></svg>
+                            <span>Select</span><kbd>V</kbd>
+                        </button>
+                        <button id="mode-place" class="mode-btn" title="Place Planet (P)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <span>Place</span><kbd>P</kbd>
+                        </button>
+                        <button id="mode-trace" class="mode-btn" title="Trace Route (T)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                            <span>Trace</span><kbd>T</kbd>
+                        </button>
+                    </div>
+                </div>
+                <div class="toolbar-right">
+                    <div class="action-group">
+                        <button id="action-undo" class="action-btn" title="Undo (Ctrl+Z)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+                        </button>
+                        <button id="action-redo" class="action-btn" title="Redo (Ctrl+Y)">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        </button>
+                    </div>
+                    <button id="action-save" class="action-btn save-btn" title="Save to Cloud (Ctrl+S)">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                    </button>
+                    <div class="separator"></div>
+                    <div class="save-indicator">
+                        <span class="save-dot" id="save-dot"></span>
+                        <span id="save-text" style="color:var(--success-color); font-size:0.7rem;">Saved</span>
+                    </div>
+                    <div class="separator"></div>
+                    <!-- Project picker -->
+                    <div class="toolbar-dropdown" id="project-dropdown">
+                        <button class="toolbar-dropdown-btn" id="project-btn" onclick="ProjectPicker.toggle()">
+                            <i class="fas fa-map"></i>
+                            <span id="project-name-display">No Project</span>
+                            <i class="fas fa-chevron-down" style="font-size:0.6rem;opacity:0.5;"></i>
+                        </button>
+                        <div class="dropdown-menu" id="project-menu">
+                            <div class="dropdown-header">Map Projects</div>
+                            <div id="project-list"></div>
+                            <div class="dropdown-item" onclick="ProjectPicker.showCreateModal()" style="color:var(--accent-color);border-top:1px solid var(--border-default);">
+                                <i class="fas fa-plus"></i> New Map Project
+                            </div>
+                        </div>
+                    </div>
+                    <div class="separator"></div>
+                    <!-- Changelog toggle -->
+                    <button class="action-btn" id="action-changelog" title="Activity Log" onclick="ChangelogDrawer.toggle()">
+                        <i class="fas fa-history" style="font-size:0.8rem;"></i>
+                    </button>
+                    <!-- User menu -->
+                    <div class="toolbar-dropdown" id="user-dropdown">
+                        <button class="user-btn" onclick="UserMenu.toggle()">
+                            <div class="user-avatar-small" id="user-avatar-small">?</div>
+                            <span id="user-display-name" style="max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">User</span>
+                        </button>
+                        <div class="dropdown-menu" id="user-menu">
+                            <div class="dropdown-item" onclick="window.location.href='index.html'"><i class="fas fa-eye"></i> View Reader Site</div>
+                            <div class="dropdown-item" onclick="Auth.logout()" style="color:var(--danger-color);"><i class="fas fa-sign-out-alt"></i> Logout</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main map area -->
+            <main>
+                <div id="map-container"></div>
+                <!-- Contributors panel -->
+                <div class="contributors-panel" id="contributors-panel">
+                    <h4>Contributors</h4>
+                    <div id="contributors-list"></div>
+                </div>
+            </main>
+
+            <!-- Status bar -->
+            <footer id="status-bar">
+                <div class="status-left">
+                    <span id="status-mode" class="status-badge">SELECT</span>
+                    <span id="status-coords">x: 0, y: 0</span>
+                </div>
+                <div class="status-center">
+                    <span id="status-hint">Click a node to edit · Right-click to delete</span>
+                </div>
+                <div class="status-right">
+                    <span id="status-zoom">Zoom: 100%</span>
+                    <span class="stats-sep">·</span>
+                    <div class="stats">
+                        <span id="stat-nodes">0 nodes</span>
+                        <span class="stats-sep">·</span>
+                        <span id="stat-edges">0 paths</span>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Changelog drawer -->
+    <div class="changelog-backdrop" id="changelog-backdrop" onclick="ChangelogDrawer.close()"></div>
+    <div class="changelog-drawer" id="changelog-drawer">
+        <div class="changelog-header">
+            <h3>Activity Log</h3>
+            <button class="changelog-close" onclick="ChangelogDrawer.close()">&times;</button>
+        </div>
+        <div class="changelog-list" id="changelog-list">
+            <div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.85rem;">No activity yet</div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) Modal.close()">
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <!-- Hidden file input for map image upload -->
+    <input type="file" id="map-image-input" accept="image/*" style="display:none">
+
+    <!-- Context menu container (created by JS) -->
+
+    <!-- SCRIPTS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+    // ==============================================
+// SUPABASE CLIENT
+// ==============================================
+const SUPABASE_URL = 'https://gdivyqfhgashkqcqqnas.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_pumorCjNkGt1RV_Ygfq30A_IFtVz_Lt';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ==============================================
+// CONTRIBUTOR COLORS
+// ==============================================
+const PALETTE = [
+    '#60a5fa','#f472b6','#34d399','#a78bfa','#fb923c',
+    '#f87171','#38bdf8','#facc15','#4ade80','#e879f9',
+    '#22d3ee','#fb7185'
+];
+function getContributorColor(userId) {
+    if (!userId) return '#888';
+    let h = 0;
+    for (let i = 0; i < userId.length; i++) h = ((h << 5) - h) + userId.charCodeAt(i);
+    return PALETTE[Math.abs(h) % PALETTE.length];
+}
+
+// ==============================================
+// STATE
+// ==============================================
+const State = {
+    user: null,
+    profile: null,
+    currentProject: null,
+    projects: [],
+    nodes: [],
+    edges: [],
+    mode: 'select', // select | place | trace
+    traceQueue: [],
+    isDirty: false,
+    contributors: {},
+    undoStack: [],
+    redoStack: []
+};
+
+// ==============================================
+// UTILS
+// ==============================================
+const Utils = {
+    escapeHtml: (s) => { if (!s) return ''; return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); },
+    slugify: (s) => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''),
+    uploadImage: async (file, bucket, folder = '') => {
+        if (!file) return null;
+        const ext = file.name.split('.').pop();
+        const name = `${Math.random().toString(36).slice(2,12)}_${Date.now()}.${ext}`;
+        const path = folder ? `${folder}/${name}` : name;
+        const { error } = await supabaseClient.storage.from(bucket).upload(path, file);
+        if (error) throw new Error(`Upload failed: ${error.message}`);
+        const { data: pub } = supabaseClient.storage.from(bucket).getPublicUrl(path);
+        return pub.publicUrl;
+    },
+    timeAgo: (d) => {
+        const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
+        if (s < 60) return 'just now';
+        if (s < 3600) return `${Math.floor(s/60)}m ago`;
+        if (s < 86400) return `${Math.floor(s/3600)}h ago`;
+        return `${Math.floor(s/86400)}d ago`;
+    },
+    uuid: () => crypto.randomUUID ? crypto.randomUUID() : ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16))
+};
+
+// ==============================================
+// UI HELPERS
+// ==============================================
+const UI = {
+    showLoading: () => document.getElementById('loading-overlay').classList.add('active'),
+    hideLoading: () => document.getElementById('loading-overlay').classList.remove('active')
+};
+
+const Toast = {
+    show: (msg, type = 'info', duration = 3000) => {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        const icons = { success:'✓', error:'✕', warning:'!', info:'i' };
+        t.className = `toast ${type}`;
+        t.innerHTML = `<span class="toast-icon">${icons[type]||'i'}</span><span>${Utils.escapeHtml(msg)}</span>`;
+        c.appendChild(t);
+        setTimeout(() => { t.classList.add('toast-out'); setTimeout(() => t.remove(), 200); }, duration);
+    }
+};
+
+// ==============================================
+// MODAL
+// ==============================================
+const Modal = {
+    open: (title, body, footer = '') => {
+        const mc = document.getElementById('modal-content');
+        mc.innerHTML = `
+            <div class="modal-header"><h3 class="modal-title">${title}</h3><button class="modal-close" onclick="Modal.close()">&times;</button></div>
+            <div class="modal-body">${body}</div>
+            ${footer ? `<div class="modal-footer">${footer}</div>` : ''}`;
+        document.getElementById('modal-overlay').classList.add('active');
+    },
+    close: () => document.getElementById('modal-overlay').classList.remove('active')
+};
+
+// ==============================================
+// AUTH
+// ==============================================
+const Auth = {
+    init: async () => {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (session) { State.user = session.user; await Auth.loadProfile(); }
+        else Auth.showLogin();
+        supabaseClient.auth.onAuthStateChange(async (ev, session) => {
+            if (ev === 'SIGNED_IN' && session) { State.user = session.user; await Auth.loadProfile(); }
+            else if (ev === 'SIGNED_OUT') { State.user = null; State.profile = null; Auth.showLogin(); }
+        });
+    },
+    loadProfile: async () => {
+        try {
+            const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', State.user.id).single();
+            if (error) throw error;
+            if (!data || !['admin','cartographer'].includes(data.role)) throw new Error('Access denied. Cartographer or Admin role required.');
+            State.profile = data;
+            document.getElementById('user-display-name').textContent = data.display_name || 'User';
+            document.getElementById('user-avatar-small').textContent = (data.display_name || 'U')[0].toUpperCase();
+            Auth.showEditor();
+        } catch (err) {
+            console.error('Profile Error:', err);
+            document.getElementById('login-error').textContent = err.message;
+            document.getElementById('login-error').style.display = 'block';
+            Auth.showLogin();
+        }
+    },
+    showLogin: () => { document.getElementById('login-view').style.display = 'block'; document.getElementById('editor-view').style.display = 'none'; },
+    showEditor: () => {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('editor-view').style.display = 'block';
+        App.init();
+    },
+    login: async (email, password) => {
+        UI.showLoading();
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        UI.hideLoading();
+        if (error) { document.getElementById('login-error').textContent = error.message; document.getElementById('login-error').style.display = 'block'; }
+    },
+    logout: async () => { await supabaseClient.auth.signOut(); window.location.reload(); }
+};
+
+// ==============================================
+// DATABASE
+// ==============================================
+const DB = {
+    getProjects: async () => {
+        const { data } = await supabaseClient.from('map_projects').select('*').order('created_at', { ascending: false });
+        return data || [];
+    },
+    createProject: async (proj) => {
+        const { data, error } = await supabaseClient.from('map_projects').insert({ ...proj, created_by: State.user.id }).select().single();
+        if (error) throw error;
+        return data;
+    },
+    updateProject: async (id, updates) => {
+        const { error } = await supabaseClient.from('map_projects').update(updates).eq('id', id);
+        if (error) throw error;
+    },
+    getNodes: async (projectId) => {
+        const { data } = await supabaseClient.from('map_nodes').select('*').eq('map_project_id', projectId).order('created_at');
+        return data || [];
+    },
+    getEdges: async (projectId) => {
+        const { data } = await supabaseClient.from('map_edges').select('*').eq('map_project_id', projectId).order('created_at');
+        return data || [];
+    },
+    saveNode: async (node) => {
+        const { data, error } = await supabaseClient.from('map_nodes').upsert(node).select().single();
+        if (error) throw error;
+        return data;
+    },
+    deleteNode: async (id) => {
+        const { error } = await supabaseClient.from('map_nodes').delete().eq('id', id);
+        if (error) throw error;
+    },
+    saveEdge: async (edge) => {
+        const { data, error } = await supabaseClient.from('map_edges').upsert(edge).select().single();
+        if (error) throw error;
+        return data;
+    },
+    deleteEdge: async (id) => {
+        const { error } = await supabaseClient.from('map_edges').delete().eq('id', id);
+        if (error) throw error;
+    },
+    logChange: async (action, entityType, entityId, oldData, newData) => {
+        if (!State.currentProject) return;
+        try {
+            await supabaseClient.from('map_changelog').insert({
+                map_project_id: State.currentProject.id,
+                user_id: State.user.id,
+                action, entity_type: entityType, entity_id: entityId,
+                old_data: oldData, new_data: newData
+            });
+        } catch(e) { console.warn('Changelog write failed:', e); }
+    },
+    getChangelog: async (projectId, limit = 50) => {
+        const { data } = await supabaseClient.from('map_changelog')
+            .select('*, profiles:user_id(display_name)')
+            .eq('map_project_id', projectId)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+        return data || [];
+    }
+};
+
+// ==============================================
+// PLANET DATA (CSV autocomplete)
+// ==============================================
+const PlanetDB = {
+    entries: [],
+    loaded: false,
+    load: async () => {
+        try {
+            const res = await fetch('data/sw_planets.csv');
+            const text = await res.text();
+            const lines = text.split('\n').slice(2); // skip header rows
+            PlanetDB.entries = lines.map(l => {
+                const [name, sector, region, grid] = l.split(',').map(s => (s||'').trim());
+                if (!name) return null;
+                return { name, sector, region, grid };
+            }).filter(Boolean);
+            PlanetDB.loaded = true;
+        } catch(e) { console.warn('Planet CSV load failed:', e); }
+    },
+    search: (query, limit = 8) => {
+        if (!query || !PlanetDB.loaded) return [];
+        const q = query.toLowerCase();
+        const results = [];
+        for (const e of PlanetDB.entries) {
+            if (e.name.toLowerCase().startsWith(q)) results.push(e);
+            if (results.length >= limit) break;
+        }
+        if (results.length < limit) {
+            for (const e of PlanetDB.entries) {
+                if (e.name.toLowerCase().includes(q) && !results.includes(e)) results.push(e);
+                if (results.length >= limit) break;
+            }
+        }
+        return results;
+    }
+};
+
+// ==============================================
+// PROJECT PICKER
+// ==============================================
+const ProjectPicker = {
+    toggle: () => {
+        const menu = document.getElementById('project-menu');
+        document.querySelectorAll('.dropdown-menu').forEach(m => { if (m !== menu) m.classList.remove('open'); });
+        menu.classList.toggle('open');
+    },
+    refresh: async () => {
+        State.projects = await DB.getProjects();
+        const list = document.getElementById('project-list');
+        if (State.projects.length === 0) {
+            list.innerHTML = '<div class="dropdown-item" style="color:var(--text-muted);cursor:default;">No projects yet</div>';
+            return;
+        }
+        list.innerHTML = State.projects.map(p => `
+            <div class="dropdown-item ${State.currentProject?.id === p.id ? 'active' : ''}" onclick="ProjectPicker.select('${p.id}')">
+                <i class="fas fa-map" style="margin-right:6px;opacity:0.5;"></i>${Utils.escapeHtml(p.title)}
+                ${p.is_published ? '<i class="fas fa-globe" style="margin-left:6px;color:var(--success-color);font-size:0.65rem;" title="Published"></i>' : ''}
+            </div>
+        `).join('');
+    },
+    select: async (id) => {
+        document.getElementById('project-menu').classList.remove('open');
+        const proj = State.projects.find(p => p.id === id);
+        if (!proj) return;
+        UI.showLoading();
+        try {
+            State.currentProject = proj;
+            document.getElementById('project-name-display').textContent = proj.title;
+            State.nodes = await DB.getNodes(id);
+            State.edges = await DB.getEdges(id);
+            State.undoStack = [];
+            State.redoStack = [];
+            State.isDirty = false;
+            SaveIndicator.setSaved();
+            MapEngine.loadProject(proj);
+            Contributors.refresh();
+            StatusBar.updateStats();
+            Toast.show(`Loaded: ${proj.title}`, 'success');
+        } catch(e) {
+            Toast.show('Failed to load project', 'error');
+            console.error(e);
+        }
+        UI.hideLoading();
+    },
+    showCreateModal: () => {
+        document.getElementById('project-menu').classList.remove('open');
+        Modal.open('New Map Project', `
+            <div class="form-group">
+                <label class="form-label">Project Title</label>
+                <input type="text" class="form-input" id="new-proj-title" placeholder="e.g. Star Wars Galaxy" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Base Map Image</label>
+                <input type="file" class="form-input" id="new-proj-image" accept="image/*" style="padding:0.3rem">
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;">Map dimensions will be read from the uploaded image.</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><input type="checkbox" id="new-proj-published" style="margin-right:6px;accent-color:var(--accent-color);">Published (visible to readers)</label>
+            </div>
+        `, `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
+            <button class="btn btn-primary" onclick="ProjectPicker.create()"><i class="fas fa-plus"></i> Create</button>`);
+    },
+    create: async () => {
+        const title = document.getElementById('new-proj-title').value.trim();
+        if (!title) { Toast.show('Title is required', 'warning'); return; }
+        const fileInput = document.getElementById('new-proj-image');
+        const published = document.getElementById('new-proj-published').checked;
+        UI.showLoading();
+        try {
+            let imageUrl = null;
+            let w = 4000, h = 4000;
+            if (fileInput.files.length > 0) {
+                const file = fileInput.files[0];
+                imageUrl = await Utils.uploadImage(file, 'map-images');
+                // Read image dimensions
+                const dims = await new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                    img.onerror = () => resolve({ width: 4000, height: 4000 });
+                    img.src = URL.createObjectURL(file);
+                });
+                w = dims.width; h = dims.height;
+            }
+            const proj = await DB.createProject({
+                title, slug: Utils.slugify(title) + '-' + Date.now().toString(36),
+                image_url: imageUrl, width: w, height: h, is_published: published
+            });
+            Modal.close();
+            await ProjectPicker.refresh();
+            await ProjectPicker.select(proj.id);
+            Toast.show('Project created!', 'success');
+        } catch(e) {
+            Toast.show(`Error: ${e.message}`, 'error');
+            console.error(e);
+        }
+        UI.hideLoading();
+    }
+};
+
+// ==============================================
+// USER MENU
+// ==============================================
+const UserMenu = {
+    toggle: () => {
+        const menu = document.getElementById('user-menu');
+        document.querySelectorAll('.dropdown-menu').forEach(m => { if (m !== menu) m.classList.remove('open'); });
+        menu.classList.toggle('open');
+    }
+};
+
+// ==============================================
+// SAVE INDICATOR
+// ==============================================
+const SaveIndicator = {
+    setSaving: () => { document.getElementById('save-dot').classList.add('saving'); document.getElementById('save-text').textContent = 'Saving…'; document.getElementById('save-text').style.color = 'var(--warning-color)'; },
+    setSaved: () => { document.getElementById('save-dot').classList.remove('saving'); document.getElementById('save-text').textContent = 'Saved'; document.getElementById('save-text').style.color = 'var(--success-color)'; State.isDirty = false; },
+    setUnsaved: () => { document.getElementById('save-dot').classList.remove('saving'); document.getElementById('save-text').textContent = 'Unsaved'; document.getElementById('save-text').style.color = 'var(--text-muted)'; State.isDirty = true; }
+};
+
+// ==============================================
+// STATUS BAR
+// ==============================================
+const StatusBar = {
+    setMode: (mode) => {
+        document.getElementById('status-mode').textContent = mode.toUpperCase();
+        const hints = {
+            select: 'Click a node to edit · Right-click for options',
+            place: 'Click on the map to place a planet · ESC to cancel',
+            trace: 'Click nodes in order to draw a path · ESC or double-click to finish'
+        };
+        document.getElementById('status-hint').textContent = hints[mode] || '';
+    },
+    setCoords: (x, y) => { document.getElementById('status-coords').textContent = `x: ${Math.round(x)}, y: ${Math.round(y)}`; },
+    setZoom: (z) => { document.getElementById('status-zoom').textContent = `Zoom: ${Math.round(z * 100)}%`; },
+    updateStats: () => {
+        document.getElementById('stat-nodes').textContent = `${State.nodes.length} nodes`;
+        document.getElementById('stat-edges').textContent = `${State.edges.length} paths`;
+    }
+};
+
+// ==============================================
+// CONTRIBUTORS
+// ==============================================
+const Contributors = {
+    refresh: () => {
+        const map = {};
+        for (const n of State.nodes) {
+            if (n.created_by && !map[n.created_by]) map[n.created_by] = { id: n.created_by, color: getContributorColor(n.created_by), name: null };
+        }
+        for (const e of State.edges) {
+            if (e.created_by && !map[e.created_by]) map[e.created_by] = { id: e.created_by, color: getContributorColor(e.created_by), name: null };
+        }
+        // Mark current user
+        if (State.user && !map[State.user.id]) map[State.user.id] = { id: State.user.id, color: getContributorColor(State.user.id), name: null };
+        if (State.user && map[State.user.id]) map[State.user.id].name = State.profile?.display_name || 'You';
+        State.contributors = map;
+
+        const list = document.getElementById('contributors-list');
+        const entries = Object.values(map);
+        if (entries.length === 0) { list.innerHTML = '<div style="font-size:0.75rem;color:var(--text-muted);">None</div>'; return; }
+        list.innerHTML = entries.map(c => `<div class="contributor-row"><span class="contributor-dot" style="background:${c.color}"></span>${Utils.escapeHtml(c.name || 'Contributor')}</div>`).join('');
+    }
+};
+
+// ==============================================
+// CHANGELOG DRAWER
+// ==============================================
+const ChangelogDrawer = {
+    toggle: () => {
+        const d = document.getElementById('changelog-drawer');
+        const b = document.getElementById('changelog-backdrop');
+        if (d.classList.contains('open')) { ChangelogDrawer.close(); } else { d.classList.add('open'); b.classList.add('active'); ChangelogDrawer.load(); }
+    },
+    close: () => {
+        document.getElementById('changelog-drawer').classList.remove('open');
+        document.getElementById('changelog-backdrop').classList.remove('active');
+    },
+    load: async () => {
+        if (!State.currentProject) return;
+        const entries = await DB.getChangelog(State.currentProject.id);
+        const list = document.getElementById('changelog-list');
+        if (entries.length === 0) { list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-muted);font-size:0.85rem;">No activity yet</div>'; return; }
+        list.innerHTML = entries.map(e => {
+            const color = getContributorColor(e.user_id);
+            const name = e.profiles?.display_name || 'Unknown';
+            const actionLabels = { add_node:'placed', edit_node:'edited', delete_node:'removed', add_edge:'traced', delete_edge:'removed' };
+            const entityName = e.new_data?.name || e.old_data?.name || e.entity_type;
+            return `<div class="changelog-item">
+                <span class="dot" style="background:${color}"></span>
+                <div class="details">
+                    <div class="action-text"><strong>${Utils.escapeHtml(name)}</strong> ${actionLabels[e.action] || e.action} ${e.entity_type} <em>${Utils.escapeHtml(entityName)}</em></div>
+                    <div class="time-text">${Utils.timeAgo(e.created_at)}</div>
+                </div>
+            </div>`;
+        }).join('');
+    }
+};
+
+// ==============================================
+// PARTICLES (background animation)
+// ==============================================
+const Particles = {
+    _rafId: null, _paused: false,
+    init: () => {
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let w, h, particles = [];
+        const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+        window.addEventListener('resize', resize); resize();
+        class P { constructor() { this.x = Math.random()*w; this.y = Math.random()*h; this.s = Math.random()*1.5+0.5; this.sy = Math.random()*0.3+0.1; this.o = Math.random()*0.5; } update() { this.y -= this.sy; if(this.y<0){this.y=h;this.x=Math.random()*w;} } draw() { ctx.fillStyle=`rgba(255,215,0,${this.o})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.s,0,Math.PI*2); ctx.fill(); } }
+        for(let i=0;i<25;i++) particles.push(new P());
+        function animate() { if(Particles._paused) return; ctx.clearRect(0,0,w,h); particles.forEach(p=>{p.update();p.draw();}); Particles._rafId=requestAnimationFrame(animate); }
+        animate();
+        document.addEventListener('visibilitychange', () => { if(document.hidden){Particles._paused=true;if(Particles._rafId){cancelAnimationFrame(Particles._rafId);Particles._rafId=null;}}else{Particles._paused=false;animate();} });
+    }
+};
+
+
+// ==============================================
+// MAP ENGINE (Leaflet CRS.Simple)
+// ==============================================
+const MapEngine = {
+    map: null,
+    imageOverlay: null,
+    nodesLayer: null,
+    edgesLayer: null,
+    selectionLayer: null,
+
+    init: () => {
+        const map = L.map('map-container', {
+            crs: L.CRS.Simple,
+            minZoom: -3,
+            maxZoom: 4,
+            zoomControl: true,
+            attributionControl: false,
+            zoomSnap: 0.25,
+            wheelPxPerZoomLevel: 120
+        });
+        MapEngine.map = map;
+        MapEngine.nodesLayer = L.layerGroup().addTo(map);
+        MapEngine.edgesLayer = L.layerGroup().addTo(map);
+        MapEngine.selectionLayer = L.layerGroup().addTo(map);
+
+        // Track mouse for coords display
+        map.on('mousemove', (e) => {
+            const pt = e.latlng;
+            StatusBar.setCoords(pt.lng, -pt.lat);
+        });
+        map.on('zoomend', () => StatusBar.setZoom(MapEngine.getZoomFraction()));
+        map.on('click', MapEngine.onClick);
+        map.on('contextmenu', MapEngine.onContextMenu);
+        // Set initial view
+        map.setView([0, 0], 0);
+    },
+
+    getZoomFraction: () => {
+        const z = MapEngine.map.getZoom();
+        return Math.pow(2, z);
+    },
+
+    loadProject: (proj) => {
+        MapEngine.clear();
+        if (proj.image_url) {
+            const bounds = [[0, 0], [-proj.height, proj.width]];
+            MapEngine.imageOverlay = L.imageOverlay(proj.image_url, bounds).addTo(MapEngine.map);
+            MapEngine.map.fitBounds(bounds);
+        } else {
+            MapEngine.map.setView([-2000, 2000], -1);
+        }
+        // Render existing data
+        MapEngine.renderAll();
+    },
+
+    clear: () => {
+        if (MapEngine.imageOverlay) { MapEngine.map.removeLayer(MapEngine.imageOverlay); MapEngine.imageOverlay = null; }
+        MapEngine.nodesLayer.clearLayers();
+        MapEngine.edgesLayer.clearLayers();
+        MapEngine.selectionLayer.clearLayers();
+    },
+
+    renderAll: () => {
+        MapEngine.nodesLayer.clearLayers();
+        MapEngine.edgesLayer.clearLayers();
+        // Render edges first (below nodes)
+        for (const edge of State.edges) MapEngine.renderEdge(edge);
+        // Render nodes
+        for (const node of State.nodes) MapEngine.renderNode(node);
+        StatusBar.updateStats();
+    },
+
+    renderNode: (node) => {
+        const color = node.color || getContributorColor(node.created_by);
+        const marker = L.circleMarker([-node.y, node.x], {
+            radius: 5,
+            fillColor: color,
+            fillOpacity: 0.9,
+            color: '#fff',
+            weight: 1.5,
+            opacity: 0.8
+        });
+        marker._nodeData = node;
+
+        // Tooltip with name
+        marker.bindTooltip(node.name, {
+            permanent: false,
+            direction: 'top',
+            offset: [0, -8],
+            className: 'node-tooltip'
+        });
+
+        marker.on('click', (e) => {
+            L.DomEvent.stopPropagation(e);
+            if (State.mode === 'select') PlanetEditor.openPopup(node, marker);
+            else if (State.mode === 'trace') TraceMode.addNode(node);
+        });
+        marker.on('contextmenu', (e) => {
+            L.DomEvent.stopPropagation(e);
+            ContextMenu.show(e.originalEvent, node);
+        });
+
+        marker.addTo(MapEngine.nodesLayer);
+        return marker;
+    },
+
+    renderEdge: (edge) => {
+        const color = edge.color || getContributorColor(edge.created_by);
+        const points = edge.geometry || [];
+        if (points.length < 2) return;
+        const latlngs = points.map(p => [-p.y, p.x]);
+
+        let line;
+        if (edge.edge_type === 'curved' && points.length > 2) {
+            // Catmull-Rom spline
+            const smooth = MapEngine.catmullRom(latlngs, 20);
+            line = L.polyline(smooth, { color, weight: 2, opacity: 0.7, dashArray: null });
+        } else {
+            line = L.polyline(latlngs, { color, weight: 2, opacity: 0.7 });
+        }
+        line._edgeData = edge;
+
+        // Tooltip
+        const label = [edge.source_name, edge.target_name].filter(Boolean).join(' → ');
+        if (label) line.bindTooltip(label, { sticky: true, direction: 'top', opacity: 0.9 });
+
+        line.on('click', (e) => {
+            L.DomEvent.stopPropagation(e);
+            if (State.mode === 'select') EdgeEditor.showInfo(edge);
+        });
+        line.on('contextmenu', (e) => {
+            L.DomEvent.stopPropagation(e);
+            ContextMenu.showEdge(e.originalEvent, edge);
+        });
+
+        line.addTo(MapEngine.edgesLayer);
+        return line;
+    },
+
+    catmullRom: (pts, segments = 20) => {
+        if (pts.length < 2) return pts;
+        const result = [];
+        for (let i = 0; i < pts.length - 1; i++) {
+            const p0 = pts[Math.max(0, i - 1)];
+            const p1 = pts[i];
+            const p2 = pts[i + 1];
+            const p3 = pts[Math.min(pts.length - 1, i + 2)];
+            for (let t = 0; t < segments; t++) {
+                const f = t / segments;
+                const f2 = f * f, f3 = f2 * f;
+                const lat = 0.5 * ((2*p1[0]) + (-p0[0]+p2[0])*f + (2*p0[0]-5*p1[0]+4*p2[0]-p3[0])*f2 + (-p0[0]+3*p1[0]-3*p2[0]+p3[0])*f3);
+                const lng = 0.5 * ((2*p1[1]) + (-p0[1]+p2[1])*f + (2*p0[1]-5*p1[1]+4*p2[1]-p3[1])*f2 + (-p0[1]+3*p1[1]-3*p2[1]+p3[1])*f3);
+                result.push([lat, lng]);
+            }
+        }
+        result.push(pts[pts.length - 1]);
+        return result;
+    },
+
+    onClick: (e) => {
+        if (State.mode === 'place') PlaceMode.placeAt(e.latlng);
+    },
+
+    onContextMenu: (e) => {
+        e.originalEvent.preventDefault();
+    },
+
+    findMarkerForNode: (nodeId) => {
+        let found = null;
+        MapEngine.nodesLayer.eachLayer(m => { if (m._nodeData && m._nodeData.id === nodeId) found = m; });
+        return found;
+    }
+};
+
+// ==============================================
+// MODE MANAGER
+// ==============================================
+const ModeManager = {
+    set: (mode) => {
+        State.mode = mode;
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`mode-${mode}`).classList.add('active');
+        StatusBar.setMode(mode);
+        // Cleanup previous mode
+        MapEngine.selectionLayer.clearLayers();
+        if (mode !== 'trace') { State.traceQueue = []; }
+        // Cursor
+        const container = document.getElementById('map-container');
+        container.style.cursor = mode === 'place' ? 'crosshair' : mode === 'trace' ? 'pointer' : '';
+    }
+};
+
+// ==============================================
+// PLACE MODE
+// ==============================================
+const PlaceMode = {
+    placeAt: async (latlng) => {
+        const x = Math.round(latlng.lng * 10) / 10;
+        const y = Math.round(-latlng.lat * 10) / 10;
+        const color = getContributorColor(State.user.id);
+        const tempId = Utils.uuid();
+
+        const node = {
+            id: tempId,
+            map_project_id: State.currentProject.id,
+            name: 'New Planet',
+            x, y,
+            region: '', sector: '',
+            color,
+            created_by: State.user.id,
+            created_at: new Date().toISOString()
+        };
+
+        // Add locally first
+        State.nodes.push(node);
+        const marker = MapEngine.renderNode(node);
+        StatusBar.updateStats();
+        SaveIndicator.setUnsaved();
+
+        // Open popup immediately for naming
+        PlanetEditor.openPopup(node, marker, true);
+    }
+};
+
+// ==============================================
+// PLANET EDITOR (popup on node click/place)
+// ==============================================
+const PlanetEditor = {
+    openPopup: (node, marker, isNew = false) => {
+        const color = node.color || getContributorColor(node.created_by);
+        const contribName = node.created_by === State.user?.id ? 'You' : 'Contributor';
+        const content = document.createElement('div');
+        content.className = 'popup-content';
+        content.innerHTML = `
+            <div class="popup-header">${isNew ? 'NEW PLANET' : 'EDIT PLANET'}</div>
+            <input type="text" id="popup-name" value="${Utils.escapeHtml(node.name)}" placeholder="Planet name..." autocomplete="off">
+            <div id="popup-autocomplete" class="autocomplete-list" style="display:none;position:relative;"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+                <input type="text" id="popup-region" value="${Utils.escapeHtml(node.region||'')}" placeholder="Region">
+                <input type="text" id="popup-sector" value="${Utils.escapeHtml(node.sector||'')}" placeholder="Sector">
+            </div>
+            <div class="popup-actions">
+                <button class="btn-save" id="popup-save-btn">Save</button>
+                <button class="btn-delete" id="popup-delete-btn"><i class="fas fa-trash" style="font-size:0.7rem"></i></button>
+            </div>
+            <div class="contributor-info"><span class="dot" style="background:${color}"></span>${contribName}</div>`;
+
+        const popup = L.popup({ closeOnClick: false, autoClose: false, maxWidth: 260, minWidth: 220, className: '' })
+            .setLatLng(marker.getLatLng())
+            .setContent(content)
+            .openOn(MapEngine.map);
+
+        // Focus name input
+        setTimeout(() => {
+            const nameInput = document.getElementById('popup-name');
+            if (nameInput) { nameInput.focus(); if (isNew) nameInput.select(); }
+            // Autocomplete
+            PlanetEditor.bindAutocomplete(nameInput);
+            // Save
+            document.getElementById('popup-save-btn').onclick = () => PlanetEditor.save(node, popup);
+            // Delete
+            document.getElementById('popup-delete-btn').onclick = () => PlanetEditor.delete(node, popup);
+            // Enter to save
+            nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') PlanetEditor.save(node, popup); });
+        }, 50);
+    },
+
+    bindAutocomplete: (input) => {
+        if (!input) return;
+        input.addEventListener('input', () => {
+            const q = input.value.trim();
+            const box = document.getElementById('popup-autocomplete');
+            if (!box) return;
+            const results = PlanetDB.search(q);
+            if (results.length === 0 || q.length < 2) { box.style.display = 'none'; return; }
+            box.style.display = 'block';
+            box.innerHTML = results.map(r => `<div class="autocomplete-item" data-name="${Utils.escapeHtml(r.name)}" data-region="${Utils.escapeHtml(r.region||'')}" data-sector="${Utils.escapeHtml(r.sector||'')}">
+                ${Utils.escapeHtml(r.name)}${r.region ? `<span class="region-tag">${Utils.escapeHtml(r.region)}</span>` : ''}
+            </div>`).join('');
+            box.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.onclick = () => {
+                    input.value = item.dataset.name;
+                    const regionInput = document.getElementById('popup-region');
+                    const sectorInput = document.getElementById('popup-sector');
+                    if (regionInput) regionInput.value = item.dataset.region || '';
+                    if (sectorInput) sectorInput.value = item.dataset.sector || '';
+                    box.style.display = 'none';
+                };
+            });
+        });
+        document.addEventListener('click', (e) => {
+            const box = document.getElementById('popup-autocomplete');
+            if (box && !box.contains(e.target) && e.target !== input) box.style.display = 'none';
+        }, { once: false });
+    },
+
+    save: async (node, popup) => {
+        const name = document.getElementById('popup-name')?.value.trim() || 'Unnamed';
+        const region = document.getElementById('popup-region')?.value.trim() || '';
+        const sector = document.getElementById('popup-sector')?.value.trim() || '';
+        const oldData = { name: node.name, region: node.region, sector: node.sector };
+        const isNew = !node._persisted;
+        node.name = name;
+        node.region = region;
+        node.sector = sector;
+        popup.remove();
+        MapEngine.renderAll();
+        SaveIndicator.setUnsaved();
+
+        try {
+            const saved = await DB.saveNode(node);
+            // Update local with server-assigned ID if needed
+            const idx = State.nodes.findIndex(n => n.id === node.id);
+            if (idx >= 0) { State.nodes[idx] = { ...saved, _persisted: true }; }
+            await DB.logChange(isNew ? 'add_node' : 'edit_node', 'node', saved.id, isNew ? null : oldData, { name, region, sector });
+            Toast.show(isNew ? `Placed: ${name}` : `Updated: ${name}`, 'success');
+        } catch(e) {
+            Toast.show(`Save failed: ${e.message}`, 'error');
+        }
+    },
+
+    delete: async (node, popup) => {
+        popup.remove();
+        State.nodes = State.nodes.filter(n => n.id !== node.id);
+        // Also remove edges referencing this node
+        const affectedEdges = State.edges.filter(e => e.source_node_id === node.id || e.target_node_id === node.id);
+        State.edges = State.edges.filter(e => e.source_node_id !== node.id && e.target_node_id !== node.id);
+        MapEngine.renderAll();
+        SaveIndicator.setUnsaved();
+
+        try {
+            // Edges cascade-delete on server, but we still log
+            for (const edge of affectedEdges) {
+                await DB.logChange('delete_edge', 'edge', edge.id, { source: edge.source_name, target: edge.target_name }, null);
+            }
+            await DB.deleteNode(node.id);
+            await DB.logChange('delete_node', 'node', node.id, { name: node.name }, null);
+            Toast.show(`Removed: ${node.name}`, 'info');
+        } catch(e) {
+            Toast.show(`Delete failed: ${e.message}`, 'error');
+        }
+    }
+};
+
+// ==============================================
+// EDGE EDITOR
+// ==============================================
+const EdgeEditor = {
+    showInfo: (edge) => {
+        const color = edge.color || getContributorColor(edge.created_by);
+        const src = edge.source_name || 'Unknown';
+        const tgt = edge.target_name || 'Unknown';
+        const points = edge.geometry || [];
+        let dist = 0;
+        for (let i = 1; i < points.length; i++) {
+            const dx = points[i].x - points[i-1].x, dy = points[i].y - points[i-1].y;
+            dist += Math.sqrt(dx*dx + dy*dy);
+        }
+        const content = `<div class="popup-content">
+            <div class="popup-header">HYPERLANE</div>
+            <div class="popup-route-info"><strong>${Utils.escapeHtml(src)}</strong> → <strong>${Utils.escapeHtml(tgt)}</strong></div>
+            <div class="popup-route-info" style="font-size:0.72rem;color:var(--text-muted);">Distance: ${Math.round(dist)} · Points: ${points.length} · Type: ${edge.edge_type}</div>
+            <div class="popup-actions">
+                <button class="btn-delete" onclick="EdgeEditor.delete('${edge.id}')"><i class="fas fa-trash"></i> Delete</button>
+            </div>
+            <div class="contributor-info"><span class="dot" style="background:${color}"></span>Contributor</div>
+        </div>`;
+        const midIdx = Math.floor(points.length / 2);
+        const midPt = points[midIdx] || points[0];
+        if (midPt) L.popup({ maxWidth: 260, minWidth: 200 }).setLatLng([-midPt.y, midPt.x]).setContent(content).openOn(MapEngine.map);
+    },
+
+    delete: async (edgeId) => {
+        const edge = State.edges.find(e => e.id === edgeId);
+        State.edges = State.edges.filter(e => e.id !== edgeId);
+        MapEngine.map.closePopup();
+        MapEngine.renderAll();
+        SaveIndicator.setUnsaved();
+        try {
+            await DB.deleteEdge(edgeId);
+            if (edge) await DB.logChange('delete_edge', 'edge', edgeId, { source: edge.source_name, target: edge.target_name }, null);
+            Toast.show('Path removed', 'info');
+        } catch(e) { Toast.show(`Delete failed: ${e.message}`, 'error'); }
+    }
+};
+
+// ==============================================
+// TRACE MODE
+// ==============================================
+const TraceMode = {
+    addNode: (node) => {
+        // Check if already in queue
+        if (State.traceQueue.find(n => n.id === node.id)) {
+            Toast.show('Node already in path', 'warning');
+            return;
+        }
+        State.traceQueue.push(node);
+        // Visual feedback: show sequence number
+        const num = State.traceQueue.length;
+        const icon = L.divIcon({ className: 'selection-number', html: `${num}`, iconSize: [20, 20], iconAnchor: [10, 10] });
+        L.marker([-node.y, node.x], { icon, interactive: false }).addTo(MapEngine.selectionLayer);
+
+        // Draw preview line
+        if (State.traceQueue.length >= 2) {
+            const pts = State.traceQueue.map(n => [-n.y, n.x]);
+            MapEngine.selectionLayer.eachLayer(l => { if (l instanceof L.Polyline) MapEngine.selectionLayer.removeLayer(l); });
+            L.polyline(pts, { color: getContributorColor(State.user.id), weight: 2, opacity: 0.6, dashArray: '8,6' }).addTo(MapEngine.selectionLayer);
+        }
+
+        StatusBar.setMode('trace');
+        document.getElementById('status-hint').textContent = `Path: ${State.traceQueue.length} nodes selected · Double-click last node or press Enter to confirm · ESC to cancel`;
+    },
+
+    finish: async () => {
+        if (State.traceQueue.length < 2) { Toast.show('Need at least 2 nodes for a path', 'warning'); TraceMode.cancel(); return; }
+        const color = getContributorColor(State.user.id);
+        const nodes = [...State.traceQueue];
+        TraceMode.cancel(); // Clear selection visuals
+
+        // Create edges between consecutive nodes
+        for (let i = 0; i < nodes.length - 1; i++) {
+            const src = nodes[i], tgt = nodes[i + 1];
+            // Check if edge already exists
+            const exists = State.edges.find(e =>
+                (e.source_node_id === src.id && e.target_node_id === tgt.id) ||
+                (e.source_node_id === tgt.id && e.target_node_id === src.id)
+            );
+            if (exists) continue;
+
+            const edge = {
+                id: Utils.uuid(),
+                map_project_id: State.currentProject.id,
+                source_node_id: src.id,
+                target_node_id: tgt.id,
+                source_name: src.name,
+                target_name: tgt.name,
+                geometry: [{ x: src.x, y: src.y }, { x: tgt.x, y: tgt.y }],
+                edge_type: 'straight',
+                color,
+                created_by: State.user.id,
+                created_at: new Date().toISOString()
+            };
+            State.edges.push(edge);
+
+            try {
+                const saved = await DB.saveEdge(edge);
+                const idx = State.edges.findIndex(e => e.id === edge.id);
+                if (idx >= 0) State.edges[idx] = saved;
+                await DB.logChange('add_edge', 'edge', saved.id, null, { source: src.name, target: tgt.name });
+            } catch(e) { console.error('Edge save failed:', e); }
+        }
+
+        MapEngine.renderAll();
+        SaveIndicator.setUnsaved();
+        Toast.show(`Path created: ${nodes.length} nodes, ${nodes.length - 1} segments`, 'success');
+    },
+
+    cancel: () => {
+        State.traceQueue = [];
+        MapEngine.selectionLayer.clearLayers();
+        StatusBar.setMode('trace');
+    }
+};
+
+// ==============================================
+// CONTEXT MENU
+// ==============================================
+const ContextMenu = {
+    el: null,
+    init: () => {
+        ContextMenu.el = document.createElement('div');
+        ContextMenu.el.className = 'context-menu';
+        ContextMenu.el.style.display = 'none';
+        document.body.appendChild(ContextMenu.el);
+        document.addEventListener('click', () => ContextMenu.hide());
+    },
+    show: (e, node) => {
+        e.preventDefault();
+        ContextMenu.el.innerHTML = `
+            <div class="context-menu-item" onclick="ContextMenu.action('edit','${node.id}')"><i class="fas fa-edit" style="width:18px;"></i> Edit</div>
+            <div class="context-menu-item" onclick="ContextMenu.action('setOrigin','${node.id}')"><i class="fas fa-play" style="width:18px;"></i> Start Path Here</div>
+            <div class="context-menu-item" onclick="ContextMenu.action('delete','${node.id}')" style="color:var(--danger-color);"><i class="fas fa-trash" style="width:18px;"></i> Delete</div>`;
+        ContextMenu.el.style.display = 'block';
+        ContextMenu.el.style.left = e.pageX + 'px';
+        ContextMenu.el.style.top = e.pageY + 'px';
+    },
+    showEdge: (e, edge) => {
+        e.preventDefault();
+        ContextMenu.el.innerHTML = `
+            <div class="context-menu-item" onclick="EdgeEditor.delete('${edge.id}')"><i class="fas fa-trash" style="width:18px;color:var(--danger-color);"></i> Delete Path</div>`;
+        ContextMenu.el.style.display = 'block';
+        ContextMenu.el.style.left = e.pageX + 'px';
+        ContextMenu.el.style.top = e.pageY + 'px';
+    },
+    hide: () => { if (ContextMenu.el) ContextMenu.el.style.display = 'none'; },
+    action: (action, nodeId) => {
+        ContextMenu.hide();
+        const node = State.nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        if (action === 'edit') {
+            const marker = MapEngine.findMarkerForNode(nodeId);
+            if (marker) PlanetEditor.openPopup(node, marker);
+        } else if (action === 'setOrigin') {
+            ModeManager.set('trace');
+            TraceMode.addNode(node);
+        } else if (action === 'delete') {
+            const marker = MapEngine.findMarkerForNode(nodeId);
+            PlanetEditor.delete(node, { remove: () => {} });
+        }
+    }
+};
+
+// ==============================================
+// KEYBOARD SHORTCUTS
+// ==============================================
+const Keyboard = {
+    init: () => {
+        document.addEventListener('keydown', (e) => {
+            // Ignore if typing in input
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+            if (e.key === 'v' || e.key === 'V') ModeManager.set('select');
+            else if (e.key === 'p' || e.key === 'P') ModeManager.set('place');
+            else if (e.key === 't' || e.key === 'T') ModeManager.set('trace');
+            else if (e.key === 'Escape') {
+                if (State.mode === 'trace' && State.traceQueue.length > 0) TraceMode.cancel();
+                else ModeManager.set('select');
+                MapEngine.map.closePopup();
+            }
+            else if (e.key === 'Enter' && State.mode === 'trace' && State.traceQueue.length >= 2) TraceMode.finish();
+            else if (e.ctrlKey && e.key === 's') { e.preventDefault(); SaveManager.save(); }
+        });
+    }
+};
+
+// ==============================================
+// SAVE MANAGER
+// ==============================================
+const SaveManager = {
+    save: async () => {
+        if (!State.currentProject) { Toast.show('No project open', 'warning'); return; }
+        SaveIndicator.setSaving();
+        try {
+            // Batch save all nodes and edges
+            for (const node of State.nodes) {
+                if (!node._persisted) {
+                    const saved = await DB.saveNode(node);
+                    const idx = State.nodes.findIndex(n => n.id === node.id);
+                    if (idx >= 0) State.nodes[idx] = { ...saved, _persisted: true };
+                }
+            }
+            SaveIndicator.setSaved();
+            Toast.show('All changes saved', 'success');
+        } catch(e) {
+            SaveIndicator.setUnsaved();
+            Toast.show(`Save failed: ${e.message}`, 'error');
+        }
+    }
+};
+
+// ==============================================
+// APP INIT
+// ==============================================
+const App = {
+    _initialized: false,
+    init: async () => {
+        if (App._initialized) return;
+        App._initialized = true;
+
+        ContextMenu.init();
+        MapEngine.init();
+        Keyboard.init();
+        PlanetDB.load();
+        Particles.init();
+
+        // Toolbar button bindings
+        document.getElementById('mode-select').onclick = () => ModeManager.set('select');
+        document.getElementById('mode-place').onclick = () => ModeManager.set('place');
+        document.getElementById('mode-trace').onclick = () => ModeManager.set('trace');
+        document.getElementById('action-save').onclick = () => SaveManager.save();
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#project-dropdown')) document.getElementById('project-menu').classList.remove('open');
+            if (!e.target.closest('#user-dropdown')) document.getElementById('user-menu').classList.remove('open');
+        });
+
+        // Load projects
+        await ProjectPicker.refresh();
+        if (State.projects.length > 0) {
+            await ProjectPicker.select(State.projects[0].id);
+        }
+        StatusBar.setMode('select');
+    }
+};
+
+// ==============================================
+// BOOTSTRAP
+// ==============================================
+document.addEventListener('DOMContentLoaded', () => {
+    // Login form
+    const form = document.getElementById('login-form');
+    if (form) form.addEventListener('submit', (e) => { e.preventDefault(); Auth.login(document.getElementById('login-email').value, document.getElementById('login-password').value); });
+    // Start auth
+    Auth.init();
+});
+
+    </script>
+</body>
+</html>

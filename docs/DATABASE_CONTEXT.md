@@ -586,3 +586,76 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 8. **The `event_date` field** in `timeline_events` is a plain TEXT field, not a PostgreSQL date type. It stores in-universe fictional date strings.
 9. **RLS applies to all queries**, including those made server-side via the Supabase client. Use the service role key (bypasses RLS) only for trusted admin operations.
 10. **`image_votes`** uses upsert semantics. To change a vote, UPDATE the existing row (unique on `user_id + image_id`).
+
+---
+
+## 11. Cartographer Tables (Collaborative Map Editor)
+
+### `map_projects`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | `gen_random_uuid()` |
+| `story_id` | UUID (nullable) | FK → `stories(id)` SET NULL. NULL = global map |
+| `title` | TEXT NOT NULL | Project name |
+| `slug` | TEXT UNIQUE NOT NULL | URL-safe identifier |
+| `image_url` | TEXT | Base map image URL (from `map-images` bucket) |
+| `width` / `height` | INTEGER DEFAULT 4000 | Map coordinate space (derived from uploaded image dimensions) |
+| `is_published` | BOOLEAN DEFAULT FALSE | |
+| `created_by` | UUID | FK → `profiles(id)` |
+| `created_at` / `updated_at` | TIMESTAMPTZ | Auto-managed |
+
+### `map_nodes`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `map_project_id` | UUID NOT NULL | FK → `map_projects(id)` CASCADE |
+| `name` | TEXT NOT NULL | Planet/location name |
+| `x` / `y` | DOUBLE PRECISION | Map coordinates |
+| `region` / `sector` | TEXT | Optional metadata |
+| `color` | TEXT | Contributor's assigned color |
+| `created_by` | UUID | FK → `profiles(id)` |
+
+### `map_edges`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `map_project_id` | UUID NOT NULL | FK → `map_projects(id)` CASCADE |
+| `source_node_id` / `target_node_id` | UUID NOT NULL | FK → `map_nodes(id)` CASCADE |
+| `source_name` / `target_name` | TEXT | Denormalized for display |
+| `geometry` | JSONB | Array of `{x, y}` waypoints |
+| `edge_type` | TEXT DEFAULT 'straight' | `'straight'` or `'curved'` |
+| `color` | TEXT | Contributor's color |
+| `created_by` | UUID | FK → `profiles(id)` |
+
+### `map_changelog`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `map_project_id` | UUID NOT NULL | FK → `map_projects(id)` CASCADE |
+| `user_id` | UUID NOT NULL | FK → `profiles(id)` |
+| `action` | TEXT NOT NULL | `'add_node'`, `'edit_node'`, `'delete_node'`, `'add_edge'`, `'delete_edge'` |
+| `entity_type` | TEXT NOT NULL | `'node'` or `'edge'` |
+| `entity_id` | UUID | |
+| `old_data` / `new_data` | JSONB | Previous/new state |
+
+### SQL Helper Function
+- `is_cartographer()` — Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
+
+### RLS Policies
+- **map_projects**: Public SELECT when `is_published = true`. Cartographer SELECT/INSERT/UPDATE/DELETE via `is_cartographer()`.
+- **map_nodes / map_edges**: Public SELECT when parent project is published. Cartographer full CRUD via `is_cartographer()`.
+- **map_changelog**: Cartographer SELECT/INSERT only via `is_cartographer()`.
+
+### Storage Bucket: `map-images`
+- Public read, authenticated write. Used for base map image uploads.
+
+### Indexes
+- `idx_map_projects_slug`, `idx_map_nodes_project`, `idx_map_edges_project`, `idx_map_edges_source`, `idx_map_edges_target`, `idx_map_changelog_project`, `idx_map_changelog_user`.
+
+### Triggers
+- `set_map_projects_updated_at`, `set_map_nodes_updated_at`, `set_map_edges_updated_at` — All reuse existing `update_timestamp()` function.
+
+### Promote a user to cartographer
+```sql
+UPDATE public.profiles SET role = 'cartographer' WHERE id = '<user_uuid>';
+```

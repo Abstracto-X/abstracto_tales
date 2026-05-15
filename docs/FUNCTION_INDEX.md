@@ -1,6 +1,6 @@
 # Function Index
 
-A comprehensive, categorized index of all meaningful functions across the `index.html`, `admin.html`, and `writer.html` Single Page Applications.
+A comprehensive, categorized index of all meaningful functions across the `index.html`, `admin.html`, `writer.html`, and `cartographer.html` Single Page Applications.
 
 ---
 
@@ -191,3 +191,92 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `duplicateNode(nodeId)` — Clones an existing node and its content.
 - `renameNode(nodeId, newTitle)` — Prompts and saves a title change.
 
+---
+
+## 4. `cartographer.html` (Collaborative Map Editor)
+
+### `Auth` (Access Control)
+- `init()` — Checks session, subscribes to auth state changes.
+- `loadProfile()` — Fetches profile, verifies `role IN ('cartographer', 'admin')`.
+- `login(email, password)` — Authenticates via `signInWithPassword`.
+- `logout()` — Signs out and reloads.
+- `showLogin() / showEditor()` — Toggles between login and editor views.
+
+### `DB` (Supabase Data Access)
+- `getProjects()` / `createProject(proj)` / `updateProject(id, updates)` — CRUD for `map_projects`.
+- `getNodes(projectId)` / `saveNode(node)` / `deleteNode(id)` — CRUD for `map_nodes`.
+- `getEdges(projectId)` / `saveEdge(edge)` / `deleteEdge(id)` — CRUD for `map_edges`.
+- `logChange(action, entityType, entityId, oldData, newData)` — Inserts audit entry into `map_changelog`.
+- `getChangelog(projectId, limit)` — Fetches recent changelog entries with contributor display names.
+
+### `MapEngine` (Leaflet.js Controller)
+- `init()` — Creates the Leaflet CRS.Simple map with custom zoom settings, binds click/contextmenu/mousemove events.
+- `loadProject(proj)` — Sets the image overlay bounds from project dimensions, fits map view, and renders all nodes/edges.
+- `renderAll()` — Clears and re-renders all edges then nodes on the map layers.
+- `renderNode(node)` — Creates a `L.circleMarker` with contributor color, tooltip, click/context handlers.
+- `renderEdge(edge)` — Creates a `L.polyline` (or Catmull-Rom spline for curved edges) with tooltip and click handlers.
+- `catmullRom(pts, segments)` — Interpolates a smooth curve through control points using Catmull-Rom spline math.
+- `findMarkerForNode(nodeId)` — Searches the nodes layer for a marker matching the given node ID.
+- `clear()` — Removes image overlay and clears all layer groups.
+
+### `ModeManager` (Interaction Modes)
+- `set(mode)` — Switches between `'select'`, `'place'`, `'trace'` modes. Updates toolbar, status bar, cursor, and clears selection layer.
+
+### `PlaceMode` (Planet Placement)
+- `placeAt(latlng)` — Creates a new node at the clicked coordinates, adds it to state, renders it, and opens the naming popup.
+
+### `PlanetEditor` (Node CRUD Popup)
+- `openPopup(node, marker, isNew)` — Opens a Leaflet popup with name/region/sector fields, autocomplete, save/delete buttons.
+- `bindAutocomplete(input)` — Binds the planet name input to `PlanetDB.search()` for CSV-based suggestions.
+- `save(node, popup)` — Persists node changes to Supabase, logs changelog entry.
+- `delete(node, popup)` — Removes node and cascading edges, logs changelog entries.
+
+### `EdgeEditor` (Path Info & Deletion)
+- `showInfo(edge)` — Opens a popup showing source→target, distance, point count, and delete button.
+- `delete(edgeId)` — Removes edge from state and DB, logs changelog.
+
+### `TraceMode` (Path Drawing)
+- `addNode(node)` — Appends a node to the trace queue, shows sequence markers and preview polyline.
+- `finish()` — Creates edges between consecutive queued nodes, saves to DB, logs changelog.
+- `cancel()` — Clears trace queue and selection layer visuals.
+
+### `ProjectPicker` (Project Management)
+- `toggle()` — Opens/closes the project dropdown menu.
+- `refresh()` — Loads all projects from DB and renders the dropdown list.
+- `select(id)` — Loads a project's nodes and edges, initializes the map, updates UI.
+- `showCreateModal()` — Opens a modal with title, image upload, and publish toggle.
+- `create()` — Creates a new project (reads image dimensions), uploads map image to `map-images` bucket.
+
+### `Contributors` (Color Legend)
+- `refresh()` — Scans nodes/edges for unique `created_by` IDs, assigns deterministic colors, renders the panel.
+
+### `ChangelogDrawer` (Activity Log)
+- `toggle() / close()` — Opens/closes the sliding changelog drawer.
+- `load()` — Fetches and renders recent changelog entries with contributor colors and time-ago formatting.
+
+### `PlanetDB` (CSV Autocomplete)
+- `load()` — Fetches `data/sw_planets.csv`, parses into `{name, sector, region, grid}` objects.
+- `search(query, limit)` — Prefix-first, then substring matching against loaded entries.
+
+### `ContextMenu` (Right-Click Menu)
+- `init()` — Creates the context menu DOM element.
+- `show(e, node) / showEdge(e, edge)` — Positions and populates the context menu for nodes or edges.
+- `hide()` — Hides the context menu.
+- `action(action, nodeId)` — Dispatches context menu clicks to edit/delete/trace-start actions.
+
+### `Keyboard` (Shortcuts)
+- `init()` — Registers: `V` (select), `P` (place), `T` (trace), `ESC` (cancel), `Enter` (finish trace), `Ctrl+S` (save).
+
+### `SaveManager` (Persistence)
+- `save()` — Batch-saves all unpersisted nodes to Supabase.
+
+### `Particles` (Background Animation)
+- `init()` — Canvas-based floating particle animation (same pattern as admin.html).
+
+### `Utils` (Shared Helpers)
+- `escapeHtml(s)` — HTML entity escaping.
+- `slugify(s)` — URL-safe slug generation.
+- `uploadImage(file, bucket, folder)` — Uploads to Supabase Storage, returns public URL.
+- `timeAgo(d)` — Relative time formatting (e.g. "3m ago").
+- `uuid()` — Generates a v4 UUID.
+- `getContributorColor(userId)` — Deterministic hash-based color from a 12-color palette.

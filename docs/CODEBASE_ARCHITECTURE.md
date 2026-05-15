@@ -1,6 +1,6 @@
 # Codebase Architecture
 
-This document outlines the architecture of the "Abstracto Tales / The Aether Archives" project, which consists of three large single-file Single Page Applications (SPAs).
+This document outlines the architecture of the "Abstracto Tales / The Aether Archives" project, which consists of four large single-file Single Page Applications (SPAs).
 
 ## 1. Purpose
 
@@ -12,6 +12,9 @@ The restricted administrative portal used by the author to manage all content fo
 
 ### `writer.html` (Writer's IDE)
 A specialized, distraction-free writing environment (IDE) tailored for the author to draft content. It integrates a rich-text editor (Quill.js) with features like word targets, focus mode, typewriter scrolling, document snapshots, and split-view editing. It organizes both draft (Workspace) nodes and published elements into a hierarchical tree, reading and saving directly to the Supabase backend.
+
+### `cartographer.html` (Collaborative Map Editor)
+A collaborative map editing SPA where users with the `cartographer` or `admin` role can create map projects, place planet nodes, and draw hyperlane paths on uploaded map images. Built on Leaflet.js (CRS.Simple) with Supabase-backed persistence. Features per-user color-coded contributions, a planet name autocomplete powered by `sw_planets.csv`, a changelog activity log, and multi-project support with dynamic coordinate spaces derived from uploaded image dimensions.
 
 ---
 
@@ -73,6 +76,24 @@ A specialized, distraction-free writing environment (IDE) tailored for the autho
   - `currentTheme` *(String)* — The active UI theme name. Loaded from `localStorage`.
   - `sessionStartWords` / `sessionStartTime` *(Number)* — Tracking metrics for the active writing session.
 
+### `cartographer.html`
+- `supabaseClient` *(Object)* — Supabase client instance.
+- `State` *(Object)* — Primary global state container.
+  - `user` *(Object | null)* — Authenticated user. Set after login.
+  - `profile` *(Object | null)* — User's profile row. Must have `role` of `'cartographer'` or `'admin'`.
+  - `currentProject` *(Object | null)* — The active `map_projects` row. Changes when switching projects.
+  - `projects` *(Array)* — Cached list of all map projects.
+  - `nodes` *(Array)* — All `map_nodes` for the current project.
+  - `edges` *(Array)* — All `map_edges` for the current project.
+  - `mode` *(String)* — Current interaction mode: `'select'`, `'place'`, or `'trace'`.
+  - `traceQueue` *(Array)* — Ordered list of nodes selected during trace mode before path finalization.
+  - `isDirty` *(Boolean)* — Whether there are unsaved local changes.
+  - `contributors` *(Object)* — Map of contributor user IDs to assigned display colors.
+  - `undoStack` / `redoStack` *(Array)* — Client-side undo/redo history.
+- `MapEngine` *(Object)* — Leaflet.js map controller managing layers, rendering, and Catmull-Rom spline interpolation.
+- `PlanetDB` *(Object)* — In-memory index of `sw_planets.csv` entries for autocomplete suggestions.
+  - `entries` *(Array)* — Parsed planet records with `name`, `sector`, `region`, `grid` fields.
+
 ---
 
 ## 3. Initialization Flow
@@ -114,6 +135,14 @@ A specialized, distraction-free writing environment (IDE) tailored for the autho
    - `startSessionTimer()` begins tracking time/word count.
    - During editing, `updateTargetBar()` updates both the word-goal UI and the editor-pane hallway illumination effect so the reveal stays synchronized with target completion.
 
+### `cartographer.html`
+1. **`DOMContentLoaded` Event Listener:**
+   - Binds login form submit handler.
+   - `Auth.init()` checks session, subscribes to auth state changes, routes to login view if no session.
+2. **Post-Authentication (`Auth.loadProfile` -> `Auth.showEditor`):**
+   - Verifies profile `role IN ('cartographer','admin')`.
+   - `App.init()` bootstraps: `ContextMenu.init()`, `MapEngine.init()` (Leaflet CRS.Simple), `Keyboard.init()` (V/P/T shortcuts), `PlanetDB.load()` (CSV autocomplete), `Particles.init()`, `ProjectPicker.refresh()` (auto-selects first project).
+
 ---
 
 ## 4. Supabase Usage & Conventions
@@ -125,6 +154,7 @@ The authentication pattern is strictly **Session-Based**:
 - **`index.html`**: Users log in (`signInWithPassword`) or register. Their session cookie determines permissions (e.g., leaving comments, liking gallery images).
 - **`admin.html`**: Enforces strict role-based access control. Upon gaining a session, it queries `profiles` to check if `role === 'admin'`. If not, access isn't granted locally. `admin.html` relies on Supabase Row Level Security (RLS) to physically protect data on the backend.
 - **`writer.html`**: Doesn't explicitly check or manage auth, implicitly relying on the active session cookie established by `admin.html` allowing the DB queries to pass RLS.
+- **`cartographer.html`**: Enforces role-based access control, accepting `role IN ('cartographer', 'admin')`. Uses the `is_cartographer()` SQL function for RLS on `map_projects`, `map_nodes`, `map_edges`, and `map_changelog` tables.
 
 ### Database Query Conventions
 In all files, Supabase data access is encapsulated in module objects (`DB` object).
