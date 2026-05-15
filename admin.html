@@ -493,6 +493,10 @@
                         <div class="nav-item" data-view="maps">
                             <i class="fas fa-map"></i> Maps
                         </div>
+                        <!-- NEW INBOX TAB -->
+                        <div class="nav-item" data-view="mapRequests">
+                            <i class="fas fa-inbox"></i> Map Requests
+                        </div>
                     </div>
 
                     <div class="nav-section">
@@ -1038,6 +1042,63 @@
                 if (error) throw error;
             },
 
+            // Map Requests (Moderation Queue)
+            getMapRequests: async () => {
+                const { data } = await supabaseClient
+                    .from('map_requests')
+                    .select('*, profiles(display_name), maps(map_name)')
+                    .order('created_at', { ascending: false });
+                return data || [];
+            },
+
+            getRequestItems: async (reqId) => {
+                const { data } = await supabaseClient
+                    .from('map_request_items')
+                    .select('*')
+                    .eq('request_id', reqId);
+                return data || [];
+            },
+
+            updateRequestStatus: async (reqId, status, feedback = '') => {
+                const { error } = await supabaseClient
+                    .from('map_requests')
+                    .update({ status, feedback, updated_at: new Date().toISOString() })
+                    .eq('id', reqId);
+                if (error) throw error;
+            },
+
+            deleteMapRequest: async (reqId) => {
+                const { error } = await supabaseClient.from('map_requests').delete().eq('id', reqId);
+                if (error) throw error;
+            },
+
+            approveMapRequest: async (reqId) => {
+                const items = await DB.getRequestItems(reqId);
+                
+                // 1. Process all items sequentially
+                for (const item of items) {
+                    const data = item.proposed_data;
+                    if (item.entity_type === 'NODE') {
+                        if (item.action === 'ADD' || item.action === 'UPDATE') {
+                            const payload = { id: data.id, map_id: data.map_id, name: data.name, x: data.x, y: data.y, region: data.region || '', sector: data.sector || '', color: data.color, created_by: data.created_by };
+                            await supabaseClient.from('map_nodes').upsert(payload);
+                        } else if (item.action === 'DELETE') {
+                            await supabaseClient.from('map_nodes').delete().eq('id', item.entity_id);
+                        }
+                    } else if (item.entity_type === 'EDGE') {
+                        if (item.action === 'ADD' || item.action === 'UPDATE') {
+                            const payload = { id: data.id, map_id: data.map_id, source_node_id: data.source_node_id, target_node_id: data.target_node_id, source_name: data.source_name, target_name: data.target_name, geometry: data.geometry, edge_type: data.edge_type, color: data.color, created_by: data.created_by };
+                            await supabaseClient.from('map_edges').upsert(payload);
+                        } else if (item.action === 'DELETE') {
+                            await supabaseClient.from('map_edges').delete().eq('id', item.entity_id);
+                        }
+                    }
+                }
+                
+                // 2. Mark as approved
+                await DB.updateRequestStatus(reqId, 'approved');
+            },
+
             // Settings
             getSettings: async () => {
                 const { data } = await supabaseClient.from('site_settings').select('*').order('setting_key');
@@ -1112,6 +1173,97 @@
         // FORMS (CRUD Modals)
         // ==============================================
         const Forms = {
+            // MAP REQUEST MODALS
+            viewMapRequest: async (reqId) => {
+                UI.showLoading();
+                try {
+                    const { data: request } = await supabaseClient.from('map_requests').select('*, profiles(display_name), maps(map_name)').eq('id', reqId).single();
+                    const items = await DB.getRequestItems(reqId);
+                    UI.hideLoading();
+
+                    const isPending = request.status === 'pending';
+                    const itemsHtml = items.map(item => {
+                        const icon = item.action === 'ADD' ? '<i class="fas fa-plus" style="color:var(--success-color)"></i>' :
+                                     item.action === 'UPDATE' ? '<i class="fas fa-edit" style="color:var(--accent-color)"></i>' :
+                                     '<i class="fas fa-trash" style="color:var(--danger-color)"></i>';
+                        const name = item.proposed_data?.name || item.proposed_data?.source_name + ' → ' + item.proposed_data?.target_name || 'Unknown Target';
+                        return `
+                            <div style="background:rgba(255,255,255,0.05); padding:0.5rem 1rem; border-radius:6px; margin-bottom:0.5rem; display:flex; align-items:center; gap:10px;">
+                                ${icon} <strong>${item.entity_type}</strong>: ${Utils.escapeHtml(name)}
+                            </div>
+                        `;
+                    }).join('');
+
+                    const html = `
+                        <div style="margin-bottom:1.5rem;">
+                            <div style="color:#aaa; font-size:0.8rem; text-transform:uppercase;">Map Project</div>
+                            <div style="font-size:1.1rem; color:#fff;">${Utils.escapeHtml(request.maps?.map_name || 'Unknown Map')}</div>
+                        </div>
+                        <div style="margin-bottom:1.5rem;">
+                            <div style="color:#aaa; font-size:0.8rem; text-transform:uppercase;">Reason / Notes</div>
+                            <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:6px; border:1px solid var(--glass-border);">${Utils.escapeHtml(request.reason || 'No notes provided.')}</div>
+                        </div>
+                        <div style="margin-bottom:1rem;">
+                            <div style="color:#aaa; font-size:0.8rem; text-transform:uppercase; margin-bottom:0.5rem;">Proposed Changes (${items.length})</div>
+                            ${itemsHtml}
+                        </div>
+                        ${isPending ? `
+                        <div class="form-group" style="margin-top:1.5rem; border-top:1px solid var(--glass-border); padding-top:1.5rem;">
+                            <label class="form-label">Feedback / Reason for Rejection (Optional)</label>
+                            <input type="text" class="form-input" id="f-req-feedback" placeholder="Leave blank if approving...">
+                        </div>` : `
+                        <div style="margin-top:1.5rem; color:${request.status==='approved'?'var(--success-color)':'var(--danger-color)'}">
+                            <strong>Status:</strong> ${request.status.toUpperCase()}
+                        </div>`}
+                    `;
+
+                    let footer = `<button class="btn btn-secondary" onclick="Modal.close()">Close</button>`;
+                    footer += `<button class="btn btn-danger" onclick="Forms.deleteMapRequest('${reqId}')" style="margin-right:auto"><i class="fas fa-trash"></i> Delete Ticket</button>`;
+                    
+                    if (isPending) {
+                        footer += `
+                            <button class="btn btn-danger" onclick="Forms.rejectMapRequest('${reqId}')"><i class="fas fa-times"></i> Reject</button>
+                            <button class="btn btn-primary" onclick="Forms.approveMapRequest('${reqId}')"><i class="fas fa-check"></i> Approve & Merge</button>
+                        `;
+                    }
+
+                    Modal.open(`Request: ${Utils.escapeHtml(request.title)}`, html, footer);
+                } catch(e) {
+                    UI.hideLoading(); UI.showToast(e.message, 'error');
+                }
+            },
+
+            approveMapRequest: async (reqId) => {
+                if(!confirm("Merge these changes into the live map?")) return;
+                try {
+                    UI.showLoading();
+                    await DB.approveMapRequest(reqId);
+                    Modal.close(); UI.showToast('Request Approved and Merged!', 'success');
+                    Views.render('mapRequests');
+                } catch(e) { UI.showToast(e.message, 'error'); } finally { UI.hideLoading(); }
+            },
+
+            rejectMapRequest: async (reqId) => {
+                if(!confirm("Reject these proposed changes?")) return;
+                try {
+                    UI.showLoading();
+                    const feedback = document.getElementById('f-req-feedback').value;
+                    await DB.updateRequestStatus(reqId, 'rejected', feedback);
+                    Modal.close(); UI.showToast('Request Rejected.', 'info');
+                    Views.render('mapRequests');
+                } catch(e) { UI.showToast(e.message, 'error'); } finally { UI.hideLoading(); }
+            },
+
+            deleteMapRequest: async (reqId) => {
+                if(!confirm("Delete this request ticket completely? It cannot be recovered.")) return;
+                try {
+                    UI.showLoading();
+                    await DB.deleteMapRequest(reqId);
+                    Modal.close(); UI.showToast('Ticket deleted.', 'info');
+                    Views.render('mapRequests');
+                } catch(e) { UI.showToast(e.message, 'error'); } finally { UI.hideLoading(); }
+            },
+
             // STORY FORM
             storyForm: async (id = null) => {
                 let story = { title: '', slug: '', short_description: '', synopsis: '', genre: '', status: '', cover_image_url: '', background_image_url: '', theme_color: '#ffd700', world_title: '', is_published: false };
@@ -2011,6 +2163,7 @@
                         case 'lore': await Views.lore(content); break;
                         case 'timeline': await Views.timeline(content); break;
                         case 'maps': await Views.maps(content); break;
+                        case 'mapRequests': await Views.mapRequests(content); break; // NEW
                         case 'settings': await Views.settings(content); break;
                         case 'profile': await Views.profile(content); break;
                         default: await Views.dashboard(content);
@@ -2612,6 +2765,57 @@
                     </div>
                 `;
             },
+
+            mapRequests: async (container) => {
+                const requests = await DB.getMapRequests();
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Map Requests</h1>
+                            <p class="page-subtitle">Moderation queue for community cartographers</p>
+                        </div>
+                    </div>
+
+                    <div class="glass-card">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Contributor</th>
+                                    <th>Title</th>
+                                    <th>Map</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${requests.map(req => {
+                                    let statusBadge = '';
+                                    if (req.status === 'pending') statusBadge = `<span class="status-badge status-draft" style="border-color:var(--warning-color); color:var(--warning-color)">Pending</span>`;
+                                    else if (req.status === 'approved') statusBadge = `<span class="status-badge status-published">Approved</span>`;
+                                    else statusBadge = `<span class="status-badge status-draft" style="border-color:var(--danger-color); color:var(--danger-color)">Rejected</span>`;
+
+                                    return `
+                                    <tr>
+                                        <td>${new Date(req.created_at).toLocaleDateString()}</td>
+                                        <td><strong>${Utils.escapeHtml(req.profiles?.display_name || 'Unknown')}</strong></td>
+                                        <td>${Utils.escapeHtml(req.title)}</td>
+                                        <td>${Utils.escapeHtml(req.maps?.map_name || 'Unknown')}</td>
+                                        <td>${statusBadge}</td>
+                                        <td>
+                                            <div class="action-btns">
+                                                <button class="btn btn-secondary btn-sm" onclick="Forms.viewMapRequest('${req.id}')" title="Review"><i class="fas fa-search"></i> Review</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `}).join('') || '<tr><td colspan="6" style="text-align:center;color:#666">No requests in the queue.</td></tr>'}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
             settings: async (container) => {
                 const settings = await DB.getSettings();
 

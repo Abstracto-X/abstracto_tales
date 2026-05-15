@@ -56,8 +56,8 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 - `State` *(Object)* — The primary global state container for the admin panel.
   - `user` *(Object | null)* — The Supabase auth user object. Changes on auth state change.
   - `profile` *(Object | null)* — The admin user's profile data. Changes after fetching user profile post-login.
-  - `currentView` *(String)* — Tracks the active view/section (e.g., 'dashboard', 'stories', 'characters'). Changes when navigating the sidebar.
-  - `stories` *(Array)*, `characters` *(Array)*, `lore` *(Array)*, etc. — Caches for entity lists to populate tables.
+  - `currentView` *(String)* — Tracks the active view/section (e.g., 'dashboard', 'stories', 'characters', 'mapRequests'). Changes when navigating the sidebar.
+  - `stories` *(Array)*, `characters` *(Array)*, `lore` *(Array)*, `mapRequests` *(Array)*, etc. — Caches for entity lists to populate tables.
   - `selectedStoryId` *(String | null)* — The ID of the currently selected story context for filtering chapters or related entities. Changes via the story dropdown on certain views.
   - `selectedCharacterId` *(String | null)* — For character relation filtering contexts.
 

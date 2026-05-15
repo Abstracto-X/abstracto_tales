@@ -684,6 +684,28 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 | `entity_id` | UUID | |
 | `old_data` / `new_data` | JSONB | Previous/new state |
 
+### `map_requests` (Moderation Queue)
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | UUID NOT NULL | FK → `profiles(id)` |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` |
+| `title` | TEXT | |
+| `reason` | TEXT | Contributor notes |
+| `status` | TEXT DEFAULT 'pending' | `'pending'`, `'approved'`, `'rejected'` |
+| `feedback` | TEXT | Admin rejection reason |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+### `map_request_items`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `request_id` | UUID NOT NULL | FK → `map_requests(id)` CASCADE |
+| `action` | TEXT | `'ADD'`, `'UPDATE'`, `'DELETE'` |
+| `entity_type` | TEXT | `'NODE'`, `'EDGE'` |
+| `entity_id` | UUID | |
+| `proposed_data` | JSONB | Full payload for the record |
+
 ### SQL Helper Function
 - `is_cartographer()` — Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
 

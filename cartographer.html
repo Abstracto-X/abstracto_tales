@@ -39,7 +39,21 @@
 }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body { font-family: var(--font-ui); background: var(--bg-deepest); color: var(--text-primary); overflow: hidden; -webkit-font-smoothing: antialiased; }
-#app { display: flex; flex-direction: column; height: 100vh; }
+
+#editor-view {
+    width: 100%;
+    height: 100vh;
+    display: flex; /* Ensures it behaves nicely before JS inline styles hit */
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+
 
 /* ── Background ── */
 .background-layer { position: fixed; top:0; left:0; width:100%; height:100%; z-index:-2; background: radial-gradient(ellipse at 20% 50%, rgba(25,25,55,0.9) 0%, #050505 70%); }

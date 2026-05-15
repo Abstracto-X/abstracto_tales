@@ -113,6 +113,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - **Lore**: `getLoreCategories(storyId)`, `saveLoreCategory(data)`, `getLoreEntries(categoryId)`, `saveLoreEntry(data)`.
 - **Timeline**: `getTimelineEvents()`, `saveTimelineEvent(data)`, `deleteTimelineEvent(id)`.
 - **Media**: `getMaps()`, `saveMap()`, `getWallpapers()`, `saveWallpaper()`, `getGallery()`, `saveGalleryImage()`.
+- **Map Requests**: `getMapRequests()`, `getRequestItems(reqId)`, `updateRequestStatus(reqId, status, feedback)`, `deleteMapRequest(reqId)`, `approveMapRequest(reqId)`.
 - **Settings**: `getSettings()`, `saveSettings(data)`.
 
 ### `Utils` (Shared Utilities)
@@ -130,13 +131,14 @@ A comprehensive, categorized index of all meaningful functions across the `index
   - `loreCategoryForm(categoryObj)` / `loreEntryForm(entryObj)`
   - `timelineEventForm(eventObj)`
   - `mapForm(mapObj)` / `wallpaperForm(wallpaperObj)`
+  - `viewMapRequest(reqId)` / `approveMapRequest(reqId)` / `rejectMapRequest(reqId)` / `deleteMapRequest(reqId)`
   - `settingsForm(settingsObj)`
   - `deleteConfirmForm(entityType, entityId, fallbackAction)`
 
 ### `Views` (Admin Rendering)
 - `render(viewName)` — The primary internal router mapping sidebar clicks to view functions.
 - View rendering functions that fetch data, populate caches, and build tables/grids:
-  - `dashboard()`, `stories()`, `chapters()`, `characters()`, `lore()`, `timeline()`, `maps()`, `gallery()`, `wallpapers()`, `settings()`.
+  - `dashboard()`, `stories()`, `chapters()`, `characters()`, `lore()`, `timeline()`, `maps()`, `mapRequests()`, `gallery()`, `wallpapers()`, `settings()`.
 
 ---
 
