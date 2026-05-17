@@ -1419,7 +1419,8 @@ const MapEngine = {
         if (proj.image_url) {
             // FIX: Positive bounds
             const bounds = [[0, 0], [height, width]];
-            MapEngine.imageOverlay = L.imageOverlay(proj.image_url, bounds).addTo(MapEngine.map);
+            // ADDED: { crossOrigin: true } to prevent Tainted Canvas CORS error
+            MapEngine.imageOverlay = L.imageOverlay(proj.image_url, bounds, { crossOrigin: true }).addTo(MapEngine.map);
             MapEngine.map.fitBounds(bounds);
         } else {
             MapEngine.map.setView([2000, 2000], -1);
@@ -1462,14 +1463,17 @@ const MapEngine = {
         if (points.length < 2) return;
         
         const action = edge._pendingAction || edge._localAction;
-        let styleClass = '';
+        
+        // 1. Give all saved paths the thick, glowing look (pulse-spline)
+        let styleClass = 'pulse-spline'; 
         let lineColor = color;
         
-        if (action === 'ADD') { styleClass = 'ghost-add'; }
-        if (action === 'UPDATE') { styleClass = 'ghost-update'; lineColor = 'var(--warning-color)'; }
-        if (action === 'DELETE') { styleClass = 'ghost-delete'; lineColor = '#ff4444'; }
+        if (action === 'ADD') { styleClass += ' ghost-add'; }
+        if (action === 'UPDATE') { styleClass += ' ghost-update'; lineColor = 'var(--warning-color)'; }
+        if (action === 'DELETE') { styleClass += ' ghost-delete'; lineColor = '#ff4444'; }
 
-        const options = { color: lineColor, weight: 4, opacity: 0.95, className: styleClass };
+        // 2. Set weight to 6 and opacity to 1 (solid, no dashArray) to match drafts
+        const options = { color: lineColor, weight: 6, opacity: 1, className: styleClass, lineCap: 'round' };
         const latlngs = points.map(p => [p.y, p.x]);
         let line = (edge.edge_type === 'curved' && points.length > 2) ? L.polyline(MapEngine.catmullRom(latlngs, 20), options) : L.polyline(latlngs, options);
         
@@ -1495,7 +1499,13 @@ const MapEngine = {
         result.push(pts[pts.length - 1]); return result;
     },
     onClick: (e) => { if (State.mode === 'place') PlaceMode.placeAt(e.latlng); },
-    onContextMenu: (e) => { e.originalEvent.preventDefault(); },
+    onContextMenu: (e) => { 
+        e.originalEvent.preventDefault(); 
+        // Allow right-clicking anywhere on the map background during a trace
+        if (State.mode === 'trace' && State.traceQueue.length >= 2) {
+            ContextMenu.show(e.originalEvent, null);
+        }
+    },
     findMarkerForNode: (nodeId) => { let found = null; MapEngine.nodesLayer.eachLayer(m => { if (m._nodeData && m._nodeData.id === nodeId) found = m; }); return found; }
 };
 
@@ -1665,26 +1675,39 @@ const ContextMenu = {
         document.body.appendChild(ContextMenu.el);
         document.addEventListener('click', () => ContextMenu.hide());
     },
-    show: (e, node) => {
+    show: (e, nodeData) => {
         e.preventDefault();
         
-        // NEW LOGIC: Intercept for TraceMode
-        if (State.mode === 'trace' && State.traceQueue.find(n => n.id === node.id)) {
-            ContextMenu.el.innerHTML = `
-                <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.finalize(false)"><i class="fas fa-arrows-alt-h" style="width:18px;"></i> Draw Straight</div>
-                <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.startCurving()"><i class="fas fa-bezier-curve" style="width:18px;"></i> Draw Curved</div>
-                <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.cancel()" style="color:var(--danger-color);"><i class="fas fa-times" style="width:18px;"></i> Cancel</div>`;
-            
-            ContextMenu.el.style.display = 'block';
-            ContextMenu.el.style.left = e.pageX + 'px';
-            ContextMenu.el.style.top = e.pageY + 'px';
-            return;
+        // 1. INTERCEPT: Global Trace Mode Menus (Right-click anywhere)
+        if (State.mode === 'trace' && State.traceQueue.length >= 2) {
+            if (PathDrawer.state === 'SELECTING') {
+                ContextMenu.el.innerHTML = `
+                    <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.finalize(false)"><i class="fas fa-arrows-alt-h" style="width:18px;"></i> Draw Straight</div>
+                    <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.startCurving()"><i class="fas fa-bezier-curve" style="width:18px;"></i> Draw Curved</div>
+                    <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.cancel()" style="color:var(--danger-color);"><i class="fas fa-times" style="width:18px;"></i> Cancel Trace</div>`;
+                ContextMenu.displayAt(e);
+                return;
+            } else if (PathDrawer.state === 'CURVING') {
+                ContextMenu.el.innerHTML = `
+                    <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.finalize(true)"><i class="fas fa-check" style="width:18px;"></i> Confirm Current Path</div>
+                    <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.finalizeAll()"><i class="fas fa-check-double" style="width:18px;"></i> Confirm All Paths</div>
+                    <div class="context-menu-item" onclick="ContextMenu.hide(); PathDrawer.cancel()" style="color:var(--danger-color);"><i class="fas fa-times" style="width:18px;"></i> Cancel Trace</div>`;
+                ContextMenu.displayAt(e);
+                return;
+            }
         }
 
-        ContextMenu.el.innerHTML = `
-            <div class="context-menu-item" onclick="ContextMenu.action('edit','${node.id}')"><i class="fas fa-edit" style="width:18px;"></i> Edit</div>
-            <div class="context-menu-item" onclick="ContextMenu.action('setOrigin','${node.id}')"><i class="fas fa-play" style="width:18px;"></i> Start Path Here</div>
-            <div class="context-menu-item" onclick="ContextMenu.action('delete','${node.id}')" style="color:var(--danger-color);"><i class="fas fa-trash" style="width:18px;"></i> Delete</div>`;
+        // 2. STANDARD: Individual Node Menu
+        let node = nodeData; // handle generic pass
+        if (node && node.id) {
+            ContextMenu.el.innerHTML = `
+                <div class="context-menu-item" onclick="ContextMenu.action('edit','${node.id}')"><i class="fas fa-edit" style="width:18px;"></i> Edit</div>
+                <div class="context-menu-item" onclick="ContextMenu.action('setOrigin','${node.id}')"><i class="fas fa-play" style="width:18px;"></i> Start Path Here</div>
+                <div class="context-menu-item" onclick="ContextMenu.action('delete','${node.id}')" style="color:var(--danger-color);"><i class="fas fa-trash" style="width:18px;"></i> Delete</div>`;
+            ContextMenu.displayAt(e);
+        }
+    },
+    displayAt: (e) => {
         ContextMenu.el.style.display = 'block';
         ContextMenu.el.style.left = e.pageX + 'px';
         ContextMenu.el.style.top = e.pageY + 'px';

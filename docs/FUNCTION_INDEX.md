@@ -229,10 +229,11 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ### `MapEngine` (Leaflet.js Controller)
 - `init()` — Creates the Leaflet CRS.Simple map with custom zoom settings, binds click/contextmenu/mousemove events.
-- `loadProject(proj)` — Sets the image overlay bounds from project dimensions, fits map view, and renders all nodes/edges.
+- `onContextMenu(e)` — Handles right-clicks on the map background. During `'trace'` mode with multiple nodes queued, it triggers the `ContextMenu` to allow finishing or curving the path.
+- `loadProject(proj)` — Sets the image overlay bounds from project dimensions, fits map view, and renders all nodes/edges. Now includes `crossOrigin: true` to prevent CORS-tainted canvas errors during snipping from cloud storage.
 - `renderAll()` — Clears and re-renders all edges then nodes on the map layers.
 - `renderNode(node)` — Creates a `L.circleMarker` with contributor color, tooltip, click/context handlers.
-- `renderEdge(edge)` — Creates a `L.polyline` (or Catmull-Rom spline for curved edges) with tooltip and click handlers.
+- `renderEdge(edge)` — Creates a `L.polyline` (or Catmull-Rom spline) with a thick, glowing `'pulse-spline'` class (weight: 6) to ensure consistent visual quality between draft and saved states. Includes tooltips and interaction handlers.
 - `catmullRom(pts, segments)` — Interpolates a smooth curve through control points using Catmull-Rom spline math.
 - `findMarkerForNode(nodeId)` — Searches the nodes layer for a marker matching the given node ID.
 - `clear()` — Removes image overlay and clears all layer groups.
@@ -250,7 +251,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ### `SnippingTool` (OCR & Planet Placement - External `js/SnippingTool.js`)
 - `init()` — Initializes the Tesseract OCR worker.
 - `activate(latlng)` — Displays the snipping overlay for the user to select map text.
-- `onMouseUp(e)` — Captures the selected canvas area, runs OCR, fuzzy matches via `PlanetDB`, and creates a node.
+- `onMouseUp(e)` — Captures the selected canvas area, runs OCR, fuzzy matches via `PlanetDB`, and creates a node. Handles CORS errors from cloud-hosted map images.
+- `createPlanetFallback(err)` — Fallback for failed snips, now logging the error context for easier debugging.
 - `createPlanet(name, matchData)` — Standard node creation with data pre-fill.
 
 ### `PathDrawer` (Advanced Spline Routing - External `js/PathDrawer.js`)
@@ -291,7 +293,9 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ### `ContextMenu` (Right-Click Menu)
 - `init()` — Creates the context menu DOM element.
-- `show(e, node) / showEdge(e, edge)` — Positions and populates the context menu for nodes or edges.
+- `show(e, nodeData)` — Positions and populates the menu. Intercepts clicks during `'trace'` mode to show specialized path-finalization options (Straight vs Curved) regardless of where the right-click occurs.
+- `displayAt(e)` — Helper to position and reveal the menu element.
+- `showEdge(e, edge)` — Populates the menu for existing edges (e.g., for deletion).
 - `hide()` — Hides the context menu.
 - `action(action, nodeId)` — Dispatches context menu clicks to edit/delete/trace-start actions.
 

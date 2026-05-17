@@ -74,7 +74,7 @@ window.SnippingTool = {
         this.deactivate();
 
         if (rect.width < 10 || rect.height < 10) {
-            this.createPlanetFallback();
+            this.createPlanetFallback("Snip area too small");
             return;
         }
 
@@ -121,8 +121,7 @@ window.SnippingTool = {
             this.createPlanet(bestMatch ? bestMatch.name : cleanText, bestMatch);
             
         } catch (err) {
-            console.error('OCR Error:', err);
-            this.createPlanetFallback();
+            this.createPlanetFallback(err);
         }
         UI.hideLoading();
     },
@@ -147,8 +146,9 @@ window.SnippingTool = {
         PlanetEditor.openPopup(node, marker, true);
     },
 
-    createPlanetFallback() {
-        Toast.show('Snip failed or too small. Defaulting to manual entry.', 'warning');
+    createPlanetFallback(err = null) {
+        if (err) console.error("Snipping Error:", err);
+        Toast.show('Snip failed. Defaulting to manual entry.', 'warning');
         this.createPlanet('New Planet', null);
     }
 };
