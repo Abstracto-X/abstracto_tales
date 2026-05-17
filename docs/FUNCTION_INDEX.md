@@ -204,7 +204,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ### `Auth` (Access Control)
 - `init()` - Checks for an existing Supabase session before revealing the login view, then subscribes to auth state changes so shared sessions feel seamless across tabs/pages.
-- `loadProfile()` - Fetches profile, verifies `role IN ('cartographer', 'admin')`, populates shared user chrome, routes authenticated users into the hub, and returns a success boolean for the session bootstrap flow.
+- `loadProfile()` — Fetches profile, populates shared user chrome, and routes to hub. Now allows `reader` role access to the collaborative hub.
 - `login(email, password)` — Authenticates via `signInWithPassword`.
 - `logout()` — Signs out and reloads.
 - `showLogin() / showEditor()` — Toggles between login, hub, and editor views as needed.
@@ -215,8 +215,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `renderMaps()` — Renders project cards plus the role-dependent create/propose action card.
 - `openMap(projectId)` — Enters the editor for a selected map project.
 - `startCreateMapFlow()` — Takes admins from the hub into the editor and immediately opens the new-project modal.
-- `renderContributions()` — Displays the contributor's pending, approved, and rejected requests.
-- `showProposeModal()` — Opens the modal for proposing a new map.
+- `renderContributions()` — Displays the contributor's pending, approved, and rejected requests. Tracks `State.pendingRequestCount` for enforcement of submission limits.
+- `showProposeModal()` — Opens the modal for proposing a new map. Enforces a limit of 3 pending requests for users with the `reader` role.
 - `submitProposal()` — Submits a new map proposal to the admin queue.
 
 ### `DB` (Supabase Data Access)

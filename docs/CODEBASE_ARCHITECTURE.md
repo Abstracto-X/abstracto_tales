@@ -81,7 +81,8 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 - `supabaseClient` *(Object)* — Supabase client instance.
 - `State` *(Object)* — Primary global state container.
   - `user` *(Object | null)* — Authenticated user. Set after login.
-  - `profile` *(Object | null)* — User's profile row. Must have `role` of `'cartographer'` or `'admin'`.
+  - `profile` *(Object | null)* — User's profile row.
+  - `pendingRequestCount` *(Number)* — Active pending contribution count.
   - `currentProject` *(Object | null)* — The active `maps` row used as the editor’s canonical parent record. Changes when switching maps.
   - `projects` *(Array)* — Cached list of available shared `maps` rows.
   - `stories` *(Array)* — Cached stories list used to require `story_id` when admins create new maps.

@@ -508,6 +508,14 @@ main { flex: 1; position: relative; display: flex; overflow: hidden; }
                         <span id="save-text" style="color:var(--success-color); font-size:0.7rem;">Saved</span>
                     </div>
                     <div class="separator"></div>
+
+                    <!-- ADD THIS NEW BUTTON -->
+                    <button class="action-btn" onclick="document.getElementById('editor-view').style.display='none'; Hub.show();" title="Back to Hub">
+                        <i class="fas fa-layer-group" style="font-size:0.8rem;"></i>
+                    </button>
+                    <div class="separator"></div>
+                    <!-- END NEW BUTTON -->
+
                     <!-- Project picker -->
                     <div class="toolbar-dropdown" id="project-dropdown">
                         <button class="toolbar-dropdown-btn" id="project-btn" onclick="ProjectPicker.toggle()">
@@ -630,6 +638,7 @@ function getContributorColor(userId) {
 const State = {
     user: null,
     profile: null,
+    pendingRequestCount: 0,
     currentProject: null,
     projects: [],
     stories: [],
@@ -728,7 +737,10 @@ const Auth = {
         try {
             const { data, error } = await supabaseClient.from('profiles').select('*').eq('id', State.user.id).single();
             if (error) throw error;
-            if (!data || !['admin','cartographer'].includes(data.role)) throw new Error('Access denied. Cartographer or Admin role required.');
+            
+            // FIX: Removed the error throw so Readers can enter the hub!
+            if (!data) throw new Error('Profile not found.');
+            
             State.profile = data;
 
             // Populate user info globally
@@ -737,7 +749,6 @@ const Auth = {
             document.getElementById('hub-user-name').textContent = data.display_name || 'Explorer';
             document.getElementById('login-error').style.display = 'none';
 
-            // Route to Hub instead of directly to Editor
             Hub.show();
             return true;
         } catch (err) {
@@ -866,10 +877,12 @@ const Hub = {
             if (!data || data.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="5" style="padding:1.5rem; text-align:center; color:var(--text-muted);">No contribution requests yet.</td></tr>`;
                 badgeSpan.style.display = 'none';
+                State.pendingRequestCount = 0; // <-- ADD THIS
                 return;
             }
 
             const pendingCount = data.filter(d => d.status === 'pending').length;
+            State.pendingRequestCount = pendingCount; // <-- ADD THIS
             if (pendingCount > 0) {
                 badgeSpan.textContent = pendingCount;
                 badgeSpan.style.display = 'inline-block';
@@ -894,8 +907,14 @@ const Hub = {
     },
 
     showProposeModal: () => {
+        // ENFORCE READER LIMIT
+        if (State.profile.role === 'reader' && State.pendingRequestCount >= 3) {
+            Toast.show('You have reached the maximum of 3 pending requests. Please wait for an Admin to review them.', 'error');
+            return;
+        }
+
         Modal.open('Propose New Base Map', `
-            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">As a cartographer, you can propose entirely new regions. Your request will be sent to the Admin queue for review.</p>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">As an explorer, you can propose entirely new regions. Your request will be sent to the Admin queue for review.</p>
             <div class="form-group"><label class="form-label">Proposed Map Title</label><input type="text" class="form-input" id="prop-title" placeholder="e.g. Deep Core Sector"></div>
             <div class="form-group"><label class="form-label">Reason / Lore Justification</label><textarea class="form-textarea" id="prop-reason" placeholder="Why should this map be added to the archives?"></textarea></div>
         `, `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
@@ -1621,6 +1640,12 @@ const PlanetEditor = {
     },
     delete: async (node, popup) => {
         popup.remove();
+
+        // FIX: Clean up Trace Queue if the node is deleted mid-trace
+        if (State.traceQueue && State.traceQueue.some(n => n.id === node.id)) {
+            if (window.PathDrawer) window.PathDrawer.cancel();
+        }
+
         if (State.profile.role === 'admin') {
             State.nodes = State.nodes.filter(n => n.id !== node.id);
             State.edges = State.edges.filter(e => e.source_node_id !== node.id && e.target_node_id !== node.id);
@@ -1708,9 +1733,23 @@ const ContextMenu = {
         }
     },
     displayAt: (e) => {
-        ContextMenu.el.style.display = 'block';
-        ContextMenu.el.style.left = e.pageX + 'px';
-        ContextMenu.el.style.top = e.pageY + 'px';
+        const menu = ContextMenu.el;
+        
+        // Make it visible to calculate rect, but hidden from user momentarily
+        menu.style.visibility = 'hidden';
+        menu.style.display = 'block';
+        
+        const rect = menu.getBoundingClientRect();
+        let x = e.pageX;
+        let y = e.pageY;
+        
+        // Push menu left or up if it bleeds off the screen
+        if (x + rect.width > window.innerWidth) x = window.innerWidth - rect.width - 10;
+        if (y + rect.height > window.innerHeight) y = window.innerHeight - rect.height - 10;
+        
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.style.visibility = 'visible';
     },
     showEdge: (e, edge) => {
         e.preventDefault();
@@ -1810,7 +1849,12 @@ const SaveManager = {
                 Toast.show('All changes live in archives', 'success'); MapEngine.renderAll();
             } catch(e) { SaveIndicator.setUnsaved(); Toast.show(`Save failed: ${e.message}`, 'error'); }
         } else {
-            // Contributor Submit
+            // Contributor / Reader Submit
+            if (State.profile.role === 'reader' && State.pendingRequestCount >= 3) {
+                Toast.show('You have reached the max of 3 pending requests. Wait for admin review before making more map edits.', 'error');
+                return;
+            }
+
             Modal.open('Submit Changes for Review', `
                 <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:1rem;">You have <strong>${localNodes.length + localEdges.length}</strong> pending changes. Submit them to the Admin queue to be merged into the live map.</p>
                 <div class="form-group"><label class="form-label">Title of Changes</label><input type="text" id="req-title" class="form-input" placeholder="e.g. Added planets to Outer Rim"></div>
