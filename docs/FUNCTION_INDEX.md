@@ -233,6 +233,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `loadProject(proj)` — Sets the image overlay bounds from project dimensions, fits map view, and renders all nodes/edges. Now includes `crossOrigin: true` to prevent CORS-tainted canvas errors during snipping from cloud storage.
 - `renderAll()` — Clears and re-renders all edges then nodes on the map layers.
 - `renderNode(node)` — Creates a `L.circleMarker` with contributor color, tooltip, click/context handlers.
+  - [2026-05-17] FIX: Click and contextmenu handlers now use `action !== 'DELETE'` instead of `!action`, allowing tracing and right-click on newly drafted nodes (unapproved nodes) for path creation and context menu actions.
 - `renderEdge(edge)` — Creates a `L.polyline` (or Catmull-Rom spline) with a thick, glowing `'pulse-spline'` class (weight: 6) to ensure consistent visual quality between draft and saved states. Includes tooltips and interaction handlers.
 - `catmullRom(pts, segments)` — Interpolates a smooth curve through control points using Catmull-Rom spline math.
 - `findMarkerForNode(nodeId)` — Searches the nodes layer for a marker matching the given node ID.
@@ -254,6 +255,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `onMouseUp(e)` — Captures the selected canvas area, runs OCR, fuzzy matches via `PlanetDB`, and creates a node. Handles CORS errors from cloud-hosted map images.
 - `createPlanetFallback(err)` — Fallback for failed snips, now logging the error context for easier debugging.
 - `createPlanet(name, matchData)` — Standard node creation with data pre-fill.
+  - [2026-05-17] FIX: Removed `ModeManager.set('select');` so users remain in 'Place' mode after placing a node, enabling rapid placement of multiple nodes.
 
 ### `PathDrawer` (Advanced Spline Routing - External `js/PathDrawer.js`)
 - `addNode(node)` — Adds a node to the trace queue with sequence numbering.

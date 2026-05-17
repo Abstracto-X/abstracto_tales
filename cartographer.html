@@ -1471,8 +1471,18 @@ const MapEngine = {
         });
         marker._nodeData = node;
         marker.bindTooltip(node.name + (action ? ` (${action})` : ''), { permanent: false, direction: 'top', offset: [0, -8], className: 'node-tooltip' });
-        marker.on('click', (e) => { L.DomEvent.stopPropagation(e); if (State.mode === 'select') PlanetEditor.openPopup(node, marker); else if (State.mode === 'trace' && !action) TraceMode.addNode(node); });
-        marker.on('contextmenu', (e) => { L.DomEvent.stopPropagation(e); if(!action) ContextMenu.show(e.originalEvent, node); });
+        // FIX: Replaced '!action' with 'action !== "DELETE"' 
+        // This allows you to click and right-click newly drafted nodes to trace paths to them!
+        marker.on('click', (e) => { 
+            L.DomEvent.stopPropagation(e); 
+            if (State.mode === 'select') PlanetEditor.openPopup(node, marker); 
+            else if (State.mode === 'trace' && action !== 'DELETE') TraceMode.addNode(node); 
+        });
+        
+        marker.on('contextmenu', (e) => { 
+            L.DomEvent.stopPropagation(e); 
+            if (action !== 'DELETE') ContextMenu.show(e.originalEvent, node); 
+        });
         marker.addTo(MapEngine.nodesLayer); return marker;
     },
     

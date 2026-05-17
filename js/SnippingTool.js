@@ -142,7 +142,8 @@ window.SnippingTool = {
         const marker = MapEngine.renderNode(node);
         StatusBar.updateStats(); 
         SaveIndicator.setUnsaved();
-        ModeManager.set('select'); // Auto-switch to select to edit
+        // FIX: Removed ModeManager.set('select'); 
+        // This keeps you in 'Place' mode so you can rapidly place more nodes!
         PlanetEditor.openPopup(node, marker, true);
     },
 
