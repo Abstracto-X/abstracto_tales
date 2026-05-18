@@ -1309,6 +1309,287 @@
                 grid-template-columns: 1fr 1fr;
             }
         }
+
+        /* ============================================================
+           MAP HUB SCREEN
+        ============================================================ */
+        .map-hub-screen {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            padding-bottom: 3rem;
+            animation: fadeUp 0.45s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(18px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .map-hub-header {
+            text-align: center;
+            padding: 2rem 1rem 0.5rem;
+        }
+        .map-hub-title {
+            font-family: var(--font-header);
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            color: var(--accent-color);
+            letter-spacing: 0.04em;
+            margin-bottom: 0.4rem;
+            text-shadow: 0 0 30px color-mix(in srgb, var(--accent-color) 50%, transparent);
+        }
+        .map-hub-subtitle {
+            font-family: var(--font-body);
+            color: rgba(255,255,255,0.45);
+            font-size: 0.9rem;
+            letter-spacing: 0.06em;
+        }
+
+        .map-hub-search-wrapper {
+            position: relative;
+            max-width: 520px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 0 1rem;
+        }
+        .map-hub-search {
+            width: 100%;
+            background: rgba(15, 15, 20, 0.75);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 40px;
+            padding: 0.65rem 1.2rem 0.65rem 3rem;
+            color: #fff;
+            font-family: var(--font-ui);
+            font-size: 0.9rem;
+            outline: none;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: border-color 0.2s, box-shadow 0.2s;
+            box-sizing: border-box;
+        }
+        .map-hub-search::placeholder { color: rgba(255,255,255,0.3); }
+        .map-hub-search:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 18%, transparent);
+        }
+        .map-hub-search-icon {
+            position: absolute;
+            left: calc(1rem + 14px);
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255,255,255,0.35);
+            font-size: 0.85rem;
+            pointer-events: none;
+        }
+
+        .map-hub-section {
+            padding: 0 0.5rem;
+        }
+        .map-hub-section-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0 0.5rem;
+        }
+        .map-hub-section-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+        .hub-section-galactic .map-hub-section-icon { background: rgba(120,80,255,0.25); color: #a78bfa; }
+        .hub-section-regional .map-hub-section-icon { background: rgba(56,189,248,0.2); color: #38bdf8; }
+        .hub-section-local    .map-hub-section-icon { background: rgba(52,211,153,0.2); color: #34d399; }
+
+        .map-hub-section-title {
+            font-family: var(--font-header);
+            font-size: 1rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+        .hub-section-galactic .map-hub-section-title { color: #a78bfa; }
+        .hub-section-regional .map-hub-section-title { color: #38bdf8; }
+        .hub-section-local    .map-hub-section-title { color: #34d399; }
+
+        .map-hub-section-line {
+            flex: 1;
+            height: 1px;
+            background: rgba(255,255,255,0.07);
+        }
+        .map-hub-count-pill {
+            font-family: var(--font-ui);
+            font-size: 0.72rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.4);
+        }
+
+        .map-hub-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.25rem;
+            padding: 0 0.5rem;
+        }
+
+        .map-hub-card {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            background: rgba(15, 15, 20, 0.75);
+            border: 1px solid rgba(255,255,255,0.08);
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: transform 0.28s cubic-bezier(.2,.8,.3,1.1), box-shadow 0.28s ease, border-color 0.25s;
+            will-change: transform;
+        }
+        .map-hub-card:hover {
+            transform: translateY(-5px) scale(1.015);
+            border-color: color-mix(in srgb, var(--accent-color) 55%, transparent);
+            box-shadow: 0 16px 48px rgba(0,0,0,0.45),
+                        0 0 0 1px color-mix(in srgb, var(--accent-color) 30%, transparent),
+                        0 0 28px color-mix(in srgb, var(--accent-color) 15%, transparent);
+        }
+        .map-hub-card:active { transform: scale(0.98); }
+
+        .map-hub-thumb {
+            width: 100%;
+            aspect-ratio: 16/9;
+            object-fit: cover;
+            display: block;
+            background: #0a0a0e;
+            transition: filter 0.3s;
+        }
+        .map-hub-card:hover .map-hub-thumb { filter: brightness(1.1) saturate(1.1); }
+        .map-hub-thumb-placeholder {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: radial-gradient(ellipse at center, rgba(255,255,255,0.04) 0%, #0a0a0e 70%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.12);
+            font-size: 2.5rem;
+        }
+
+        .map-hub-card-body {
+            padding: 0.9rem 1rem 1rem;
+        }
+        .map-hub-card-name {
+            font-family: var(--font-header);
+            font-size: 1.05rem;
+            color: #fff;
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+        .map-hub-card-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            align-items: center;
+        }
+        .map-hub-badge {
+            font-family: var(--font-ui);
+            font-size: 0.68rem;
+            letter-spacing: 0.06em;
+            padding: 3px 9px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .map-hub-badge.type-galactic { background: rgba(167,139,250,0.15); color: #c4b5fd; border: 1px solid rgba(167,139,250,0.25); }
+        .map-hub-badge.type-regional { background: rgba(56,189,248,0.12); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.22); }
+        .map-hub-badge.type-local    { background: rgba(52,211,153,0.12); color: #6ee7b7; border: 1px solid rgba(52,211,153,0.22); }
+        .map-hub-badge.primary       { background: color-mix(in srgb, var(--accent-color) 15%, transparent); color: var(--accent-color); border: 1px solid color-mix(in srgb, var(--accent-color) 35%, transparent); }
+        .map-hub-badge.stat          { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
+
+        .map-hub-card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        .map-hub-empty {
+            grid-column: 1 / -1;
+            padding: 2.5rem;
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+        }
+        .map-hub-no-results {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: rgba(255,255,255,0.3);
+            font-family: var(--font-body);
+            display: none;
+        }
+        .map-hub-no-results i { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+
+        /* Cross-map search hint in navicomputer */
+        .routing-cross-map-hint {
+            margin-top: 0.6rem;
+            padding: 0.6rem 0.8rem;
+            background: rgba(56,189,248,0.08);
+            border: 1px solid rgba(56,189,248,0.22);
+            border-radius: 8px;
+            font-family: var(--font-ui);
+            font-size: 0.78rem;
+            color: #7dd3fc;
+            display: none;
+        }
+        .routing-cross-map-hint.visible { display: block; }
+        .routing-cross-map-hint strong { display: block; margin-bottom: 0.3rem; color: #bae6fd; }
+        .routing-cross-map-hint .cross-map-links { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.4rem; }
+        .routing-cross-map-link {
+            background: rgba(56,189,248,0.12);
+            border: 1px solid rgba(56,189,248,0.25);
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: 0.73rem;
+            color: #7dd3fc;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-family: var(--font-ui);
+        }
+        .routing-cross-map-link:hover { background: rgba(56,189,248,0.22); }
+
+        /* Map viewer back-to-hub bar */
+        .map-hub-backbar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 0;
+            flex-shrink: 0;
+        }
+        .map-hub-back-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            padding: 0.4rem 0.85rem;
+            color: rgba(255,255,255,0.7);
+            font-family: var(--font-ui);
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .map-hub-back-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        @media (max-width: 720px) {
+            .map-hub-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 0.85rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1818,6 +2099,11 @@
                 src: '',
                 name: ''
             },
+            // Cross-map search: populated by Render.maps before entering viewer
+            crossMapIndex: {},  // { 'planet name lowercase': [{mapId, mapName}] }
+            storyMaps: [],      // All maps for the current story
+            storySlug: '',      // Slug of the current story
+
 
             init: ({ id, src, mapName, width, height }) => {
                 if (MapViewer._abortController) {
@@ -1907,18 +2193,30 @@
                 }, { signal });
                 ui.searchInput.addEventListener('change', () => MapViewer.handleSearch(), { signal });
 
-                ui.originInput.addEventListener('change', () => MapViewer.setRouteEndpoint('origin', ui.originInput.value, { allowPartial: false }), { signal });
-                ui.destInput.addEventListener('change', () => MapViewer.setRouteEndpoint('destination', ui.destInput.value, { allowPartial: false }), { signal });
+                ui.originInput.addEventListener('change', () => {
+                    const ok = MapViewer.setRouteEndpoint('origin', ui.originInput.value, { allowPartial: false });
+                    if (!ok) MapViewer.updateCrossMapHint(ui.originInput.value, 'origin');
+                    else MapViewer.hideCrossMapHint('origin');
+                }, { signal });
+                ui.destInput.addEventListener('change', () => {
+                    const ok = MapViewer.setRouteEndpoint('destination', ui.destInput.value, { allowPartial: false });
+                    if (!ok) MapViewer.updateCrossMapHint(ui.destInput.value, 'dest');
+                    else MapViewer.hideCrossMapHint('dest');
+                }, { signal });
 
                 ui.selectorButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
-                        MapViewer.init({
-                            id: btn.dataset.id,
-                            src: btn.dataset.src,
-                            mapName: btn.dataset.mapName || btn.textContent.trim(),
-                            width: parseInt(btn.dataset.width) || 4000,
-                            height: parseInt(btn.dataset.height) || 4000
-                        });
+                        if (MapViewer.storySlug) {
+                            Router.navigate(`maps/${MapViewer.storySlug}/${btn.dataset.id}`);
+                        } else {
+                            MapViewer.init({
+                                id: btn.dataset.id,
+                                src: btn.dataset.src,
+                                mapName: btn.dataset.mapName || btn.textContent.trim(),
+                                width: parseInt(btn.dataset.width) || 4000,
+                                height: parseInt(btn.dataset.height) || 4000
+                            });
+                        }
                     }, { signal });
                 });
             },
@@ -2366,8 +2664,9 @@
 
             setRouteEndpoint: (type, value, options = {}) => {
                 let node = null;
-                if (typeof value === 'string' && value.startsWith('planet_')) {
-                    node = MapViewer.nodeIndex[value] || null;
+                if (typeof value === 'string' && MapViewer.nodeIndex[value]) {
+                    // Direct UUID lookup — handles IDs from click events and renderNodeCard buttons
+                    node = MapViewer.nodeIndex[value];
                 } else if (typeof value === 'string') {
                     node = MapViewer.findNodeByName(value);
                 } else if (value && value.id) {
@@ -2587,13 +2886,58 @@
                 const node = MapViewer.findNodeByName(value);
                 if (!node) {
                     MapViewer.setStatus('Search needs an exact world name from the navicomputer list.', 'error');
+                    MapViewer.updateCrossMapHint(value, 'search');
                     return;
                 }
+                MapViewer.hideCrossMapHint('search');
                 MapViewer.selectedNodeId = node.id;
                 MapViewer.refreshNodeStates();
                 MapViewer.renderNodeCard();
                 MapViewer.zoomToNode(node.name);
                 MapViewer.setStatus(`${node.name} brought into focus.`, 'success');
+            },
+
+            // Cross-map search: look for a planet name in other maps of the same story
+            crossMapSearch: (name) => {
+                if (!name || !name.trim()) return [];
+                const key = name.trim().toLowerCase();
+                const results = MapViewer.crossMapIndex[key] || [];
+                // Filter out the current map
+                return results.filter(r => r.mapId !== MapViewer.currentMap.id);
+            },
+
+            // Show a cross-map hint below a navicomputer field
+            updateCrossMapHint: (name, hintId) => {
+                const hintEl = document.getElementById(`cross-map-hint-${hintId}`);
+                if (!hintEl) return;
+                if (!name || !name.trim()) { hintEl.classList.remove('visible'); return; }
+                const results = MapViewer.crossMapSearch(name);
+                if (!results.length) { hintEl.classList.remove('visible'); return; }
+                // Check if it's also in the current map
+                const key = name.trim().toLowerCase();
+                const inCurrentMap = !!MapViewer.nodeNameIndex[key];
+                if (inCurrentMap) { hintEl.classList.remove('visible'); return; }
+                // Build link buttons for each map where it's found
+                const uniqueMaps = [];
+                const seen = new Set();
+                results.forEach(r => { if (!seen.has(r.mapId)) { seen.add(r.mapId); uniqueMaps.push(r); } });
+                const linksHtml = uniqueMaps.map(r => {
+                    const label = Utils.escapeHtml(r.mapName);
+                    return `<span class="routing-cross-map-link" onclick="MapViewer.switchToMap('${r.mapId}')">${label}</span>`;
+                }).join('');
+                hintEl.innerHTML = `<strong><i class="fas fa-search-location"></i> Not in current chart</strong>Found in: <div class="cross-map-links">${linksHtml}</div>`;
+                hintEl.classList.add('visible');
+            },
+
+            hideCrossMapHint: (hintId) => {
+                const hintEl = document.getElementById(`cross-map-hint-${hintId}`);
+                if (hintEl) hintEl.classList.remove('visible');
+            },
+
+            // Switch to a different map in the viewer (navigates via router)
+            switchToMap: (mapId) => {
+                if (!MapViewer.storySlug) return;
+                Router.navigate(`maps/${MapViewer.storySlug}/${mapId}`);
             },
 
             renderNodeCard: () => {
@@ -3075,7 +3419,40 @@
                 if (error) throw error;
                 return data || [];
             },
-            // ------------------------------------------------------------------------
+
+            // Batch-fetch node and edge counts for multiple maps (used by MapHub)
+            getMapCounts: async (mapIds) => {
+                if (!mapIds || !mapIds.length) return {};
+                const [nodesRes, edgesRes] = await Promise.all([
+                    supabaseClient.from('map_nodes').select('map_id').in('map_id', mapIds),
+                    supabaseClient.from('map_edges').select('map_id').in('map_id', mapIds)
+                ]);
+                const counts = {};
+                mapIds.forEach(id => { counts[id] = { nodes: 0, edges: 0 }; });
+                (nodesRes.data || []).forEach(r => { if (counts[r.map_id]) counts[r.map_id].nodes++; });
+                (edgesRes.data || []).forEach(r => { if (counts[r.map_id]) counts[r.map_id].edges++; });
+                return counts;
+            },
+
+            // Fetch all node names across all maps of a story for cross-map search
+            getAllMapNodeNames: async (storyId) => {
+                const { data, error } = await supabaseClient
+                    .from('map_nodes')
+                    .select('map_id, name')
+                    .in('map_id',
+                        supabaseClient.from('maps').select('id').eq('story_id', storyId)
+                    );
+                if (error) {
+                    // Fallback: simple query without subquery if the DB doesn't support it
+                    const mapsRes = await supabaseClient.from('maps').select('id').eq('story_id', storyId);
+                    if (mapsRes.error || !mapsRes.data) return [];
+                    const mapIds = mapsRes.data.map(m => m.id);
+                    if (!mapIds.length) return [];
+                    const nodesRes = await supabaseClient.from('map_nodes').select('map_id, name').in('map_id', mapIds);
+                    return nodesRes.data || [];
+                }
+                return data || [];
+            },
 
             // FIX 11: Cached author profile — avoids re-fetching on every #home visit
             getAuthorProfile: async () => {
@@ -4216,10 +4593,117 @@
         };
 
         // ==============================================
+        // MAP HUB
+        // ==============================================
+        const MapHub = {
+            _counts: {},
+
+            // Map type configuration
+            _types: {
+                galactic: { label: 'Galactic Maps', icon: 'fas fa-globe', cls: 'hub-section-galactic', badgeCls: 'type-galactic', badgeLabel: 'Galactic' },
+                regional: { label: 'Regional / Sector Maps', icon: 'fas fa-map', cls: 'hub-section-regional', badgeCls: 'type-regional', badgeLabel: 'Regional' },
+                local:    { label: 'Local Maps', icon: 'fas fa-map-pin', cls: 'hub-section-local', badgeCls: 'type-local', badgeLabel: 'Local' },
+            },
+
+            renderCard: (map, slug, counts) => {
+                const type = map.map_type || 'galactic';
+                const cfg = MapHub._types[type] || MapHub._types.galactic;
+                const c = counts[map.id] || { nodes: 0, edges: 0 };
+                const thumbHtml = map.image_url
+                    ? `<img class="map-hub-thumb" src="${Utils.escapeHtml(map.image_url)}" loading="lazy" alt="${Utils.escapeHtml(map.map_name)}">`
+                    : `<div class="map-hub-thumb-placeholder"><i class="fas fa-map-marked-alt"></i></div>`;
+                return `
+                    <div class="map-hub-card" data-name="${Utils.escapeHtml(map.map_name.toLowerCase())}" data-type="${type}" onclick="Router.navigate('maps/${slug}/${map.id}')">
+                        <div class="map-hub-card-overlay"></div>
+                        ${thumbHtml}
+                        <div class="map-hub-card-body">
+                            <div class="map-hub-card-name">${Utils.escapeHtml(map.map_name)}</div>
+                            <div class="map-hub-card-badges">
+                                <span class="map-hub-badge ${cfg.badgeCls}">${cfg.badgeLabel}</span>
+                                ${map.is_primary ? '<span class="map-hub-badge primary"><i class="fas fa-star"></i> Primary</span>' : ''}
+                                <span class="map-hub-badge stat"><i class="fas fa-circle-dot"></i> ${c.nodes} node${c.nodes !== 1 ? 's' : ''}</span>
+                                <span class="map-hub-badge stat"><i class="fas fa-route"></i> ${c.edges} lane${c.edges !== 1 ? 's' : ''}</span>
+                            </div>
+                        </div>
+                    </div>`;
+            },
+
+            renderSection: (typeKey, maps, slug, counts) => {
+                if (!maps.length) return '';
+                const cfg = MapHub._types[typeKey];
+                const cardsHtml = maps.map(m => MapHub.renderCard(m, slug, counts)).join('');
+                return `
+                    <div class="map-hub-section ${cfg.cls}" data-category="${typeKey}">
+                        <div class="map-hub-section-header">
+                            <div class="map-hub-section-icon"><i class="${cfg.icon}"></i></div>
+                            <div class="map-hub-section-title">${cfg.label}</div>
+                            <span class="map-hub-count-pill">${maps.length}</span>
+                            <div class="map-hub-section-line"></div>
+                        </div>
+                        <div class="map-hub-grid">${cardsHtml}</div>
+                    </div>`;
+            },
+
+            render: (maps, slug, themeColor, counts) => {
+                const galactic = maps.filter(m => (m.map_type || 'galactic') === 'galactic');
+                const regional = maps.filter(m => m.map_type === 'regional');
+                const local    = maps.filter(m => m.map_type === 'local');
+                const sections = [
+                    MapHub.renderSection('galactic', galactic, slug, counts),
+                    MapHub.renderSection('regional', regional, slug, counts),
+                    MapHub.renderSection('local',    local,    slug, counts),
+                ].join('');
+
+                return `
+                    <div class="map-hub-screen" id="map-hub-screen">
+                        <div class="map-hub-header">
+                            <div class="map-hub-title"><i class="fas fa-satellite-dish" style="margin-right:0.5rem; opacity:0.7;"></i>Star Chart Registry</div>
+                            <div class="map-hub-subtitle">${maps.length} chart${maps.length !== 1 ? 's' : ''} in the database — select one to open the interactive viewer</div>
+                        </div>
+                        <div class="map-hub-search-wrapper">
+                            <i class="fas fa-search map-hub-search-icon"></i>
+                            <input id="map-hub-search" type="text" class="map-hub-search" placeholder="Search charts…" autocomplete="off">
+                        </div>
+                        ${sections}
+                        <div class="map-hub-no-results" id="map-hub-no-results">
+                            <i class="fas fa-satellite-dish"></i>
+                            No charts match your search
+                        </div>
+                    </div>`;
+            },
+
+            init: () => {
+                const searchInput = document.getElementById('map-hub-search');
+                if (!searchInput) return;
+                searchInput.addEventListener('input', MapHub.onSearch);
+            },
+
+            onSearch: (e) => {
+                const query = (e.target.value || '').toLowerCase().trim();
+                let anyVisible = false;
+                document.querySelectorAll('.map-hub-card').forEach(card => {
+                    const name = card.dataset.name || '';
+                    const type = card.dataset.type || '';
+                    const match = !query || name.includes(query) || type.includes(query);
+                    card.style.display = match ? '' : 'none';
+                    if (match) anyVisible = true;
+                });
+                // Hide empty sections
+                document.querySelectorAll('.map-hub-section').forEach(section => {
+                    const hasVisible = [...section.querySelectorAll('.map-hub-card')].some(c => c.style.display !== 'none');
+                    section.style.display = hasVisible ? '' : 'none';
+                });
+                const noResults = document.getElementById('map-hub-no-results');
+                if (noResults) noResults.style.display = (query && !anyVisible) ? 'block' : 'none';
+            }
+        };
+
+        // ==============================================
         // MAIN RENDERER
         // ==============================================
         const Render = {
             stage: document.getElementById('content-stage'),
+
             
 
             home: async () => {
@@ -4684,35 +5168,81 @@
                 Render.stage.innerHTML = html + '</div>';
             },
 
-            maps: async (slug) => {
+            maps: async (slug, mapId = null) => {
                 UI.showLoading();
                 
                 const hubData = await DB.getStoryHubData(slug);
                 if (!hubData || !hubData.story) { Router.navigate('home'); return; }
                 const story = hubData.story;
 
-                UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                 UI.setBg(story.background_image_url);
                 document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-                const maps = hubData.maps;
-                
-                if (!maps || maps.length === 0) {
+                const maps = hubData.maps || [];
+                if (maps.length === 0) {
+                    UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
                     Render.stage.innerHTML = `<div style="padding:2rem;text-align:center">No maps found.</div>`;
                     return;
                 }
 
+                // Populate global cross-map indexes
+                try {
+                    const nodeNames = await DB.getAllMapNodeNames(story.id);
+                    const crossIndex = {};
+                    nodeNames.forEach(n => {
+                        const key = n.name.trim().toLowerCase();
+                        if (!crossIndex[key]) crossIndex[key] = [];
+                        const m = maps.find(x => x.id === n.map_id);
+                        if (m) {
+                            crossIndex[key].push({
+                                mapId: n.map_id,
+                                mapName: m.map_name
+                            });
+                        }
+                    });
+                    MapViewer.crossMapIndex = crossIndex;
+                    MapViewer.storyMaps = maps;
+                    MapViewer.storySlug = slug;
+                } catch (e) {
+                    console.error("Failed to build cross-map search index:", e);
+                }
+
+                // Phase 1: Hub Screen (if no mapId is provided)
+                if (!mapId) {
+                    UI.setBackButton(`Router.navigate('story/${slug}')`, "Story Hub");
+                    
+                    // Fetch counts for all maps
+                    const mapIds = maps.map(m => m.id);
+                    let counts = {};
+                    try {
+                        counts = await DB.getMapCounts(mapIds);
+                    } catch (e) {
+                        console.error("Failed to fetch map node/edge counts:", e);
+                    }
+
+                    Render.stage.innerHTML = MapHub.render(maps, slug, story.theme_color, counts);
+                    MapHub.init();
+                    return;
+                }
+
+                // Phase 2: Interactive Viewer Screen
+                UI.setBackButton(`Router.navigate('maps/${slug}')`, "Registry");
+
+                const activeMap = maps.find(m => m.id === mapId) || maps.find(m => m.is_primary) || maps[0];
+
                 let btns = '';
                 maps.forEach(m => {
-                    // Added: dataset id, width, height for DB fetching
-                    btns += `<button class="map-selector-btn ${m.is_primary ? 'active' : ''}" data-id="${m.id}" data-src="${m.image_url}" data-map-name="${Utils.escapeHtml(m.map_name)}" data-width="${m.width || 4000}" data-height="${m.height || 4000}">${Utils.escapeHtml(m.map_name)}</button>`;
+                    btns += `<button class="map-selector-btn ${m.id === activeMap.id ? 'active' : ''}" data-id="${m.id}" data-src="${m.image_url}" data-map-name="${Utils.escapeHtml(m.map_name)}" data-width="${m.width || 4000}" data-height="${m.height || 4000}">${Utils.escapeHtml(m.map_name)}</button>`;
                 });
-                
-                const primary = maps.find(m => m.is_primary) || maps[0];
                 
                 Render.stage.innerHTML = `
                     <div class="map-layout">
-                        <div class="map-selector glass-box">${btns}</div>
+                        <div class="map-hub-backbar">
+                            <button class="map-hub-back-btn" onclick="Router.navigate('maps/${slug}')">
+                                <i class="fas fa-arrow-left"></i> Registry
+                            </button>
+                            <div class="map-selector glass-box" style="margin:0; flex:1; justify-content:flex-start;">${btns}</div>
+                        </div>
                         <div class="map-workspace">
                             <div class="map-column-left" style="display: flex; flex-direction: column; gap: 0.85rem; min-width: 0;">
                                 <div class="map-stage">
@@ -4722,12 +5252,12 @@
                                             <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
                                         </div>
                                         <div class="map-topbar-group">
-                                            <div class="map-chip" id="active-map-chip">${Utils.escapeHtml(primary.map_name)}</div>
+                                            <div class="map-chip" id="active-map-chip">${Utils.escapeHtml(activeMap.map_name)}</div>
                                         </div>
                                     </div>
                                     <div class="map-viewer" id="map-viewer">
                                         <div class="map-canvas" id="map-canvas">
-                                            <img src="${primary.image_url}" id="map-image" draggable="false">
+                                            <img src="${activeMap.image_url}" id="map-image" draggable="false">
                                             <svg id="map-svg-layer"></svg>
                                             <div id="map-nodes-layer"></div>
                                         </div>
@@ -4762,6 +5292,7 @@
                                         <label for="planet-search">Focus</label>
                                         <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist">
                                     </div>
+                                    <div id="cross-map-hint-search" class="routing-cross-map-hint"></div>
                                     <div class="routing-inline-actions">
                                         <button class="routing-btn" id="focus-route-btn" type="button">Focus World</button>
                                         <button class="routing-btn" id="set-origin-btn" type="button">Set Selected as Origin</button>
@@ -4779,10 +5310,12 @@
                                         <label for="route-origin">Origin</label>
                                         <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist">
                                     </div>
+                                    <div id="cross-map-hint-origin" class="routing-cross-map-hint"></div>
                                     <div class="routing-field-row">
                                         <label for="route-dest">Destination</label>
                                         <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist">
                                     </div>
+                                    <div id="cross-map-hint-dest" class="routing-cross-map-hint"></div>
                                     <datalist id="planet-datalist"></datalist>
                                     <div class="routing-main-actions">
                                         <button class="routing-btn primary" id="plot-course-btn" type="button">Plot Course</button>
@@ -4802,11 +5335,11 @@
                     </div>`;
                 
                 setTimeout(() => MapViewer.init({ 
-                    id: primary.id, 
-                    src: primary.image_url, 
-                    mapName: primary.map_name, 
-                    width: parseInt(primary.width) || 4000, 
-                    height: parseInt(primary.height) || 4000 
+                    id: activeMap.id, 
+                    src: activeMap.image_url, 
+                    mapName: activeMap.map_name, 
+                    width: parseInt(activeMap.width) || 4000, 
+                    height: parseInt(activeMap.height) || 4000 
                 }), 50);
             }
         };
@@ -4880,7 +5413,7 @@
                         else await Render.lore(id);
                     }
                     else if (view === 'timeline') await Render.timeline(id);
-                    else if (view === 'maps') await Render.maps(id);
+                    else if (view === 'maps') await Render.maps(id, subId);
                     else await Render.home();
                 })().then(() => {
                     setTimeout(() => {

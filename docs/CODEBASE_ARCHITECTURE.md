@@ -49,9 +49,12 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
     - `profile` *(Object | null)* — The user's profile info from the DB.
 
 #### `index.html` MapViewer state additions
-- `MapViewer.componentIndex` / `MapViewer.nodeComponentIndex` â€” Connected-component indexes used to separate routeable hyperlane clusters from isolated worlds.
-- `MapViewer.edgeLengthIndex` â€” Cached per-edge geometry lengths reused by routing and nearest-exit calculations.
-- `MapViewer.routeState.offlaneSegments` / `routeState.accessPoints` / `routeState.advisory` â€” Hybrid-route metadata for snapped exits, straight-line off-lane travel, and reader-facing warnings about unregistered approach legs.
+- `MapViewer.componentIndex` / `MapViewer.nodeComponentIndex` — Connected-component indexes used to separate routeable hyperlane clusters from isolated worlds.
+- `MapViewer.edgeLengthIndex` — Cached per-edge geometry lengths reused by routing and nearest-exit calculations.
+- `MapViewer.routeState.offlaneSegments` / `routeState.accessPoints` / `routeState.advisory` — Hybrid-route metadata for snapped exits, straight-line off-lane travel, and reader-facing warnings about unregistered approach legs.
+- `MapViewer.crossMapIndex` — Bidirectional cross-map indexing mapping lowercase planet names to a list of `{ mapId, mapName }` records where they exist across all charts in the current story, enabling cross-map search and snap hints.
+- `MapViewer.storyMaps` — Local cache of all maps for the current story to enable quick name and metadata mapping.
+- `MapViewer.storySlug` — Stores the current story slug to construct clean relative routing paths during map switching.
 
 ### `admin.html`
 - `State` *(Object)* — The primary global state container for the admin panel.
@@ -179,7 +182,11 @@ In all files, Supabase data access is encapsulated in module objects (`DB` objec
 Media assets are managed using Supabase Storage buckets.
 - **`Utils.uploadImage(file, bucket, folderPath)`**: A standard utility function handles uploading. It typically uses unique IDs (like `Date.now()`) for naming, performs `supabase.storage.from(bucket).upload()`, and immediately fetches the public URL via `.getPublicUrl()` to save back into database rows (covers, avatars, wallpapers, maps).
 ### Reader Map Conventions
-- The `maps` route now renders as a two-pane workspace: a panoramic map stage plus a dedicated navicomputer panel instead of a minimal overlay form.
+- **Two-Phase Map Discovery & Routing:** The maps view follows a robust two-phase routing structure. A root story map registry (`#maps/slug`) displays the **Star Chart Registry (Map Hub)**, which transitions into the **Interactive Viewer** (`#maps/slug/mapId`) when a specific map is selected. A glassmorphic top navigation bar on the viewer allows seamless return to the Registry.
+- **Star Chart Registry (Map Hub):** A modern, grid-based interface displaying all charted maps associated with a story. Maps are dynamically grouped into **Galactic**, **Regional / Sector**, and **Local** categories, featuring live stats (node and hyperlane counts) on each thumbnail card.
+- **Dynamic Search & Filtering:** The Map Hub includes a real-time responsive search bar to filter charts instantly by name or type category, dynamically hiding empty sections.
+- **Cross-Map Planet Search & Navigation:** Navicomputer input fields (`Focus`, `Origin`, `Destination`) are enhanced with cross-map lookups. When a user queries a planet not charting on the current map, a non-intrusive hint detects if the world is charted in any other story map and provides one-click navigation links to switch charts instantly.
+- The `maps` route renders as a two-pane workspace: a panoramic map stage plus a dedicated navicomputer panel.
 - Map selector buttons carry each map row's `id`, `width`, and `height` so the reader can fully swap both the background image and the underlying route graph.
 - `MapViewer.init()` now binds navicomputer controls and layer toggles as part of map bootstrapping, resets any active route state, and reloads topology for the selected Supabase map record.
 - `MapViewer` owns map switching, node selection, route plotting, inline routing status, route summaries, and itinerary generation.

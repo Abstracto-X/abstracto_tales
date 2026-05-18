@@ -276,6 +276,7 @@ Map images associated with a story.
 | `height` | INTEGER | Cartographer coordinate height. Default `4000` |
 | `is_published` | BOOLEAN | Default FALSE. Controls public visibility of the interactive map |
 | `sort_order` | INTEGER | Default 0 |
+| `map_type` | TEXT | One of: `galactic`, `regional`, `local`. Default `'galactic'` |
 | `created_by` | UUID | FK → `profiles(id)`. Identifies the original map creator |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | Auto-updated via trigger |

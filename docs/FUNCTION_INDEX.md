@@ -26,6 +26,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `getCharacterGallery(characterId)` — Fetches gallery images for a character.
 - `getLatestGalleryImages(storyId, limit, offset)` — Fetches recently added gallery images across all characters in a story with pagination/offset support.
 - `getLoreEntry(storyId, loreSlug)` — Fetches a single lore entry by slug.
+- `getMapCounts(mapIds)` — Fetches node and edge counts for specified maps to display in the hub.
+- `getAllMapNodeNames(storyId)` — Fetches all mapped planet names across all maps in a given story.
 
 ### `UserAuth` (Authentication)
 - `init()` — Checks for an existing session and sets up the `onAuthStateChange` listener.
@@ -62,6 +64,13 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 - `hideLoading()` — Smoothly finishes the last stretch to `100%`, briefly holds the completed frame, then fades out the overlay before resetting progress off-screen for the next transition.
 
+### `MapHub` (Registry Discovery Screen)
+- `render(maps, slug, themeColor, counts)` — Prepares and renders the full grid-based map registry screen, segmented by galactic, regional, and local categories.
+- `renderSection(typeKey, maps, slug, counts)` — Renders an individual category registry row with count badges.
+- `renderCard(map, slug, counts)` — Renders a sleek card for each map displaying visual thumbnails and charted stats.
+- `init()` — Binds input events to the registry search bar.
+- `onSearch(e)` — Filters displayed maps and hides empty sections in real-time as users type.
+
 ### `MapViewer` (Interactive Map & Routing)
 - `MinPriorityQueue` — Lightweight binary heap class providing `enqueue`, `dequeue`, and `isEmpty` methods for the pathfinding engine.
 - `init()` - Initializes the transform-based panning/zooming engine for a specific Supabase map record, resetting route state, clearing stale overlays, and setting up the SVG/HTML overlay containers.
@@ -94,6 +103,10 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `renderNodeCard()` / `renderSummary()` — Renders the focused-world card plus the route summary metrics panel.
 - `renderRouteOverlay()` — Draws cyan straight-line off-lane segments and exit markers for hybrid routes.
 - `toggleLayer(key)` / `applyDisplayState()` — Manages reader-facing label and hyperlane visibility controls.
+- `crossMapSearch(name)` — Searches for a world name across all other maps of the same story.
+- `updateCrossMapHint(name, hintId)` — Displays a non-intrusive navigation suggestion below the field if the searched planet exists in another chart.
+- `hideCrossMapHint(hintId)` — Hides the cross-map hint for the specified field.
+- `switchToMap(mapId)` — Switches active map in the viewer to the specified mapId using Router.navigate.
 
 ### `Particles` (Background Engine)
 - `init()` — Sets up the HTML5 Canvas, spawns particles, and registers `visibilitychange` listener for pause/resume.
