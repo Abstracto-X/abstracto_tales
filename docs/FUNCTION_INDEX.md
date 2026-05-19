@@ -95,8 +95,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `setMapSource(src, mapName)` — Swaps the visible map image while preserving navicomputer state and updating the active selector chip.
 - `selectNode(nodeId)` / `assignSelectedNode(type)` — Drives the focused-world workflow so readers can inspect a node and promote it to origin or destination.
 - `setRouteEndpoint(type, value)` — Resolves a selected node or exact input value into a persistent route endpoint.
-- `createAccessPointForNode(node)` / `findNearestAccessPoint(node, componentId)` — Build native or snapped route-entry metadata for linked and unlinked worlds.
-- `runDijkstra(sourceId, targetId)` / `findBestHybridRoute(sourceNode, targetNode)` — Shared routing helpers for standard graph traversal and hybrid nearest-exit fallback selection.
+- `createAccessPointForNode(node)` / `findNearestAccessPoint(node, componentId)` — Build native or snapped route-entry metadata for linked and unlinked worlds. Hardened against unlinked graph topography exceptions and malformed coordinate drift.
+- `runDijkstra(sourceId, targetId)` / `findBestHybridRoute(sourceNode, targetNode)` — Shared routing helpers for standard graph traversal and hybrid nearest-exit fallback selection. Hardened to prevent crashes if nodes are asynchronously deleted or unlinked from subnetwork topology tables.
 - `clearRoute()` / `swapRoute()` — Route management helpers for clearing or reversing the current nav path.
 - `handleSearch()` — Focuses the map on an exact world search hit from the navicomputer search field.
 - `renderNodeCard()` / `renderSummary()` — Renders the focused-world card plus the route summary metrics panel.

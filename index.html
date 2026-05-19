@@ -2453,14 +2453,14 @@
 
             findNearestAccessPoint: (node, componentId) => {
                 const component = MapViewer.componentIndex[componentId];
-                if (!node || !component) return null;
+                if (!node || !component || node.x === undefined || node.y === undefined) return null;
 
                 let best = null;
                 const origin = { x: node.x, y: node.y };
 
                 component.nodeIds.forEach(candidateNodeId => {
                     const candidateNode = MapViewer.nodeIndex[candidateNodeId];
-                    if (!candidateNode) return;
+                    if (!candidateNode || candidateNode.x === undefined || candidateNode.y === undefined) return;
                     const distance = Math.hypot(candidateNode.x - origin.x, candidateNode.y - origin.y);
                     if (!best || distance < best.offlaneDistance) {
                         best = {
@@ -2485,6 +2485,9 @@
                     for (let i = 1; i < edge.geometry.length; i += 1) {
                         const start = edge.geometry[i - 1];
                         const end = edge.geometry[i];
+                        if (!start || !end || start.x === undefined || start.y === undefined || end.x === undefined || end.y === undefined) {
+                            continue;
+                        }
                         const segmentLength = Math.hypot(end.x - start.x, end.y - start.y);
                         const closest = MapViewer.getClosestPointOnSegment(origin, start, end);
                         const distanceAlong = traversed + (segmentLength * closest.t);
@@ -2547,7 +2550,7 @@
                     if (minNode === targetId) break;
                     if (currentDist > distances[minNode]) continue;
 
-                    MapViewer.graph[minNode].edges.forEach(neighbor => {
+                    (MapViewer.graph[minNode]?.edges || []).forEach(neighbor => {
                         const alt = distances[minNode] + neighbor.weight;
                         if (alt < (distances[neighbor.target] ?? Infinity)) {
                             distances[neighbor.target] = alt;
