@@ -3829,17 +3829,39 @@
 
             fetchProfile: async (user) => {
                 UserAuth.user = user;
-                const { data, error } = await supabaseClient
-                    .from('profiles')
-                    .select('*')
-                    .eq('id', user.id)
-                    .single();
+                
+                let data = null;
+                let error = null;
+                const maxRetries = 5;
+                const baseDelay = 300; // ms base delay for exponential backoff
+
+                for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                    const res = await supabaseClient
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    data = res.data;
+                    error = res.error;
+
+                    if (!error && data) {
+                        break;
+                    }
+
+                    if (attempt < maxRetries) {
+                        const delay = baseDelay * Math.pow(2, attempt);
+                        console.warn(`Profile sync lag detected. Retry attempt ${attempt + 1}/${maxRetries} in ${delay}ms...`, error);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                    }
+                }
 
                 if (!error && data) {
                     UserAuth.profile = data;
                     UI.initAuthLink(data);
                     UI.initAdminLink();
                 } else {
+                    console.error("Profile synchronization failed after all retries.", error);
                     UserAuth.profile = null;
                     UI.initAuthLink(null);
                     UI.initAdminLink();

@@ -31,8 +31,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ### `UserAuth` (Authentication)
 - `init()` — Checks for an existing session and sets up the `onAuthStateChange` listener.
-- `handleAuthStateChange(event, session)` — Responds to logins/logouts to refresh the session and UI.
-- `updateUserUI()` — Toggles visibility of login/register buttons vs. the user profile menu.
+- `fetchProfile(user)` — Asynchronously fetches the user's profile row from the DB. Implements exponential backoff (up to 5 retries starting at 300ms) to bypass database replication or trigger delays upon new user registration.
 - `logout()` — Signs the current user out of Supabase and reloads the page.
 - `showAuthModal(type)` — Opens the generic modal configured for either 'login' or 'register'.
 
