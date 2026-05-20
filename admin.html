@@ -394,7 +394,233 @@
             .sidebar-toggle { display: flex; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .quick-actions { grid-template-columns: repeat(2, 1fr); }
-        }    </style>
+        }
+
+        /* --- DROPZONE --- */
+        .upload-dropzone {
+            border: 2px dashed var(--glass-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .upload-dropzone:hover, .upload-dropzone.dragover {
+            border-color: var(--accent-color);
+            background: rgba(255, 215, 0, 0.03);
+        }
+        .upload-preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+        .upload-preview-item {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.4);
+        }
+        .upload-preview-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .upload-preview-item .remove-btn {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            line-height: 1;
+            transition: background 0.2s;
+        }
+        .upload-preview-item .remove-btn:hover {
+            background: var(--danger-color);
+        }
+
+        /* --- INTERACTIVE TAG INPUT --- */
+        .tag-input-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            min-height: 45px;
+            align-items: center;
+            transition: border-color 0.25s ease;
+        }
+        .tag-input-container:focus-within {
+            border-color: var(--accent-color);
+        }
+        .tag-input-container .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            background: var(--accent-color);
+            color: #000;
+            padding: 0.25rem 0.6rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .tag-input-container .tag-chip .remove {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .tag-input-container .tag-chip .remove:hover {
+            opacity: 1;
+        }
+        .tag-input-container .tag-input {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            padding: 0.25rem 0;
+        }
+        .tag-input-container .tag-raw-input {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-size: 0.9rem;
+            outline: none;
+            padding: 0.25rem 0;
+        }
+
+        /* --- TOGGLE SWITCH --- */
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            padding: 0.8rem 1rem;
+            margin-top: 1rem;
+        }
+        .toggle-label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        .toggle-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .toggle-subtitle {
+            font-size: 0.72rem;
+            color: #777;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: 0.25s;
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: #888;
+            transition: 0.25s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: rgba(255, 68, 68, 0.2);
+            border-color: var(--danger-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(22px);
+            background-color: var(--danger-color);
+        }
+
+        /* --- AUTOCOMPLETE TAG DROPDOWN --- */
+        .tag-input-wrapper-relative {
+            position: relative;
+        }
+        .tag-autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: rgba(14, 14, 14, 0.98);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 8px;
+            max-height: 180px;
+            overflow-y: auto;
+            z-index: 1000;
+            margin-top: 4px;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+            display: none;
+        }
+        .tag-autocomplete-item {
+            padding: 0.6rem 1rem;
+            font-size: 0.82rem;
+            color: #ccc;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .tag-autocomplete-item:hover, .tag-autocomplete-item.selected {
+            background: rgba(255, 215, 0, 0.12);
+            color: var(--accent-color);
+        }
+        .tag-autocomplete-item .badge {
+            font-size: 0.65rem;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            color: #666;
+        }
+    </style>
 </head>
 <body>
 
@@ -623,19 +849,354 @@
         // ==============================================
         const UI = {
             imageUploadField: (id, label, currentValue, bucketName, multiple = false) => {
+                const listId = `${id}_preview_list`;
+                const urlInputId = `${id}_url`;
+                const fileInputId = `${id}_file`;
                 return `
                     <div class="form-group">
                         <label class="form-label">${label}</label>
-                        <div style="display:flex;gap:1rem;align-items:center;">
-                            ${currentValue ? `<img src="${Utils.escapeAttr(currentValue)}" style="width:50px;height:50px;object-fit:cover;border-radius:4px" alt="Preview">` : ''}
-                            <div style="flex-grow:1;">
-                                <input type="file" id="${id}_file" accept="image/*" class="form-input" style="padding:0.3rem" ${multiple ? 'multiple' : ''}>
-                                <div style="font-size:0.8rem;color:#888;margin-top:0.2rem">Or enter URL directly:</div>
-                                <input type="text" class="form-input" id="${id}_url" value="${Utils.escapeAttr(currentValue || '')}" placeholder="https://...">
-                            </div>
+                        <div class="upload-dropzone" id="${id}_dropzone" onclick="document.getElementById('${fileInputId}').click()">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 1.8rem; color: var(--accent-color);"></i>
+                            <span style="font-size: 0.9rem; color: #ccc;">Drag & drop images here or <strong>browse</strong></span>
+                            <input type="file" id="${fileInputId}" accept="image/*" style="display: none;" ${multiple ? 'multiple' : ''} onchange="UI.handleFileSelection(this, '${listId}', '${urlInputId}')">
+                        </div>
+                        <div style="margin-top: 0.5rem;">
+                            <input type="text" class="form-input" id="${urlInputId}" value="${Utils.escapeAttr(currentValue || '')}" placeholder="Or paste image URL directly..." oninput="UI.handleUrlInput(this, '${listId}')">
+                        </div>
+                        <div class="upload-preview-container" id="${listId}">
+                            ${currentValue ? `
+                                <div class="upload-preview-item" data-url="${Utils.escapeAttr(currentValue)}">
+                                    <img src="${Utils.escapeAttr(currentValue)}" alt="Preview">
+                                    <button type="button" class="remove-btn" onclick="UI.clearPreviews('${listId}', '${urlInputId}')">&times;</button>
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 `;
+            },
+
+            handleFileSelection: (input, listId, urlInputId) => {
+                const previewContainer = document.getElementById(listId);
+                previewContainer.innerHTML = '';
+                const urlInput = document.getElementById(urlInputId);
+                if (urlInput) urlInput.value = ''; // Reset direct URL value as file selection has priority
+
+                if (input.files && input.files.length > 0) {
+                    Array.from(input.files).forEach(file => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const item = document.createElement('div');
+                            item.className = 'upload-preview-item';
+                            item.innerHTML = `
+                                <img src="${e.target.result}" alt="Local Preview">
+                                <button type="button" class="remove-btn" onclick="UI.clearPreviews('${listId}', '${urlInputId}')">&times;</button>
+                            `;
+                            previewContainer.appendChild(item);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                }
+            },
+
+            handleUrlInput: (input, listId) => {
+                const previewContainer = document.getElementById(listId);
+                previewContainer.innerHTML = '';
+                
+                const fileInput = document.getElementById(input.id.replace('_url', '_file'));
+                if (fileInput) fileInput.value = ''; // Reset file input as URL has priority
+
+                if (input.value.trim()) {
+                    const item = document.createElement('div');
+                    item.className = 'upload-preview-item';
+                    item.innerHTML = `
+                        <img src="${Utils.escapeAttr(input.value.trim())}" alt="URL Preview" onerror="this.src='https://placehold.co/100?text=Invalid+URL'">
+                        <button type="button" class="remove-btn" onclick="UI.clearPreviews('${listId}', '${input.id}')">&times;</button>
+                    `;
+                    previewContainer.appendChild(item);
+                }
+            },
+
+            clearPreviews: (listId, urlInputId) => {
+                const previewContainer = document.getElementById(listId);
+                if (previewContainer) previewContainer.innerHTML = '';
+                const urlInput = document.getElementById(urlInputId);
+                if (urlInput) urlInput.value = '';
+                const fileInput = document.getElementById(urlInputId.replace('_url', '_file'));
+                if (fileInput) fileInput.value = '';
+            },
+
+            initDragAndDrop: (id) => {
+                const dropzone = document.getElementById(`${id}_dropzone`);
+                const fileInput = document.getElementById(`${id}_file`);
+                const listId = `${id}_preview_list`;
+                const urlInputId = `${id}_url`;
+
+                if (!dropzone || !fileInput) return;
+
+                // Prevent default drag behaviors
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, (e) => e.preventDefault(), false);
+                    dropzone.addEventListener(eventName, (e) => e.stopPropagation(), false);
+                });
+
+                // Highlight dropzone on drag hover
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, () => dropzone.classList.add('dragover'), false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropzone.addEventListener(eventName, () => dropzone.classList.remove('dragover'), false);
+                });
+
+                // Handle dropped files
+                dropzone.addEventListener('drop', (e) => {
+                    const dt = e.dataTransfer;
+                    const files = dt.files;
+                    if (files && files.length > 0) {
+                        fileInput.files = files;
+                        UI.handleFileSelection(fileInput, listId, urlInputId);
+                    }
+                }, false);
+            },
+
+            initTagComponent: (elementId, initialTags = []) => {
+                const rawInput = document.getElementById(elementId);
+                if (!rawInput) return;
+
+                // Hide the raw input text box visually but keep it for simple extraction
+                rawInput.style.display = 'none';
+
+                // Check if interactive container already exists to avoid duplication
+                let container = rawInput.parentElement.querySelector('.tag-input-container');
+                if (container) container.remove();
+
+                // Create interactive tags layout container
+                container = document.createElement('div');
+                container.className = 'tag-input-container';
+
+                // Track standard JS list arrays cleanly
+                let tagsList = [...initialTags];
+
+                // Create dynamic text entry box inside chips row
+                const inputField = document.createElement('input');
+                inputField.type = 'text';
+                inputField.className = 'tag-input';
+                inputField.placeholder = tagsList.length === 0 ? 'Type tag and press Enter/Comma...' : '';
+
+                // Render existing chips
+                const renderChips = () => {
+                    // Clear all but keeps input box
+                    const existingChips = container.querySelectorAll('.tag-chip');
+                    existingChips.forEach(chip => chip.remove());
+
+                    tagsList.forEach((tag, index) => {
+                        const chip = document.createElement('span');
+                        chip.className = 'tag-chip';
+                        chip.innerHTML = `
+                            ${Utils.escapeHtml(tag)}
+                            <span class="remove" data-index="${index}">&times;</span>
+                        `;
+                        container.insertBefore(chip, inputField);
+                    });
+
+                    // Update original hidden input value for DB compatibility
+                    rawInput.value = tagsList.join(', ');
+                };
+
+                container.appendChild(inputField);
+                rawInput.parentNode.insertBefore(container, rawInput.nextSibling);
+
+                // Handle typing flow events
+                inputField.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        const val = inputField.value.trim().replace(/,/g, '');
+                        if (val && !tagsList.includes(val)) {
+                            tagsList.push(val);
+                            inputField.value = '';
+                            renderChips();
+                            inputField.placeholder = '';
+                        }
+                    } else if (e.key === 'Backspace' && !inputField.value && tagsList.length > 0) {
+                        tagsList.pop();
+                        renderChips();
+                        if (tagsList.length === 0) {
+                            inputField.placeholder = 'Type tag and press Enter/Comma...';
+                        }
+                    }
+                });
+
+                // Delegate clicking removes
+                container.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('remove')) {
+                        const idx = parseInt(e.target.getAttribute('data-index'));
+                        tagsList.splice(idx, 1);
+                        renderChips();
+                        if (tagsList.length === 0) {
+                            inputField.placeholder = 'Type tag and press Enter/Comma...';
+                        }
+                    } else {
+                        inputField.focus();
+                    }
+                });
+
+                renderChips();
+            },
+
+            initTagAutocomplete: async (containerId, initialTags = []) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                // Fetch all unique tags currently in the database to build suggestions
+                let allTags = [];
+                try {
+                    const { data } = await supabaseClient.from('character_gallery_images').select('image_tags');
+                    const tagSet = new Set();
+                    if (data) {
+                        data.forEach(row => {
+                            if (row.image_tags) {
+                                row.image_tags.forEach(t => {
+                                    // Filter out R18 structural tags from autocomplete options
+                                    if (t && t !== 'NSFW' && t !== 'R18') tagSet.add(t);
+                                });
+                            }
+                        });
+                    }
+                    allTags = Array.from(tagSet);
+                } catch (e) {
+                    console.error('Error fetching autocomplete tags:', e);
+                }
+
+                let tags = [...initialTags];
+                let selectedIndex = -1;
+
+                const render = () => {
+                    container.innerHTML = `
+                        <div class="tag-input-wrapper-relative">
+                            <div class="tag-input-container">
+                                ${tags.map((tag, idx) => `
+                                    <span class="tag-chip">${Utils.escapeHtml(tag)} 
+                                        <i class="fas fa-times" onclick="window._removeAutoTag('${containerId}', ${idx})"></i>
+                                    </span>
+                                `).join('')}
+                                <input type="text" class="tag-raw-input" placeholder="Type tag..." autocomplete="off">
+                            </div>
+                            <div class="tag-autocomplete-dropdown"></div>
+                            <input type="hidden" id="${containerId}_value" value="${Utils.escapeAttr(tags.join(','))}">
+                        </div>
+                    `;
+
+                    const input = container.querySelector('.tag-raw-input');
+                    const dropdown = container.querySelector('.tag-autocomplete-dropdown');
+
+                    input.addEventListener('input', () => {
+                        const val = input.value.trim().toLowerCase();
+                        if (!val) {
+                            dropdown.style.display = 'none';
+                            return;
+                        }
+
+                        // Filter out existing choices
+                        const matches = allTags.filter(t => t.toLowerCase().includes(val) && !tags.includes(t));
+                        selectedIndex = -1;
+
+                        let dropdownHtml = '';
+                        if (matches.length > 0) {
+                            dropdownHtml = matches.map((match, idx) => `
+                                <div class="tag-autocomplete-item" data-index="${idx}" data-tag="${Utils.escapeAttr(match)}">
+                                    <span>${Utils.escapeHtml(match)}</span>
+                                    <span class="badge">Existing Tag</span>
+                                </div>
+                            `).join('');
+                        }
+
+                        // Always offer choice to create a completely new tag
+                        if (!tags.includes(input.value.trim())) {
+                            const isExactMatch = matches.some(m => m.toLowerCase() === val);
+                            if (!isExactMatch) {
+                                dropdownHtml += `
+                                    <div class="tag-autocomplete-item text-accent" data-index="${matches.length}" data-tag="${Utils.escapeAttr(input.value.trim())}">
+                                        <span>+ Create "${Utils.escapeHtml(input.value.trim())}"</span>
+                                    </div>
+                                `;
+                            }
+                        }
+
+                        if (dropdownHtml) {
+                            dropdown.innerHTML = dropdownHtml;
+                            dropdown.style.display = 'block';
+
+                            dropdown.querySelectorAll('.tag-autocomplete-item').forEach(item => {
+                                item.addEventListener('click', () => {
+                                    addTag(item.getAttribute('data-tag'));
+                                });
+                            });
+                        } else {
+                            dropdown.style.display = 'none';
+                        }
+                    });
+
+                    input.addEventListener('keydown', (e) => {
+                        const items = dropdown.querySelectorAll('.tag-autocomplete-item');
+                        if (dropdown.style.display === 'block' && items.length > 0) {
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                selectedIndex = (selectedIndex + 1) % items.length;
+                                highlightItem(items);
+                            } else if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+                                highlightItem(items);
+                            } else if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (selectedIndex >= 0 && selectedIndex < items.length) {
+                                    addTag(items[selectedIndex].getAttribute('data-tag'));
+                                } else if (input.value.trim()) {
+                                    addTag(input.value.trim());
+                                }
+                            } else if (e.key === 'Escape') {
+                                dropdown.style.display = 'none';
+                            }
+                        } else if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            if (input.value.trim()) {
+                                addTag(input.value.trim());
+                            }
+                        }
+                    });
+
+                    // Close dropdown when clicking outside
+                    document.addEventListener('click', (e) => {
+                        if (!container.contains(e.target)) {
+                            dropdown.style.display = 'none';
+                        }
+                    });
+                };
+
+                const highlightItem = (items) => {
+                    items.forEach(item => item.classList.remove('selected'));
+                    if (selectedIndex >= 0 && selectedIndex < items.length) {
+                        const target = items[selectedIndex];
+                        target.classList.add('selected');
+                        target.scrollIntoView({ block: 'nearest' });
+                    }
+                };
+
+                const addTag = (tag) => {
+                    const cleanTag = tag.replace(/,/g, '').trim();
+                    if (cleanTag && !tags.includes(cleanTag)) {
+                        tags.push(cleanTag);
+                        render();
+                        container.querySelector('.tag-raw-input').focus();
+                    }
+                };
+
+                window._removeAutoTag = (targetId, idx) => {
+                    tags.splice(idx, 1);
+                    render();
+                };
+
+                render();
             },
             showLoading: () => document.getElementById('loading-overlay').classList.add('active'),
             hideLoading: () => document.getElementById('loading-overlay').classList.remove('active'),
@@ -1343,6 +1904,8 @@
                 `;
 
                 Modal.open(id ? 'Edit Story' : 'Add Story', html, footer);
+                UI.initDragAndDrop('f-cover_image_url');
+                UI.initDragAndDrop('f-background_image_url');
             },
 
             saveStory: async (id) => {
@@ -1535,6 +2098,7 @@
                 `;
 
                 Modal.open(id ? 'Edit Character' : 'Add Character', html, footer);
+                UI.initDragAndDrop('f-profile_image_url');
             },
 
             saveCharacter: async (id) => {
@@ -1586,38 +2150,67 @@
                     img = data || img;
                 }
 
-                const tagsStr = (img.image_tags || []).join(', ');
+                // Determine current NSFW state based on stored tags
+                const isNsfw = (img.image_tags || []).includes('NSFW');
+                // Filter structural tags so they don't render inside the interactive user tags array
+                const structuralFilteredTags = (img.image_tags || []).filter(t => t !== 'NSFW' && t !== 'R18');
 
                 const html = `
-                    ${UI.imageUploadField('f-image_url', 'Gallery Image(s) *', img.image_url, 'characters', true)}
+                    ${UI.imageUploadField('f-image_url', 'Gallery Image(s) *', img.image_url, 'characters', !id)}
                     <div class="form-group">
                         <label class="form-label">Caption</label>
-                        <input type="text" class="form-input" id="f-caption" value="${img.caption || ''}">
+                        <input type="text" class="form-input" id="f-caption" value="${Utils.escapeAttr(img.caption || '')}">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Tags (comma-separated)</label>
-                        <input type="text" class="form-input" id="f-image_tags" value="${tagsStr}" placeholder="e.g., portrait, action, casual">
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label class="form-label">Tags</label>
+                        <div id="interactive-tags-wrapper"></div>
+                    </div>
+
+                    <div class="toggle-container">
+                        <div class="toggle-label">
+                            <span class="toggle-title">NSFW / R18 content</span>
+                            <span class="toggle-subtitle">Require authentication/age verification overlays to view.</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="f-nsfw" ${isNsfw ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
                     </div>
                 `;
 
                 const footer = `
-                    ${id ? '<button class="btn btn-danger" onclick="Forms.deleteGalleryImage(\'' + id + '\')"><i class="fas fa-trash"></i> Delete</button>' : ''}
+                    ${id ? `<button class="btn btn-danger" onclick="Forms.deleteGalleryImage('${id}')"><i class="fas fa-trash"></i> Delete</button>` : ''}
                     <button class="btn btn-secondary" onclick="Modal.close()">Cancel</button>
                     <button class="btn btn-primary" onclick="Forms.saveGalleryImage('${id || ''}')"><i class="fas fa-save"></i> Save</button>
                 `;
 
-                Modal.open(id ? 'Edit Image' : 'Add Image', html, footer);
+                Modal.open(id ? 'Edit Image' : 'Add Image(s)', html, footer);
+
+                // Run dynamic initializations after loading HTML
+                UI.initDragAndDrop('f-image_url');
+                UI.initTagAutocomplete('interactive-tags-wrapper', structuralFilteredTags);
             },
 
             saveGalleryImage: async (id) => {
                 try {
                     UI.showLoading();
-                    const tagsInput = document.getElementById('f-image_tags').value;
-                    const tags = tagsInput ? tagsInput.split(',').map(t => t.trim()).filter(t => t) : [];
                     
+                    // Fetch values from the interactive autocomplete component
+                    const tagsVal = document.getElementById('interactive-tags-wrapper_value').value;
+                    const tags = tagsVal ? tagsVal.split(',').filter(t => t) : [];
+
+                    // Check the toggle switch and structure structural tags appropriately
+                    const isNsfwChecked = document.getElementById('f-nsfw').checked;
+                    if (isNsfwChecked) {
+                        if (!tags.includes('NSFW')) tags.push('NSFW');
+                    } else {
+                        const index = tags.indexOf('NSFW');
+                        if (index > -1) tags.splice(index, 1);
+                    }
+
                     const imgFiles = document.getElementById('f-image_url_file').files;
                     let imgUrl = document.getElementById('f-image_url_url').value;
-                    
+
                     if (imgFiles && imgFiles.length > 0) {
                         for (let i = 0; i < imgFiles.length; i++) {
                             const uploadedUrl = await Utils.uploadImage(imgFiles[i], 'characters');
@@ -1627,10 +2220,9 @@
                                 caption: document.getElementById('f-caption').value,
                                 image_tags: tags
                             };
-                            // If editing a single existing file, use the id for the first iteration. Then use null to create new.
                             await DB.saveGalleryImage((i === 0 && id) ? id : null, record);
                         }
-                    } else {
+                    } else if (imgUrl) {
                         const record = {
                             character_id: State.selectedCharacterId,
                             image_url: imgUrl,
@@ -1638,10 +2230,12 @@
                             image_tags: tags
                         };
                         await DB.saveGalleryImage(id || null, record);
+                    } else {
+                        throw new Error('Please select an image file or supply an image URL.');
                     }
 
                     Modal.close();
-                    UI.showToast('Image(s) saved!');
+                    UI.showToast('Gallery updated successfully!');
                     Views.render('gallery');
                 } catch (err) {
                     UI.showToast(err.message, 'error');
@@ -1689,6 +2283,7 @@
                 `;
 
                 Modal.open(id ? 'Edit Wallpaper' : 'Add Wallpaper', html, footer);
+                UI.initDragAndDrop('f-image_url');
             },
 
             saveWallpaper: async (id) => {
@@ -1779,6 +2374,7 @@
                 `;
 
                 Modal.open(id ? 'Edit Lore Entry' : 'Add Lore Entry', html, footer);
+                UI.initDragAndDrop('f-image_url');
             },
 
             saveLoreEntry: async (id) => {
@@ -1968,6 +2564,7 @@
                 `;
 
                 Modal.open(id ? 'Edit Map' : 'Add Map', html, footer);
+                UI.initDragAndDrop('f-image_url');
             },
 
             saveMap: async (id) => {

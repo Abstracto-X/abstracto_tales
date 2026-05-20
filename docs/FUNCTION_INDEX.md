@@ -169,6 +169,15 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - View rendering functions that fetch data, populate caches, and build tables/grids:
   - `dashboard()`, `stories()`, `chapters()`, `characters()`, `lore()`, `timeline()`, `maps()`, `mapRequests()`, `gallery()`, `wallpapers()`, `settings()`.
 
+### `UI` (Interactive Dashboard Components)
+- `imageUploadField(id, label, currentValue, bucketName, multiple)` — Renders a modern drag-and-drop dropzone dashboard UI element with a file picker input, text URL input, and dynamic client-side image preview area.
+- `handleFileSelection(input, listId, urlInputId)` — Fired on standard browser file changes. Cleans out stale assets and leverages `FileReader` to render visual local image previews instantly.
+- `handleUrlInput(input, listId)` — Handles pasting a direct image URL, showing an instant live rendering or placeholder fallback.
+- `clearPreviews(listId, urlInputId)` — Helper to purge cached local previews and clear bound text values.
+- `initDragAndDrop(id)` — Binds `dragenter`, `dragover`, `dragleave`, and `drop` event listeners to a target upload area, enabling high-performance visual state transitions and multi-file processing.
+- `initTagComponent(elementId, initialTags)` — Replaces static tag strings with a dynamic, HSL-colored interactive tag-chip wrapper. Handles Backspace, Enter, and Comma key triggers alongside individual chip deletion buttons, automatically syncing the parsed array back to hidden elements.
+- `initTagAutocomplete(containerId, initialTags)` — Advanced interactive tag input with live database autocompletion. Asynchronously pulls all distinct gallery tags, offers arrow-key keyboard navigation, and provides options to create entirely new tags or select existing tags.
+
 ---
 
 ## 3. `writer.html` (Writer's IDE)
