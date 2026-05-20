@@ -28,6 +28,9 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
     - `_pendingNavigationTimer` *(Number | null)* — Timeout handle for the delayed hash transition used by the fade animation, allowing same-route and rapid navigation cleanup.
 - `CommentsManager` *(Object)* — Manages state for the comments drawer/panel.
 - `UI` *(Object)* — Handles global UI state like toasts and loading spinners.
+- `State.galleryConfirmed` *(Boolean)* — Tracks whether the user has viewed and accepted the Mature Content and AI advisory warning overlay for the gallery, preserving the choice for the current session.
+- `State.galleryViewMode` *(String)* — Tracks whether the active character gallery is displayed in standard column `'grid'` or premium fanning `'deck'` view modes, persisted to `localStorage`.
+- `State.showR18` *(Boolean)* — Tracks whether to strictly filter and hide mature/R18/NSFW tagged artwork across roster grid, recently added list, and individual galleries, persisted to `localStorage`.
 - `Cache` *(Object)* — TTL + LRU cache for Supabase query results.
     - `stories` *(Array | null)* — Cached stories list with `storiesTTL` timestamp.
     - `author` *(Object | null)* — Cached author profile with `authorTTL` timestamp.
@@ -38,6 +41,7 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
     - `currentMap` *(Object)* - Active reader map metadata including Supabase `id`, image `src`, display `name`, and coordinate `width` / `height`.
     - `graph` *(Object | null)* - Adjacency list used for Dijkstra pathfinding.
     - `mapHeight` *(Number)* - Internal coordinate space height (4000px) used for Y-axis inversion.
+    - `state.pendingX` / `state.pendingY` / `state.dragTicking` *(Number/Boolean)* — State variables used to gate dragging layout updates inside a `requestAnimationFrame` loop.
 - `MinPriorityQueue` *(Class)* - Lightweight binary heap implementation for Dijkstra pathfinding.
 - `MinPriorityQueue` *(Class)* — Lightweight binary heap implementation for Dijkstra pathfinding.
 - `default_behavior_lightsaber` *(String)* — Sets the site-wide default loader orientation (`'vertical'` or `'horizontal'`) used when the reader has not saved a personal saber mode preference yet.

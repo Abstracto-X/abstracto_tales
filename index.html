@@ -55,6 +55,7 @@
             z-index: -2; background-color: #111;
             background-size: cover; background-position: center;
             transition: filter 0.6s ease;
+            will-change: filter;
         }
         
         #app-container { 
@@ -1590,6 +1591,106 @@
                 gap: 0.85rem;
             }
         }
+
+        /* --- INTERACTIVE 3D SCROLLING DECK VIEW --- */
+        .decks-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 5rem 3.5rem; /* Increased horizontal gap to fully clear the wider fan */
+            max-width: 1100px;
+            margin: 3rem auto 5rem;
+            padding: 0 1.5rem;
+        }
+
+        .card-deck {
+            position: relative;
+            aspect-ratio: 3 / 4; 
+            cursor: pointer;
+            perspective: 1500px;
+            transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .card-deck:hover {
+            z-index: 100; /* Pop cleanly above adjacent rows */
+            transform: translateY(-5px);
+        }
+
+        .deck-card {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            background: #0f0f0f;
+            transform-origin: bottom center; 
+            /* Smooth transition for when we dynamically re-index cards via JavaScript */
+            transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.4s ease, box-shadow 0.3s ease;
+        }
+
+        .deck-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center top;
+            transition: filter 0.3s ease;
+        }
+
+        /* --- INDICATOR PILLS (TOP-RIGHT CORNER) --- */
+        .deck-scroll-indicator {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--accent-color);
+            font-family: var(--font-header);
+            font-size: 0.75rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.5px;
+            z-index: 110;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            pointer-events: none;
+        }
+
+        .card-deck:hover .deck-scroll-indicator {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- TITLES --- */
+        .card-deck-title {
+            position: absolute;
+            bottom: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 85%;
+            text-align: center;
+            font-family: var(--font-header);
+            color: #fff;
+            font-size: 0.95rem;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            background: rgba(15, 15, 15, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            z-index: 110;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .card-deck:hover .card-deck-title {
+            color: var(--accent-color);
+            border-color: rgba(255, 215, 0, 0.3);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body>
@@ -1732,6 +1833,47 @@
         </div>
     </div>
 
+    <!-- GALLERY CONTENT ADVISORY WARNING MODAL -->
+    <div id="gallery-warning-modal" class="modal-overlay" style="z-index: 7000;">
+        <div class="modal-box glass-box" style="max-width: 480px; padding: 2.5rem; text-align: center; border-color: var(--accent-color); box-shadow: 0 0 30px rgba(255, 215, 0, 0.15);">
+            <div style="font-size: 3rem; color: var(--accent-color); margin-bottom: 1.5rem; filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.4));">
+                <i class="fas fa-exclamation-triangle animate-pulse"></i>
+            </div>
+            <h2 class="modal-title" style="color: var(--accent-color); margin-bottom: 1.5rem; font-size: 1.6rem; letter-spacing: 1px; text-transform: uppercase;">
+                Archive Content Advisory
+            </h2>
+            <div style="color: #ddd; font-family: var(--font-body); font-size: 0.95rem; line-height: 1.6; margin-bottom: 2.2rem; text-align: left;">
+                <p style="margin-bottom: 1rem; color: #fff; font-weight: 500;">
+                    Please review the following advisory before entering the character gallery:
+                </p>
+                <div style="background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.05); padding: 1.2rem; border-radius: 8px; margin-bottom: 1.2rem;">
+                    <ul style="padding-left: 1.2rem; margin: 0; list-style-type: square; color: #ccc;">
+                        <li style="margin-bottom: 0.8rem;">
+                            <strong>Aggregated Content:</strong> All images are aggregated from various sources and user submissions.
+                        </li>
+                        <li style="margin-bottom: 0.8rem;">
+                            <strong>AI Artworks:</strong> The collection may include AI-generated images.
+                        </li>
+                        <li style="margin-bottom: 0px;">
+                            <strong>Mature Content:</strong> The gallery may contain mature, suggestive, or R18 artworks.
+                        </li>
+                    </ul>
+                </div>
+                <p style="text-align: center; font-weight: 500; color: #fff;">
+                    Do you wish to proceed and access the gallery?
+                </p>
+            </div>
+            <div style="display: flex; gap: 1.2rem; justify-content: center;">
+                <button class="btn-large" id="gallery-warning-yes" style="flex: 1; padding: 12px; font-weight: bold; background: var(--accent-color); color: #000; border-radius: 6px; cursor: pointer; transition: all 0.3s;">
+                    Yes, Proceed
+                </button>
+                <button class="btn-large" id="gallery-warning-no" style="flex: 1; padding: 12px; font-weight: bold; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff; border-radius: 6px; cursor: pointer; transition: all 0.3s;">
+                    No, Go Back
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- GLOBAL FLOATING COMMENT BUTTON -->
     <div id="global-comment-btn" class="glass-box" style="display:none; position:fixed; right:20px; top:50%; margin-top:-25px; width:50px; height:50px; border-radius:50%; justify-content:center; align-items:center; cursor:pointer; font-size:1.5rem; color:var(--accent-color); z-index:7000; box-shadow:0 5px 15px rgba(0,0,0,0.5); transition:transform 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'" title="Open Discussion">
         <i class="fas fa-comment-dots"></i>
@@ -1813,32 +1955,63 @@
         // ==============================================
         const Visuals = {
             initDynamicTransparency: () => {
+                if (window.innerWidth < 900) return;
                 const app = document.getElementById('app-container');
                 const bgLayer = document.getElementById('global-bg');
+                
                 let ticking = false;
-                if(window.innerWidth < 900) return;
+                let lastTarget = null;
+                let isHoveringContent = false;
+                let currentFilterState = ''; // Cache the applied CSS string
 
                 window.addEventListener('mousemove', (e) => {
-                    if (!ticking) {
-                        window.requestAnimationFrame(() => {
-                            const w = window.innerWidth, h = window.innerHeight;
-                            const isBottomRight = (e.clientX > w * 0.90) && (e.clientY > h * 0.90);
-                            if (isBottomRight) {
-                                app.style.opacity = '0'; bgLayer.style.filter = 'blur(0px) brightness(1)';
-                            } else {
-                                app.style.opacity = '1';
-                                const isHoveringContent = e.target.closest('.glass-box') || e.target.closest('.char-card');
-                                if (isHoveringContent) {
-                                    bgLayer.style.filter = 'blur(5px) brightness(0.5)';
-                                } else {
-                                    const distX = Math.abs(e.clientX - w / 2), distY = Math.abs(e.clientY - h / 2);
-                                    const blur = 5 * (1 - (Math.hypot(distX, distY) / Math.hypot(w/2, h/2))); 
-                                    bgLayer.style.filter = `blur(${blur}px) brightness(${0.5 + (0.5 * (Math.hypot(distX, distY) / Math.hypot(w/2, h/2)))}`;
-                                }
+                    if (ticking) return;
+                    ticking = true;
+
+                    window.requestAnimationFrame(() => {
+                        const w = window.innerWidth;
+                        const h = window.innerHeight;
+                        const isBottomRight = (e.clientX > w * 0.90) && (e.clientY > h * 0.90);
+
+                        if (isBottomRight) {
+                            app.style.opacity = '0';
+                            if (currentFilterState !== 'none') {
+                                bgLayer.style.filter = 'blur(0px) brightness(1)';
+                                currentFilterState = 'none';
                             }
-                            ticking = false;
-                        }); ticking = true;
-                    }
+                        } else {
+                            app.style.opacity = '1';
+                            
+                            // Optimized Target Caching
+                            if (e.target !== lastTarget) {
+                                lastTarget = e.target;
+                                isHoveringContent = !!(e.target.closest('.glass-box') || e.target.closest('.char-card'));
+                            }
+
+                            let newFilter;
+                            if (isHoveringContent) {
+                                newFilter = 'blur(5px) brightness(0.5)';
+                            } else {
+                                const distX = Math.abs(e.clientX - w / 2);
+                                const distY = Math.abs(e.clientY - h / 2);
+                                const maxDist = Math.hypot(w/2, h/2);
+                                const currentDist = Math.hypot(distX, distY);
+                                
+                                // Round values to 1 decimal place to prevent micro-repaints
+                                const blur = (5 * (1 - (currentDist / maxDist))).toFixed(1); 
+                                const brightness = (0.5 + (0.5 * (currentDist / maxDist))).toFixed(2);
+                                
+                                newFilter = `blur(${blur}px) brightness(${brightness})`;
+                            }
+
+                            // DOM Write Gating: Only touch the DOM if the string actually changed
+                            if (currentFilterState !== newFilter) {
+                                bgLayer.style.filter = newFilter;
+                                currentFilterState = newFilter;
+                            }
+                        }
+                        ticking = false;
+                    });
                 });
             },
             // FIX 8: Single delegated listener instead of N per-card listeners
@@ -2067,7 +2240,7 @@
         const MapViewer = {
             viewer: null, canvas: null, img: null,
             ui: {},
-            state: { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 },
+            state: { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0, pendingX: 0, pendingY: 0, dragTicking: false },
             _abortController: null,
             mapData: null,
             _mapDataPromise: null,
@@ -2141,7 +2314,7 @@
                     activeMapChip: document.getElementById('active-map-chip')
                 };
                 
-                MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0 };
+                MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0, pendingX: 0, pendingY: 0, dragTicking: false };
                 MapViewer.currentMap = { id, src, name: mapName || 'Map', width: width || 4000, height: height || 4000 };
                 MapViewer.mapHeight = height || 4000;
                 MapViewer.mapData = null;
@@ -2158,9 +2331,10 @@
                 MapViewer.loadMapData();
 
                 const v = MapViewer.viewer;
-                v.addEventListener('mousedown', MapViewer.onDown, { signal });
-                window.addEventListener('mousemove', MapViewer.onMove, { signal });
-                window.addEventListener('mouseup', MapViewer.onUp, { signal });
+                v.addEventListener('pointerdown', MapViewer.onPointerDown, { signal });
+                window.addEventListener('pointermove', MapViewer.onPointerMove, { signal });
+                window.addEventListener('pointerup', MapViewer.onPointerUp, { signal });
+                window.addEventListener('pointercancel', MapViewer.onPointerUp, { signal });
                 v.addEventListener('wheel', MapViewer.onWheel, { passive: false, signal });
                 v.addEventListener('touchstart', MapViewer.onTouchStart, { passive: false, signal });
                 v.addEventListener('touchmove', MapViewer.onTouchMove, { passive: false, signal });
@@ -3263,9 +3437,14 @@
                 MapViewer.zoom(e.deltaY < 0 ? 1.1 : 0.9);
             },
 
-            onDown: (e) => {
-                e.preventDefault();
-                MapViewer.startDrag(e.clientX, e.clientY);
+            onPointerDown: (e) => {
+                if (e.target.closest('.map-node') || e.target.closest('.map-edge')) {
+                    return;
+                }
+                if (e.isPrimary) {
+                    e.preventDefault();
+                    MapViewer.startDrag(e.clientX, e.clientY);
+                }
             },
 
             onTouchStart: (e) => {
@@ -3288,10 +3467,12 @@
                 MapViewer.viewer.classList.add('is-dragging');
             },
 
-            onMove: (e) => {
-                if (MapViewer.state.isDragging) {
+            onPointerMove: (e) => {
+                if (MapViewer.state.isDragging && e.isPrimary) {
                     e.preventDefault();
-                    MapViewer.doDrag(e.clientX, e.clientY);
+                    MapViewer.state.pendingX = e.clientX;
+                    MapViewer.state.pendingY = e.clientY;
+                    MapViewer.scheduleDragTick();
                 }
             },
 
@@ -3307,7 +3488,21 @@
                         MapViewer.state.lastDist = dist;
                     }
                 } else if (MapViewer.state.isDragging) {
-                    MapViewer.doDrag(e.touches[0].clientX, e.touches[0].clientY);
+                    MapViewer.state.pendingX = e.touches[0].clientX;
+                    MapViewer.state.pendingY = e.touches[0].clientY;
+                    MapViewer.scheduleDragTick();
+                }
+            },
+
+            scheduleDragTick: () => {
+                if (!MapViewer.state.dragTicking) {
+                    requestAnimationFrame(() => {
+                        if (MapViewer.state.isDragging) {
+                            MapViewer.doDrag(MapViewer.state.pendingX, MapViewer.state.pendingY);
+                        }
+                        MapViewer.state.dragTicking = false;
+                    });
+                    MapViewer.state.dragTicking = true;
                 }
             },
 
@@ -3316,6 +3511,12 @@
                 MapViewer.state.y = y - MapViewer.state.startY;
                 MapViewer.clamp();
                 MapViewer.update();
+            },
+
+            onPointerUp: (e) => {
+                if (e.isPrimary) {
+                    MapViewer.onUp();
+                }
             },
 
             onUp: () => {
@@ -3342,7 +3543,10 @@
             currentStorySlug: null,
             currentChars: [], 
             currentWallpapers: [],
-            filterTag: 'All'
+            filterTag: 'All',
+            galleryConfirmed: false,
+            galleryViewMode: localStorage.getItem('gallery_view_mode') || 'grid',
+            showR18: localStorage.getItem('show_r18') === 'true'
         };
 
         // ==============================================
@@ -3687,6 +3891,18 @@
             // FIX 14: Chunked gallery rendering via requestIdleCallback to avoid long tasks
             renderGalleryGrid: (shuffle = false) => {
                 let imgs = [...Actions.currentGalleryImages];
+                
+                // Strict R18 filtering
+                if (!State.showR18) {
+                    imgs = imgs.filter(i => {
+                        if (!i.image_tags) return true;
+                        return !i.image_tags.some(t => {
+                            const lower = t.toLowerCase();
+                            return lower === 'r18' || lower === 'mature' || lower === 'nsfw' || lower === 'suggestive';
+                        });
+                    });
+                }
+
                 if (State.filterTag !== 'All') {
                     imgs = imgs.filter(i => i.image_tags && i.image_tags.includes(State.filterTag));
                 }
@@ -3698,6 +3914,171 @@
                 if (!container) return;
                 container.innerHTML = ''; // Clear existing
 
+                if (State.galleryViewMode === 'deck') {
+                    container.className = 'decks-grid';
+                    
+                    const decksMap = {};
+                    imgs.forEach(i => {
+                        if (i.image_tags && i.image_tags.length > 0) {
+                            i.image_tags.forEach(t => {
+                                const lower = t.toLowerCase();
+                                if (lower === 'r18' || lower === 'mature' || lower === 'nsfw' || lower === 'suggestive') return;
+                                
+                                if (!decksMap[t]) decksMap[t] = [];
+                                decksMap[t].push(i);
+                            });
+                        } else {
+                            if (!decksMap['General']) decksMap['General'] = [];
+                            decksMap['General'].push(i);
+                        }
+                    });
+
+                    // Ensure ungrouped images fall back to General
+                    imgs.forEach(i => {
+                        const isGrouped = Object.values(decksMap).some(arr => arr.includes(i));
+                        if (!isGrouped) {
+                            if (!decksMap['General']) decksMap['General'] = [];
+                            decksMap['General'].push(i);
+                        }
+                    });
+
+                    const frag = document.createDocumentFragment();
+                    const tagsList = Object.keys(decksMap).sort();
+                    
+                    tagsList.forEach(tag => {
+                        const deckImages = decksMap[tag];
+                        if (deckImages.length === 0) return;
+
+                        // Cap at 12 to maintain visual depth accuracy and prevent heavy DOM paint loops
+                        const maxVisibleCards = Math.min(deckImages.length, 20);
+                        const scrubImages = deckImages.slice(0, maxVisibleCards);
+                        const deckItem = document.createElement('div');
+                        
+                        deckItem.className = 'card-deck';
+                        
+                        // Scoped tracking state for this specific deck instance
+                        let currentIndex = 0;
+                        let isHovered = false;
+
+                        // Helper function to dynamically adjust layout positions
+                        const updateDeckLayout = () => {
+                            const cards = deckItem.querySelectorAll('.deck-card');
+                            cards.forEach((card, domIdx) => {
+                                // Determine relative distance from the currently focused card
+                                const offset = domIdx - currentIndex; 
+
+                                if (offset < 0) {
+                                    // Sent to the left backdrop: completely read or filtered past
+                                    card.style.opacity = '0';
+                                    card.style.transform = `translate3d(-120px, 15px, -100px) rotate(-25deg) scale(0.85)`;
+                                    card.style.zIndex = domIdx;
+                                    card.querySelector('img').style.filter = 'brightness(0.3)';
+                                } else if (offset === 0) {
+                                    // The main foreground spotlight card
+                                    card.style.opacity = '1';
+                                    card.style.zIndex = 50;
+                                    card.style.transform = isHovered 
+                                        ? `translate3d(0, -15px, 20px) scale(1.05)` 
+                                        : `translate3d(0, 0, 0)`;
+                                    card.querySelector('img').style.filter = 'brightness(1)';
+                                } else {
+                                    // Secondary and tertiary cards fanning outward to the right field
+                                    card.style.opacity = offset <= 3 ? '1' : '0'; // Only show next 3 layers
+                                    card.style.zIndex = 50 - offset;
+
+                                    if (isHovered) {
+                                        // Accentuated wide 3D spreading arc values
+                                        const shiftX = 35 + (offset * 25);
+                                        const shiftY = -10 - (offset * 8);
+                                        const rotateDeg = 6 + (offset * 6);
+                                        const scaleFactor = 1 - (offset * 0.04);
+                                        
+                                        card.style.transform = `translate3d(${shiftX}px, ${shiftY}px, -${offset * 20}px) rotate(${rotateDeg}deg) scale(${scaleFactor})`;
+                                        card.querySelector('img').style.filter = `brightness(${0.85 - (offset * 0.15)})`;
+                                    } else {
+                                        // Resting stack style
+                                        const shiftY = -6 * offset;
+                                        const scaleFactor = 1 - (offset * 0.04);
+                                        card.style.transform = `translate3d(0, ${shiftY}px, -${offset * 15}px) scale(${scaleFactor})`;
+                                        card.querySelector('img').style.filter = 'brightness(0.7)';
+                                    }
+                                }
+                            });
+
+                            // Refresh counter notification chip
+                            const indicator = deckItem.querySelector('.deck-scroll-indicator');
+                            if (indicator) {
+                                indicator.textContent = `${currentIndex + 1} / ${scrubImages.length} (Scroll)`;
+                            }
+                        };
+
+                        // Capture scrolling wheel ticks
+                        deckItem.addEventListener('wheel', (e) => {
+                            // Intercept standard global viewport page scroll
+                            e.preventDefault(); 
+                            
+                            if (e.deltaY > 0 && currentIndex < scrubImages.length - 1) {
+                                currentIndex++;
+                                updateDeckLayout();
+                            } else if (e.deltaY < 0 && currentIndex > 0) {
+                                currentIndex--;
+                                updateDeckLayout();
+                            }
+                        }, { passive: false });
+
+                        // Handle hover ignition states
+                        deckItem.onmouseenter = () => {
+                            isHovered = true;
+                            updateDeckLayout();
+                        };
+
+                        deckItem.onmouseleave = () => {
+                            isHovered = false;
+                            currentIndex = 0; // Seamless snap back to front cover when user pulls back mouse
+                            updateDeckLayout();
+                        };
+
+                        // Handle selection redirection matching the spotlight index position
+                        deckItem.onclick = (e) => {
+                            // Prevent event confusion layers
+                            e.stopPropagation();
+                            const activeImgRecord = scrubImages[currentIndex];
+                            const flatIdx = Actions.filteredImages.findIndex(x => x.id === activeImgRecord.id);
+                            if (flatIdx !== -1) {
+                                Visuals.openGalleryLightbox(flatIdx, Actions.filteredImages);
+                            }
+                        };
+
+                        // Build the template structures
+                        let cardsHtml = '';
+                        scrubImages.forEach((img) => {
+                            cardsHtml += `
+                                <div class="deck-card">
+                                    <img src="${img.image_url}" loading="lazy" alt="${tag} illustration">
+                                </div>
+                            `;
+                        });
+
+                        deckItem.innerHTML = `
+                            ${cardsHtml}
+                            <div class="deck-scroll-indicator"></div>
+                            <div class="card-deck-title">
+                                ${tag} <span style="opacity: 0.5; font-size: 0.8em;">(${deckImages.length})</span>
+                            </div>
+                        `;
+                        
+                        frag.appendChild(deckItem);
+                        
+                        // Perform instant initialization call once added to document scope
+                        setTimeout(updateDeckLayout, 0);
+                    });
+                    
+                    container.appendChild(frag);
+                    return;
+                }
+
+                // Grid View chunked rendering
+                container.className = 'sub-gallery-grid';
                 const CHUNK_SIZE = 8;
                 let idx = 0;
 
@@ -3730,7 +4111,6 @@
                     container.appendChild(frag);
                     
                     if (idx < imgs.length) {
-                        // Schedule next chunk — use requestIdleCallback if available, else rAF fallback
                         if (window.requestIdleCallback) {
                             requestIdleCallback(renderChunk, { timeout: 100 });
                         } else {
@@ -3739,8 +4119,39 @@
                     }
                 };
 
-                // Start first chunk immediately for fast first paint
                 renderChunk();
+            },
+            toggleViewMode: () => {
+                const newMode = State.galleryViewMode === 'deck' ? 'grid' : 'deck';
+                State.galleryViewMode = newMode;
+                localStorage.setItem('gallery_view_mode', newMode);
+                
+                const btn = document.getElementById('pref-view-mode-toggle');
+                if (btn) {
+                    btn.innerHTML = `<i class="${newMode === 'deck' ? 'fas fa-layer-group' : 'fas fa-th'}"></i> <span>${newMode === 'deck' ? 'Deck View' : 'Grid View'}</span>`;
+                }
+                
+                Actions.renderGalleryGrid();
+            },
+            toggleR18: () => {
+                const newValue = !State.showR18;
+                State.showR18 = newValue;
+                localStorage.setItem('show_r18', newValue ? 'true' : 'false');
+                
+                const btn = document.getElementById('pref-r18-toggle');
+                if (btn) {
+                    if (newValue) {
+                        btn.style.borderColor = 'var(--danger-color)';
+                        btn.style.color = 'var(--danger-color)';
+                        btn.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>Strict: R18 On</span>`;
+                    } else {
+                        btn.style.borderColor = '';
+                        btn.style.color = '';
+                        btn.innerHTML = `<i class="fas fa-eye-slash"></i> <span>Strict: R18 Off</span>`;
+                    }
+                }
+                
+                Actions.renderGalleryGrid();
             },
             setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
             shuffleGallery: () => Actions.renderGalleryGrid(true),
@@ -4614,6 +5025,49 @@
                 } else {
                     container.innerHTML = '';
                 }
+            },
+
+            showGalleryWarning: (storySlug) => {
+                const modal = document.getElementById('gallery-warning-modal');
+                if (!modal) return;
+                
+                // Bind Yes button click
+                const yesBtn = document.getElementById('gallery-warning-yes');
+                if (yesBtn) {
+                    yesBtn.onclick = () => {
+                        State.galleryConfirmed = true;
+                        sessionStorage.setItem('gallery_confirmed', 'true');
+                        UI.closeGalleryWarning();
+                        
+                        // Proceed to routing and loading
+                        Router.handle();
+                    };
+                }
+                
+                // Bind No button click
+                const noBtn = document.getElementById('gallery-warning-no');
+                if (noBtn) {
+                    noBtn.onclick = () => {
+                        UI.closeGalleryWarning();
+                        
+                        // Go back to story hub or home
+                        if (storySlug) {
+                            Router.navigate('story/' + storySlug);
+                        } else {
+                            Router.navigate('home');
+                        }
+                    };
+                }
+                
+                modal.style.display = 'flex';
+                setTimeout(() => modal.classList.add('active'), 10);
+            },
+            
+            closeGalleryWarning: () => {
+                const modal = document.getElementById('gallery-warning-modal');
+                if (!modal) return;
+                modal.classList.remove('active');
+                setTimeout(() => modal.style.display = 'none', 300);
             }
         };
 
@@ -4892,9 +5346,17 @@
                             </div>`; 
                     });
                     html += '</div>';
-
                     // Fetch and append Latest Images below Characters
-                    const latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
+                    let latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
+                    if (!State.showR18) {
+                        latestImages = latestImages.filter(i => {
+                            if (!i.image_tags) return true;
+                            return !i.image_tags.some(t => {
+                                const lower = t.toLowerCase();
+                                return lower === 'r18' || lower === 'mature' || lower === 'nsfw' || lower === 'suggestive';
+                            });
+                        });
+                    }
                     Actions.latestGalleryImages = latestImages;
                     Actions.currentGalleryImages = latestImages;
                     await Actions.fetchVotes();
@@ -4966,6 +5428,27 @@
                     });
                     tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; min-height:0;" onclick="Actions.shuffleGallery()"><i class="fas fa-random"></i></div></div>`;
                     
+                    // Sleek Preference Toggle Bar
+                    let prefHtml = `
+                        <div class="glass-box" style="display: flex; gap: 15px; justify-content: center; align-items: center; max-width: 600px; margin: 0 auto 1.5rem; padding: 0.8rem 1.5rem; border-radius: 30px; border-color: rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
+                            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #aaa; font-weight: 500;">
+                                <i class="fas fa-sliders-h" style="color: var(--accent-color);"></i> Settings:
+                            </div>
+                            
+                            <!-- Gallery View Mode Toggle -->
+                            <div class="btn-large" id="pref-view-mode-toggle" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 20px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="Actions.toggleViewMode()">
+                                <i class="${State.galleryViewMode === 'deck' ? 'fas fa-layer-group' : 'fas fa-th'}"></i> 
+                                <span>${State.galleryViewMode === 'deck' ? 'Deck View' : 'Grid View'}</span>
+                            </div>
+                            
+                            <!-- Strict R18 Toggle -->
+                            <div class="btn-large" id="pref-r18-toggle" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 20px; min-height: 0; cursor: pointer; transition: all 0.3s; ${State.showR18 ? 'border-color: var(--danger-color); color: var(--danger-color);' : ''}" onclick="Actions.toggleR18()">
+                                <i class="${State.showR18 ? 'fas fa-exclamation-circle' : 'fas fa-eye-slash'}"></i>
+                                <span>${State.showR18 ? 'Strict: R18 On' : 'Strict: R18 Off'}</span>
+                            </div>
+                        </div>
+                    `;
+                    
                     Render.stage.innerHTML = `
                         <div class="char-profile-hero glass-box">
                             <div class="hero-img-container"><img src="${character.profile_image_url || ''}" class="hero-img"></div>
@@ -4975,8 +5458,9 @@
                                 <div class="hero-bio">${character.biography || ''}</div>
                             </div>
                         </div>
+                        ${prefHtml}
                         ${tHtml}
-                        <div class="sub-gallery-grid" id="gallery-grid"></div>`;
+                        <div class="${State.galleryViewMode === 'deck' ? 'decks-grid' : 'sub-gallery-grid'}" id="gallery-grid"></div>`;
                     
                     Actions.renderGalleryGrid();
                 }
@@ -5427,6 +5911,12 @@
                 const id = parts[1];
                 const subId = parts[2];
                 const stage = document.getElementById('content-stage');
+                
+                // Intercept gallery route if content disclaimer not yet accepted
+                if (view === 'gallery' && !State.galleryConfirmed && sessionStorage.getItem('gallery_confirmed') !== 'true') {
+                    UI.showGalleryWarning(id);
+                    return;
+                }
                 
                 (async () => {
                     if (view === 'home') await Render.home();

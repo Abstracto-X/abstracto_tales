@@ -51,6 +51,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `applyCustomColors(settings)` - Injects CSS variables into the `:root` to theme the site dynamically.
 - `renderStoryCard(story)` - Returns the HTML block for a story display card.
 - `renderChapterList(chapters)` - Returns the HTML list of chapters for the story view.
+- `showGalleryWarning(storySlug)` — Displays a beautiful glassmorphic modal advising the user of aggregated/AI/mature content in the gallery, offering them a clear Yes (Proceed) or No (Go Back) option.
+- `closeGalleryWarning()` — Closes the gallery content advisory modal with a smooth fade animation.
 
 - `initAuthLink(userProfile)` â€” Renders the far-right header auth slot as either a sign-in button or the current reader avatar/profile trigger.
 
@@ -73,6 +75,8 @@ A comprehensive, categorized index of all meaningful functions across the `index
 ### `MapViewer` (Interactive Map & Routing)
 - `MinPriorityQueue` — Lightweight binary heap class providing `enqueue`, `dequeue`, and `isEmpty` methods for the pathfinding engine.
 - `init()` - Initializes the transform-based panning/zooming engine for a specific Supabase map record, resetting route state, clearing stale overlays, and setting up the SVG/HTML overlay containers.
+- `onPointerDown(e)` / `onPointerMove(e)` / `onPointerUp(e)` — Input callbacks implementing unified mouse and touch dragging via standard Pointer Events.
+- `scheduleDragTick()` — Gates layout rendering transformations inside a `requestAnimationFrame` paint tick during drag operations to optimize frame rate.
 - `loadMapData()` - Fetches `map_nodes` and `map_edges` for the active `map_id` from Supabase, remaps edge foreign keys into the reader routing shape, and triggers graph construction and rendering.
 - `renderMapData()` — Generates SVG paths for hyperlanes, route-overlay groups, and DOM elements for planet nodes, performing Y-axis inversion.
 - `buildGraph()` — Converts the node and edge data into an adjacency list for pathfinding and seeds cached lane lengths.
@@ -111,6 +115,14 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `init()` — Sets up the HTML5 Canvas, spawns particles, and registers `visibilitychange` listener for pause/resume.
 - `animate()` — The `requestAnimationFrame` loop. Checks `_paused` flag before rendering. Stores rAF ID for cancellation.
 - `resize()` — Handles window resize events to keep the canvas covering the screen.
+
+### `Actions` (Gallery & General Operations)
+- `renderGalleryGrid(shuffle)` — Renders character gallery images under either standard grid or premium fanning Card Deck View modes. Implements strict R18 filters when disabled.
+- `toggleViewMode()` — Toggles the character gallery between column-based Grid View and stacked/fanning Card Deck View modes, saving the choice in local storage.
+- `toggleR18()` — Toggles strict R18 content filtering on or off, updating the layout state dynamically and persisting preference.
+- `setFilter(tag)` — Filters the current character gallery by tag name (e.g. Portrait, Sketch, Action).
+- `shuffleGallery()` — Shuffles the order of images in the active character gallery dynamically.
+- `voteImage(imageId, value)` — Handles casting and updating image upvotes/downvotes against Supabase with real-time score synchronization.
 
 ---
 
