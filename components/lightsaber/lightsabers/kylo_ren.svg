@@ -164,7 +164,7 @@
     </clipPath>
   </defs>
 
-  <g id="lightsaber-hilt" transform="rotate(180 460 200)">
+  <g id="lightsaber-hilt" transform="translate(460, 200) rotate(90) translate(-200, -466)">
 
     <!-- ============================================================ -->
     <!--  SECTION 1: TOP EMITTER NOZZLE                                -->

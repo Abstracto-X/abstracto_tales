@@ -272,6 +272,10 @@ const WIDGET_CSS = `
   pointer-events: none;
 }
 
+.lsw-saber-group[data-hilt="kylo_ren"] .lsw-crossguard-container {
+  left: -24px;
+}
+
 .lsw-crossguard-blade {
   position: absolute;
   left: 50%;
@@ -593,14 +597,16 @@ export function createLightsaber(options = {}) {
     return {
       ...cfg,
       // Override crossguard/unstable if explicitly set
-      isCrossguard: opts.hilt === 'crossguard' || (opts.unstable && opts.hilt !== 'maul'),
+      isCrossguard: opts.hilt === 'crossguard' || opts.hilt === 'kylo_ren' || (opts.unstable && opts.hilt !== 'maul'),
       isDouble: cfg.isDouble,
     };
   }
 
   // ── Build DOM ──
   const root = document.createElement('div');
-  root.className = 'lsw-root lsw-visible';
+  root.className = 'lsw-root lsw-hidden';
+  root.style.opacity = '0'; // Prevent flash of unstyled widget on load
+  root.style.pointerEvents = 'none';
 
   const bgDark = document.createElement('div');
   bgDark.className = 'lsw-bg-dark';
@@ -764,6 +770,7 @@ export function createLightsaber(options = {}) {
 
   function applyHilt() {
     const hiltKey = opts.hilt;
+    saberGroup.setAttribute('data-hilt', hiltKey); // Set data-hilt attribute for hilt-specific CSS overrides
     const cfg = HILT_CONFIGS[hiltKey] || HILT_CONFIGS.obiwan;
     hiltWrapper.innerHTML = '';
     hiltWrapper.style.width = cfg.hiltWidth + 'px';
@@ -1183,6 +1190,7 @@ export function createLightsaber(options = {}) {
     /** Show the transition overlay (fade in) */
     show() {
       if (destroyed) return;
+      root.style.opacity = ''; // Clear inline opacity to allow CSS transition
       root.classList.remove('lsw-hidden');
       root.classList.add('lsw-visible');
       root.style.pointerEvents = 'all';

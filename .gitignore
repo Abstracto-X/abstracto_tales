@@ -21,5 +21,6 @@ docs/To_Do.md
 docs/To_Do.md
 components/lightsaber/primary_loader.html
 components/lightsaber/primary_loader.html
-components/primary_loader/primary_loader.js
 /Internal_tools
+concat_docs.py
+/docs_v2

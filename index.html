@@ -163,7 +163,8 @@
 
         .story-card {
             position: relative;
-            height: 450px;
+            height: auto;
+            aspect-ratio: 2 / 3;
             border-radius: 16px;
             overflow: hidden;
             cursor: pointer;
@@ -611,7 +612,7 @@
             .logo { font-size: 1.2rem; }
             
             .story-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .story-card { height: 260px; }
+            .story-card { height: auto; aspect-ratio: 2 / 3; }
             .card-info { padding: 1rem; }
             .card-title { font-size: 0.9rem; }
 
@@ -1690,6 +1691,70 @@
             color: var(--accent-color);
             border-color: rgba(255, 215, 0, 0.3);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* ============================================================
+           LOADER-THEMED LANDING PAGE ADJUSTMENTS
+           ============================================================ */
+        body.home-active {
+            --accent-color: #00f2fe; /* Matches the cyan glow */
+            background-color: #050508;
+        }
+
+        /* Update default particle container to feel deeper and moodier */
+        body.home-active #particle-canvas {
+            opacity: 0.45;
+        }
+
+        /* Story cards visual upgrade */
+        body.home-active .story-card {
+            border-color: rgba(0, 242, 254, 0.12);
+            background: rgba(10, 10, 15, 0.65);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 
+                        inset 0 0 15px rgba(0, 242, 254, 0.03);
+            border-radius: 12px;
+        }
+
+        body.home-active .story-card:hover {
+            border-color: #00f2fe;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 
+                        0 0 15px rgba(0, 242, 254, 0.2),
+                        inset 0 0 20px rgba(123, 47, 247, 0.08);
+        }
+
+        body.home-active .story-card:hover .card-title {
+            /* Subtle gradient effect on card titles during hover */
+            background: linear-gradient(135deg, #ffffff, #00f2fe);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Author block visual upgrade */
+        body.home-active .author-section {
+            border-color: rgba(123, 47, 247, 0.2);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 
+                        0 0 25px rgba(123, 47, 247, 0.05);
+            background: linear-gradient(180deg, rgba(15, 15, 25, 0.8) 0%, rgba(5, 5, 8, 0.95) 100%);
+            border-radius: 16px;
+        }
+
+        body.home-active .author-info h2 {
+            color: #00f2fe;
+            text-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+        }
+
+        body.home-active .link-row {
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        body.home-active .link-row:hover {
+            border-color: #00f2fe;
+            background: rgba(0, 242, 254, 0.04);
+            box-shadow: 0 0 15px rgba(0, 242, 254, 0.1);
+        }
+
+        body.home-active .link-note {
+            color: #7b2ff7; /* Purple accent for internal labels */
         }
     </style>
 </head>
@@ -3539,6 +3604,7 @@
         // APPLICATION STATE
         // ==============================================
         const State = { 
+            isInitialAppLoad: true,
             currentStory: null,
             currentStorySlug: null,
             currentChars: [], 
@@ -4946,10 +5012,12 @@
             },
             
             showLoading: () => {
+                if (State.isInitialAppLoad) return; // Mute lightsaber on initial load
                 SaberController.showLoading();
             },
 
             hideLoading: () => {
+                if (State.isInitialAppLoad) return; // Mute lightsaber on initial load
                 SaberController.hideLoading();
             },
 
@@ -5186,11 +5254,17 @@
             
 
             home: async () => {
-                UI.showLoading();
                 UI.setBackButton(null); 
                 UI.hideWallpaperButton();
-                document.documentElement.style.setProperty('--accent-color', '#ffd700');
-                UI.setBg('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop');
+                
+                // 1. Enable home-active class for specialized themed layouts
+                document.body.classList.add('home-active');
+                
+                // 2. Set home variables to utilize the Loader's custom colors
+                document.documentElement.style.setProperty('--accent-color', '#00f2fe');
+                
+                // 3. Set background to match the atmospheric backdrop of the loader
+                UI.setBg('https://getwallpapers.com/wallpaper/full/f/4/a/275569.jpg');
 
                 const [stories, author] = await Promise.all([
                     DB.getStories(),
@@ -5199,17 +5273,14 @@
 
                 let html = '<div class="story-grid">';
                 
-                // ADDED: Empty State Fallback
                 if (!stories || stories.length === 0) {
                     html += `
-                        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px dashed #555;">
+                        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem; background: rgba(0,0,0,0.5); border-radius: 12px; border: 1px dashed #333;">
                             <h2 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 1rem;">The Archives are Empty</h2>
-                            <p style="color: #888;">No published stories were found in the database. Log into the admin panel to create or publish content.</p>
+                            <p style="color: #888;">No published stories were found in the database.</p>
                         </div>
                     `;
                 } else {
-                    // Render stories if they exist
-                    // FIX 6: First 4 story cards use eager loading for LCP
                     stories.forEach((s, idx) => {
                         const loadAttr = idx < 4 ? '' : 'loading="lazy"';
                         html += `
@@ -5224,7 +5295,6 @@
                 }
                 html += '</div>';
 
-                // Author Section
                 if (author) {
                     const linksHtml = (author.links || []).map(link => `
                         <a href="${link.url}" target="_blank" class="link-row">
@@ -5886,6 +5956,10 @@
             
             handle: () => {
                 const routeToken = ++Router._activeRouteToken;
+                
+                // Clear the loader theme overrides upon switching views
+                document.body.classList.remove('home-active');
+                
                 CommentsManager.closeDrawer();
                 const globalBtn = document.getElementById('global-comment-btn');
                 if (globalBtn) globalBtn.style.display = 'none';
@@ -5933,7 +6007,15 @@
                 })().then(() => {
                     setTimeout(() => {
                         if (routeToken !== Router._activeRouteToken) return;
-                        UI.hideLoading();
+                        
+                        // NEW: Handle Primary Loader Outro on first load
+                        if (State.isInitialAppLoad) {
+                            State.isInitialAppLoad = false;
+                            if (window.PrimaryLoader) window.PrimaryLoader.playOutro();
+                        } else {
+                            UI.hideLoading(); // Hides lightsaber for normal routing
+                        }
+
                         if (!stage) return;
                         stage.scrollTop = 0;
                         // Fade the new content back in
@@ -5963,6 +6045,17 @@
         // ==============================================
         window.addEventListener('hashchange', Router.handle);
         window.addEventListener('DOMContentLoaded', async () => { 
+            // 1. Immediately import and inject the primary cinematic loader
+            try {
+                const { PrimaryLoader } = await import('./components/primary_loader/primary_loader.js');
+                window.PrimaryLoader = PrimaryLoader;
+                PrimaryLoader.inject(); // Instantly adds the HTML/CSS and covers screen
+            } catch(e) {
+                console.warn("Primary loader module failed to load. Falling back to default.", e);
+                State.isInitialAppLoad = false; // Fallback so app still works
+            }
+
+            // 2. Init rest of the app
             await SaberController.init();
             // FIX 2: Non-blocking prefetcher — cosmetic data should not block critical path
             LorePrefetcher.init(); // fire-and-forget (no await)

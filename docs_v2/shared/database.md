@@ -1,10 +1,10 @@
-# DATABASE CONTEXT — Shared Database Reference
+# DATABASE CONTEXT — AI Agent Reference
 
-This document provides a complete context of the Supabase PostgreSQL database utilized across the Abstracto Tales platform. It details the schema, relationships, Row Level Security (RLS) policies, storage buckets, enums, triggers, and common query patterns.
+> **Purpose:** This document provides complete context for any AI agent working with this Supabase PostgreSQL database. It covers schema, relationships, RLS policies, storage buckets, enums, triggers, and architectural notes.
 
 ---
 
-## 1. Platform & Architecture
+## 1. PLATFORM & ARCHITECTURE
 
 - **Database:** Supabase (PostgreSQL)
 - **Auth:** Supabase Auth (`auth.users` table managed by Supabase)
@@ -17,7 +17,7 @@ This document provides a complete context of the Supabase PostgreSQL database ut
 
 ---
 
-## 2. Enum Types
+## 2. ENUM TYPES
 
 ```sql
 CREATE TYPE node_type_enum AS ENUM (
@@ -30,13 +30,15 @@ CREATE TYPE node_type_enum AS ENUM (
   'item'
 );
 ```
-*Used by:* `writer_nodes.type`
+
+Used by: `writer_nodes.type`
 
 ---
 
-## 3. Database Schema
+## 3. DATABASE SCHEMA
 
 ### 3.1 `public.profiles`
+
 Extends `auth.users`. One row per authenticated user.
 
 | Column | Type | Notes |
@@ -52,11 +54,12 @@ Extends `auth.users`. One row per authenticated user.
 
 **Key notes:**
 - This table is the source of truth for roles. To promote a user to admin, run: `UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';`
-- The `is_admin()` function queries this table using `auth.uid()`.
+- The `is_admin()` function queries this table using `auth.uid()`
 
 ---
 
 ### 3.2 `public.author_links`
+
 Social/external links for the author profile page.
 
 | Column | Type | Notes |
@@ -72,6 +75,7 @@ Social/external links for the author profile page.
 ---
 
 ### 3.3 `public.site_settings`
+
 Key-value store for global site configuration.
 
 | Column | Type | Notes |
@@ -83,6 +87,7 @@ Key-value store for global site configuration.
 ---
 
 ### 3.4 `public.stories`
+
 Top-level story/series entries.
 
 | Column | Type | Notes |
@@ -110,6 +115,7 @@ Top-level story/series entries.
 ---
 
 ### 3.5 `public.chapters`
+
 Individual chapters belonging to a story.
 
 | Column | Type | Notes |
@@ -129,6 +135,7 @@ Individual chapters belonging to a story.
 ---
 
 ### 3.6 `public.characters`
+
 Characters belonging to a story.
 
 | Column | Type | Notes |
@@ -145,6 +152,7 @@ Characters belonging to a story.
 ---
 
 ### 3.7 `public.character_gallery_images`
+
 Gallery images for individual characters.
 
 | Column | Type | Notes |
@@ -160,6 +168,7 @@ Gallery images for individual characters.
 ---
 
 ### 3.8 `public.image_votes`
+
 Upvote/downvote system for character gallery images.
 
 | Column | Type | Notes |
@@ -175,6 +184,7 @@ Upvote/downvote system for character gallery images.
 ---
 
 ### 3.9 `public.story_wallpapers`
+
 Downloadable wallpapers associated with a story.
 
 | Column | Type | Notes |
@@ -189,6 +199,7 @@ Downloadable wallpapers associated with a story.
 ---
 
 ### 3.10 `public.lore_categories`
+
 Categories for grouping lore entries within a story.
 
 | Column | Type | Notes |
@@ -204,6 +215,7 @@ Categories for grouping lore entries within a story.
 ---
 
 ### 3.11 `public.lore_entries`
+
 Individual lore/world-building entries.
 
 | Column | Type | Notes |
@@ -221,6 +233,7 @@ Individual lore/world-building entries.
 ---
 
 ### 3.12 `public.timeline_events`
+
 In-universe timeline events for a story.
 
 | Column | Type | Notes |
@@ -236,6 +249,7 @@ In-universe timeline events for a story.
 ---
 
 ### 3.13 `public.timeline_event_characters`
+
 Join table linking characters to timeline events (many-to-many).
 
 | Column | Type | Notes |
@@ -247,6 +261,7 @@ Join table linking characters to timeline events (many-to-many).
 ---
 
 ### 3.14 `public.maps`
+
 Map images associated with a story.
 
 | Column | Type | Notes |
@@ -270,10 +285,12 @@ Map images associated with a story.
 - This is the canonical parent table for both reader-facing maps and `cartographer.html`.
 - `story_id` should be treated as required for cartographer-created maps so they appear in the main Reader/Admin flows.
 - `width` and `height` are required by the cartographer editor to restore the correct coordinate space for uploaded maps.
+- The advanced route demo in `index.html` can still consume a separate high-fidelity static JSON file at `/data/map_project.json`.
 
 ---
 
 ### 3.15 `public.comments`
+
 Reader comments on chapters, lore entries, gallery images, etc.
 
 | Column | Type | Notes |
@@ -292,6 +309,7 @@ Reader comments on chapters, lore entries, gallery images, etc.
 ---
 
 ### 3.16 `public.writer_nodes`
+
 File-tree nodes for an internal Writer IDE (private authoring tool).
 
 | Column | Type | Notes |
@@ -315,6 +333,7 @@ File-tree nodes for an internal Writer IDE (private authoring tool).
 ---
 
 ### 3.17 `public.writer_node_links`
+
 Relational links between writer nodes (e.g. a character referenced in a location doc).
 
 | Column | Type | Notes |
@@ -329,129 +348,103 @@ Relational links between writer nodes (e.g. a character referenced in a location
 
 ---
 
-### 3.18 `public.map_nodes` (Cartographer Tables)
-Node coordinates and metadata for story maps.
+### 3.18 `public.map_requests`
+
+Handles map change requests submitted by contributors.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `map_id` | UUID | FK → `maps(id)` CASCADE |
-| `name` | TEXT | Planet/location name |
-| `x` | DOUBLE PRECISION | True Cartesian X coordinate |
-| `y` | DOUBLE PRECISION | True Cartesian Y coordinate |
-| `region` | TEXT | Galactic region |
-| `sector` | TEXT | Galactic sector |
-| `color` | TEXT | Contributor's assigned display color |
-| `created_by` | UUID | FK → `profiles(id)` |
-
----
-
-### 3.19 `public.map_edges` (Cartographer Tables)
-Polyline or spline links (hyperlanes) connecting nodes.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID (PK) | |
-| `map_id` | UUID | FK → `maps(id)` CASCADE |
-| `source_node_id` | UUID | FK → `map_nodes(id)` CASCADE |
-| `target_node_id` | UUID | FK → `map_nodes(id)` CASCADE |
-| `source_name` | TEXT | Denormalized source name |
-| `target_name` | TEXT | Denormalized target name |
-| `geometry` | JSONB | Array of `{x, y}` coordinates representing vertices |
-| `edge_type` | TEXT | `'straight'` or `'curved'`. Default `'straight'` |
-| `color` | TEXT | Contributor's assigned color |
-| `created_by` | UUID | FK → `profiles(id)` |
-
----
-
-### 3.20 `public.map_changelog` (Cartographer Tables)
-Audit log tracking edits to maps.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID (PK) | |
-| `map_id` | UUID | FK → `maps(id)` CASCADE |
-| `user_id` | UUID | FK → `profiles(id)` |
-| `action` | TEXT | `'add_node'`, `'edit_node'`, `'delete_node'`, `'add_edge'`, `'delete_edge'` |
-| `entity_type` | TEXT | `'node'` or `'edge'` |
-| `entity_id` | UUID | ID of the affected element |
-| `old_data` | JSONB | Previous state data |
-| `new_data` | JSONB | New state data |
-
----
-
-### 3.21 `public.map_requests` (Moderation Queue)
-Map revision tickets submitted by contributors.
-
-| Column | Type | Notes |
-|---|---|---|
-| `id` | UUID (PK) | |
-| `user_id` | UUID | FK → `profiles(id)` |
-| `map_id` | UUID | FK → `maps(id)`. Nullable for new map requests. |
+| `map_id` | UUID | FK → `maps(id)` CASCADE DELETE. Nullable for "New Map" proposals. |
+| `user_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
 | `title` | TEXT | Title of the request |
-| `reason` | TEXT | Justification or contributor comments |
-| `status` | TEXT | `'pending'`, `'approved'`, `'rejected'`. Default `'pending'` |
-| `feedback` | TEXT | Admin response/rejection reason |
+| `reason` | TEXT | Justification for the request |
+| `status` | TEXT | `pending`, `approved`, `rejected`, `conflict` |
+| `feedback` | TEXT | Admin feedback |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | |
 
 ---
 
-### 3.22 `public.map_request_items` (Moderation Queue)
-Individual atomic mutations proposed within a map request ticket.
+### 3.19 `public.map_request_items`
+
+Tracks individual changes within a map request.
 
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `request_id` | UUID | FK → `map_requests(id)` CASCADE |
-| `action` | TEXT | `'ADD'`, `'UPDATE'`, `'DELETE'` |
-| `entity_type` | TEXT | `'NODE'`, `'EDGE'` |
-| `entity_id` | UUID | Affected element ID |
-| `proposed_data` | JSONB | Proposed complete record payload |
+| `request_id` | UUID | FK → `map_requests(id)` CASCADE DELETE |
+| `action` | TEXT | `ADD`, `UPDATE`, `DELETE` |
+| `entity_type` | TEXT | `NODE`, `EDGE`, `MAP` |
+| `entity_id` | UUID | ID of the affected entity |
+| `proposed_data` | JSONB | Details of the proposed change |
 | `created_at` | TIMESTAMPTZ | |
+
+### Row Level Security (RLS) Policies
+
+#### `map_requests`
+- **Admins:** Full access.
+- **Contributors:** Can read and insert their own requests.
+- **Cartographers:** Can see any Request Ticket linked to a map they have access to.
+
+#### `map_request_items`
+- **Admins:** Full access.
+- **Contributors:** Can read and insert items linked to their own requests.
+- **Cartographers:** Can see the specific items/data inside tickets linked to maps they have access to.
 
 ---
 
-## 4. Functions & Triggers
+## 4. FUNCTIONS & TRIGGERS
 
-### `public.is_admin()` → `BOOLEAN`
+### `public.is_admin()` → BOOLEAN
 ```sql
 SELECT EXISTS (
   SELECT 1 FROM public.profiles
   WHERE id = auth.uid() AND role = 'admin'
 );
 ```
-- **Definition:** `SECURITY DEFINER, STABLE`
-- Used in write/delete RLS policies on critical tables to verify the active user has the `'admin'` role.
-
-### `public.is_cartographer()` → `BOOLEAN`
-```sql
-SELECT EXISTS (
-  SELECT 1 FROM public.profiles
-  WHERE id = auth.uid() AND role IN ('cartographer', 'admin')
-);
-```
-- **Definition:** `SECURITY DEFINER, STABLE`
-- Used in map-related tables to allow certified cartographers or admins to query or staging operations.
-
-### `public.handle_new_user()`
-- Trigger function fired `AFTER INSERT ON auth.users`.
-- Spawns a standard profile in `public.profiles` for each new registrant, setting `role` to `'reader'` by default.
-- Formats username as `emailPrefix_first4charsOfUUID` and sets display name to the email prefix.
-
-### `public.update_timestamp()`
-- Fired `BEFORE UPDATE` to sync the `updated_at` timestamp with `NOW()`. Applied to `profiles`, `stories`, `chapters`, `maps`, `map_nodes`, and `map_edges`.
+- SECURITY DEFINER, STABLE
+- Used in all admin RLS policies
+- Returns `TRUE` only if the calling user's profile has `role = 'admin'`
 
 ---
 
-## 5. Row Level Security (RLS) Policies
+### `public.handle_new_user()` (Trigger Function)
+- Fires `AFTER INSERT ON auth.users`
+- Creates a `public.profiles` row for every new signup
+- Assigns `role = 'reader'` by default
+- Sets `username` = `emailPrefix_first4charsOfUUID`
+- Sets `display_name` = email prefix
+- Uses `ON CONFLICT (id) DO NOTHING` to prevent duplicate errors
 
-### Public Reads (No Auth Required)
-All reader-facing data allows unauthenticated SELECT.
+---
 
-| Table | Policy | Condition / Rule |
+### `public.update_timestamp()` (Trigger Function)
+- Sets `updated_at = NOW()` on `BEFORE UPDATE`
+- Applied to: `profiles`, `stories`, `chapters`
+
+---
+
+### Triggers Summary
+
+| Trigger | Table | Event | Function |
+|---|---|---|---|
+| `on_auth_user_created` | `auth.users` | AFTER INSERT | `handle_new_user()` |
+| `set_profiles_updated_at` | `profiles` | BEFORE UPDATE | `update_timestamp()` |
+| `set_stories_updated_at` | `stories` | BEFORE UPDATE | `update_timestamp()` |
+| `set_chapters_updated_at` | `chapters` | BEFORE UPDATE | `update_timestamp()` |
+
+---
+
+## 5. ROW LEVEL SECURITY (RLS) POLICIES
+
+RLS is enabled on all tables. Unauthenticated reads are allowed on most public content. Writes require either ownership or admin role.
+
+### Public Read Policies (no auth required)
+
+| Table | Policy | Condition |
 |---|---|---|
-| `profiles` | Public read | `true` |
+| `profiles` | Public read | `true` (all rows) |
 | `author_links` | Public read | `true` |
 | `site_settings` | Public read | `true` |
 | `stories` | Public read | `is_published = true` only |
@@ -464,16 +457,17 @@ All reader-facing data allows unauthenticated SELECT.
 | `lore_entries` | Public read | `true` |
 | `timeline_events` | Public read | `true` |
 | `timeline_event_characters` | Public read | `true` |
-| `maps` | Public read | `is_published = true` only |
+| `maps` | Public read | `true` |
 | `comments` | Public read | `true` |
-| `map_nodes` | Public read | If mapped map `is_published = true` |
-| `map_edges` | Public read | If mapped map `is_published = true` |
 
-### Admin Writes (Requires `is_admin() = true`)
-Admins have full CRUD privileges for all operational and public entity tables.
+---
 
-- `stories` (can also view unpublished rows)
-- `chapters` (can also view unpublished rows)
+### Admin Write Policies (requires `is_admin() = true`)
+
+Applies to ALL operations (INSERT, UPDATE, DELETE, SELECT of unpublished):
+
+- `stories` — full access including unpublished
+- `chapters` — full access including unpublished
 - `characters`
 - `character_gallery_images`
 - `story_wallpapers`
@@ -485,45 +479,66 @@ Admins have full CRUD privileges for all operational and public entity tables.
 - `site_settings`
 - `author_links`
 
-### Contributor & Role-Based Policies
+---
 
-- **`map_nodes` / `map_edges`**:
-  - `SELECT`: Allowed for public if map published. Certified cartographers/admins can select all.
-  - `INSERT/UPDATE/DELETE`: Admins only. (Contributors and cartographers must use `map_requests`).
-- **`map_requests` / `map_request_items`**:
-  - `SELECT`: Admins full access. Contributors can read their own submissions. Cartographers can read requests bound to projects they can access.
-  - `INSERT`: Authenticated users can insert to request edits.
-- **`writer_nodes` / `writer_node_links`**:
-  - `ALL`: Open to all authenticated users (single-author/small-team context; RLS checks `auth.role() = 'authenticated'`).
-- **User-Owned Profiles, Comments, & Votes**:
-  - `profiles`: `UPDATE` only if `id = auth.uid()`.
-  - `comments`: `INSERT` and `DELETE` only if `user_id = auth.uid()`.
-  - `image_votes`: `INSERT`, `UPDATE`, and `DELETE` only if `user_id = auth.uid()`.
+### User-Scoped Policies (authenticated, own data only)
+
+| Table | Operation | Condition |
+|---|---|---|
+| `profiles` | UPDATE | `id = auth.uid()` |
+| `comments` | INSERT | `user_id = auth.uid()` |
+| `comments` | DELETE | `user_id = auth.uid()` |
+| `image_votes` | INSERT | `user_id = auth.uid()` |
+| `image_votes` | UPDATE | `user_id = auth.uid()` |
+| `image_votes` | DELETE | `user_id = auth.uid()` |
 
 ---
 
-## 6. Storage Buckets
+### Writer IDE Policies (authenticated users only)
 
-All buckets are public (publicly readable URLs). Writes are restricted to authenticated users at the storage layer; administrative enforcement resides at the application layer.
+| Table | Policy |
+|---|---|
+| `writer_nodes` | Authenticated users have full access (INSERT, SELECT, UPDATE, DELETE) |
+| `writer_node_links` | Authenticated users have full access |
 
-| Bucket ID | Purpose | Associated Table / Column |
+> ⚠️ Writer IDE tables are not scoped to ownership — any authenticated user can read/write all writer nodes. This is intended for a single-author/small-team setup.
+
+---
+
+## 6. STORAGE BUCKETS
+
+All buckets are **public** (publicly readable URLs). Writes are restricted to authenticated users only.
+
+| Bucket ID | Purpose | Used By |
 |---|---|---|
 | `covers` | Story cover images | `stories.cover_image_url` |
 | `backgrounds` | Story background/banner images | `stories.background_image_url` |
 | `characters` | Character profile + gallery images | `characters.profile_image_url`, `character_gallery_images.image_url` |
 | `lore` | Lore entry images | `lore_entries.image_url` |
-| `maps` | Map background images | `maps.image_url` |
+| `maps` | Map images | `maps.image_url` |
 | `author` | Author profile images | `profiles.avatar_url` |
-| `Reader` | Reader-uploaded comment attachments | `comments.metadata`, `profiles.avatar_url` |
+| `Reader` | Reader-uploaded images (avatars, comment attachments) | `comments.metadata`, `profiles.avatar_url` |
 
-### Reader Bucket Rules
-- **Restrictions:** Max size 5MB. MIME types restricted to standard image formats.
-- **Access:** Public read.
-- **Writes/Deletes:** Enforced by checking `auth.uid()::text` against the prefix of the storage filename (must match `{user_id}-{timestamp}.{ext}`).
+### Storage Policy Pattern (all buckets except `Reader`)
+
+- **SELECT:** Public (no auth required)
+- **INSERT:** `auth.role() = 'authenticated'`
+- **UPDATE:** `auth.role() = 'authenticated'`
+- **DELETE:** `auth.role() = 'authenticated'`
+
+> ⚠️ Storage policies check `auth.role() = 'authenticated'` only — they do NOT check `is_admin()`. Any logged-in user (reader or admin) can technically upload. Enforce admin-only uploads at the application layer.
+
+### `Reader` Bucket (special rules)
+
+- **File size limit:** 5MB
+- **Allowed MIME types:** `image/png`, `image/jpeg`, `image/gif`, `image/webp`
+- **SELECT:** Public
+- **INSERT:** `auth.role() = 'authenticated'`
+- **UPDATE/DELETE:** Only by the file's owner — enforced by checking that `auth.uid()::text` matches the first segment of the filename (filenames must be formatted as `{user_id}-{timestamp}.{ext}`)
 
 ---
 
-## 7. Database Indexes
+## 7. INDEXES
 
 | Index Name | Table | Columns | Purpose |
 |---|---|---|---|
@@ -541,10 +556,178 @@ All buckets are public (publicly readable URLs). Writes are restricted to authen
 
 ---
 
-## 8. Query Patterns & Best Practices
+## 8. ENTITY RELATIONSHIP OVERVIEW
 
-1. **Gate Public Content:** Public views should query with `.eq('is_published', true)` when fetching `stories`, `chapters`, or `maps`.
-2. **Handle Comments Polymorphically:** A comment target is represented by `target_id` (UUID) and `target_type` (`'chapter'`, `'lore'`, `'gallery'`). Always filter by both attributes.
-3. **Recursive Writer Tree:** Retrieve all writer nodes for a given `story_id` in a single query, then assemble the hierarchy recursively in-memory on the client side: root elements carry `parent_id = NULL`.
-4. **Construct Storage URLs:** Construct public URLs manually following this format:
-   `{SUPABASE_URL}/storage/v1/object/public/{bucket_id}/{filename}`
+```
+auth.users
+  └── profiles (1:1)
+        └── author_links (1:many)
+
+stories
+  ├── chapters (1:many)
+  ├── characters (1:many)
+  │     └── character_gallery_images (1:many)
+  │           └── image_votes (1:many, via user)
+  ├── story_wallpapers (1:many)
+  ├── lore_categories (1:many)
+  │     └── lore_entries (1:many, category optional)
+  ├── timeline_events (1:many)
+  │     └── timeline_event_characters (many:many → characters)
+  ├── maps (1:many)
+  │     ├── map_nodes (1:many)
+  │     ├── map_edges (1:many)
+  │     └── map_changelog (1:many)
+  └── writer_nodes (tree, 1:many recursive)
+        └── writer_node_links (many:many between nodes)
+
+comments (polymorphic → chapters, lore, gallery, etc.)
+site_settings (global key-value)
+```
+
+---
+
+## 9. COMMON QUERY PATTERNS
+
+### Fetch a published story with its chapters
+```sql
+SELECT s.*, c.*
+FROM public.stories s
+LEFT JOIN public.chapters c ON c.story_id = s.id AND c.is_published = true
+WHERE s.slug = 'your-story-slug' AND s.is_published = true
+ORDER BY c.chapter_order ASC;
+```
+
+### Fetch comments for a chapter
+```sql
+SELECT cm.*, p.display_name, p.avatar_url
+FROM public.comments cm
+JOIN public.profiles p ON p.id = cm.user_id
+WHERE cm.target_id = '<chapter_uuid>' AND cm.target_type = 'chapter'
+ORDER BY cm.created_at ASC;
+```
+
+### Fetch characters with gallery and vote totals
+```sql
+SELECT ch.*, 
+  json_agg(gi.*) AS gallery,
+  COALESCE(SUM(iv.vote_value), 0) AS total_votes
+FROM public.characters ch
+LEFT JOIN public.character_gallery_images gi ON gi.character_id = ch.id
+LEFT JOIN public.image_votes iv ON iv.image_id = gi.id
+WHERE ch.story_id = '<story_uuid>'
+GROUP BY ch.id
+ORDER BY ch.sort_order ASC;
+```
+
+### Get the writer file tree for a story
+```sql
+SELECT * FROM public.writer_nodes
+WHERE story_id = '<story_uuid>'
+ORDER BY sort_order ASC;
+-- Build the tree client-side by nesting on parent_id
+```
+
+### Promote a user to admin
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
+```
+
+---
+
+## 10. IMPORTANT NOTES FOR AI AGENTS
+
+1. **Never hardcode UUIDs.** Always query for IDs by slug, username, or other unique fields first.
+2. **`is_published` gates public visibility** on `stories` and `chapters`. Always filter by this unless operating as an admin.
+3. **`target_type` is a freeform string** on `comments`. Accepted values in use: `'chapter'`, `'lore'`, `'gallery'`. Always filter by both `target_id` AND `target_type`.
+4. **`writer_nodes` is a recursive tree.** Reconstruct the tree client-side after fetching all nodes for a `story_id`. Root nodes have `parent_id = NULL`.
+5. **`metadata` JSONB columns** exist on `comments` and `writer_nodes`. Structure is flexible — check application code for expected shape before writing.
+6. **Storage URLs** are public Supabase Storage URLs. Construct them as: `{SUPABASE_URL}/storage/v1/object/public/{bucket_id}/{filename}`
+7. **`Reader` bucket filenames** must follow `{user_id}-{timestamp}.{ext}` format for ownership policies to work.
+8. **The `event_date` field** in `timeline_events` is a plain TEXT field, not a PostgreSQL date type. It stores in-universe fictional date strings.
+9. **RLS applies to all queries**, including those made server-side via the Supabase client. Use the service role key (bypasses RLS) only for trusted admin operations.
+10. **`image_votes`** uses upsert semantics. To change a vote, UPDATE the existing row (unique on `user_id + image_id`).
+
+---
+
+## 11. Cartographer Tables (Collaborative Map Editor)
+
+### `map_nodes`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
+| `name` | TEXT NOT NULL | Planet/location name |
+| `x` / `y` | DOUBLE PRECISION | Map coordinates |
+| `region` / `sector` | TEXT | Optional metadata |
+| `color` | TEXT | Contributor's assigned color |
+| `created_by` | UUID | FK → `profiles(id)` |
+
+### `map_edges`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
+| `source_node_id` / `target_node_id` | UUID NOT NULL | FK → `map_nodes(id)` CASCADE |
+| `source_name` / `target_name` | TEXT | Denormalized for display |
+| `geometry` | JSONB | Array of `{x, y}` waypoints |
+| `edge_type` | TEXT DEFAULT 'straight' | `'straight'` or `'curved'` |
+| `color` | TEXT | Contributor's color |
+| `created_by` | UUID | FK → `profiles(id)` |
+
+### `map_changelog`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
+| `user_id` | UUID NOT NULL | FK → `profiles(id)` |
+| `action` | TEXT NOT NULL | `'add_node'`, `'edit_node'`, `'delete_node'`, `'add_edge'`, `'delete_edge'` |
+| `entity_type` | TEXT NOT NULL | `'node'` or `'edge'` |
+| `entity_id` | UUID | |
+| `old_data` / `new_data` | JSONB | Previous/new state |
+
+### `map_requests` (Moderation Queue)
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | UUID NOT NULL | FK → `profiles(id)` |
+| `map_id` | UUID NOT NULL | FK → `maps(id)` |
+| `title` | TEXT | |
+| `reason` | TEXT | Contributor notes |
+| `status` | TEXT DEFAULT 'pending' | `'pending'`, `'approved'`, `'rejected'` |
+| `feedback` | TEXT | Admin rejection reason |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+### `map_request_items`
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `request_id` | UUID NOT NULL | FK → `map_requests(id)` CASCADE |
+| `action` | TEXT | `'ADD'`, `'UPDATE'`, `'DELETE'` |
+| `entity_type` | TEXT | `'NODE'`, `'EDGE'` |
+| `entity_id` | UUID | |
+| `proposed_data` | JSONB | Full payload for the record |
+
+### SQL Helper Function
+- `is_cartographer()` — Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
+
+### RLS Policies
+
+    maps: Public SELECT for published maps. Admins: Full CRUD. Cartographers: SELECT all.
+
+    map_nodes / map_edges: Public SELECT for nodes/edges belonging to published maps. Admins: Full CRUD. Cartographers: SELECT only (Writes must go through map_requests).
+
+    map_requests / map_request_items: Admins: Full CRUD. Cartographers: SELECT (for maps they can access) and INSERT (to submit new requests).
+
+### Storage Bucket: `maps`
+- Public read, authenticated write. Used for story map images and cartographer base map uploads.
+
+### Indexes
+- `idx_maps_story`, `idx_maps_slug`, `idx_map_nodes_map`, `idx_map_edges_map`, `idx_map_edges_source`, `idx_map_edges_target`, `idx_map_changelog_map`, `idx_map_changelog_user`.
+
+### Triggers
+- `set_maps_updated_at`, `set_map_nodes_updated_at`, `set_map_edges_updated_at` — All reuse existing `update_timestamp()` function where present.
+
+### Promote a user to cartographer
+```sql
+UPDATE public.profiles SET role = 'cartographer' WHERE id = '<user_uuid>';
+```
