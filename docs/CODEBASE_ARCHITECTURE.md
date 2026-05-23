@@ -1,11 +1,21 @@
-# Codebase Architecture
-
-This document outlines the architecture of the "Abstracto Tales / The Aether Archives" project, which consists of four large single-file Single Page Applications (SPAs).
+This document outlines the architecture of the "Abstracto Tales / The Aether Archives" project. It comprises three single-file Single Page Applications (SPAs) for administrative and editing interfaces, and a highly modular, clean ES6-module-based SPA for the public-facing reader frontend.
 
 ## 1. Purpose
 
-### `index.html` (Reader Frontend)
-The public-facing frontend designed for readers to browse and read the author's stories. It features a custom SPA router that handles navigation between the main catalog, story reading views, lore encyclopedia, and character galleries. The interface uses a clean, responsive glassmorphic design and engages readers through a dynamic particle background, interactive comments, and an immersive reading experience.
+### `index.html` (Reader Frontend - Modularized)
+The public-facing frontend designed for readers to browse and read stories. While originally a single-file monolith, it is now refactored into a clean skeleton utilizing a project-wide external stylesheet (`styles.css`) and a modular ES6 codebase:
+- **`index.html`**: Clean skeletal HTML layout and external resource preload tags.
+- **`styles.css`**: Complete layout, theme configurations, animations, and custom typography.
+- **`js/main.js`**: Central bootstrapper and entry point.
+- **`js/config.js`**: Environment keys, central `State` registry, and lightsaber preferences.
+- **`js/db.js`**: Database API operations and LRU/TTL caching layers.
+- **`js/auth.js`**: Profile synchronization and user authentication flow.
+- **`js/comments.js`**: Comment drawers, inline annotations, and discussion managers.
+- **`js/ui.js`**: Interface templates, particle engines, audio controllers, and lightsaber indicators.
+- **`js/render.js`**: Dynamic HTML generator functions for pages and tabs.
+- **`js/router.js`**: Custom client-side hash router and stage transition handling.
+- **`js/maps/MapViewer.js`**: Star chart SVG rendering and Dijkstra pathfinder.
+- **`js/maps/MapHub.js`**: Star chart selector grids and dynamic catalog filters.
 
 ### `admin.html` (CMS / Admin Panel)
 The restricted administrative portal used by the author to manage all content for the application. It provides comprehensive CRUD interfaces to draft stories, manage chapters, upload media (covers, maps, character avatars, wallpapers), and organize lore and timeline events. It enforces session-based authentication to ensure that only authorized users with an `admin` role can modify the database.
@@ -20,9 +30,10 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 
 ## 2. Global State
 
-### `index.html`
-- `supabaseClient` *(Object)* — Holds the initialized Supabase client instance. Created on load and used by all managers.
-- `currentStory` *(Object | null)* — Holds the currently loaded story data. Changes when navigating to a reader view.
+### `index.html` (Reader - Modularized)
+Global state is encapsulated within the `State` object of `js/config.js` and specialized manager modules. Key properties and systems include:
+- `window.supabase` *(Object)* — Holds the Supabase JS client instance initialized in `js/config.js`.
+- `State.currentStory` *(Object | null)* — Holds the currently loaded story data.
 - `Router` *(Object)* — Manages navigation state and current active view. Changes on hash change.
     - `_activeRouteToken` *(Number)* — Monotonic token used to ignore stale route completions so older async renders cannot re-hide/show the stage after a newer navigation starts.
     - `_pendingNavigationTimer` *(Number | null)* — Timeout handle for the delayed hash transition used by the fade animation, allowing same-route and rapid navigation cleanup.
@@ -111,9 +122,13 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 
 ## 3. Initialization Flow
 
-### `index.html`
-1. **`DOMContentLoaded` Event Listener:**
-   - Immediately triggers `LoaderManager.show()`, which resolves the correct loading system (`'primary'` monogram loader for first cold load) and overlays it over the viewport.
+### `index.html` (Reader - Modularized)
+The bootstrap sequence is triggered entirely within the ES6 module system of `js/main.js`:
+1. **Module Loading & Global Binding:**
+   - `<script type="module" src="js/main.js"></script>` imports all controller modules synchronously inside the module scope.
+   - All modules (e.g. `Router`, `UI`, `DB`, `UserAuth`, `CommentsManager`, etc.) are explicitly bound to the global `window` object to prevent `ReferenceError`s from legacy inline event handlers.
+2. **`DOMContentLoaded` Event Listener:**
+   - Triggers `LoaderManager.show()` immediately to resolve and render the cold start primary loader.
    - Initializes `Router` to set up hash change listeners.
    - `SaberController.init()` bootstraps the centered vertical lightsaber transition overlay before route rendering begins so loading states can mirror the live reader background without the separate progress bar overlay.
    - `UserAuth.init()` sets up the auth listener, checks existing session via `supabase.auth.getSession()`, fetching profile if needed, overriding default nav based on role.

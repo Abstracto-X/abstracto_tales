@@ -4,21 +4,23 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 ---
 
-## 1. `index.html` (Reader Frontend)
+## 1. `index.html` (Reader Frontend - Modularized)
 
-### `Router` (Navigation & Views)
+The functions and components of the public reader SPA are now fully modularized and organized into dedicated ES6 files inside `/js/` and styles inside `styles.css` at the project root directory.
+
+### `Router` (Navigation & Views - `js/router.js`)
 - `handle()` - Also wraps `UI.hideLoading()` in both success and error completion paths so stage fade-in still completes if the saber widget throws during teardown.
 - `handle()` — Reads the current window hash and dispatches to the correct view renderer, now guarding route completions so stale or failed renders cannot leave the stage hidden or loader stuck.
 - `navigate(path)` — Programmatically changes the URL hash and triggers a route update, short-circuiting same-route clicks into a safe re-render instead of waiting on a `hashchange` that will never fire.
 - `getParts()` — Helper to break down the hash into view and ID parameters (e.g., `#story/123`).
 
-### `Cache` (TTL + LRU Data Cache)
+### `Cache` (TTL + LRU Data Cache - `js/db.js`)
 - `getHub(slug)` — Returns cached hub data if fresh (within 5-min TTL), or `null` if stale/missing. Updates LRU order on access.
 - `setHub(slug, data)` — Stores hub data with a timestamp. Evicts the least-recently-used entry if at capacity (max 5).
 - `_evictHub(slug)` — Removes a specific hub entry from both the ordered list and lookup map.
 - `isStale(ttlTimestamp)` — Returns `true` if the given timestamp is older than the TTL threshold (5 minutes).
 
-### `DB` (Supabase Data Access)
+### `DB` (Supabase Data Access - `js/db.js`)
 - `getStories()` — Fetches published stories (cached with TTL).
 - `getAuthorProfile()` — Fetches admin profile + author links (cached with TTL).
 - `getStoryHubData(slug)` — Fetches story + wallpapers + characters + lore + timeline + maps in parallel (LRU-cached). Timeline character links are batched via `.in()`.
@@ -29,13 +31,13 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `getMapCounts(mapIds)` — Fetches node and edge counts for specified maps to display in the hub.
 - `getAllMapNodeNames(storyId)` — Fetches all mapped planet names across all maps in a given story.
 
-### `UserAuth` (Authentication)
+### `UserAuth` (Authentication - `js/auth.js`)
 - `init()` — Checks for an existing session and sets up the `onAuthStateChange` listener.
 - `fetchProfile(user)` — Asynchronously fetches the user's profile row from the DB. Implements exponential backoff (up to 5 retries starting at 300ms) to bypass database replication or trigger delays upon new user registration.
 - `logout()` — Signs the current user out of Supabase and reloads the page.
 - `showAuthModal(type)` — Opens the generic modal configured for either 'login' or 'register'.
 
-### `CommentsManager` (User Interaction)
+### `CommentsManager` (User Interaction - `js/comments.js`)
 - `init()` — Initializes the comments drawer UI bindings.
 - `loadComments(targetId, targetType)` — Fetches comments linked to a specific entity (like a chapter or story).
 - `renderComments(comments)` — Generates the HTML for the comments list.
@@ -44,7 +46,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `toggleUpvote(commentId)` — Toggles the like status on a comment for the active user.
 - `toggleCommentDrawer()` — Opens or closes the sliding comments side panel.
 
-### `UI` (Interface Helpers)
+### `UI` (Interface Helpers - `js/ui.js`)
 - `showLoading() / hideLoading()` — Proxies to `LoaderManager` to control the global full-screen transition overlay.
 - `openSaberModal() / closeSaberModal()` — Controls the lightsaber preferences modal.
 - `toast(message, type, duration)` — Displays a temporary notification popup (success, error, info).
@@ -56,13 +58,13 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 - `initAuthLink(userProfile)` â€” Renders the far-right header auth slot as either a sign-in button or the current reader avatar/profile trigger.
 
-### `LoaderManager` (Modular Transition Orchestrator)
+### `LoaderManager` (Modular Transition Orchestrator - `js/ui.js`)
 - `determineRequiredLoader()` — Resolves the appropriate overlay module key (e.g., `'primary'` monogram loader or standard `'lightsaber'`) based on cold start states or specific story metadata values.
 - `show()` — Asynchronously imports, mounts, and initiates the resolved visual loading system, ensuring a fallback defaults to the lightsaber if an error occurs.
 - `hide()` — Invokes the target loading system's cleanup or exit hooks.
 - `playOutro()` — Triggers custom exit animation routines on the active module when loading completes.
 
-### `SaberController` (Lightsaber Loading Widget)
+### `SaberController` (Lightsaber Loading Widget - `js/ui.js`)
 - `animateProgressTo(target, duration, onComplete)` - Defensively parses widget progress and guards `getProgress` / `setProgress` calls so malformed saber state cannot crash the animation loop before `onComplete()` runs.
 - `hideLoading()` - Also wraps widget `hide()` and reset progress calls so loader teardown still finishes even if the saber widget misbehaves.
 - `init()` — Dynamically imports and initializes the lightsaber widget logic, applying either the default or saved loader mode, hiding the separate progress bar overlay, and seeding its illumination backdrop from the current reader background image.
@@ -71,20 +73,20 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 - `hideLoading()` — Smoothly finishes the last stretch to `100%`, briefly holds the completed frame, then fades out the overlay before resetting progress off-screen for the next transition.
 
-### `AnomalyLoader` (Modular SCP Anomaly Loader)
+### `AnomalyLoader` (Modular SCP Anomaly Loader - `js/ui.js`)
 - `inject()` — Dynamically inserts scoped CRT scanline overrides, Courier Prime fonts, terminal status logs, and decryption progress indicators directly to `document.body` on demand.
 - `show(pattern)` — Configures and launches a responsive canvas-based procedural walker engine (supporting `'flesh'`, `'hex'`, `'cyber'`, `'kinetic'`, or `'crystal'` patterns) and increments a simulated terminal breach progress bar.
 - `hide()` — Fades out and pauses the active requestAnimationFrame particle rendering loops.
 - `playOutro()` — Runs a visual fade out routine and purges elements from the DOM after the route renders.
 
-### `MapHub` (Registry Discovery Screen)
+### `MapHub` (Registry Discovery Screen - `js/maps/MapHub.js`)
 - `render(maps, slug, themeColor, counts)` — Prepares and renders the full grid-based map registry screen, segmented by galactic, regional, and local categories.
 - `renderSection(typeKey, maps, slug, counts)` — Renders an individual category registry row with count badges.
 - `renderCard(map, slug, counts)` — Renders a sleek card for each map displaying visual thumbnails and charted stats.
 - `init()` — Binds input events to the registry search bar.
 - `onSearch(e)` — Filters displayed maps and hides empty sections in real-time as users type.
 
-### `MapViewer` (Interactive Map & Routing)
+### `MapViewer` (Interactive Map & Routing - `js/maps/MapViewer.js`)
 - `MinPriorityQueue` — Lightweight binary heap class providing `enqueue`, `dequeue`, and `isEmpty` methods for the pathfinding engine.
 - `init()` - Initializes the transform-based panning/zooming engine for a specific Supabase map record, resetting route state, clearing stale overlays, and setting up the SVG/HTML overlay containers.
 - `onPointerDown(e)` / `onPointerMove(e)` / `onPointerUp(e)` — Input callbacks implementing unified mouse and touch dragging via standard Pointer Events.
@@ -123,12 +125,12 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `hideCrossMapHint(hintId)` — Hides the cross-map hint for the specified field.
 - `switchToMap(mapId)` — Switches active map in the viewer to the specified mapId using Router.navigate.
 
-### `Particles` (Background Engine)
+### `Particles` (Background Engine - `js/ui.js`)
 - `init()` — Sets up the HTML5 Canvas, spawns particles, and registers `visibilitychange` listener for pause/resume.
 - `animate()` — The `requestAnimationFrame` loop. Checks `_paused` flag before rendering. Stores rAF ID for cancellation.
 - `resize()` — Handles window resize events to keep the canvas covering the screen.
 
-### `Actions` (Gallery & General Operations)
+### `Actions` (Gallery & General Operations - `js/ui.js`)
 - `renderGalleryGrid(shuffle)` — Renders character gallery images under either standard grid or premium fanning Card Deck View modes. Implements strict R18 filters when disabled.
 - `toggleViewMode()` — Toggles the character gallery between column-based Grid View and stacked/fanning Card Deck View modes, saving the choice in local storage.
 - `toggleR18()` — Toggles strict R18 content filtering on or off, updating the layout state dynamically and persisting preference.
