@@ -1842,7 +1842,7 @@
 
             // STORY FORM
             storyForm: async (id = null) => {
-                let story = { title: '', slug: '', short_description: '', synopsis: '', genre: '', status: '', cover_image_url: '', background_image_url: '', theme_color: '#ffd700', world_title: '', is_published: false };
+                let story = { title: '', slug: '', short_description: '', synopsis: '', genre: '', status: '', cover_image_url: '', background_image_url: '', theme_color: '#ffd700', world_title: '', is_published: false, loader_theme: 'lightsaber' };
                 
                 if (id) {
                     story = await DB.getStory(id) || story;
@@ -1885,9 +1885,21 @@
                             <input type="color" class="form-input" id="f-theme_color" value="${story.theme_color || '#ffd700'}" style="height:45px">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">World Title (for encyclopedia)</label>
-                            <input type="text" class="form-input" id="f-world_title" value="${story.world_title || ''}">
+                            <label class="form-label">Loader Theme</label>
+                            <select class="form-input" id="f-loader_theme" style="height:45px; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 4px; padding: 0 10px;">
+                                <option value="lightsaber" ${(story.loader_theme || 'lightsaber') === 'lightsaber' ? 'selected' : ''}>Lightsaber (Default)</option>
+                                <option value="primary" ${story.loader_theme === 'primary' ? 'selected' : ''}>Primary Monogram</option>
+                                <option value="anomaly_flesh" ${story.loader_theme === 'anomaly_flesh' ? 'selected' : ''}>SCP-610: Sarkic Tendrils (Organic)</option>
+                                <option value="anomaly_hex" ${story.loader_theme === 'anomaly_hex' ? 'selected' : ''}>SCP-3333: Hex-Lattice Trace (Geometric)</option>
+                                <option value="anomaly_cyber" ${story.loader_theme === 'anomaly_cyber' ? 'selected' : ''}>SCP-079: Data Corruption (Circuit)</option>
+                                <option value="anomaly_kinetic" ${story.loader_theme === 'anomaly_kinetic' ? 'selected' : ''}>SCP-018: Kinetic Outbreak (Vector Bounces)</option>
+                                <option value="anomaly_crystal" ${story.loader_theme === 'anomaly_crystal' ? 'selected' : ''}>SCP-2787: Non-Euclidean Grid (Crystalline)</option>
+                            </select>
                         </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">World Title (for encyclopedia)</label>
+                        <input type="text" class="form-input" id="f-world_title" value="${story.world_title || ''}">
                     </div>
                     <div class="form-group">
                         <label class="form-checkbox">
@@ -1935,6 +1947,7 @@
                         cover_image_url: coverUrl,
                         background_image_url: bgUrl,
                         theme_color: document.getElementById('f-theme_color').value,
+                        loader_theme: document.getElementById('f-loader_theme').value,
                         world_title: document.getElementById('f-world_title').value,
                         is_published: document.getElementById('f-is_published').checked
                     };

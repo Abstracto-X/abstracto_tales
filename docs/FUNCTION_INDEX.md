@@ -45,7 +45,7 @@ A comprehensive, categorized index of all meaningful functions across the `index
 - `toggleCommentDrawer()` — Opens or closes the sliding comments side panel.
 
 ### `UI` (Interface Helpers)
-- `showLoading() / hideLoading()` — Proxies to `SaberController` to control the global full-screen lightsaber transition overlay.
+- `showLoading() / hideLoading()` — Proxies to `LoaderManager` to control the global full-screen transition overlay.
 - `openSaberModal() / closeSaberModal()` — Controls the lightsaber preferences modal.
 - `toast(message, type, duration)` — Displays a temporary notification popup (success, error, info).
 - `applyCustomColors(settings)` - Injects CSS variables into the `:root` to theme the site dynamically.
@@ -56,6 +56,12 @@ A comprehensive, categorized index of all meaningful functions across the `index
 
 - `initAuthLink(userProfile)` â€” Renders the far-right header auth slot as either a sign-in button or the current reader avatar/profile trigger.
 
+### `LoaderManager` (Modular Transition Orchestrator)
+- `determineRequiredLoader()` — Resolves the appropriate overlay module key (e.g., `'primary'` monogram loader or standard `'lightsaber'`) based on cold start states or specific story metadata values.
+- `show()` — Asynchronously imports, mounts, and initiates the resolved visual loading system, ensuring a fallback defaults to the lightsaber if an error occurs.
+- `hide()` — Invokes the target loading system's cleanup or exit hooks.
+- `playOutro()` — Triggers custom exit animation routines on the active module when loading completes.
+
 ### `SaberController` (Lightsaber Loading Widget)
 - `animateProgressTo(target, duration, onComplete)` - Defensively parses widget progress and guards `getProgress` / `setProgress` calls so malformed saber state cannot crash the animation loop before `onComplete()` runs.
 - `hideLoading()` - Also wraps widget `hide()` and reset progress calls so loader teardown still finishes even if the saber widget misbehaves.
@@ -64,6 +70,12 @@ A comprehensive, categorized index of all meaningful functions across the `index
 -`showLoading()` — Activates the overlay, syncs the current background image and responsive blade length into the widget, and runs a smooth `requestAnimationFrame`-driven sweep toward the near-complete state while the saber widget brightens the full viewport and concentrates extra glow at the emitter, blade body, and tip.
 
 - `hideLoading()` — Smoothly finishes the last stretch to `100%`, briefly holds the completed frame, then fades out the overlay before resetting progress off-screen for the next transition.
+
+### `AnomalyLoader` (Modular SCP Anomaly Loader)
+- `inject()` — Dynamically inserts scoped CRT scanline overrides, Courier Prime fonts, terminal status logs, and decryption progress indicators directly to `document.body` on demand.
+- `show(pattern)` — Configures and launches a responsive canvas-based procedural walker engine (supporting `'flesh'`, `'hex'`, `'cyber'`, `'kinetic'`, or `'crystal'` patterns) and increments a simulated terminal breach progress bar.
+- `hide()` — Fades out and pauses the active requestAnimationFrame particle rendering loops.
+- `playOutro()` — Runs a visual fade out routine and purges elements from the DOM after the route renders.
 
 ### `MapHub` (Registry Discovery Screen)
 - `render(maps, slug, themeColor, counts)` — Prepares and renders the full grid-based map registry screen, segmented by galactic, regional, and local categories.

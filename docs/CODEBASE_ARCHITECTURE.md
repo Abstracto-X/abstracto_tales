@@ -28,6 +28,7 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
     - `_pendingNavigationTimer` *(Number | null)* — Timeout handle for the delayed hash transition used by the fade animation, allowing same-route and rapid navigation cleanup.
 - `CommentsManager` *(Object)* — Manages state for the comments drawer/panel.
 - `UI` *(Object)* — Handles global UI state like toasts and loading spinners.
+- `LoaderManager` *(Object)* — Unified modular loading orchestrator. Tracks `activeLoaderId` and `activeLoader`, maintains a registry of dynamic loader modules, and decides whether to load/execute the monogram cinematic (`'primary'`) or standard lightsaber loading sequence (`'lightsaber'`) depending on initial load state and specific story settings.
 - `State.isInitialAppLoad` *(Boolean)* — Tracks whether the application is performing its initial cold load, letting the primary cinematic loader coordinate the intro overlay instead of the default lightsaber loading states.
 - `State.galleryConfirmed` *(Boolean)* — Tracks whether the user has viewed and accepted the Mature Content and AI advisory warning overlay for the gallery, preserving the choice for the current session.
 - `State.galleryViewMode` *(String)* — Tracks whether the active character gallery is displayed in standard column `'grid'` or premium fanning `'deck'` view modes, persisted to `localStorage`.
@@ -112,14 +113,14 @@ A collaborative map editing SPA where users with the `cartographer` or `admin` r
 
 ### `index.html`
 1. **`DOMContentLoaded` Event Listener:**
-   - Immediately imports and executes the dynamic `PrimaryLoader` sequence (`PrimaryLoader.inject()`) to cover the viewport with a premium cinematic intro during first cold load.
+   - Immediately triggers `LoaderManager.show()`, which resolves the correct loading system (`'primary'` monogram loader for first cold load) and overlays it over the viewport.
    - Initializes `Router` to set up hash change listeners.
    - `SaberController.init()` bootstraps the centered vertical lightsaber transition overlay before route rendering begins so loading states can mirror the live reader background without the separate progress bar overlay.
    - `UserAuth.init()` sets up the auth listener, checks existing session via `supabase.auth.getSession()`, fetching profile if needed, overriding default nav based on role.
    - Global `DB.getSettings()` call applies custom CSS variables from the backend.
    - Global `DB.getWallpapers()` call checks for custom main background.
     - `Particles.init()` starts the dynamic background canvas.
-    - `Router.handle()` executes the initial route (e.g., `#home`), with same-route re-renders, guarded completion, and defensive loader teardown so failed or stale async work cannot leave the reader stage blank or trapped beneath a stuck lightsaber overlay. On initial load, the completion of this routing cycle triggers `PrimaryLoader.playOutro()` to transition smoothly into the active home view.
+    - `Router.handle()` executes the initial route (e.g., `#home`), with same-route re-renders, guarded completion, and defensive loader teardown so failed or stale async work cannot leave the reader stage blank or trapped beneath a stuck lightsaber overlay. On initial load, the completion of this routing cycle triggers `LoaderManager.playOutro()` to transition smoothly into the active home view.
     - **Map Initialization:** When the maps view is rendered, `Render.maps()` passes the selected map row's `id`, image URL, and coordinate dimensions into `MapViewer.init()`, after which `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` for that specific `map_id`.
 2. **Reader Header Chrome:**
    - The top-right header controls combine utility shortcuts (saber settings, wallpaper/audio toggles, admin shortcut when applicable), a static contributor badge with a hover/focus popover crediting the Vesper collaboration, and the auth/profile slot managed by `UI.initAuthLink()`.

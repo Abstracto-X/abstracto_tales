@@ -180,6 +180,28 @@ export const PrimaryLoader = {
         document.body.appendChild(div);
     },
 
+    show: () => {
+        let loader = document.getElementById('loader');
+        if (!loader) {
+            PrimaryLoader.inject();
+            loader = document.getElementById('loader');
+        }
+        loader.classList.remove('hide');
+        const bar = loader.querySelector('.loading-bar');
+        if (bar) {
+            bar.style.animation = 'none';
+            void bar.offsetWidth; // trigger reflow
+            bar.style.animation = '';
+        }
+    },
+
+    hide: () => {
+        const loader = document.getElementById('loader');
+        if (loader) {
+            loader.classList.add('hide');
+        }
+    },
+
     playOutro: () => {
         const loader = document.getElementById('loader');
         if (!loader) return;

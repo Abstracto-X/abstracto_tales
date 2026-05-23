@@ -102,6 +102,7 @@ Top-level story/series entries.
 | `cover_image_url` | TEXT | From `covers` storage bucket |
 | `background_image_url` | TEXT | From `backgrounds` storage bucket |
 | `theme_color` | TEXT | Hex color, default `'#ffd700'` |
+| `loader_theme` | TEXT | Custom loader theme (e.g. `'lightsaber'`, `'primary'`, `'anomaly_flesh'`, `'anomaly_hex'`, `'anomaly_cyber'`, `'anomaly_kinetic'`, `'anomaly_crystal'`), default `'lightsaber'` |
 | `world_title` | TEXT | Name of the story's world |
 | `sort_order` | INTEGER | Default 0 |
 | `is_published` | BOOLEAN | Default FALSE. Controls public visibility |

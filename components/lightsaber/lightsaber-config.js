@@ -3,7 +3,7 @@ export const HILT_SVG_PATHS = {
   luke: 'components/lightsaber/lightsabers/luke.svg',
   maul: 'components/lightsaber/lightsabers/maul.svg',
   crossguard: 'components/lightsaber/lightsabers/crossguard.svg',
-  kylo_ren: 'components/lightsaber/lightsabers/kylo_ren.svg',
+  // kylo_ren: 'components/lightsaber/lightsabers/kylo_ren.svg',
 };
 
 export const HILT_CONFIGS = {
