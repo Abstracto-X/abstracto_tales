@@ -35,6 +35,20 @@ export const Router = {
     
     handle: () => {
         const routeToken = ++Router._activeRouteToken;
+        const stage = document.getElementById('content-stage');
+        const finishRoute = (loaderAction = 'outro') => {
+            if (routeToken !== Router._activeRouteToken) return;
+
+            if (loaderAction === 'hide') {
+                LoaderManager.hide();
+            } else {
+                LoaderManager.playOutro();
+            }
+
+            if (!stage) return;
+            stage.scrollTop = 0;
+            stage.style.opacity = '1';
+        };
         
         // Clear the loader theme overrides upon switching views
         document.body.classList.remove('home-active');
@@ -63,11 +77,11 @@ export const Router = {
         const view = parts[0];
         const id = parts[1];
         const subId = parts[2];
-        const stage = document.getElementById('content-stage');
         
         // Intercept gallery route if content disclaimer not yet accepted
         if (view === 'gallery' && !State.galleryConfirmed && sessionStorage.getItem('gallery_confirmed') !== 'true') {
             UI.showGalleryWarning(id);
+            setTimeout(() => finishRoute('outro'), 0);
             return;
         }
         
@@ -85,20 +99,13 @@ export const Router = {
             else await Render.home();
         })().then(() => {
             setTimeout(() => {
-                if (routeToken !== Router._activeRouteToken) return;
-                
-                LoaderManager.playOutro();
-
-                if (!stage) return;
-                stage.scrollTop = 0;
-                // Fade the new content back in
-                stage.style.opacity = '1';
+                finishRoute('outro');
             }, 800);
         }).catch((err) => {
             console.error('Router rendering failed:', err);
             setTimeout(() => {
                 if (routeToken !== Router._activeRouteToken) return;
-                LoaderManager.hide();
+                finishRoute('hide');
                 if (!stage) return;
                 stage.stage = document.getElementById('content-stage');
                 stage.innerHTML = `<div style="text-align:center; padding: 4rem; color: var(--danger-color); font-family: var(--font-header);">
@@ -107,8 +114,6 @@ export const Router = {
                     <p style="font-size: 0.8rem; font-family: var(--font-ui); color: #888; margin-top: 0.5rem;">${err.message}</p>
                     <button class="btn-large" style="margin: 2rem auto 0;" onclick="window.location.reload()">Reload Archives</button>
                 </div>`;
-                stage.scrollTop = 0;
-                stage.style.opacity = '1';
             }, 800);
         });
     }

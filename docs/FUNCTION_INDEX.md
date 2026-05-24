@@ -10,6 +10,7 @@ The functions and components of the public reader SPA are now fully modularized 
 
 ### `Router` (Navigation & Views - `js/router.js`)
 - `handle()` - Also wraps `UI.hideLoading()` in both success and error completion paths so stage fade-in still completes if the saber widget throws during teardown.
+- `handle()` - Also tears down the cold-start loader when the gallery advisory modal intercepts routing before any gallery render work begins.
 - `handle()` — Reads the current window hash and dispatches to the correct view renderer, now guarding route completions so stale or failed renders cannot leave the stage hidden or loader stuck.
 - `navigate(path)` — Programmatically changes the URL hash and triggers a route update, short-circuiting same-route clicks into a safe re-render instead of waiting on a `hashchange` that will never fire.
 - `getParts()` — Helper to break down the hash into view and ID parameters (e.g., `#story/123`).
