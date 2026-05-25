@@ -670,6 +670,7 @@ export const UI = {
 export const LoaderManager = {
     activeLoaderId: null,
     activeLoader: null,
+    _IMPORT_TIMEOUT_MS: 5000,
     registry: {
         'primary': {
             path: '../components/primary_loader/primary_loader.js',
@@ -701,6 +702,22 @@ export const LoaderManager = {
             pattern: 'crystal'
         },
         'lightsaber': 'inline'
+    },
+
+    withTimeout: (promise, message) => {
+        let timerId;
+        const timeout = new Promise((_, reject) => {
+            timerId = setTimeout(() => reject(new Error(message)), LoaderManager._IMPORT_TIMEOUT_MS);
+        });
+
+        return Promise.race([promise, timeout]).finally(() => clearTimeout(timerId));
+    },
+
+    clearPrimaryLoader: () => {
+        const loader = document.getElementById('loader');
+        if (!loader) return;
+        loader.classList.add('hide');
+        setTimeout(() => loader.remove(), 1500);
     },
 
     determineRequiredLoader: () => {
@@ -736,7 +753,10 @@ export const LoaderManager = {
             const config = LoaderManager.registry[loaderId];
             if (config && config.path) {
                 try {
-                    const module = await import(config.path);
+                    const module = await LoaderManager.withTimeout(
+                        import(config.path),
+                        `Timed out loading loader theme "${loaderId}".`
+                    );
                     const loaderObj = module[config.className] || module.default;
                     LoaderManager.activeLoader = loaderObj;
 
@@ -765,6 +785,8 @@ export const LoaderManager = {
 
         if (LoaderManager.activeLoaderId === 'lightsaber') {
             SaberController.hideLoading();
+        } else if (LoaderManager.activeLoaderId === 'primary' && !LoaderManager.activeLoader) {
+            LoaderManager.clearPrimaryLoader();
         } else if (LoaderManager.activeLoader && typeof LoaderManager.activeLoader.hide === 'function') {
             LoaderManager.activeLoader.hide();
         }
@@ -776,6 +798,8 @@ export const LoaderManager = {
         if (LoaderManager.activeLoaderId === 'primary') {
             if (LoaderManager.activeLoader && typeof LoaderManager.activeLoader.playOutro === 'function') {
                 LoaderManager.activeLoader.playOutro();
+            } else {
+                LoaderManager.clearPrimaryLoader();
             }
         } else if (LoaderManager.activeLoaderId === 'lightsaber') {
             SaberController.hideLoading();
@@ -794,7 +818,36 @@ export const Actions = {
     currentGalleryImages: [],
     votesCache: {}, // { imageId: { score: 0, userVote: 0 } }
     filteredImages: [],
+    latestGalleryImages: [],
     isLoadingMore: false,
+    isMatureTag: (tag) => {
+        const lower = String(tag || '').toLowerCase();
+        return lower === 'r18' || lower === 'mature' || lower === 'nsfw' || lower === 'suggestive';
+    },
+    isMatureImage: (image) => {
+        if (!image || !Array.isArray(image.image_tags)) return false;
+        return image.image_tags.some(tag => Actions.isMatureTag(tag));
+    },
+    processGalleryImages: (images) => {
+        let processed = Array.isArray(images) ? [...images] : [];
+
+        if (!State.showR18) {
+            return processed.filter(image => !Actions.isMatureImage(image));
+        }
+
+        processed.sort((a, b) => Number(Actions.isMatureImage(b)) - Number(Actions.isMatureImage(a)));
+        return processed;
+    },
+    updateR18ToggleButtons: () => {
+        const toggleButtons = document.querySelectorAll('[data-gallery-r18-toggle]');
+        toggleButtons.forEach((btn) => {
+            btn.style.borderColor = State.showR18 ? 'var(--danger-color)' : '';
+            btn.style.color = State.showR18 ? 'var(--danger-color)' : '';
+            btn.innerHTML = State.showR18
+                ? `<i class="fas fa-fire"></i> <span>R18 On</span>`
+                : `<i class="fas fa-eye-slash"></i> <span>R18 Off</span>`;
+        });
+    },
     
     fetchVotes: async () => {
         if(Actions.currentGalleryImages.length === 0) return;
@@ -892,20 +945,55 @@ export const Actions = {
         }
     },
     
+    renderLatestGalleryGrid: () => {
+        const grid = document.getElementById('latest-gallery-grid');
+        if (!grid) return;
+
+        const displayedImages = Actions.processGalleryImages(Actions.latestGalleryImages);
+        Actions.currentGalleryImages = displayedImages;
+        grid.innerHTML = '';
+
+        if (displayedImages.length === 0) {
+            grid.innerHTML = `
+                <div class="glass-box" style="padding:1rem 1.25rem; text-align:center; color:#aaa;">
+                    ${Actions.latestGalleryImages.length > 0
+                        ? 'No recent images are visible with R18 hidden right now.'
+                        : 'No recent images yet.'}
+                </div>
+            `;
+            return;
+        }
+
+        const colCount = window.innerWidth <= 768 ? 2 : 3;
+        const columns = Array.from({ length: colCount }, () => {
+            const column = document.createElement('div');
+            column.className = 'flex-masonry-col';
+            return column;
+        });
+
+        displayedImages.forEach((image, idx) => {
+            const cache = Actions.votesCache[image.id] || { score: 0, userVote: 0 };
+            const card = document.createElement('div');
+            card.className = 'gallery-item';
+            card.style.position = 'relative';
+            card.innerHTML = `
+                <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5; pointer-events: none;">${image.characters?.name || 'Unknown'}</div>
+                <img src="${image.image_url}" loading="lazy" onclick="window.Visuals.openGalleryLightbox(${idx}, window.Actions.currentGalleryImages)">
+                <div class="image-vote-container" onclick="event.stopPropagation()">
+                    <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="window.Actions.voteImage('${image.id}', 1)"><i class="fas fa-arrow-up"></i></button>
+                    <span class="vote-score" id="vote-score-${image.id}">${cache.score}</span>
+                    <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="window.Actions.voteImage('${image.id}', -1)"><i class="fas fa-arrow-down"></i></button>
+                </div>
+            `;
+            columns[idx % colCount].appendChild(card);
+        });
+
+        columns.forEach((column) => grid.appendChild(column));
+    },
+
     // Chunked gallery rendering via requestIdleCallback to avoid long tasks
     renderGalleryGrid: (shuffle = false) => {
-        let imgs = [...Actions.currentGalleryImages];
-        
-        // Strict R18 filtering
-        if (!State.showR18) {
-            imgs = imgs.filter(i => {
-                if (!i.image_tags) return true;
-                return !i.image_tags.some(t => {
-                    const lower = t.toLowerCase();
-                    return lower === 'r18' || lower === 'mature' || lower === 'nsfw' || lower === 'suggestive';
-                });
-            });
-        }
+        let imgs = Actions.processGalleryImages(Actions.currentGalleryImages);
 
         if (State.filterTag !== 'All') {
             imgs = imgs.filter(i => i.image_tags && i.image_tags.includes(State.filterTag));
@@ -1141,21 +1229,16 @@ export const Actions = {
         const newValue = !State.showR18;
         State.showR18 = newValue;
         localStorage.setItem('show_r18', newValue ? 'true' : 'false');
-        
-        const btn = document.getElementById('pref-r18-toggle');
-        if (btn) {
-            if (newValue) {
-                btn.style.borderColor = 'var(--danger-color)';
-                btn.style.color = 'var(--danger-color)';
-                btn.innerHTML = `<i class="fas fa-exclamation-circle"></i> <span>Strict: R18 On</span>`;
-            } else {
-                btn.style.borderColor = '';
-                btn.style.color = '';
-                btn.innerHTML = `<i class="fas fa-eye-slash"></i> <span>Strict: R18 Off</span>`;
-            }
+
+        Actions.updateR18ToggleButtons();
+
+        if (document.getElementById('latest-gallery-grid')) {
+            Actions.renderLatestGalleryGrid();
         }
-        
-        Actions.renderGalleryGrid();
+
+        if (document.getElementById('gallery-grid')) {
+            Actions.renderGalleryGrid();
+        }
     },
     setFilter: (t) => { State.filterTag = t; Actions.renderGalleryGrid(); },
     shuffleGallery: () => Actions.renderGalleryGrid(true),
@@ -1178,29 +1261,7 @@ export const Actions = {
         Actions.latestGalleryImages = Actions.latestGalleryImages.concat(newImages);
         Actions.currentGalleryImages = Actions.latestGalleryImages;
         await Actions.fetchVotes(); // Re-fetch votes for the new set
-        
-        const grid = document.getElementById('latest-gallery-grid');
-        if (grid) {
-            const columns = grid.querySelectorAll('.flex-masonry-col');
-            const colCount = columns.length;
-            newImages.forEach((i, idx) => {
-                const globalIdx = offset + idx;
-                const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
-                const div = document.createElement('div');
-                div.className = 'gallery-item';
-                div.style.position = 'relative';
-                div.innerHTML = `
-                    <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5; pointer-events: none;">${i.characters?.name || 'Unknown'}</div>
-                    <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${globalIdx}, Actions.latestGalleryImages)">
-                    <div class="image-vote-container" onclick="event.stopPropagation()">
-                        <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
-                        <span class="vote-score" id="vote-score-${i.id}">${cache.score}</span>
-                        <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
-                    </div>
-                `;
-                columns[idx % colCount].appendChild(div);
-            });
-        }
+        Actions.renderLatestGalleryGrid();
         
         if (newImages.length < 10) {
             if (btn) btn.style.display = 'none';

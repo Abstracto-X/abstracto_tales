@@ -9,7 +9,16 @@ import { MapViewer } from './maps/MapViewer.js';
 export const Router = {
     _activeRouteToken: 0,
     _pendingNavigationTimer: null,
+    _ROUTE_TIMEOUT_MS: 15000,
     getParts: () => (window.location.hash.slice(1) || 'home').split('/'),
+    withTimeout: (promise, message) => {
+        let timerId;
+        const timeout = new Promise((_, reject) => {
+            timerId = setTimeout(() => reject(new Error(message)), Router._ROUTE_TIMEOUT_MS);
+        });
+
+        return Promise.race([promise, timeout]).finally(() => clearTimeout(timerId));
+    },
     
     navigate: (h) => {
         const nextRoute = (h || 'home').replace(/^#/, '') || 'home';
@@ -50,28 +59,32 @@ export const Router = {
             stage.style.opacity = '1';
         };
         
-        // Clear the loader theme overrides upon switching views
-        document.body.classList.remove('home-active');
-        
-        CommentsManager.closeDrawer();
-        const globalBtn = document.getElementById('global-comment-btn');
-        if (globalBtn) globalBtn.style.display = 'none';
+        try {
+            // Clear loader/theme overrides and transient UI before switching views.
+            document.body.classList.remove('home-active');
+            
+            CommentsManager.closeDrawer();
+            const globalBtn = document.getElementById('global-comment-btn');
+            if (globalBtn) globalBtn.style.display = 'none';
 
-        Visuals.closeLightbox();
-        document.getElementById('wp-modal').style.display = 'none';
-        
-        if (MapViewer.destroy) MapViewer.destroy();
+            Visuals.closeLightbox();
+            const wallpaperModal = document.getElementById('wp-modal');
+            if (wallpaperModal) wallpaperModal.style.display = 'none';
+            
+            if (MapViewer.destroy) MapViewer.destroy();
 
-        // Clean up transient state on route change
-        Actions.currentGalleryImages = [];
-        Actions.votesCache = {};
-        
-        const sb = document.querySelector('.reader-sidebar');
-        if(sb) sb.classList.remove('active');
-        const bd = document.querySelector('.sidebar-backdrop');
-        if(bd) bd.classList.remove('active');
-        
-        document.body.classList.remove('focus-active');
+            Actions.currentGalleryImages = [];
+            Actions.votesCache = {};
+            
+            const sb = document.querySelector('.reader-sidebar');
+            if(sb) sb.classList.remove('active');
+            const bd = document.querySelector('.sidebar-backdrop');
+            if(bd) bd.classList.remove('active');
+            
+            document.body.classList.remove('focus-active');
+        } catch (err) {
+            console.error('Router cleanup failed:', err);
+        }
 
         const parts = Router.getParts();
         const view = parts[0];
@@ -85,7 +98,7 @@ export const Router = {
             return;
         }
         
-        (async () => {
+        const renderRoute = (async () => {
             if (view === 'home') await Render.home();
             else if (view === 'story') await Render.storyHub(id);
             else if (view === 'read') await Render.reader(id, parseInt(subId) || 0);
@@ -97,7 +110,9 @@ export const Router = {
             else if (view === 'timeline') await Render.timeline(id);
             else if (view === 'maps') await Render.maps(id, subId);
             else await Render.home();
-        })().then(() => {
+        })();
+
+        Router.withTimeout(renderRoute, 'The archive request timed out. Please check your connection and try again.').then(() => {
             setTimeout(() => {
                 finishRoute('outro');
             }, 800);

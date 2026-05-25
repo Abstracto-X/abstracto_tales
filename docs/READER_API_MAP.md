@@ -43,7 +43,7 @@ State fields:
 - `filterTag: string` - Active gallery filter tag.
 - `galleryConfirmed: boolean` - Mature-content gate confirmation flag.
 - `galleryViewMode: string` - Gallery layout preference restored from `localStorage`.
-- `showR18: boolean` - NSFW visibility preference restored from `localStorage`.
+- `showR18: boolean` - Gallery R18 visibility preference restored from `localStorage`; when `true`, gallery views reveal artwork tagged `R18`, `NSFW`, `mature`, or `suggestive` and prioritize those images first.
 
 #### `default_behavior_lightsaber`
 - Type: `string`

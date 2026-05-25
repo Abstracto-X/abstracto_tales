@@ -43,17 +43,42 @@ window.Router = Router;
 window.addEventListener('hashchange', Router.handle);
 
 window.addEventListener('DOMContentLoaded', async () => { 
-    // 1. Instantly display the active loading system (Primary cinematic loader for cold start)
-    await LoaderManager.show();
+    let didStartRouter = false;
+    const startRouterOnce = () => {
+        if (didStartRouter) return;
+        didStartRouter = true;
+        Router.handle();
+    };
 
-    // 2. Init rest of the app in parallel
-    await SaberController.init();
+    const startupWatchdog = setTimeout(() => {
+        console.warn('Reader startup watchdog released the router.');
+        startRouterOnce();
+    }, 6000);
+
+    try {
+        // 1. Instantly display the active loading system (Primary cinematic loader for cold start)
+        await LoaderManager.show();
+    } catch (err) {
+        console.error('Initial loader failed:', err);
+    }
+
+    try {
+        // 2. Init rest of the app without letting cosmetic loaders block routing
+        await SaberController.init();
+    } catch (err) {
+        console.error('Saber initialization failed:', err);
+    }
     
     // Non-blocking prefetcher — cosmetic data should not block critical path
-    LorePrefetcher.init(); // fire-and-forget (no await)
+    LorePrefetcher.init().catch(err => console.error('Lore prefetch failed:', err)); // fire-and-forget
     
-    UserAuth.init();
-    Router.handle(); 
+    UserAuth.init().catch(err => {
+        console.error('Reader auth initialization failed:', err);
+        UI.initAuthLink(null);
+        UI.initAdminLink();
+    });
+    clearTimeout(startupWatchdog);
+    startRouterOnce(); 
     Visuals.initDynamicTransparency(); 
     Particles.init();
     AudioController.init();

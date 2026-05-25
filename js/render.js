@@ -148,12 +148,22 @@ export const Render = {
 
         const characters = hubData.characters;
         State.currentChars = characters;
+        const galleryHeaderHtml = (title, subtitle) => `
+            <div class="glass-box" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; padding:1rem 1.25rem;">
+                <div>
+                    <div style="font-family:var(--font-header); font-size:1.25rem; color:var(--accent-color); letter-spacing:1px;">${title}</div>
+                    <div style="font-size:0.85rem; color:#aaa; margin-top:0.25rem;">${subtitle}</div>
+                </div>
+                <div class="btn-large" data-gallery-r18-toggle style="padding: 0.45rem 1rem; font-size: 0.75rem; border-radius: 999px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="window.Actions.toggleR18()"></div>
+            </div>
+        `;
         
         if (!charId) {
             // Character grid view
             UI.setBackButton(`window.Router.navigate('story/${slug}')`, "Story Hub");
             
-            let html = '<h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Characters</h2>';
+            let html = galleryHeaderHtml('Gallery', 'Toggle R18 to reveal mature artwork and float it to the front of the gallery.');
+            html += '<h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Characters</h2>';
             html += '<div class="char-grid" style="margin-bottom: 3rem;">';
             characters.forEach((c, idx) => { 
                 const loadAttr = idx < 6 ? '' : 'loading="lazy"';
@@ -171,16 +181,7 @@ export const Render = {
             });
             html += '</div>';
             // Fetch and append Latest Images below Characters
-            let latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
-            if (!State.showR18) {
-                latestImages = latestImages.filter(i => {
-                    if (!i.image_tags) return true;
-                    return !i.image_tags.some(t => {
-                        const lower = t.toLowerCase();
-                        return lower === 'r18' || lower === 'mature' || lower === 'nsfw' || lower === 'suggestive';
-                    });
-                });
-            }
+            const latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
             Actions.latestGalleryImages = latestImages;
             Actions.currentGalleryImages = latestImages;
             await Actions.fetchVotes();
@@ -189,36 +190,15 @@ export const Render = {
                 html += `
                     <div style="margin-bottom: 2rem;">
                         <h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Recently Added</h2>
-                        <div class="flex-masonry" id="latest-gallery-grid">
-                `;
-                const colCount = window.innerWidth <= 768 ? 2 : 3;
-                const columnsHtml = Array(colCount).fill('');
-                latestImages.forEach((i, idx) => {
-                    const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
-                    const colIdx = idx % colCount;
-                    columnsHtml[colIdx] += `
-                            <div class="gallery-item" style="position: relative;">
-                                <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5; pointer-events: none;">${i.characters?.name || 'Unknown'}</div>
-                                <img src="${i.image_url}" loading="lazy" onclick="window.Visuals.openGalleryLightbox(${idx}, window.Actions.latestGalleryImages)">
-                                <div class="image-vote-container" onclick="event.stopPropagation()">
-                                    <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="window.Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
-                                    <span class="vote-score" id="vote-score-${i.id}">${cache.score}</span>
-                                    <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="window.Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
-                                </div>
-                            </div>
-                    `;
-                });
-                columnsHtml.forEach(cHtml => {
-                    html += `<div class="flex-masonry-col">${cHtml}</div>`;
-                });
-                html += `
-                        </div>
+                        <div class="flex-masonry" id="latest-gallery-grid"></div>
                         ${latestImages.length === 10 ? `<div style="text-align: center; margin-top: 1rem;"><button id="load-more-latest-btn" class="btn-large" onclick="window.Actions.loadMoreLatestImages('${story.id}')">Load More</button></div>` : ''}
                     </div>
                 `;
             }
 
             Render.stage.innerHTML = html; 
+            Actions.updateR18ToggleButtons();
+            Actions.renderLatestGalleryGrid();
             Visuals.initCardTilt();
         } else {
             // Individual character profile
@@ -242,7 +222,11 @@ export const Render = {
             // Build unique tags
             const tags = new Set(['All']); 
             galleryImages.forEach(i => {
-                if (i.image_tags) i.image_tags.forEach(t => tags.add(t));
+                if (i.image_tags) {
+                    i.image_tags.forEach(t => {
+                        if (!Actions.isMatureTag(t)) tags.add(t);
+                    });
+                }
             });
             
             let tHtml = `<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:1.5rem">`;
@@ -252,28 +236,20 @@ export const Render = {
             });
             tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; min-height:0;" onclick="window.Actions.shuffleGallery()"><i class="fas fa-random"></i></div></div>`;
             
-            // Sleek Preference Toggle Bar
             let prefHtml = `
-                <div class="glass-box" style="display: flex; gap: 15px; justify-content: center; align-items: center; max-width: 600px; margin: 0 auto 1.5rem; padding: 0.8rem 1.5rem; border-radius: 30px; border-color: rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
+                <div class="glass-box" style="display: flex; gap: 15px; justify-content: center; align-items: center; max-width: 420px; margin: 0 auto 1.5rem; padding: 0.8rem 1.25rem; border-radius: 30px; border-color: rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
                     <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #aaa; font-weight: 500;">
-                        <i class="fas fa-sliders-h" style="color: var(--accent-color);"></i> Settings:
+                        <i class="fas fa-sliders-h" style="color: var(--accent-color);"></i> Layout:
                     </div>
-                    
-                    <!-- Gallery View Mode Toggle -->
                     <div class="btn-large" id="pref-view-mode-toggle" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 20px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="window.Actions.toggleViewMode()">
                         <i class="${State.galleryViewMode === 'deck' ? 'fas fa-layer-group' : 'fas fa-th'}"></i> 
                         <span>${State.galleryViewMode === 'deck' ? 'Deck View' : 'Grid View'}</span>
-                    </div>
-                    
-                    <!-- Strict R18 Toggle -->
-                    <div class="btn-large" id="pref-r18-toggle" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 20px; min-height: 0; cursor: pointer; transition: all 0.3s; ${State.showR18 ? 'border-color: var(--danger-color); color: var(--danger-color);' : ''}" onclick="window.Actions.toggleR18()">
-                        <i class="${State.showR18 ? 'fas fa-exclamation-circle' : 'fas fa-eye-slash'}"></i>
-                        <span>${State.showR18 ? 'Strict: R18 On' : 'Strict: R18 Off'}</span>
                     </div>
                 </div>
             `;
             
             Render.stage.innerHTML = `
+                ${galleryHeaderHtml(character.name + ' Gallery', 'Use the header toggle to reveal R18 artwork first across this gallery and the recent feed.')}
                 <div class="char-profile-hero glass-box">
                     <div class="hero-img-container"><img src="${character.profile_image_url || ''}" class="hero-img"></div>
                     <div class="hero-info">
@@ -286,6 +262,7 @@ export const Render = {
                 ${tHtml}
                 <div class="${State.galleryViewMode === 'deck' ? 'decks-grid' : 'sub-gallery-grid'}" id="gallery-grid"></div>`;
             
+            Actions.updateR18ToggleButtons();
             Actions.renderGalleryGrid();
         }
     },

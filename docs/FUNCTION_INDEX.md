@@ -11,6 +11,7 @@ The functions and components of the public reader SPA are now fully modularized 
 ### `Router` (Navigation & Views - `js/router.js`)
 - `handle()` - Also wraps `UI.hideLoading()` in both success and error completion paths so stage fade-in still completes if the saber widget throws during teardown.
 - `handle()` - Also tears down the cold-start loader when the gallery advisory modal intercepts routing before any gallery render work begins.
+- `withTimeout(promise, message)` - Caps route rendering work so stalled Supabase/network requests resolve into the router error panel instead of leaving the loader overlay visible indefinitely.
 - `handle()` — Reads the current window hash and dispatches to the correct view renderer, now guarding route completions so stale or failed renders cannot leave the stage hidden or loader stuck.
 - `navigate(path)` — Programmatically changes the URL hash and triggers a route update, short-circuiting same-route clicks into a safe re-render instead of waiting on a `hashchange` that will never fire.
 - `getParts()` — Helper to break down the hash into view and ID parameters (e.g., `#story/123`).
@@ -64,6 +65,9 @@ The functions and components of the public reader SPA are now fully modularized 
 - `show()` — Asynchronously imports, mounts, and initiates the resolved visual loading system, ensuring a fallback defaults to the lightsaber if an error occurs.
 - `hide()` — Invokes the target loading system's cleanup or exit hooks.
 - `playOutro()` — Triggers custom exit animation routines on the active module when loading completes.
+
+- `withTimeout(promise, message)` - Caps dynamic loader imports so startup can continue if a loader module fetch stalls.
+- `clearPrimaryLoader()` - Directly fades/removes the primary loader DOM as a fallback when no active loader object is available.
 
 ### `SaberController` (Lightsaber Loading Widget - `js/ui.js`)
 - `animateProgressTo(target, duration, onComplete)` - Defensively parses widget progress and guards `getProgress` / `setProgress` calls so malformed saber state cannot crash the animation loop before `onComplete()` runs.
@@ -132,9 +136,14 @@ The functions and components of the public reader SPA are now fully modularized 
 - `resize()` — Handles window resize events to keep the canvas covering the screen.
 
 ### `Actions` (Gallery & General Operations - `js/ui.js`)
-- `renderGalleryGrid(shuffle)` — Renders character gallery images under either standard grid or premium fanning Card Deck View modes. Implements strict R18 filters when disabled.
+- `isMatureTag(tag)` — Normalizes gallery structural tags and detects whether a tag should be treated as mature content (`R18`, `NSFW`, `mature`, `suggestive`).
+- `isMatureImage(image)` — Returns whether a gallery image carries any mature structural tags.
+- `processGalleryImages(images)` — Applies the shared public-gallery mature-content rule set, hiding mature images while R18 is off and floating them to the front when R18 is on.
+- `updateR18ToggleButtons()` — Refreshes every gallery-header R18 toggle instance so the button label and danger styling stay synchronized across gallery surfaces.
+- `renderGalleryGrid(shuffle)` — Renders character gallery images under either standard grid or premium fanning Card Deck View modes, hiding mature-tagged artwork while R18 is off and prioritizing those images first when R18 is on.
+- `renderLatestGalleryGrid()` — Rebuilds the public "Recently Added" gallery masonry using the shared mature-content visibility/order rules so the header toggle and load-more flow stay in sync.
 - `toggleViewMode()` — Toggles the character gallery between column-based Grid View and stacked/fanning Card Deck View modes, saving the choice in local storage.
-- `toggleR18()` — Toggles strict R18 content filtering on or off, updating the layout state dynamically and persisting preference.
+- `toggleR18()` — Toggles the shared gallery-header R18 mode on or off, updating the header control and re-rendering both recent-image and individual-character gallery views with the correct mature-content visibility and ordering.
 - `setFilter(tag)` — Filters the current character gallery by tag name (e.g. Portrait, Sketch, Action).
 - `shuffleGallery()` — Shuffles the order of images in the active character gallery dynamically.
 - `voteImage(imageId, value)` — Handles casting and updating image upvotes/downvotes against Supabase with real-time score synchronization.
