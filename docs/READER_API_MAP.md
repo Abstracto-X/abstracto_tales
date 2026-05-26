@@ -154,11 +154,11 @@ Cache state:
   - Returns `[]` on query failure.
 
 - `getCharacterGallery(characterId)` -> `Promise<array>`
-  - Reads `character_gallery_images` rows for one character.
+  - Reads only published `character_gallery_images` rows for one character.
   - Returns `[]` on query failure.
 
 - `getLatestGalleryImages(storyId, limit = 10, offset = 0)` -> `Promise<array>`
-  - Reads latest `character_gallery_images` joined through `characters`.
+  - Reads latest published `character_gallery_images` joined through `characters`.
   - Supports paginated gallery loading via `range(...)`.
   - Returns `[]` on query failure.
 

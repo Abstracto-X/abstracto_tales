@@ -373,6 +373,242 @@
         }
         .image-grid-item:hover .overlay { opacity: 1; }
 
+        /* --- GALLERY WORKSPACE --- */
+        .gallery-toolbar {
+            display: grid;
+            grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(220px, 1fr);
+            gap: 1rem;
+            align-items: end;
+        }
+        .gallery-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .gallery-stat {
+            position: relative;
+            overflow: hidden;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background:
+                radial-gradient(circle at top right, rgba(255,215,0,0.16), transparent 38%),
+                linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.015));
+            padding: 1rem 1rem 0.9rem;
+        }
+        .gallery-stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+            margin-bottom: 0.35rem;
+        }
+        .gallery-stat-label {
+            color: #8f8f8f;
+            font-size: 0.76rem;
+            letter-spacing: 1.3px;
+            text-transform: uppercase;
+        }
+        .gallery-stat-note {
+            margin-top: 0.35rem;
+            color: #686868;
+            font-size: 0.75rem;
+        }
+        .gallery-sections {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+            gap: 1.25rem;
+            align-items: start;
+        }
+        .gallery-section {
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
+                rgba(8,8,8,0.5);
+            overflow: hidden;
+        }
+        .gallery-section.hidden-pool {
+            border-color: rgba(255,170,0,0.18);
+            box-shadow: inset 0 0 0 1px rgba(255,170,0,0.04);
+        }
+        .gallery-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1rem 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .gallery-section-title {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            color: #fff;
+            font-family: var(--font-header);
+            font-size: 1.05rem;
+        }
+        .gallery-section-title i { color: var(--accent-color); }
+        .gallery-section-subtitle {
+            margin-top: 0.3rem;
+            color: #787878;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+        .gallery-section-body {
+            padding: 1rem;
+        }
+        .gallery-grid-advanced {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .gallery-card {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            transition: transform 0.25s, border-color 0.25s, box-shadow 0.25s;
+        }
+        .gallery-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(255,215,0,0.4);
+            box-shadow: 0 16px 34px rgba(0,0,0,0.35);
+        }
+        .gallery-card-media {
+            position: relative;
+            aspect-ratio: 1;
+            background: rgba(0,0,0,0.45);
+        }
+        .gallery-card-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .gallery-card-badges {
+            position: absolute;
+            top: 0.75rem;
+            left: 0.75rem;
+            right: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 0.4rem;
+            pointer-events: none;
+        }
+        .gallery-badge-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+        }
+        .gallery-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.28rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+            background: rgba(0,0,0,0.65);
+            border: 1px solid rgba(255,255,255,0.12);
+            color: #f3f3f3;
+        }
+        .gallery-badge.live {
+            background: rgba(68,255,136,0.16);
+            border-color: rgba(68,255,136,0.28);
+            color: var(--success-color);
+        }
+        .gallery-badge.hidden {
+            background: rgba(255,170,0,0.14);
+            border-color: rgba(255,170,0,0.24);
+            color: #ffcc6b;
+        }
+        .gallery-badge.nsfw {
+            background: rgba(255,68,68,0.18);
+            border-color: rgba(255,68,68,0.3);
+            color: #ff9f9f;
+        }
+        .gallery-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            padding: 0.95rem;
+            flex: 1;
+        }
+        .gallery-card-title {
+            color: #fff;
+            font-size: 0.98rem;
+            font-weight: 600;
+            line-height: 1.35;
+        }
+        .gallery-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.75rem;
+            color: #7b7b7b;
+            font-size: 0.74rem;
+        }
+        .gallery-card-character {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        .gallery-card-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+        .gallery-card-tag {
+            padding: 0.28rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.7rem;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: #c9c9c9;
+        }
+        .gallery-card-actions {
+            display: flex;
+            gap: 0.55rem;
+            flex-wrap: wrap;
+        }
+        .gallery-card-actions .btn {
+            flex: 1 1 110px;
+            justify-content: center;
+        }
+        .gallery-empty {
+            border: 1px dashed rgba(255,255,255,0.12);
+            border-radius: 14px;
+            padding: 2rem 1.25rem;
+            text-align: center;
+            color: #777;
+            background: rgba(255,255,255,0.02);
+        }
+        .gallery-empty i {
+            display: block;
+            font-size: 1.6rem;
+            color: rgba(255,215,0,0.22);
+            margin-bottom: 0.75rem;
+        }
+        .gallery-visibility-note {
+            margin-top: -0.5rem;
+            margin-bottom: 1rem;
+            padding: 0.9rem 1rem;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.03);
+            color: #a3a3a3;
+            font-size: 0.8rem;
+            line-height: 1.5;
+        }
+
         /* --- TAG INPUT --- */
         .tag-input-wrapper { display: flex; flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); border-radius: 8px; min-height: 45px; }
         .tag-chip { display: inline-flex; align-items: center; gap: 0.3rem; background: var(--accent-color); color: #000; padding: 0.3rem 0.6rem; border-radius: 20px; font-size: 0.8rem; }
@@ -394,6 +630,8 @@
             .sidebar-toggle { display: flex; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .quick-actions { grid-template-columns: repeat(2, 1fr); }
+            .gallery-toolbar { grid-template-columns: 1fr; }
+            .gallery-sections { grid-template-columns: 1fr; }
         }
 
         /* --- DROPZONE --- */
@@ -799,7 +1037,8 @@
             stories: [],
             characters: [],
             selectedStoryId: null,
-            selectedCharacterId: null
+            selectedCharacterId: null,
+            gallerySearch: ''
         };
 
         // ==============================================
@@ -822,6 +1061,18 @@
                      .replace(/"/g, "&quot;")
                      .replace(/'/g, "&#039;");
             },
+            formatRelativeDate: (dateString) => {
+                if (!dateString) return 'Unknown date';
+                const date = new Date(dateString);
+                if (Number.isNaN(date.getTime())) return 'Unknown date';
+                return date.toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            },
+            isGalleryImagePublished: (image) => image?.is_published !== false,
+            isGalleryImageNsfw: (image) => Array.isArray(image?.image_tags) && image.image_tags.includes('NSFW'),
             uploadImage: async (file, bucketName, folderPath = '') => {
                 if (!file) return null;
                 const fileExt = file.name.split('.').pop();
@@ -1451,6 +1702,18 @@
             // Gallery Images
             getGalleryImages: async (characterId) => {
                 const { data } = await supabaseClient.from('character_gallery_images').select('*').eq('character_id', characterId).order('sort_order');
+                return data || [];
+            },
+
+            getStoryGalleryImages: async (storyId) => {
+                const { data, error } = await supabaseClient
+                    .from('character_gallery_images')
+                    .select('*, characters!inner(id, name, story_id)')
+                    .eq('characters.story_id', storyId)
+                    .order('is_published', { ascending: false })
+                    .order('sort_order')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
                 return data || [];
             },
 
@@ -2155,8 +2418,14 @@
             },
 
             // GALLERY IMAGE FORM
-            galleryImageForm: async (id = null) => {
-                let img = { image_url: '', caption: '', image_tags: [], character_id: State.selectedCharacterId };
+            galleryImageForm: async (id = null, defaultPublished = true) => {
+                let img = {
+                    image_url: '',
+                    caption: '',
+                    image_tags: [],
+                    character_id: State.selectedCharacterId === 'all' ? (State.characters[0]?.id || '') : State.selectedCharacterId,
+                    is_published: defaultPublished
+                };
                 
                 if (id) {
                     const { data } = await supabaseClient.from('character_gallery_images').select('*').eq('id', id).single();
@@ -2171,12 +2440,33 @@
                 const html = `
                     ${UI.imageUploadField('f-image_url', 'Gallery Image(s) *', img.image_url, 'characters', !id)}
                     <div class="form-group">
+                        <label class="form-label">Character</label>
+                        <select class="form-select" id="f-character_id">
+                            ${State.characters.map(character => `
+                                <option value="${character.id}" ${character.id === img.character_id ? 'selected' : ''}>
+                                    ${Utils.escapeHtml(character.name)}
+                                </option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Caption</label>
                         <input type="text" class="form-input" id="f-caption" value="${Utils.escapeAttr(img.caption || '')}">
                     </div>
                     <div class="form-group" style="margin-bottom: 1.5rem;">
                         <label class="form-label">Tags</label>
                         <div id="interactive-tags-wrapper"></div>
+                    </div>
+
+                    <div class="toggle-container">
+                        <div class="toggle-label">
+                            <span class="toggle-title">Published on reader frontend</span>
+                            <span class="toggle-subtitle">Turn this off to move the image into the hidden pool without deleting it.</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="f-is_published" ${Utils.isGalleryImagePublished(img) ? 'checked' : ''}>
+                            <span class="slider"></span>
+                        </label>
                     </div>
 
                     <div class="toggle-container">
@@ -2223,24 +2513,33 @@
 
                     const imgFiles = document.getElementById('f-image_url_file').files;
                     let imgUrl = document.getElementById('f-image_url_url').value;
+                    const selectedCharacterId = document.getElementById('f-character_id').value;
+                    const isPublished = document.getElementById('f-is_published').checked;
+                    const caption = document.getElementById('f-caption').value;
+
+                    if (!selectedCharacterId) {
+                        throw new Error('Please select a character for this gallery image.');
+                    }
 
                     if (imgFiles && imgFiles.length > 0) {
                         for (let i = 0; i < imgFiles.length; i++) {
                             const uploadedUrl = await Utils.uploadImage(imgFiles[i], 'characters');
                             const record = {
-                                character_id: State.selectedCharacterId,
+                                character_id: selectedCharacterId,
                                 image_url: uploadedUrl,
-                                caption: document.getElementById('f-caption').value,
-                                image_tags: tags
+                                caption: caption,
+                                image_tags: tags,
+                                is_published: isPublished
                             };
                             await DB.saveGalleryImage((i === 0 && id) ? id : null, record);
                         }
                     } else if (imgUrl) {
                         const record = {
-                            character_id: State.selectedCharacterId,
+                            character_id: selectedCharacterId,
                             image_url: imgUrl,
-                            caption: document.getElementById('f-caption').value,
-                            image_tags: tags
+                            caption: caption,
+                            image_tags: tags,
+                            is_published: isPublished
                         };
                         await DB.saveGalleryImage(id || null, record);
                     } else {
@@ -2249,6 +2548,19 @@
 
                     Modal.close();
                     UI.showToast('Gallery updated successfully!');
+                    Views.render('gallery');
+                } catch (err) {
+                    UI.showToast(err.message, 'error');
+                } finally {
+                    UI.hideLoading();
+                }
+            },
+
+            setGalleryImagePublished: async (id, isPublished) => {
+                try {
+                    UI.showLoading();
+                    await DB.saveGalleryImage(id, { is_published: isPublished });
+                    UI.showToast(isPublished ? 'Image published to reader gallery.' : 'Image moved to hidden pool.');
                     Views.render('gallery');
                 } catch (err) {
                     UI.showToast(err.message, 'error');
@@ -3100,58 +3412,194 @@
                     return;
                 }
 
-                State.selectedCharacterId = State.selectedCharacterId || characters[0].id;
-                
-                // Verify selected character belongs to selected story
-                if (!characters.find(c => c.id === State.selectedCharacterId)) {
-                    State.selectedCharacterId = characters[0].id;
+                const characterOptions = [{ id: 'all', name: 'All Characters' }, ...characters];
+                State.selectedCharacterId = State.selectedCharacterId || 'all';
+                State.gallerySearch = State.gallerySearch || '';
+
+                if (!characterOptions.find(c => c.id === State.selectedCharacterId)) {
+                    State.selectedCharacterId = 'all';
                 }
 
-                const images = await DB.getGalleryImages(State.selectedCharacterId);
+                const allImages = await DB.getStoryGalleryImages(State.selectedStoryId);
+                const activeCharacterName = State.selectedCharacterId === 'all'
+                    ? 'All Characters'
+                    : (characters.find(c => c.id === State.selectedCharacterId)?.name || 'Character');
+                const normalizedSearch = State.gallerySearch.trim().toLowerCase();
+                const filteredImages = allImages.filter(img => {
+                    const matchesCharacter = State.selectedCharacterId === 'all' || img.character_id === State.selectedCharacterId;
+                    if (!matchesCharacter) return false;
+                    if (!normalizedSearch) return true;
+
+                    const haystack = [
+                        img.caption || '',
+                        img.characters?.name || '',
+                        ...(img.image_tags || [])
+                    ].join(' ').toLowerCase();
+                    return haystack.includes(normalizedSearch);
+                });
+
+                const publishedImages = filteredImages.filter(img => Utils.isGalleryImagePublished(img));
+                const hiddenImages = filteredImages.filter(img => !Utils.isGalleryImagePublished(img));
+                const nsfwCount = filteredImages.filter(img => Utils.isGalleryImageNsfw(img)).length;
+
+                const renderGalleryCards = (images, isHiddenPool = false) => {
+                    if (!images.length) {
+                        return `
+                            <div class="gallery-empty">
+                                <i class="fas ${isHiddenPool ? 'fa-box-archive' : 'fa-images'}"></i>
+                                <div style="color:#d0d0d0; font-weight:600; margin-bottom:0.35rem;">
+                                    ${isHiddenPool ? 'No hidden images in this pool.' : 'No published images match this filter.'}
+                                </div>
+                                <div>${isHiddenPool ? 'Hide images from the reader to stage them here for later publishing.' : 'Add new art or publish items from the hidden pool.'}</div>
+                            </div>
+                        `;
+                    }
+
+                    return `
+                        <div class="gallery-grid-advanced">
+                            ${images.map(img => `
+                                <article class="gallery-card">
+                                    <div class="gallery-card-media">
+                                        <img src="${Utils.escapeAttr(img.image_url)}" alt="${Utils.escapeAttr(img.caption || img.characters?.name || 'Gallery image')}" loading="lazy">
+                                        <div class="gallery-card-badges">
+                                            <div class="gallery-badge-group">
+                                                <span class="gallery-badge ${Utils.isGalleryImagePublished(img) ? 'live' : 'hidden'}">
+                                                    <i class="fas ${Utils.isGalleryImagePublished(img) ? 'fa-eye' : 'fa-eye-slash'}"></i>
+                                                    ${Utils.isGalleryImagePublished(img) ? 'Published' : 'Hidden'}
+                                                </span>
+                                                ${Utils.isGalleryImageNsfw(img) ? `<span class="gallery-badge nsfw"><i class="fas fa-user-shield"></i> NSFW</span>` : ''}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="gallery-card-body">
+                                        <div class="gallery-card-title">${Utils.escapeHtml(img.caption || 'Untitled gallery image')}</div>
+                                        <div class="gallery-card-meta">
+                                            <span class="gallery-card-character">${Utils.escapeHtml(img.characters?.name || 'Unassigned')}</span>
+                                            <span>${Utils.escapeHtml(Utils.formatRelativeDate(img.created_at))}</span>
+                                        </div>
+                                        <div class="gallery-card-tags">
+                                            ${(img.image_tags && img.image_tags.length
+                                                ? img.image_tags.map(tag => `<span class="gallery-card-tag">${Utils.escapeHtml(tag)}</span>`).join('')
+                                                : `<span class="gallery-card-tag">No tags</span>`)}
+                                        </div>
+                                        <div class="gallery-card-actions">
+                                            <button class="btn btn-secondary btn-sm" onclick="Forms.galleryImageForm('${img.id}')">
+                                                <i class="fas fa-pen"></i> Edit
+                                            </button>
+                                            <button class="btn ${Utils.isGalleryImagePublished(img) ? 'btn-secondary' : 'btn-primary'} btn-sm" onclick="Forms.setGalleryImagePublished('${img.id}', ${Utils.isGalleryImagePublished(img) ? 'false' : 'true'})">
+                                                <i class="fas ${Utils.isGalleryImagePublished(img) ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                                                ${Utils.isGalleryImagePublished(img) ? 'Hide' : 'Publish'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </article>
+                            `).join('')}
+                        </div>
+                    `;
+                };
 
                 container.innerHTML = `
                     <div class="page-header">
                         <div>
                             <h1 class="page-title">Character Gallery</h1>
-                            <p class="page-subtitle">Manage character images</p>
+                            <p class="page-subtitle">Publish, stage, and curate character art across the reader frontend</p>
                         </div>
-                        <button class="btn btn-primary" onclick="Forms.galleryImageForm()">
-                            <i class="fas fa-plus"></i> Add Image
-                        </button>
+                        <div class="action-btns">
+                            <button class="btn btn-secondary" onclick="Forms.galleryImageForm(null, false)">
+                                <i class="fas fa-box-archive"></i> Add To Hidden Pool
+                            </button>
+                            <button class="btn btn-primary" onclick="Forms.galleryImageForm()">
+                                <i class="fas fa-plus"></i> Add Published Image
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="gallery-stats">
+                        <div class="gallery-stat">
+                            <div class="gallery-stat-value">${filteredImages.length}</div>
+                            <div class="gallery-stat-label">Visible In Workspace</div>
+                            <div class="gallery-stat-note">${Utils.escapeHtml(activeCharacterName)}${normalizedSearch ? ' with search applied' : ''}</div>
+                        </div>
+                        <div class="gallery-stat">
+                            <div class="gallery-stat-value">${publishedImages.length}</div>
+                            <div class="gallery-stat-label">Published</div>
+                            <div class="gallery-stat-note">Currently queryable by the reader SPA</div>
+                        </div>
+                        <div class="gallery-stat">
+                            <div class="gallery-stat-value">${hiddenImages.length}</div>
+                            <div class="gallery-stat-label">Hidden Pool</div>
+                            <div class="gallery-stat-note">Staged assets kept off the public frontend</div>
+                        </div>
+                        <div class="gallery-stat">
+                            <div class="gallery-stat-value">${nsfwCount}</div>
+                            <div class="gallery-stat-label">NSFW Tagged</div>
+                            <div class="gallery-stat-note">Structural tag still applies inside both pools</div>
+                        </div>
                     </div>
 
                     <div class="glass-card" style="margin-bottom:1rem">
-                        <div class="form-row">
+                        <div class="gallery-toolbar">
                             <div class="form-group" style="margin-bottom:0">
                                 <label class="form-label">Select Story</label>
-                                <select class="form-select" onchange="State.selectedStoryId = this.value; State.selectedCharacterId = null; Views.render('gallery')">
+                                <select class="form-select" onchange="State.selectedStoryId = this.value; State.selectedCharacterId = 'all'; State.gallerySearch = ''; Views.render('gallery')">
                                     ${stories.map(s => `<option value="${s.id}" ${s.id === State.selectedStoryId ? 'selected' : ''}>${Utils.escapeHtml(s.title)}</option>`).join('')}
                                 </select>
                             </div>
                             <div class="form-group" style="margin-bottom:0">
-                                <label class="form-label">Select Character</label>
+                                <label class="form-label">Character Filter</label>
                                 <select class="form-select" onchange="State.selectedCharacterId = this.value; Views.render('gallery')">
-                                    ${characters.map(c => `<option value="${c.id}" ${c.id === State.selectedCharacterId ? 'selected' : ''}>${Utils.escapeHtml(c.name)}</option>`).join('')}
+                                    ${characterOptions.map(c => `<option value="${c.id}" ${c.id === State.selectedCharacterId ? 'selected' : ''}>${Utils.escapeHtml(c.name)}</option>`).join('')}
                                 </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0">
+                                <label class="form-label">Search Caption / Tags</label>
+                                <input
+                                    type="text"
+                                    class="form-input"
+                                    value="${Utils.escapeAttr(State.gallerySearch)}"
+                                    placeholder="Search images, character names, or tags..."
+                                    oninput="State.gallerySearch = this.value; Views.render('gallery')"
+                                >
                             </div>
                         </div>
                     </div>
 
-                    <div class="glass-card">
-                        <div class="card-header">
-                            <h3 class="card-title">${characters.find(c => c.id === State.selectedCharacterId)?.name || 'Character'} Gallery</h3>
-                            <span style="color:#666">${images.length} image(s)</span>
-                        </div>
-                        <div class="image-grid">
-                            ${images.map(img => `
-                                <div class="image-grid-item">
-                                    <img src="${img.image_url}" alt="">
-                                    <div class="overlay">
-                                        <button class="btn btn-secondary btn-sm" onclick="Forms.galleryImageForm('${img.id}')"><i class="fas fa-edit"></i></button>
+                    <div class="gallery-visibility-note">
+                        Reader-facing gallery queries now only pull rows where <code>is_published = true</code>. Use the hidden pool to stage art, keep alternates/private drafts out of the public gallery, or temporarily unpublish images without losing their metadata.
+                    </div>
+
+                    <div class="gallery-sections">
+                        <section class="gallery-section">
+                            <div class="gallery-section-header">
+                                <div>
+                                    <div class="gallery-section-title">
+                                        <i class="fas fa-images"></i>
+                                        <span>Published Gallery</span>
                                     </div>
+                                    <div class="gallery-section-subtitle">These images appear on the reader frontend and feed the recent gallery section.</div>
                                 </div>
-                            `).join('') || '<p style="grid-column:1/-1;text-align:center;color:#666;padding:2rem">No images yet</p>'}
-                        </div>
+                                <span class="status-badge status-published">${publishedImages.length} live</span>
+                            </div>
+                            <div class="gallery-section-body">
+                                ${renderGalleryCards(publishedImages)}
+                            </div>
+                        </section>
+
+                        <section class="gallery-section hidden-pool">
+                            <div class="gallery-section-header">
+                                <div>
+                                    <div class="gallery-section-title">
+                                        <i class="fas fa-box-archive"></i>
+                                        <span>Unpublished Image Pool</span>
+                                    </div>
+                                    <div class="gallery-section-subtitle">Use this pool for hidden alternates, drafts, spoiler art, or assets waiting for a release window.</div>
+                                </div>
+                                <span class="status-badge status-draft">${hiddenImages.length} hidden</span>
+                            </div>
+                            <div class="gallery-section-body">
+                                ${renderGalleryCards(hiddenImages, true)}
+                            </div>
+                        </section>
                     </div>
                 `;
             },

@@ -27,8 +27,8 @@ The functions and components of the public reader SPA are now fully modularized 
 - `getAuthorProfile()` — Fetches admin profile + author links (cached with TTL).
 - `getStoryHubData(slug)` — Fetches story + wallpapers + characters + lore + timeline + maps in parallel (LRU-cached). Timeline character links are batched via `.in()`.
 - `getChapters(storyId)` — Fetches all published chapters for a specific story.
-- `getCharacterGallery(characterId)` — Fetches gallery images for a character.
-- `getLatestGalleryImages(storyId, limit, offset)` — Fetches recently added gallery images across all characters in a story with pagination/offset support.
+- `getCharacterGallery(characterId)` — Fetches only published gallery images for a character.
+- `getLatestGalleryImages(storyId, limit, offset)` — Fetches only published recently added gallery images across all characters in a story with pagination/offset support.
 - `getLoreEntry(storyId, loreSlug)` — Fetches a single lore entry by slug.
 - `getMapCounts(mapIds)` — Fetches node and edge counts for specified maps to display in the hub.
 - `getAllMapNodeNames(storyId)` — Fetches all mapped planet names across all maps in a given story.
@@ -165,7 +165,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - **Characters**: `getCharacters(storyId)`, `saveCharacter(data)`, `deleteCharacter(id)`.
 - **Lore**: `getLoreCategories(storyId)`, `saveLoreCategory(data)`, `getLoreEntries(categoryId)`, `saveLoreEntry(data)`.
 - **Timeline**: `getTimelineEvents()`, `saveTimelineEvent(data)`, `deleteTimelineEvent(id)`.
-- **Media**: `getMaps()`, `saveMap()`, `getWallpapers()`, `saveWallpaper()`, `getGallery()`, `saveGalleryImage()`.
+- **Media**: `getMaps()`, `saveMap()`, `getWallpapers()`, `saveWallpaper()`, `getGallery()`, `getStoryGalleryImages()`, `saveGalleryImage()`.
 - **Map Requests**: `getMapRequests()`, `getRequestItems(reqId)`, `updateRequestStatus(reqId, status, feedback)`, `deleteMapRequest(reqId)`, `approveMapRequest(reqId)` (Applies changes to live tables and logs activity to `map_changelog`).
 - **Settings**: `getSettings()`, `saveSettings(data)`.
 
@@ -184,6 +184,7 @@ The functions and components of the public reader SPA are now fully modularized 
   - `loreCategoryForm(categoryObj)` / `loreEntryForm(entryObj)`
   - `timelineEventForm(eventObj)`
   - `mapForm(mapObj)` / `wallpaperForm(wallpaperObj)`
+  - `setGalleryImagePublished(id, isPublished)`
   - `viewMapRequest(reqId)` / `approveMapRequest(reqId)` / `rejectMapRequest(reqId)` / `deleteMapRequest(reqId)`
   - `settingsForm(settingsObj)`
   - `deleteConfirmForm(entityType, entityId, fallbackAction)`
@@ -192,6 +193,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `render(viewName)` — The primary internal router mapping sidebar clicks to view functions.
 - View rendering functions that fetch data, populate caches, and build tables/grids:
   - `dashboard()`, `stories()`, `chapters()`, `characters()`, `lore()`, `timeline()`, `maps()`, `mapRequests()`, `gallery()`, `wallpapers()`, `settings()`.
+  - `gallery()` now renders a story-wide media workspace with search/filter controls, a published board, and an unpublished image pool.
 
 ### `UI` (Interactive Dashboard Components)
 - `imageUploadField(id, label, currentValue, bucketName, multiple)` — Renders a modern drag-and-drop dropzone dashboard UI element with a file picker input, text URL input, and dynamic client-side image preview area.
@@ -389,3 +391,47 @@ const SaveManager = {
 - `uuid()` — Generates a v4 UUID.
 - `getContributorColor(userId)` — Deterministic hash-based color from a 12-color palette.
 
+
+---
+
+## 5. `scripts/scribblehub_autosync.js` (Background Chapter Import Worker)
+
+### CLI & Configuration
+- `parseArgs(argv)` â€” Reads `--once`, `--dry-run`, and `--help` worker flags.
+- `printHelp()` â€” Prints environment-variable requirements and worker usage.
+- `getConfig()` â€” Validates env configuration for Supabase credentials, ScribbleHub series target, story target, polling interval, and publish mode.
+- `requireEnv(name)` â€” Throws if a required environment variable is missing.
+
+### ScribbleHub Discovery & Parsing
+- `discoverRecentChapters(config)` â€” Attempts the ScribbleHub series RSS feed first, then falls back to scraping the series table-of-contents page for recent chapter links.
+- `extractRecentChaptersFromFeed(xml, limit)` â€” Parses RSS `<item>` entries into recent chapter metadata.
+- `extractRecentChaptersFromSeriesPage(html, limit)` â€” Extracts recent `/read/.../chapter/...` links from the series page when feed discovery is unavailable.
+- `fetchChapterBody(entry, config)` â€” Downloads an individual chapter page and returns sanitized chapter text ready for insertion.
+- `extractChapterHtml(rawHtml)` â€” Uses heuristic content-container matching (`#chp_raw`, `#chp_contents`, `.chapter-content`, etc.) before falling back to broad body extraction.
+- `sanitizeImportedContent(html, sourceUrl)` â€” Converts scraped HTML into newline-preserving plain chapter text and prepends the invisible ScribbleHub provenance marker comment.
+
+### Supabase Sync
+- `getStoryRecord(supabase, config)` â€” Resolves the destination story by `STORY_ID` or `STORY_SLUG`.
+- `getExistingChapters(supabase, storyId)` â€” Loads existing chapter titles, orders, and content for dedupe checks.
+- `buildKnownChapterIndexes(existingChapters)` â€” Creates in-memory title and imported-source indexes so the worker only inserts unseen chapters.
+- `insertChapter(supabase, storyId, record)` â€” Inserts a new `chapters` row and computes `word_count` for compatibility with existing admin/reader views.
+- `runSync(config, options)` â€” Executes one import pass, ordering unseen ScribbleHub chapters oldest-to-newest so `chapter_order` remains sequential.
+
+### Shared Helpers
+- `normalizeSeriesUrl(url)` / `normalizeChapterUrl(url)` â€” Canonicalize ScribbleHub URLs for matching and dedupe.
+- `buildRequestOptions(cookie)` / `fetchText(url, cookie)` â€” Centralize fetch headers and optional authenticated cookie support.
+- `decodeHtmlEntities(text)` / `stripTags(html)` / `cleanWhitespace(value)` / `extractFirst(text, regex)` â€” Utility helpers used throughout the feed/page parser.
+- `extractImportedSource(content)` â€” Reads the hidden `imported-from:scribblehub` marker from an existing chapter body so repeated sync passes stay idempotent.
+- `main()` â€” Boots the worker, runs an immediate sync pass, and optionally enters continuous polling mode.
+
+## 6. `scripts/run_scribblehub_sync.ps1` and `scripts/register_scribblehub_sync_task.ps1` (Windows Helpers)
+
+### Runtime Bootstrap
+- `run_scribblehub_sync.ps1` - Loads key/value pairs from the repo-local `.env`, exposes them to the current process, and launches the Node-based ScribbleHub autosync worker with optional `-Once` and `-DryRun` switches.
+
+### Scheduled Task Registration
+- `register_scribblehub_sync_task.ps1` - Registers a Windows Scheduled Task named `AbstractoTales-ScribbleHubSync` by default, configured to launch the PowerShell runner hidden at user logon with basic auto-restart settings.
+
+## 7. ScribbleHub Autosync Updates (Backfill)
+- `scripts/scribblehub_autosync.js` now supports `--backfill` to crawl full ScribbleHub TOC pages (`?toc=N`), resequence `chapters.chapter_order`, and insert missing earlier chapters ahead of already-imported recent chapters.
+- Additional env knobs: `SCRIBBLEHUB_TOC_PAGES_MAX`, `CHAPTER_ORDER_START`, and `ALLOW_MIXED_CHAPTERS`.

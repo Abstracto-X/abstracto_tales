@@ -207,6 +207,7 @@ export const DB = {
             .from('character_gallery_images')
             .select('*')
             .eq('character_id', characterId)
+            .eq('is_published', true)
             .order('sort_order');
         if (error) { console.error('Error fetching gallery:', error); return []; }
         return data || [];
@@ -217,6 +218,7 @@ export const DB = {
             .from('character_gallery_images')
             .select('*, characters!inner(story_id, name)')
             .eq('characters.story_id', storyId)
+            .eq('is_published', true)
             .order('created_at', { ascending: false })
             .range(offset, offset + limit - 1);
         if (error) { console.error('Error fetching latest gallery:', error); return []; }

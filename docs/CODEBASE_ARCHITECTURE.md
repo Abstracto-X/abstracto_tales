@@ -26,6 +26,12 @@ A specialized, distraction-free writing environment (IDE) tailored for the autho
 ### `cartographer.html` (Collaborative Map Editor)
 A collaborative map editing SPA where users with the `cartographer` or `admin` role can create story-linked maps, place planet nodes, and draw hyperlane paths on uploaded map images. Built on Leaflet.js (CRS.Simple) with Supabase-backed persistence. Features per-user color-coded contributions, a planet name autocomplete powered by `sw_planets.csv`, a changelog activity log, and multi-map support with dynamic coordinate spaces derived from uploaded image dimensions stored on the shared `maps` table.
 
+### `scripts/scribblehub_autosync.js` (Background Chapter Import Worker)
+A standalone Node.js worker for operational automation. It polls a configured ScribbleHub series, discovers recently published chapter links via the series RSS feed or series page, fetches unseen chapter bodies, and inserts them into the existing `chapters` table in Supabase using a service-role key. This script is intentionally isolated from the browser apps so `admin.html`, `writer.html`, and the public reader continue consuming the same chapter records with no frontend contract changes.
+
+### `scripts/run_scribblehub_sync.ps1` / `scripts/register_scribblehub_sync_task.ps1` (Windows Runtime Helpers)
+Supporting PowerShell helpers for Windows deployments. `run_scribblehub_sync.ps1` loads repo-local `.env` values into the process and launches the Node worker, while `register_scribblehub_sync_task.ps1` registers a Scheduled Task that starts the sync worker automatically at logon.
+
 ---
 
 ## 2. Global State
@@ -81,6 +87,7 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
   - `stories` *(Array)*, `characters` *(Array)*, `lore` *(Array)*, `mapRequests` *(Array)*, etc. — Caches for entity lists to populate tables.
   - `selectedStoryId` *(String | null)* — The ID of the currently selected story context for filtering chapters or related entities. Changes via the story dropdown on certain views.
   - `selectedCharacterId` *(String | null)* — For character relation filtering contexts.
+  - `gallerySearch` *(String)* — Active admin gallery workspace search query spanning caption text, character names, and tags while filtering the published panel and hidden pool.
 
 ### `writer.html`
 - `supabase` *(Object)* — Holds the initialized Supabase client instance.
@@ -201,6 +208,14 @@ In all files, Supabase data access is encapsulated in module objects (`DB` objec
 - **Error Handling**: Database calls throw errors that are caught by UI or form functions, utilizing a centralized `toast(message, 'error')` or `UI.showToast()` to alert the user.
 - **Relationships**: Relational queries pull nested sub-records (e.g., `lore_entries(..., lore_categories(id, name))`) to avoid N+1 queries.
 
+### Operational Worker Conventions
+- **Service-role only for offline tooling:** `scripts/scribblehub_autosync.js` runs outside the browser and must use `SUPABASE_SERVICE_ROLE_KEY` from the environment instead of any client publishable key.
+- **No schema fork:** The worker writes directly into `public.chapters`, preserving the existing reader/admin/writer flows instead of introducing a separate import table.
+- **Import provenance marker:** Imported chapter bodies begin with an HTML comment marker in the format `<!-- imported-from:scribblehub {chapterUrl} -->`. This keeps the source URL attached to the chapter for idempotent sync checks while staying invisible in the reader render.
+- **Recent-window polling:** The worker inspects the most recent ScribbleHub entries (default 15) so it can run continuously on a local machine or scheduler without needing a full historical crawl every pass.
+- **Fetch throttling and skips:** The worker rate-limits chapter fetches by a small delay and skips individual chapters that fail to fetch/parse (e.g., `403 Forbidden` due to R18/login gating) so a single blocked page does not abort the whole sync pass.
+- **Full backfill + resequencing:** When run with `--backfill`, the worker crawls the ScribbleHub series TOC pages (`?toc=N`), sorts chapters oldest-to-newest, then resequences `chapters.chapter_order` for already-imported ScribbleHub chapters and inserts any missing earlier chapters before the newer ones. This path is designed specifically for "import the last few chapters first, then backfill everything earlier" without losing ordering.
+
 ### Storage Conventions
 Media assets are managed using Supabase Storage buckets.
 - **`Utils.uploadImage(file, bucket, folderPath)`**: A standard utility function handles uploading. It typically uses unique IDs (like `Date.now()`) for naming, performs `supabase.storage.from(bucket).upload()`, and immediately fetches the public URL via `.getPublicUrl()` to save back into database rows (covers, avatars, wallpapers, maps).
@@ -239,5 +254,6 @@ Media assets are managed using Supabase Storage buckets.
 - **Interactive Tag Chip & Autocomplete System:** Integrated a dynamic, HSL-themed visual tag chip input (`UI.initTagComponent` & `UI.initTagAutocomplete`) that converts input strings into deletable tag chips. The autocomplete-powered variant fetches existing distinct tags from the database (filtering out structural flags like `NSFW`), allowing arrow-key selection, click selection, and custom tokenization. 
 - **NSFW / R18 Content Categorization:** Implemented a standardized visual toggle switch inside `Forms.galleryImageForm` that isolates age-gated media assets. Upon saving, it programmatically injects or prunes structural metadata tags (`NSFW`) while maintaining standard user tags.
 - **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
+- **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and segments assets into a reader-visible published board plus an unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
 
 

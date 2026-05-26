@@ -24,3 +24,5 @@ components/lightsaber/primary_loader.html
 /Internal_tools
 concat_docs.py
 /docs_v2
+.env
+/scripts

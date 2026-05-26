@@ -163,6 +163,7 @@ Gallery images for individual characters.
 | `image_url` | TEXT | From `characters` storage bucket |
 | `caption` | TEXT | |
 | `image_tags` | TEXT[] | Default `'{}'` (empty array) |
+| `is_published` | BOOLEAN | Default TRUE. Controls whether the image should render in reader gallery surfaces; hidden images can still remain database-readable under your existing policies |
 | `sort_order` | INTEGER | Default 0 |
 | `created_at` | TIMESTAMPTZ | |
 
@@ -547,6 +548,7 @@ All buckets are **public** (publicly readable URLs). Writes are restricted to au
 | `idx_chapters_story_order` | `chapters` | `(story_id, chapter_order)` | Ordered chapter list per story |
 | `idx_characters_story` | `characters` | `story_id` | All characters for a story |
 | `idx_gallery_images_character` | `character_gallery_images` | `character_id` | Gallery images per character |
+| `idx_gallery_images_character_published` | `character_gallery_images` | `(character_id, is_published, sort_order)` | Published/hidden gallery fetches per character |
 | `idx_lore_story` | `lore_entries` | `story_id` | Lore entries per story |
 | `idx_timeline_story_order` | `timeline_events` | `(story_id, event_order)` | Ordered timeline per story |
 | `idx_maps_story` | `maps` | `story_id` | Maps per story |
@@ -616,6 +618,7 @@ FROM public.characters ch
 LEFT JOIN public.character_gallery_images gi ON gi.character_id = ch.id
 LEFT JOIN public.image_votes iv ON iv.image_id = gi.id
 WHERE ch.story_id = '<story_uuid>'
+  AND gi.is_published = true
 GROUP BY ch.id
 ORDER BY ch.sort_order ASC;
 ```
@@ -639,14 +642,15 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 
 1. **Never hardcode UUIDs.** Always query for IDs by slug, username, or other unique fields first.
 2. **`is_published` gates public visibility** on `stories` and `chapters`. Always filter by this unless operating as an admin.
-3. **`target_type` is a freeform string** on `comments`. Accepted values in use: `'chapter'`, `'lore'`, `'gallery'`. Always filter by both `target_id` AND `target_type`.
-4. **`writer_nodes` is a recursive tree.** Reconstruct the tree client-side after fetching all nodes for a `story_id`. Root nodes have `parent_id = NULL`.
-5. **`metadata` JSONB columns** exist on `comments` and `writer_nodes`. Structure is flexible — check application code for expected shape before writing.
-6. **Storage URLs** are public Supabase Storage URLs. Construct them as: `{SUPABASE_URL}/storage/v1/object/public/{bucket_id}/{filename}`
-7. **`Reader` bucket filenames** must follow `{user_id}-{timestamp}.{ext}` format for ownership policies to work.
-8. **The `event_date` field** in `timeline_events` is a plain TEXT field, not a PostgreSQL date type. It stores in-universe fictional date strings.
-9. **RLS applies to all queries**, including those made server-side via the Supabase client. Use the service role key (bypasses RLS) only for trusted admin operations.
-10. **`image_votes`** uses upsert semantics. To change a vote, UPDATE the existing row (unique on `user_id + image_id`).
+3. **`character_gallery_images.is_published` gates public gallery visibility**. Reader-facing gallery feeds and individual character galleries should only query published rows.
+4. **`target_type` is a freeform string** on `comments`. Accepted values in use: `'chapter'`, `'lore'`, `'gallery'`. Always filter by both `target_id` AND `target_type`.
+5. **`writer_nodes` is a recursive tree.** Reconstruct the tree client-side after fetching all nodes for a `story_id`. Root nodes have `parent_id = NULL`.
+6. **`metadata` JSONB columns** exist on `comments` and `writer_nodes`. Structure is flexible — check application code for expected shape before writing.
+7. **Storage URLs** are public Supabase Storage URLs. Construct them as: `{SUPABASE_URL}/storage/v1/object/public/{bucket_id}/{filename}`
+8. **`Reader` bucket filenames** must follow `{user_id}-{timestamp}.{ext}` format for ownership policies to work.
+9. **The `event_date` field** in `timeline_events` is a plain TEXT field, not a PostgreSQL date type. It stores in-universe fictional date strings.
+10. **RLS applies to all queries**, including those made server-side via the Supabase client. Use the service role key (bypasses RLS) only for trusted admin operations.
+11. **`image_votes`** uses upsert semantics. To change a vote, UPDATE the existing row (unique on `user_id + image_id`).
 
 ---
 
