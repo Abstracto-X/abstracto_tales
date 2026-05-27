@@ -414,6 +414,82 @@
             color: #686868;
             font-size: 0.75rem;
         }
+        .gallery-view-shell {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 200px;
+            gap: 1.25rem;
+            align-items: start;
+        }
+        .gallery-view-main {
+            min-width: 0;
+        }
+        .gallery-view-aside {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            position: sticky;
+            top: 1rem;
+        }
+        .gallery-view-toggle {
+            text-align: left;
+            justify-content: flex-start;
+            width: 100%;
+            padding: 0.9rem 1rem;
+            border-radius: 12px;
+        }
+        .gallery-view-toggle strong {
+            display: block;
+            font-size: 0.84rem;
+            color: inherit;
+        }
+        .gallery-view-toggle span {
+            display: block;
+            margin-top: 0.2rem;
+            font-size: 0.72rem;
+            color: inherit;
+            opacity: 0.8;
+            line-height: 1.35;
+        }
+        .gallery-view-toggle.is-active {
+            background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,215,0,0.08));
+            border-color: rgba(255,215,0,0.35);
+            color: #fff;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.24);
+        }
+        .gallery-stage {
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015)),
+                rgba(8,8,8,0.5);
+            overflow: hidden;
+        }
+        .gallery-stage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 1rem 0.9rem;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .gallery-stage-title {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+            color: #fff;
+            font-family: var(--font-header);
+            font-size: 1.05rem;
+        }
+        .gallery-stage-title i { color: var(--accent-color); }
+        .gallery-stage-subtitle {
+            margin-top: 0.3rem;
+            color: #787878;
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+        .gallery-stage-body {
+            padding: 1rem;
+        }
         .gallery-sections {
             display: grid;
             grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -631,6 +707,8 @@
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
             .quick-actions { grid-template-columns: repeat(2, 1fr); }
             .gallery-toolbar { grid-template-columns: 1fr; }
+            .gallery-view-shell { grid-template-columns: 1fr; }
+            .gallery-view-aside { position: static; }
             .gallery-sections { grid-template-columns: 1fr; }
         }
 
@@ -1038,7 +1116,8 @@
             characters: [],
             selectedStoryId: null,
             selectedCharacterId: null,
-            gallerySearch: ''
+            gallerySearch: '',
+            galleryVisibilityFilter: 'published'
         };
 
         // ==============================================
@@ -1298,30 +1377,12 @@
                 const container = document.getElementById(containerId);
                 if (!container) return;
 
-                // Fetch all unique tags currently in the database to build suggestions
-                let allTags = [];
-                try {
-                    const { data } = await supabaseClient.from('character_gallery_images').select('image_tags');
-                    const tagSet = new Set();
-                    if (data) {
-                        data.forEach(row => {
-                            if (row.image_tags) {
-                                row.image_tags.forEach(t => {
-                                    // Filter out R18 structural tags from autocomplete options
-                                    if (t && t !== 'NSFW' && t !== 'R18') tagSet.add(t);
-                                });
-                            }
-                        });
-                    }
-                    allTags = Array.from(tagSet);
-                } catch (e) {
-                    console.error('Error fetching autocomplete tags:', e);
-                }
-
                 let tags = [...initialTags];
                 let selectedIndex = -1;
+                let allTags = [];
 
                 const render = () => {
+                    container.dataset.tags = JSON.stringify(tags);
                     container.innerHTML = `
                         <div class="tag-input-wrapper-relative">
                             <div class="tag-input-container">
@@ -1448,6 +1509,47 @@
                 };
 
                 render();
+
+                // Fetch all unique tags currently in the database to build suggestions
+                try {
+                    const { data } = await supabaseClient.from('character_gallery_images').select('image_tags');
+                    const tagSet = new Set();
+                    if (data) {
+                        data.forEach(row => {
+                            if (row.image_tags) {
+                                row.image_tags.forEach(t => {
+                                    // Filter out R18 structural tags from autocomplete options
+                                    if (t && t !== 'NSFW' && t !== 'R18') tagSet.add(t);
+                                });
+                            }
+                        });
+                    }
+                    allTags = Array.from(tagSet);
+                } catch (e) {
+                    console.error('Error fetching autocomplete tags:', e);
+                }
+            },
+            getTagValues: (containerId) => {
+                const hiddenInput = document.getElementById(`${containerId}_value`);
+                if (hiddenInput) {
+                    return hiddenInput.value
+                        .split(',')
+                        .map(tag => tag.trim())
+                        .filter(Boolean);
+                }
+
+                const container = document.getElementById(containerId);
+                if (!container?.dataset?.tags) return [];
+
+                try {
+                    const parsed = JSON.parse(container.dataset.tags);
+                    return Array.isArray(parsed)
+                        ? parsed.map(tag => `${tag}`.trim()).filter(Boolean)
+                        : [];
+                } catch (err) {
+                    console.error('Error reading tag values:', err);
+                    return [];
+                }
             },
             showLoading: () => document.getElementById('loading-overlay').classList.add('active'),
             hideLoading: () => document.getElementById('loading-overlay').classList.remove('active'),
@@ -2499,8 +2601,7 @@
                     UI.showLoading();
                     
                     // Fetch values from the interactive autocomplete component
-                    const tagsVal = document.getElementById('interactive-tags-wrapper_value').value;
-                    const tags = tagsVal ? tagsVal.split(',').filter(t => t) : [];
+                    const tags = UI.getTagValues('interactive-tags-wrapper');
 
                     // Check the toggle switch and structure structural tags appropriately
                     const isNsfwChecked = document.getElementById('f-nsfw').checked;
@@ -3441,6 +3542,13 @@
                 const publishedImages = filteredImages.filter(img => Utils.isGalleryImagePublished(img));
                 const hiddenImages = filteredImages.filter(img => !Utils.isGalleryImagePublished(img));
                 const nsfwCount = filteredImages.filter(img => Utils.isGalleryImageNsfw(img)).length;
+                const activeVisibilityFilter = State.galleryVisibilityFilter === 'hidden' ? 'hidden' : 'published';
+                const activeImages = activeVisibilityFilter === 'hidden' ? hiddenImages : publishedImages;
+                const activeBoardTitle = activeVisibilityFilter === 'hidden' ? 'Unpublished Image Pool' : 'Published Gallery';
+                const activeBoardSubtitle = activeVisibilityFilter === 'hidden'
+                    ? 'Use this pool for hidden alternates, drafts, spoiler art, or assets waiting for a release window.'
+                    : 'These images appear on the reader frontend and feed the recent gallery section.';
+                const activeBoardCount = activeVisibilityFilter === 'hidden' ? hiddenImages.length : publishedImages.length;
 
                 const renderGalleryCards = (images, isHiddenPool = false) => {
                     if (!images.length) {
@@ -3558,7 +3666,7 @@
                                     class="form-input"
                                     value="${Utils.escapeAttr(State.gallerySearch)}"
                                     placeholder="Search images, character names, or tags..."
-                                    oninput="State.gallerySearch = this.value; Views.render('gallery')"
+                                    oninput="State.gallerySearch = this.value; clearTimeout(window._gallerySearchTimer); window._gallerySearchTimer = setTimeout(() => Views.render('gallery'), 160)"
                                 >
                             </div>
                         </div>
@@ -3568,38 +3676,39 @@
                         Reader-facing gallery queries now only pull rows where <code>is_published = true</code>. Use the hidden pool to stage art, keep alternates/private drafts out of the public gallery, or temporarily unpublish images without losing their metadata.
                     </div>
 
-                    <div class="gallery-sections">
-                        <section class="gallery-section">
-                            <div class="gallery-section-header">
-                                <div>
-                                    <div class="gallery-section-title">
-                                        <i class="fas fa-images"></i>
-                                        <span>Published Gallery</span>
+                    <div class="gallery-view-shell">
+                        <div class="gallery-view-main">
+                            <section class="gallery-stage ${activeVisibilityFilter === 'hidden' ? 'hidden-pool' : ''}">
+                                <div class="gallery-stage-header">
+                                    <div>
+                                        <div class="gallery-stage-title">
+                                            <i class="fas ${activeVisibilityFilter === 'hidden' ? 'fa-box-archive' : 'fa-images'}"></i>
+                                            <span>${activeBoardTitle}</span>
+                                        </div>
+                                        <div class="gallery-stage-subtitle">${activeBoardSubtitle}</div>
                                     </div>
-                                    <div class="gallery-section-subtitle">These images appear on the reader frontend and feed the recent gallery section.</div>
+                                    <span class="status-badge ${activeVisibilityFilter === 'hidden' ? 'status-draft' : 'status-published'}">${activeBoardCount} ${activeVisibilityFilter === 'hidden' ? 'hidden' : 'live'}</span>
                                 </div>
-                                <span class="status-badge status-published">${publishedImages.length} live</span>
-                            </div>
-                            <div class="gallery-section-body">
-                                ${renderGalleryCards(publishedImages)}
-                            </div>
-                        </section>
+                                <div class="gallery-stage-body">
+                                    ${renderGalleryCards(activeImages, activeVisibilityFilter === 'hidden')}
+                                </div>
+                            </section>
+                        </div>
 
-                        <section class="gallery-section hidden-pool">
-                            <div class="gallery-section-header">
+                        <aside class="gallery-view-aside">
+                            <button class="btn btn-secondary gallery-view-toggle ${activeVisibilityFilter === 'published' ? 'is-active' : ''}" onclick="State.galleryVisibilityFilter = 'published'; Views.render('gallery')">
                                 <div>
-                                    <div class="gallery-section-title">
-                                        <i class="fas fa-box-archive"></i>
-                                        <span>Unpublished Image Pool</span>
-                                    </div>
-                                    <div class="gallery-section-subtitle">Use this pool for hidden alternates, drafts, spoiler art, or assets waiting for a release window.</div>
+                                    <strong>Published Images</strong>
+                                    <span>${publishedImages.length} image(s) currently visible on the reader frontend.</span>
                                 </div>
-                                <span class="status-badge status-draft">${hiddenImages.length} hidden</span>
-                            </div>
-                            <div class="gallery-section-body">
-                                ${renderGalleryCards(hiddenImages, true)}
-                            </div>
-                        </section>
+                            </button>
+                            <button class="btn btn-secondary gallery-view-toggle ${activeVisibilityFilter === 'hidden' ? 'is-active' : ''}" onclick="State.galleryVisibilityFilter = 'hidden'; Views.render('gallery')">
+                                <div>
+                                    <strong>Unpublished Images</strong>
+                                    <span>${hiddenImages.length} staged image(s) hidden from the reader frontend.</span>
+                                </div>
+                            </button>
+                        </aside>
                     </div>
                 `;
             },

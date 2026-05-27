@@ -193,7 +193,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `render(viewName)` — The primary internal router mapping sidebar clicks to view functions.
 - View rendering functions that fetch data, populate caches, and build tables/grids:
   - `dashboard()`, `stories()`, `chapters()`, `characters()`, `lore()`, `timeline()`, `maps()`, `mapRequests()`, `gallery()`, `wallpapers()`, `settings()`.
-  - `gallery()` now renders a story-wide media workspace with search/filter controls, a published board, and an unpublished image pool.
+  - `gallery()` now renders a story-wide media workspace with search/filter controls, a single broad-view gallery board, and a side toggle between published and unpublished image collections.
 
 ### `UI` (Interactive Dashboard Components)
 - `imageUploadField(id, label, currentValue, bucketName, multiple)` — Renders a modern drag-and-drop dropzone dashboard UI element with a file picker input, text URL input, and dynamic client-side image preview area.
@@ -202,7 +202,8 @@ The functions and components of the public reader SPA are now fully modularized 
 - `clearPreviews(listId, urlInputId)` — Helper to purge cached local previews and clear bound text values.
 - `initDragAndDrop(id)` — Binds `dragenter`, `dragover`, `dragleave`, and `drop` event listeners to a target upload area, enabling high-performance visual state transitions and multi-file processing.
 - `initTagComponent(elementId, initialTags)` — Replaces static tag strings with a dynamic, HSL-colored interactive tag-chip wrapper. Handles Backspace, Enter, and Comma key triggers alongside individual chip deletion buttons, automatically syncing the parsed array back to hidden elements.
-- `initTagAutocomplete(containerId, initialTags)` — Advanced interactive tag input with live database autocompletion. Asynchronously pulls all distinct gallery tags, offers arrow-key keyboard navigation, and provides options to create entirely new tags or select existing tags.
+- `initTagAutocomplete(containerId, initialTags)` — Advanced interactive tag input with live database autocompletion. Immediately renders existing chips, then asynchronously hydrates suggestion options from the database so save flows are not blocked by the autocomplete fetch.
+- `getTagValues(containerId)` — Reads the current gallery tag selection from the autocomplete widget, using the hidden input when present and a container dataset fallback when the widget is still hydrating.
 
 ---
 

@@ -89,6 +89,8 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
   - `selectedCharacterId` *(String | null)* — For character relation filtering contexts.
   - `gallerySearch` *(String)* — Active admin gallery workspace search query spanning caption text, character names, and tags while filtering the published panel and hidden pool.
 
+  - `galleryVisibilityFilter` *(String)* â€” Tracks whether the admin gallery workspace is currently showing the published board or the unpublished pool.
+
 ### `writer.html`
 - `supabase` *(Object)* — Holds the initialized Supabase client instance.
 - `currentStoryId` *(String | null)* — The ID of the story currently being edited. Initialized from the `?story_id=` URL parameter or the first available story; changes via the top-bar dropdown.
@@ -254,6 +256,6 @@ Media assets are managed using Supabase Storage buckets.
 - **Interactive Tag Chip & Autocomplete System:** Integrated a dynamic, HSL-themed visual tag chip input (`UI.initTagComponent` & `UI.initTagAutocomplete`) that converts input strings into deletable tag chips. The autocomplete-powered variant fetches existing distinct tags from the database (filtering out structural flags like `NSFW`), allowing arrow-key selection, click selection, and custom tokenization. 
 - **NSFW / R18 Content Categorization:** Implemented a standardized visual toggle switch inside `Forms.galleryImageForm` that isolates age-gated media assets. Upon saving, it programmatically injects or prunes structural metadata tags (`NSFW`) while maintaining standard user tags.
 - **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
-- **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and segments assets into a reader-visible published board plus an unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
+- **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and presents a single broad-view gallery board with a side toggle between the reader-visible published collection and the unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
 
 

@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-05-27]
+### Fixed
+- 10:41 +05:30: Refined the `admin.html` gallery workspace so it now uses a single broad-view image board with a side toggle between published and unpublished collections instead of rendering both pools side by side. Also fixed gallery image saving by making the tag autocomplete render immediately and adding a resilient tag-value fallback, restoring the gallery tag system and preventing the `document.getElementById(...).value is null` save error. Updated `docs/CODEBASE_ARCHITECTURE.md` and `docs/FUNCTION_INDEX.md`.
+
 ## [2026-05-25]
 ### Added
 - 23:21 +05:30: Added a standalone ScribbleHub chapter autosync worker at `scripts/scribblehub_autosync.js`, plus `.env.example`, Windows helper scripts (`scripts/run_scribblehub_sync.ps1`, `scripts/register_scribblehub_sync_task.ps1`), and a `npm run sync:scribblehub` entrypoint. The worker polls a ScribbleHub series feed/page for recent chapters, fetches unseen chapter bodies, and inserts them into the existing Supabase `chapters` table with a hidden provenance marker for idempotent re-syncs. Updated `docs/CODEBASE_ARCHITECTURE.md` and `docs/FUNCTION_INDEX.md` to document the new automation flow.
