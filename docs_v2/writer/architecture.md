@@ -31,7 +31,9 @@ The IDE encapsulates state in a unified `state` manager and global context varia
   - `activeNodeId` *(UUID | null)* — The ID of the node currently loaded in the active editor.
   - `expandedFolders` *(Set)* — Set of folder UUIDs currently expanded in the binder tree view. Persisted in `localStorage`.
   - `bookmarks` *(Set)* — Collection of flagged node UUIDs.
+  - `childrenByParent` *(Object)* — Precomputed binder-tree child index used to avoid repeated full-array scans during recursive rendering.
   - `isDirty` *(Boolean)* — Tracks whether there are unsaved editor changes. Governs auto-saves and navigation warning prompts.
+  - `editorChangeRevision` / async request tokens *(Number)* — Guard autosaves, node loads, inspector link renders, and global search against stale async completions.
   - `quill` *(Object)* — The Quill rich-text editor instance.
   - `currentTheme` *(String)* — Name of the active visual theme (e.g. Amber Glow, Solarized Dark). Persisted in `localStorage`.
   - `sessionStartWords` / `sessionStartTime` *(Number)* — word and time markers used to calculate session metrics.
@@ -49,7 +51,7 @@ Upon loading the Writer IDE, the page executes the following IIFE bootstrap proc
    - **Listener Bindings:** `bindEvents()` registers keyboard shortcuts (Ctrl+S, Focus Mode keys), sidebar resizers, and popup controllers.
    - **Visual Theme Selection:** Recovers saved visual themes from `localStorage` and injects theme classes onto the document root.
    - **Story Lookup:** Queries available stories via Supabase and populates the top dropdown, defaulting to the URL parameters if present.
-   - **Tree Builder:** `loadNodes()` fetches all nodes associated with the story, indexes them by ID, and renders the left binder tree.
+   - **Tree Builder:** `loadNodes()` fetches lightweight node metadata for the selected story, indexes nodes by ID and parent ID, and renders the left binder tree. Full bodies are loaded on node open or on-demand global search.
    - **Session Metric Init:** Records baseline word counts and start times, launching interval timers to update statistics.
 
 ---

@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-05-28]
+### Fixed
+- 03:28 +05:30: Applied the first `writer.html` performance and correctness pass: lightweight binder queries, lazy global-search body hydration, precomputed binder child indexes, serialized autosave revision guards, stale async node/link/search guards, batched Quill metrics updates, split-view rendering without throwaway Quill instances, and minor HTML escaping/link-search hardening. Added the applied-fixes log to `Internal_tools/performance_report_writer.md` and updated writer architecture/function documentation.
+
 ## [2026-05-27]
 ### Fixed
 - 10:41 +05:30: Refined the `admin.html` gallery workspace so it now uses a single broad-view image board with a side toggle between published and unpublished collections instead of rendering both pools side by side. Also fixed gallery image saving by making the tag autocomplete render immediately and adding a resilient tag-value fallback, restoring the gallery tag system and preventing the `document.getElementById(...).value is null` save error. Updated `docs/CODEBASE_ARCHITECTURE.md` and `docs/FUNCTION_INDEX.md`.

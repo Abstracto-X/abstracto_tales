@@ -22,9 +22,11 @@ Fetches draft hierarchies, manages database saves, and virtualizes live publishe
 - `getStories()`
   - **Description:** Fetches available story rows to populate the top selection dropdown.
 - `getNodes()`
-  - **Description:** Fetches all flat node records for the active story from the private `writer_nodes` tree table.
+  - **Description:** Fetches lightweight flat node metadata for the active story from the private `writer_nodes` tree table.
 - `getPublishedNodes()`
-  - **Description:** Asynchronously queries public database tables (`chapters`, `characters`, `lore_entries`, and `timeline_events`), virtualizing them into folder/document node objects to show in the Binder tree view.
+  - **Description:** Asynchronously queries lightweight public database metadata (`chapters`, `characters`, `lore_entries`, and `timeline_events`), virtualizing it into folder/document node objects to show in the Binder tree view.
+- `getSearchContent()`
+  - **Description:** Lazily retrieves full body content for the active story/tree mode when global search needs content matching.
 - `getNode(nodeId)`
   - **Description:** Fetches the text payload, snapshot histories, and detailed metadata columns for a specific node.
 - `saveNode(nodeId, payload)`
@@ -40,11 +42,11 @@ Fetches draft hierarchies, manages database saves, and virtualizes live publishe
 Builds recursive folders, updates active lists, and handles node sorting.
 
 - `loadNodes()`
-  - **Description:** Pulls raw node data from the database and triggers in-memory tree reconstruction.
+  - **Description:** Pulls lightweight node data from the database and triggers in-memory tree reconstruction.
 - `buildNodeMap()`
-  - **Description:** Converts flat database arrays into a dictionary index (`state.nodeMap`) for instant lookup by ID.
+  - **Description:** Converts flat database arrays into dictionary indexes (`state.nodeMap` and `state.childrenByParent`) for instant lookup by ID and parent.
 - `getNodeChildren(parentId)`
-  - **Description:** Retrieves and sorts children nodes belonging to a parent folder ID.
+  - **Description:** Retrieves pre-sorted children nodes belonging to a parent folder ID.
 - `renderTree(filterText)`
   - **Description:** Traverses the node hierarchy recursively, generating nested list markup (`<ul>` and `<li>`) for the Binder panel.
 - `renderTreeNode(node)`
@@ -58,13 +60,13 @@ Builds recursive folders, updates active lists, and handles node sorting.
 Handles document loading, debounced auto-saves, and split-view reference panels.
 
 - `openNode(nodeId)`
-  - **Description:** Loads a selected node. Auto-saves the active draft first, loads the new content, configures editing locks, and populates properties inspectors.
+  - **Description:** Loads a selected node. Auto-saves the active draft first, loads the new content, configures editing locks, populates properties inspectors, and ignores stale async responses after rapid navigation.
 - `scheduleSave() / saveCurrentNode()`
-  - **Description:** Automates draft saves. Captures editor changes, checks isDirty state, and schedules a debounced write to Supabase.
+  - **Description:** Automates draft saves. Serializes writes, checks editor revision state, and schedules debounced Supabase writes without letting older saves clear newer edits.
 - `loadNodeContentIntoEditor(node)`
   - **Description:** Inspects document contents (Quill JSON Delta vs raw HTML) and populates the canvas.
 - `renderNodeContentInSplitView(node)`
-  - **Description:** Loads a secondary node as read-only in the split-view panel for reference while writing.
+  - **Description:** Loads a secondary node as read-only in the split-view panel for reference while writing without creating throwaway Quill instances.
 - `clearActiveSelection()`
   - **Description:** Clears the editor canvas and displays placeholder illustrations when no document is active.
 

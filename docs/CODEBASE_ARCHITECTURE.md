@@ -98,10 +98,15 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
   - `treeMode` *(String)* — Either `'workspace'` (drafts) or `'published'` (live entities). Changes via the binder tabs.
   - `nodes` *(Array)* — The current list of tree nodes (documents, folders, characters, etc.) for the active tree mode.
   - `nodeMap` *(Object)* — A dictionary mapping node IDs to node objects for quick lookup.
+  - `childrenByParent` *(Object)* — A precomputed parent-id index used by the binder renderer to avoid repeatedly filtering the full node list while walking the tree.
   - `activeNodeId` *(String | null)* — The ID of the currently opened node in the editor. Changes when clicking a node in the binder.
+  - `activeNodeRequestId` / `linksRenderRequestId` / `searchRequestId` *(Number)* — Monotonic request tokens used to ignore stale async editor, inspector-link, and global-search completions after the user changes context.
   - `expandedFolders` *(Set)* — Keeps track of which folders are visually expanded in the tree. Saved to/from `localStorage`.
   - `bookmarks` *(Set)* — A collection of bookmarked node IDs.
+  - `savePromise` / `isSaving` / `pendingSaveAfterCurrent` *(Object | Boolean)* — Autosave coordination state that prevents overlapping Supabase writes from marking newer edits as saved.
   - `isDirty` *(Boolean)* — Tracks if the editor has unsaved changes. Changes on text input and resets on successful save.
+  - `editorChangeRevision` *(Number)* — Incremented on each Quill text-change so save completions can tell whether newer edits happened while a write was in flight.
+  - `searchContentHydratedKey` *(String | null)* — Tracks whether full body text has been loaded on demand for the active story/tree mode global search.
   - `quill` *(Object)* — The Quill rich-text editor instance.
   - `currentTheme` *(String)* — The active UI theme name. Loaded from `localStorage`.
   - `sessionStartWords` / `sessionStartTime` *(Number)* — Tracking metrics for the active writing session.
@@ -172,9 +177,9 @@ The bootstrap sequence is triggered entirely within the ES6 module system of `js
    - `bindEvents()` attaches UI listeners (buttons, modal handlers, hotkeys).
    - `setTheme(state.currentTheme)` applies the user's stored theme.
    - `DB.getStories()` populates the workspace dropdown, defaulting to the first or the `?story_id=` URL param.
-   - `loadNodes()` fetches the hierarchical document tree from the DB, building `state.nodes` and `nodeMap`, and rendering the left sidebar binder.
+   - `loadNodes()` fetches lightweight hierarchical document metadata from the DB, building `state.nodes`, `nodeMap`, and `childrenByParent`, then rendering the left sidebar binder. Full node bodies are fetched only when a document is opened or when global search hydrates searchable content on demand.
    - `startSessionTimer()` begins tracking time/word count.
-   - During editing, `updateTargetBar()` updates both the word-goal UI and the editor-pane hallway illumination effect so the reveal stays synchronized with target completion.
+   - During editing, Quill text changes increment a revision counter, schedule a debounced autosave, and batch editor metrics/outline/target updates through `requestAnimationFrame` so typing does not synchronously recompute all panels on every keystroke.
 
 ### `cartographer.html`
 1. **`DOMContentLoaded` Event Listener:**

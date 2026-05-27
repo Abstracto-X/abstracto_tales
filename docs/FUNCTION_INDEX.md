@@ -216,8 +216,9 @@ The functions and components of the public reader SPA are now fully modularized 
 
 ### `DB` (Supabase Data Access)
 - `getStories()` — Populates the header dropdown to switch workspace contexts.
-- `getNodes()` — Retrieves all raw draft nodes from the `writer_nodes` tree table.
-- `getPublishedNodes()` — Synthesizes a virtual tree array from live `chapters`, `characters`, `lore`, and `timeline` tables.
+- `getNodes()` — Retrieves lightweight draft node metadata from the `writer_nodes` tree table without full document bodies.
+- `getPublishedNodes()` — Synthesizes a lightweight virtual tree array from live `chapters`, `characters`, `lore`, and `timeline` tables.
+- `getSearchContent()` — Lazily fetches full body fields for the active story/tree mode when global search needs content matching.
 - `getNode(nodeId)` — Fetches the full content/body of a specific node asynchronously.
 - `saveNode(nodeId, payload)` — Updates or inserts a node. Handles polymorphic saving (identifies if it's a draft node or a live table record).
 - `deleteNode(nodeId)` — Purges a node from the DB.
@@ -225,17 +226,17 @@ The functions and components of the public reader SPA are now fully modularized 
 
 ### Tree Rendering & Binder (Left Sidebar)
 - `loadNodes()` — Fetches data via `DB` and triggers tree recreation.
-- `buildNodeMap()` — Converts the flat array of node records into a quick-access dictionary (`state.nodeMap`).
-- `getNodeChildren(parentId)` — Helper to traverse the hierarchical tree structure.
+- `buildNodeMap()` — Converts the flat array of node records into quick-access `state.nodeMap` and `state.childrenByParent` indexes.
+- `getNodeChildren(parentId)` — Reads pre-sorted child arrays from `state.childrenByParent` while traversing the hierarchical tree structure.
 - `renderTree(filterText)` — Recursively generates the HTML `<ul>`/`<li>` structure for the binder.
 - `renderTreeNode(node)` — Creates an individual tree item, attaching expanding, dragging, and context menu behaviors.
 - `toggleFolder(nodeId)` — Expands/collapses sub-trees in the UI.
 
 ### Editor Logic (Center Canvas)
-- `openNode(nodeId)` — The primary function for clicking a document: handles saving the old node, loading the new one, checking edit permissions, and refreshing the inspector.
-- `scheduleSave() / saveCurrentNode()` — The debounced auto-save mechanics that push dirty `state.quill` content to Supabase.
+- `openNode(nodeId)` — The primary function for clicking a document: handles saving the old node, loading the new one, checking edit permissions, refreshing the inspector, and ignoring stale async loads after rapid navigation.
+- `scheduleSave() / saveCurrentNode()` — Debounced auto-save mechanics that serialize Supabase writes and use editor revision checks so in-flight saves cannot mark newer edits as saved.
 - `loadNodeContentIntoEditor(node)` — Determines if the content is a Quill Delta JSON or raw HTML, and configures the editor gracefully.
-- `renderNodeContentInSplitView(node)` — Renders a read-only secondary view for cross-referencing.
+- `renderNodeContentInSplitView(node)` — Renders a read-only secondary view for cross-referencing without creating throwaway Quill instances.
 - `clearActiveSelection()` — Resets the editor canvas to the empty/placeholder state.
 
 ### Inspector & Properties (Right Sidebar)
@@ -246,11 +247,11 @@ The functions and components of the public reader SPA are now fully modularized 
 
 ### Metrics & Utilities
 - `countWords(text)` — Simple whitespace-delimited word counter.
-- `updateCounts()` — Fired on Quill text-change to update footer metrics.
+- `scheduleEditorMetricsUpdate()` / `updateCounts()` — Batches Quill text-change metrics, outline, and target-bar updates through `requestAnimationFrame`.
 - `startSessionTimer() / updateSessionStats()` — Calculates Words-Per-Minute and overall session duration.
 - `setTheme(themeName)` — Injects the selected UI theme class onto the root body.
 - `toggleFocusMode() / toggleTypewriterMode()` — Adjusts CSS bounds to hide sidebars or auto-scroll the editor to the center.
-- `performSearchAll(query)` — Global `Ctrl+Shift+F` full-text search across all loaded nodes.
+- `hydrateSearchContent()` / `performSearchAll(query)` — Global `Ctrl+Shift+F` full-text search that lazily hydrates body content for the active story/tree mode before matching.
 ### Context Menus & Actions
 - `showContextMenu(e, nodeId) / hideContextMenu()` — Manages the custom right-click floating menu.
 - `handleContextAction(action)` — Dispatches menu clicks to node operations.

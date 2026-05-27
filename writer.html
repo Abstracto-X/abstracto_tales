@@ -1395,16 +1395,26 @@
             treeMode: 'workspace',
             nodes: [],
             nodeMap: {},
+            childrenByParent: {},
             activeNodeId: null,
+            activeNodeRequestId: 0,
+            linksRenderRequestId: 0,
+            searchRequestId: 0,
+            searchContentHydratedKey: null,
             expandedFolders: new Set(JSON.parse(localStorage.getItem('wIDE_expanded') || '[]')),
             bookmarks: new Set(JSON.parse(localStorage.getItem('wIDE_bookmarks') || '[]')),
             saveTimer: null,
+            savePromise: null,
+            isSaving: false,
+            pendingSaveAfterCurrent: false,
             isDirty: false,
+            editorChangeRevision: 0,
             quill: null,
             contextNodeId: null,
             sessionStartWords: 0,
             sessionStartTime: Date.now(),
             sessionTimer: null,
+            editorMetricsFrame: null,
             splitNodeId: null,
             currentTheme: localStorage.getItem('wIDE_theme') || 'dark',
             focusMode: false,
@@ -1520,7 +1530,7 @@
             const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
             const el = document.createElement('div');
             el.className = `toast ${type}`;
-            el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i>${message}`;
+            el.innerHTML = `<i class="fas ${icons[type] || icons.info}"></i>${escapeHTML(message)}`;
             dom.toastContainer.appendChild(el);
             setTimeout(() => {
                 el.classList.add('fadeOut');
@@ -1619,6 +1629,16 @@
 
         function looksLikeHtml(content) {
             return /<\/?[a-z][\s\S]*>/i.test(content || '');
+        }
+
+        function escapeHTML(value) {
+            return String(value || '').replace(/[&<>"']/g, ch => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[ch]));
         }
 
         function getPublishedEditorContent() {
@@ -1723,6 +1743,7 @@
         }
 
         function clearActiveSelection() {
+            state.activeNodeRequestId += 1;
             state.activeNodeId = null;
             state.isDirty = false;
             dom.editorEmptyState.classList.remove('hidden');
@@ -1790,12 +1811,10 @@
             if (isWorkspaceNode(node)) {
                 try {
                     const delta = JSON.parse(node.content);
-                    const tempContainer = document.createElement('div');
-                    document.body.appendChild(tempContainer);
-                    const tempQuill = new Quill(tempContainer, { readOnly: true });
-                    tempQuill.setContents(delta);
-                    dom.splitEditorContent.innerHTML = tempQuill.root.innerHTML;
-                    document.body.removeChild(tempContainer);
+                    const text = (delta.ops || [])
+                        .map(op => typeof op.insert === 'string' ? op.insert : '')
+                        .join('');
+                    dom.splitEditorContent.innerHTML = escapeHTML(text).replace(/\n/g, '<br>');
                     return;
                 } catch (e) {
                     dom.splitEditorContent.innerHTML = node.content;
@@ -1923,7 +1942,7 @@
             getNodes: async () => {
                 const { data, error } = await supabase
                     .from('writer_nodes')
-                    .select('*')
+                    .select('id, story_id, parent_id, title, type, status, sort_order, word_count, image_url, metadata, created_at, updated_at')
                     .eq('story_id', currentStoryId)
                     .order('sort_order');
                 if (error) throw error;
@@ -1931,11 +1950,11 @@
             },
             getPublishedNodes: async () => {
                 const [chaptersRes, charactersRes, loreCategoriesRes, loreEntriesRes, timelineRes] = await Promise.all([
-                    supabase.from('chapters').select('*').eq('story_id', currentStoryId).order('chapter_order'),
-                    supabase.from('characters').select('*').eq('story_id', currentStoryId).order('sort_order'),
-                    supabase.from('lore_categories').select('*').eq('story_id', currentStoryId).order('sort_order'),
-                    supabase.from('lore_entries').select('*, lore_categories(id, name, slug)').eq('story_id', currentStoryId).order('sort_order'),
-                    supabase.from('timeline_events').select('*').eq('story_id', currentStoryId).order('event_order')
+                    supabase.from('chapters').select('id, title, chapter_order, word_count, is_published, updated_at').eq('story_id', currentStoryId).order('chapter_order'),
+                    supabase.from('characters').select('id, name, role_title, profile_image_url, sort_order').eq('story_id', currentStoryId).order('sort_order'),
+                    supabase.from('lore_categories').select('id, name, slug, sort_order').eq('story_id', currentStoryId).order('sort_order'),
+                    supabase.from('lore_entries').select('id, title, slug, category_id, image_url, sort_order, lore_categories(id, name, slug)').eq('story_id', currentStoryId).order('sort_order'),
+                    supabase.from('timeline_events').select('id, title, event_date, event_order').eq('story_id', currentStoryId).order('event_order')
                 ]);
 
                 const responses = [chaptersRes, charactersRes, loreCategoriesRes, loreEntriesRes, timelineRes];
@@ -1958,6 +1977,37 @@
                 (timelineRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('timeline_events', record)));
 
                 return nodes;
+            },
+            getSearchContent: async () => {
+                if (isWorkspaceTree()) {
+                    const { data, error } = await supabase
+                        .from('writer_nodes')
+                        .select('id, content')
+                        .eq('story_id', currentStoryId);
+                    if (error) throw error;
+                    return (data || []).map(record => ({
+                        id: record.id,
+                        content: record.content || ''
+                    }));
+                }
+
+                const [chaptersRes, charactersRes, loreEntriesRes, timelineRes] = await Promise.all([
+                    supabase.from('chapters').select('id, content').eq('story_id', currentStoryId),
+                    supabase.from('characters').select('id, biography').eq('story_id', currentStoryId),
+                    supabase.from('lore_entries').select('id, description').eq('story_id', currentStoryId),
+                    supabase.from('timeline_events').select('id, description').eq('story_id', currentStoryId)
+                ]);
+
+                const responses = [chaptersRes, charactersRes, loreEntriesRes, timelineRes];
+                const failed = responses.find(res => res.error);
+                if (failed) throw failed.error;
+
+                return [
+                    ...(chaptersRes.data || []).map(record => ({ id: `pub_chapter_${record.id}`, content: record.content || '' })),
+                    ...(charactersRes.data || []).map(record => ({ id: `pub_character_${record.id}`, content: record.biography || '' })),
+                    ...(loreEntriesRes.data || []).map(record => ({ id: `pub_lore_${record.id}`, content: record.description || '' })),
+                    ...(timelineRes.data || []).map(record => ({ id: `pub_timeline_${record.id}`, content: record.description || '' }))
+                ];
             },
             getNode: async (target) => {
                 const node = typeof target === 'string' ? state.nodeMap[target] : target;
@@ -2149,15 +2199,24 @@
 
             state.quill.on('text-change', () => {
                 if (!state.activeNodeId) return;
+                state.editorChangeRevision += 1;
                 state.isDirty = true;
                 scheduleSave();
-                updateCounts();
-                updateOutline();
-                updateTargetBar();
+                scheduleEditorMetricsUpdate();
 
                 if (state.typewriterMode) {
                     typewriterScroll();
                 }
+            });
+        }
+
+        function scheduleEditorMetricsUpdate() {
+            if (state.editorMetricsFrame) return;
+            state.editorMetricsFrame = requestAnimationFrame(() => {
+                state.editorMetricsFrame = null;
+                updateCounts();
+                updateOutline();
+                updateTargetBar();
             });
         }
 
@@ -2187,6 +2246,7 @@
                     ? await DB.getNodes()
                     : await DB.getPublishedNodes();
                 state.nodes = data;
+                state.searchContentHydratedKey = null;
                 buildNodeMap();
                 renderTree(dom.binderSearch.value);
                 renderBookmarks();
@@ -2204,17 +2264,24 @@
 
         function buildNodeMap() {
             state.nodeMap = {};
+            state.childrenByParent = {};
             state.nodes.forEach(n => {
                 const normalized = normalizeNodeRecord(n);
                 state.nodeMap[normalized.id] = normalized;
+                const parentKey = normalized.parent_id || '__root__';
+                if (!state.childrenByParent[parentKey]) {
+                    state.childrenByParent[parentKey] = [];
+                }
+                state.childrenByParent[parentKey].push(normalized);
             });
             state.nodes = Object.values(state.nodeMap);
+            Object.values(state.childrenByParent).forEach(children => {
+                children.sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            });
         }
 
         function getNodeChildren(parentId) {
-            return state.nodes
-                .filter(n => n.parent_id === parentId)
-                .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            return state.childrenByParent[parentId || '__root__'] || [];
         }
 
         function getAllDescendants(nodeId) {
@@ -2442,6 +2509,7 @@
                 await saveCurrentNode();
             }
 
+            const requestId = ++state.activeNodeRequestId;
             state.activeNodeId = nodeId;
             localStorage.setItem(getActiveNodeStorageKey(), nodeId);
 
@@ -2462,12 +2530,15 @@
 
             try {
                 const fullNode = await DB.getNode(node);
+                if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
                 Object.assign(state.nodeMap[nodeId], fullNode);
                 loadNodeContentIntoEditor(state.nodeMap[nodeId]);
             } catch (e) {
+                if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
                 loadNodeContentIntoEditor(node);
             }
 
+            if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
             state.isDirty = false;
             updateCounts();
             updateOutline();
@@ -2489,17 +2560,28 @@
 
         async function saveCurrentNode() {
             if (!state.activeNodeId || !state.isDirty) return;
+            if (state.isSaving) {
+                state.pendingSaveAfterCurrent = true;
+                return state.savePromise;
+            }
+
             clearTimeout(state.saveTimer);
             setSaveStatus('saving', 'Saving...');
 
-            const node = state.nodeMap[state.activeNodeId];
+            const nodeId = state.activeNodeId;
+            const node = state.nodeMap[nodeId];
             if (!node || !canEditNodeBody(node)) {
                 state.isDirty = false;
                 setSaveStatus('saved', '');
                 return;
             }
 
-            try {
+            const saveRevision = state.editorChangeRevision;
+
+            state.isSaving = true;
+            state.pendingSaveAfterCurrent = false;
+            state.savePromise = (async () => {
+                try {
                 const content = isWorkspaceNode(node)
                     ? JSON.stringify(state.quill.getContents())
                     : getPublishedEditorContent();
@@ -2513,19 +2595,38 @@
                 };
 
                 const savedNode = await DB.saveNode(node, data);
-                Object.assign(node, savedNode, {
-                    title: data.title,
-                    content,
-                    word_count: wordCount
-                });
-                
-                state.isDirty = false;
-                setSaveStatus('saved', 'Saved');
+                if (state.nodeMap[nodeId]) {
+                    Object.assign(state.nodeMap[nodeId], savedNode, {
+                        title: data.title,
+                        content,
+                        word_count: wordCount
+                    });
+                }
+
+                if (state.activeNodeId === nodeId && state.editorChangeRevision === saveRevision) {
+                    state.isDirty = false;
+                    setSaveStatus('saved', 'Saved');
+                } else if (state.activeNodeId === nodeId) {
+                    state.isDirty = true;
+                    setSaveStatus('saving', 'Saving...');
+                }
+
                 renderTree(dom.binderSearch.value);
             } catch (e) {
                 setSaveStatus('error', 'Save failed');
                 toast(`Failed to save: ${e.message}`, 'error');
+            } finally {
+                state.isSaving = false;
+                state.savePromise = null;
+
+                if (state.pendingSaveAfterCurrent || (state.activeNodeId === nodeId && state.isDirty && state.editorChangeRevision !== saveRevision)) {
+                    state.pendingSaveAfterCurrent = false;
+                    scheduleSave();
+                }
             }
+            })();
+
+            return state.savePromise;
         }
 
         // ============================
@@ -2574,12 +2675,16 @@
         // SESSION TRACKING
         // ============================
         function startSessionTimer() {
+            if (state.sessionTimer) {
+                clearInterval(state.sessionTimer);
+            }
             state.sessionStartTime = Date.now();
             state.sessionTimer = setInterval(updateSessionStats, 5000);
             updateSessionStats();
         }
 
         function updateSessionStats() {
+            if (document.hidden) return;
             const elapsed = (Date.now() - state.sessionStartTime) / 1000;
             const minutes = Math.floor(elapsed / 60);
             const seconds = Math.floor(elapsed % 60);
@@ -2658,7 +2763,7 @@
                 item.className = 'bookmark-item';
                 item.innerHTML = `
                     <i class="fas fa-star"></i>
-                    <span>${node.title || 'Untitled'}</span>
+                    <span>${escapeHTML(node.title || 'Untitled')}</span>
                     <button class="bm-remove" title="Remove bookmark"><i class="fas fa-times"></i></button>
                 `;
                 item.querySelector('span').addEventListener('click', () => openNode(id));
@@ -2789,9 +2894,12 @@
                 return;
             }
 
+            const requestId = ++state.linksRenderRequestId;
+            const nodeId = node.id;
             dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--text-faint);padding:4px 0;">Loading...</div>';
             try {
                 const linksData = await DB.getLinks(node.id);
+                if (requestId !== state.linksRenderRequestId || state.activeNodeId !== nodeId) return;
                 dom.inspLinksList.innerHTML = '';
                 
                 if (linksData.length === 0) {
@@ -2807,7 +2915,7 @@
                     item.className = 'link-item';
                     item.innerHTML = `
                         <i class="link-icon ${getIconName(targetInfo.type)}"></i>
-                        <span class="link-name">${targetInfo.title || 'Untitled'}</span>
+                        <span class="link-name">${escapeHTML(targetInfo.title || 'Untitled')}</span>
                         <button class="link-remove"><i class="fas fa-times"></i></button>
                     `;
                     item.querySelector('.link-name').addEventListener('click', () => openNode(targetInfo.id));
@@ -2817,6 +2925,7 @@
                     dom.inspLinksList.appendChild(item);
                 });
             } catch (e) {
+                if (requestId !== state.linksRenderRequestId || state.activeNodeId !== nodeId) return;
                 dom.inspLinksList.innerHTML = '<div style="font-size:10px;color:var(--danger-color);padding:4px 0;">Failed to load links</div>';
             }
         }
@@ -2856,7 +2965,7 @@
                 const item = document.createElement('div');
                 item.className = 'snapshot-item';
                 item.innerHTML = `
-                    <span class="snap-name">${snap.name || `Snapshot ${idx + 1}`}</span>
+                        <span class="snap-name">${escapeHTML(snap.name || `Snapshot ${idx + 1}`)}</span>
                     <span class="snap-date">${new Date(snap.date).toLocaleDateString()}</span>
                     <button class="snap-delete" title="Delete snapshot"><i class="fas fa-times"></i></button>
                 `;
@@ -2929,7 +3038,7 @@
                 item.innerHTML = `
                     <div class="search-result-title">
                         <i class="${getIconName(node.type)}"></i>
-                        ${node.title || 'Untitled'}
+                        ${escapeHTML(node.title || 'Untitled')}
                     </div>
                 `;
                 item.addEventListener('click', () => {
@@ -2967,13 +3076,38 @@
         // ============================
         let searchAllTimer = null;
 
-        function performSearchAll(query) {
+        async function hydrateSearchContent() {
+            const cacheKey = `${state.treeMode}:${currentStoryId}`;
+            if (state.searchContentHydratedKey === cacheKey) return;
+
+            const rows = await DB.getSearchContent();
+            rows.forEach(row => {
+                if (state.nodeMap[row.id]) {
+                    state.nodeMap[row.id].content = row.content || '';
+                }
+            });
+            state.searchContentHydratedKey = cacheKey;
+        }
+
+        async function performSearchAll(query) {
+            const requestId = ++state.searchRequestId;
             dom.searchAllResults.innerHTML = '';
             if (!query || query.length < 2) {
                 dom.searchAllResults.innerHTML = '<div class="search-result-empty">Type at least 2 characters...</div>';
                 return;
             }
 
+            dom.searchAllResults.innerHTML = '<div class="search-result-empty">Searching...</div>';
+            try {
+                await hydrateSearchContent();
+            } catch (e) {
+                if (requestId !== state.searchRequestId) return;
+                dom.searchAllResults.innerHTML = '<div class="search-result-empty">Search failed</div>';
+                return;
+            }
+
+            if (requestId !== state.searchRequestId) return;
+            dom.searchAllResults.innerHTML = '';
             const lowerQuery = query.toLowerCase();
             const results = [];
 
@@ -2998,9 +3132,11 @@
                         const idx = contentText.toLowerCase().indexOf(lowerQuery);
                         const start = Math.max(0, idx - 40);
                         const end = Math.min(contentText.length, idx + query.length + 40);
+                        const escapedExcerpt = escapeHTML(contentText.substring(start, end));
+                        const escapedQuery = escapeHTML(query).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                         excerpt = (start > 0 ? '...' : '') +
-                            contentText.substring(start, end).replace(
-                                new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+                            escapedExcerpt.replace(
+                                new RegExp(`(${escapedQuery})`, 'gi'),
                                 '<mark>$1</mark>'
                             ) +
                             (end < contentText.length ? '...' : '');
@@ -3025,7 +3161,7 @@
                 item.innerHTML = `
                     <div class="search-result-title">
                         <i class="${getIconName(node.type)}"></i>
-                        ${node.title || 'Untitled'}
+                        ${escapeHTML(node.title || 'Untitled')}
                     </div>
                     ${excerpt ? `<div class="search-result-excerpt">${excerpt}</div>` : ''}
                 `;
@@ -3382,7 +3518,16 @@
                     dom.linkSearchResults.innerHTML = '';
                     dom.linkSearchResults.classList.add('visible');
 
-                    const existingLinks = await DB.getLinks(state.activeNodeId);
+                    const activeNodeId = state.activeNodeId;
+                    let existingLinks = [];
+                    try {
+                        existingLinks = await DB.getLinks(activeNodeId);
+                    } catch (e) {
+                        dom.linkSearchResults.innerHTML = '<div style="padding:8px;font-size:11px;color:var(--danger-color);">Link search failed</div>';
+                        return;
+                    }
+
+                    if (!activeNodeId || activeNodeId !== state.activeNodeId || query !== dom.linkSearchInput.value.trim().toLowerCase()) return;
                     const existingIds = existingLinks.map(l => l.target_node_id);
 
                     const results = state.nodes
@@ -3393,7 +3538,7 @@
                     results.forEach(n => {
                         const item = document.createElement('div');
                         item.className = 'link-search-result';
-                        item.innerHTML = `<i class="${getIconName(n.type)}"></i>${n.title || 'Untitled'}`;
+                        item.innerHTML = `<i class="${getIconName(n.type)}"></i>${escapeHTML(n.title || 'Untitled')}`;
                         item.addEventListener('click', () => {
                             addLink(state.activeNodeId, n.id);
                         });
@@ -3597,7 +3742,7 @@
                     toast('You must create a story in the Admin Panel first.', 'warning', 5000);
                 } else {
                     dom.globalStorySelector.innerHTML = stories.map(s =>
-                        `<option value="${s.id}">${s.title}</option>`
+                        `<option value="${s.id}">${escapeHTML(s.title)}</option>`
                     ).join('');
 
                     if (!currentStoryId || !stories.find(s => s.id === currentStoryId)) {
