@@ -514,6 +514,7 @@
         .header-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
         .header-btn.active { color: var(--accent-color); }
         .header-btn.bookmarked { color: var(--accent-color); }
+        .header-btn.danger:hover { color: var(--danger-color); background: rgba(255,68,68,0.1); }
 
         /* Target/Goal progress bar */
         #target-bar-wrap {
@@ -1070,6 +1071,8 @@
                     <button class="header-btn" id="btn-outline" title="Outline"><i class="fas fa-list-ol"></i></button>
                     <button class="header-btn" id="btn-split-view" title="Split View"><i class="fas fa-columns"></i></button>
                     <button class="header-btn" id="btn-snapshot" title="Take Snapshot"><i class="fas fa-camera"></i></button>
+                    <button class="header-btn" id="btn-render-markdown" title="Render Markdown (Ctrl+Shift+M)"><i class="fab fa-markdown"></i></button>
+                    <button class="header-btn danger" id="btn-close-doc" title="Close Document"><i class="fas fa-times"></i></button>
                 </div>
                 <!-- Target bar -->
                 <div id="target-bar-wrap">
@@ -1409,6 +1412,10 @@
             pendingSaveAfterCurrent: false,
             isDirty: false,
             editorChangeRevision: 0,
+            isProgrammaticLoad: false,
+            currentWordCount: 0,
+            currentCharCount: 0,
+            currentParaCount: 0,
             quill: null,
             contextNodeId: null,
             sessionStartWords: 0,
@@ -1466,6 +1473,8 @@
             btnOutline: $('#btn-outline'),
             btnSplitView: $('#btn-split-view'),
             btnSnapshot: $('#btn-snapshot'),
+            btnRenderMarkdown: $('#btn-render-markdown'),
+            btnCloseDoc: $('#btn-close-doc'),
             outlinePanel: $('#outline-panel'),
             outlineList: $('#outline-list'),
             targetBarWrap: $('#target-bar-wrap'),
@@ -1641,10 +1650,215 @@
             }[ch]));
         }
 
+        function isSafeMarkdownUrl(url) {
+            return /^(https?:|mailto:|#|\/|\.\/|\.\.\/)/i.test(String(url || '').trim());
+        }
+
+        function markdownInlineToHTML(value) {
+            const codeSpans = [];
+            let html = escapeHTML(value).replace(/`([^`]+)`/g, (_, code) => {
+                const token = `%%CODE_SPAN_${codeSpans.length}%%`;
+                codeSpans.push(`<code>${code}</code>`);
+                return token;
+            });
+
+            html = html.replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, alt, url) => {
+                const safeUrl = url.replace(/&amp;/g, '&');
+                if (!isSafeMarkdownUrl(safeUrl)) return match;
+                return `<img src="${escapeHTML(safeUrl)}" alt="${alt}">`;
+            });
+
+            html = html.replace(/\[([^\]]+)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, (match, label, url) => {
+                const safeUrl = url.replace(/&amp;/g, '&');
+                if (!isSafeMarkdownUrl(safeUrl)) return match;
+                return `<a href="${escapeHTML(safeUrl)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+            });
+
+            html = html
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+                .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+                .replace(/_([^_\n]+)_/g, '<em>$1</em>')
+                .replace(/~~([^~]+)~~/g, '<s>$1</s>');
+
+            codeSpans.forEach((code, idx) => {
+                html = html.replace(`%%CODE_SPAN_${idx}%%`, code);
+            });
+
+            return html;
+        }
+
+        function isLikelyMarkdown(text) {
+            if (!text || looksLikeHtml(text)) return false;
+            const sample = String(text).trim();
+            if (!sample) return false;
+            const markdownPatterns = [
+                /(^|\n)\s{0,3}#{1,6}\s+\S/,
+                /(^|\n)\s{0,3}>\s+\S/,
+                /(^|\n)\s{0,3}(?:[-*+]|\d+\.)\s+\S/,
+                /(^|\n)\s{0,3}```/,
+                /(^|\n)\s{0,3}---+\s*($|\n)/,
+                /\*\*[^*\n]+\*\*/,
+                /__[^_\n]+__/,
+                /`[^`\n]+`/,
+                /\[[^\]\n]+\]\([^)]+\)/
+            ];
+            return markdownPatterns.some(pattern => pattern.test(sample));
+        }
+
+        function markdownToHTML(markdown) {
+            const lines = String(markdown || '').replace(/\r\n?/g, '\n').split('\n');
+            const html = [];
+            let paragraph = [];
+            let listType = null;
+            let inCodeBlock = false;
+            let codeLines = [];
+
+            const closeParagraph = () => {
+                if (paragraph.length === 0) return;
+                paragraph.forEach(line => {
+                    html.push(`<p>${markdownInlineToHTML(line)}</p>`);
+                });
+                paragraph = [];
+            };
+
+            const closeList = () => {
+                if (!listType) return;
+                html.push(`</${listType}>`);
+                listType = null;
+            };
+
+            const openList = (type) => {
+                if (listType === type) return;
+                closeList();
+                listType = type;
+                html.push(`<${type}>`);
+            };
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+
+                if (/^```/.test(trimmed)) {
+                    if (inCodeBlock) {
+                        html.push(`<pre><code>${escapeHTML(codeLines.join('\n'))}</code></pre>`);
+                        codeLines = [];
+                        inCodeBlock = false;
+                    } else {
+                        closeParagraph();
+                        closeList();
+                        inCodeBlock = true;
+                    }
+                    return;
+                }
+
+                if (inCodeBlock) {
+                    codeLines.push(line);
+                    return;
+                }
+
+                if (!trimmed) {
+                    closeParagraph();
+                    closeList();
+                    if (html.length > 0 && html[html.length - 1] !== '<p><br></p>') {
+                        html.push('<p><br></p>');
+                    }
+                    return;
+                }
+
+                const heading = trimmed.match(/^(#{1,6})\s+(.+)$/);
+                if (heading) {
+                    closeParagraph();
+                    closeList();
+                    const level = heading[1].length;
+                    html.push(`<h${level}>${markdownInlineToHTML(heading[2])}</h${level}>`);
+                    return;
+                }
+
+                if (/^---+$/.test(trimmed)) {
+                    closeParagraph();
+                    closeList();
+                    html.push('<hr>');
+                    return;
+                }
+
+                const quote = trimmed.match(/^>\s?(.*)$/);
+                if (quote) {
+                    closeParagraph();
+                    closeList();
+                    html.push(`<blockquote>${markdownInlineToHTML(quote[1])}</blockquote>`);
+                    return;
+                }
+
+                const unordered = trimmed.match(/^[-*+]\s+(.+)$/);
+                if (unordered) {
+                    closeParagraph();
+                    openList('ul');
+                    html.push(`<li>${markdownInlineToHTML(unordered[1])}</li>`);
+                    return;
+                }
+
+                const ordered = trimmed.match(/^\d+\.\s+(.+)$/);
+                if (ordered) {
+                    closeParagraph();
+                    openList('ol');
+                    html.push(`<li>${markdownInlineToHTML(ordered[1])}</li>`);
+                    return;
+                }
+
+                closeList();
+                paragraph.push(trimmed);
+            });
+
+            if (inCodeBlock) {
+                html.push(`<pre><code>${escapeHTML(codeLines.join('\n'))}</code></pre>`);
+            }
+
+            closeParagraph();
+            closeList();
+            return html.join('');
+        }
+
+        function renderMarkdownTextIntoEditor(markdown, source = 'silent') {
+            if (!state.quill || !isLikelyMarkdown(markdown)) return false;
+            state.quill.clipboard.dangerouslyPasteHTML(markdownToHTML(markdown), source);
+            return true;
+        }
+
+        function renderCurrentMarkdown() {
+            if (!state.quill || state.isProgrammaticLoad || !state.activeNodeId) return;
+            const node = state.nodeMap[state.activeNodeId];
+            if (!canEditNodeBody(node)) return;
+
+            const text = state.quill.getText();
+            if (!isLikelyMarkdown(text)) {
+                toast('No markdown detected', 'info', 1500);
+                return;
+            }
+
+            state.isProgrammaticLoad = true;
+            try {
+                renderMarkdownTextIntoEditor(text, 'silent');
+            } finally {
+                state.isProgrammaticLoad = false;
+            }
+
+            state.editorChangeRevision += 1;
+            state.isDirty = true;
+            scheduleSave();
+            scheduleEditorMetricsUpdate(true);
+            toast('Markdown rendered', 'success', 1200);
+        }
+
         function getPublishedEditorContent() {
             const text = state.quill ? state.quill.getText().trim() : '';
             if (!text) return '';
             return state.quill.root.innerHTML;
+        }
+
+        function isPlainTextDelta(delta) {
+            return !!delta
+                && Array.isArray(delta.ops)
+                && delta.ops.every(op => typeof op.insert === 'string' && !op.attributes);
         }
 
         function getSynopsisConfig(node) {
@@ -1742,10 +1956,67 @@
             el.style.display = visible ? 'block' : 'none';
         }
 
-        function clearActiveSelection() {
+        function unloadEditorContent() {
+            if (!state.quill) return;
+            state.isProgrammaticLoad = true;
+            try {
+                state.quill.blur();
+                state.quill.setText('', 'silent');
+                state.quill.root.innerHTML = '';
+            } finally {
+                state.isProgrammaticLoad = false;
+            }
+        }
+
+        async function closeActiveDocument(options = {}) {
+            const { skipSave = false, removeStoredActive = true, releaseContent = true } = options;
+            const closingNodeId = state.activeNodeId;
+
+            if (!skipSave && state.isDirty && closingNodeId) {
+                await saveCurrentNode();
+            }
+
             state.activeNodeRequestId += 1;
+            clearTimeout(state.saveTimer);
+            if (state.editorMetricsFrame) {
+                cancelAnimationFrame(state.editorMetricsFrame);
+                state.editorMetricsFrame = null;
+            }
+
+            unloadEditorContent();
+            if (releaseContent && closingNodeId && state.nodeMap[closingNodeId]) {
+                state.nodeMap[closingNodeId].content = '';
+            }
+
             state.activeNodeId = null;
             state.isDirty = false;
+            state.currentWordCount = 0;
+            state.currentCharCount = 0;
+            state.currentParaCount = 0;
+            state.sessionStartWords = 0;
+
+            if (removeStoredActive) {
+                localStorage.removeItem(getActiveNodeStorageKey());
+            }
+
+            closeSplitView();
+            clearActiveSelection({ skipUnload: true, removeStoredActive: false });
+            updateTreeActiveSelection();
+            await waitForFrames(2);
+        }
+
+        function clearActiveSelection(options = {}) {
+            const { skipUnload = false, removeStoredActive = false } = options;
+            state.activeNodeRequestId += 1;
+            if (!skipUnload) unloadEditorContent();
+            state.activeNodeId = null;
+            state.isDirty = false;
+            state.currentWordCount = 0;
+            state.currentCharCount = 0;
+            state.currentParaCount = 0;
+            if (removeStoredActive) {
+                localStorage.removeItem(getActiveNodeStorageKey());
+            }
             dom.editorEmptyState.classList.remove('hidden');
             dom.editorHeader.style.display = 'none';
             dom.editorWrapper.style.display = 'none';
@@ -1765,7 +2036,8 @@
 
             const workspaceTree = isWorkspaceTree();
             dom.btnAddFolder.disabled = !workspaceTree;
-            dom.btnAddDoc.disabled = !workspaceTree;
+            dom.btnAddDoc.disabled = !workspaceTree && state.treeMode !== 'published';
+            dom.btnAddDoc.title = workspaceTree ? 'Add Document' : 'Add Chapter';
 
             const activeNode = state.activeNodeId ? state.nodeMap[state.activeNodeId] : null;
             dom.btnSnapshot.disabled = !!activeNode && !isWorkspaceNode(activeNode);
@@ -1779,26 +2051,44 @@
         function loadNodeContentIntoEditor(node) {
             applyNodeEditState(node);
 
-            if (!canEditNodeBody(node) || !node.content) {
-                state.quill.setContents([{ insert: '\n' }], 'silent');
-                return;
-            }
-
-            if (isWorkspaceNode(node)) {
-                try {
-                    const delta = JSON.parse(node.content);
-                    state.quill.setContents(delta, 'silent');
-                    return;
-                } catch (e) {
-                    state.quill.root.innerHTML = node.content;
+            state.isProgrammaticLoad = true;
+            try {
+                if (!canEditNodeBody(node) || !node.content) {
+                    state.quill.setContents([{ insert: '\n' }], 'silent');
                     return;
                 }
-            }
 
-            if (looksLikeHtml(node.content)) {
-                state.quill.clipboard.dangerouslyPasteHTML(node.content, 'silent');
-            } else {
-                state.quill.setText(node.content, 'silent');
+                if (isWorkspaceNode(node)) {
+                    try {
+                        const delta = JSON.parse(node.content);
+                        if (isPlainTextDelta(delta)) {
+                            const plainText = delta.ops.map(op => op.insert).join('');
+                            if (!renderMarkdownTextIntoEditor(plainText, 'silent')) {
+                                state.quill.setText(plainText, 'silent');
+                            }
+                        } else {
+                            state.quill.setContents(delta, 'silent');
+                        }
+                        return;
+                    } catch (e) {
+                        if (isLikelyMarkdown(node.content)) {
+                            renderMarkdownTextIntoEditor(node.content, 'silent');
+                        } else {
+                            state.quill.root.innerHTML = node.content;
+                        }
+                        return;
+                    }
+                }
+
+                if (looksLikeHtml(node.content)) {
+                    state.quill.clipboard.dangerouslyPasteHTML(node.content, 'silent');
+                } else if (isLikelyMarkdown(node.content)) {
+                    renderMarkdownTextIntoEditor(node.content, 'silent');
+                } else {
+                    state.quill.setText(node.content, 'silent');
+                }
+            } finally {
+                state.isProgrammaticLoad = false;
             }
         }
 
@@ -1977,6 +2267,36 @@
                 (timelineRes.data || []).forEach(record => nodes.push(mapPublishedRecordToNode('timeline_events', record)));
 
                 return nodes;
+            },
+            createPublishedChapter: async () => {
+                const { data: chapters, error: orderError } = await supabase
+                    .from('chapters')
+                    .select('chapter_order')
+                    .eq('story_id', currentStoryId);
+                if (orderError) throw orderError;
+
+                const nextOrder = (chapters || []).reduce((max, chapter) => {
+                    const order = Number.parseInt(chapter.chapter_order, 10);
+                    if (!Number.isFinite(order)) return max;
+                    return Math.max(max, order);
+                }, -1) + 1;
+
+                const record = {
+                    story_id: currentStoryId,
+                    title: 'Untitled Chapter',
+                    content: '',
+                    chapter_order: nextOrder,
+                    word_count: 0,
+                    is_published: false
+                };
+
+                const { data, error } = await supabase
+                    .from('chapters')
+                    .insert(record)
+                    .select('*')
+                    .single();
+                if (error) throw error;
+                return mapPublishedRecordToNode('chapters', data);
             },
             getSearchContent: async () => {
                 if (isWorkspaceTree()) {
@@ -2198,6 +2518,7 @@
             });
 
             state.quill.on('text-change', () => {
+                if (state.isProgrammaticLoad) return;
                 if (!state.activeNodeId) return;
                 state.editorChangeRevision += 1;
                 state.isDirty = true;
@@ -2210,14 +2531,31 @@
             });
         }
 
-        function scheduleEditorMetricsUpdate() {
+        function scheduleEditorMetricsUpdate(useIdle = false) {
             if (state.editorMetricsFrame) return;
             state.editorMetricsFrame = requestAnimationFrame(() => {
                 state.editorMetricsFrame = null;
-                updateCounts();
-                updateOutline();
-                updateTargetBar();
+                const update = () => {
+                    updateCounts();
+                    updateOutline();
+                    updateTargetBar();
+                };
+                if (useIdle && 'requestIdleCallback' in window) {
+                    requestIdleCallback(update, { timeout: 1200 });
+                } else {
+                    update();
+                }
             });
+        }
+
+        function waitForNextFrame() {
+            return new Promise(resolve => requestAnimationFrame(() => resolve()));
+        }
+
+        async function waitForFrames(count = 1) {
+            for (let i = 0; i < count; i += 1) {
+                await waitForNextFrame();
+            }
         }
 
         function typewriterScroll() {
@@ -2306,6 +2644,16 @@
                 ul.appendChild(renderTreeNode(node, filterText.toLowerCase()));
             });
             dom.binderTree.appendChild(ul);
+        }
+
+        function updateTreeActiveSelection() {
+            dom.binderTree.querySelectorAll('.tree-item-header.active').forEach(header => {
+                header.classList.remove('active');
+            });
+            if (!state.activeNodeId) return;
+            const escapedId = window.CSS?.escape ? CSS.escape(state.activeNodeId) : state.activeNodeId.replace(/"/g, '\\"');
+            const activeItem = dom.binderTree.querySelector(`[data-node-id="${escapedId}"] > .tree-item-header`);
+            if (activeItem) activeItem.classList.add('active');
         }
 
         function renderTreeNode(node, filterText) {
@@ -2505,7 +2853,9 @@
         // OPEN NODE
         // ============================
         async function openNode(nodeId) {
-            if (state.isDirty && state.activeNodeId) {
+            if (state.activeNodeId && state.activeNodeId !== nodeId) {
+                await closeActiveDocument({ removeStoredActive: false });
+            } else if (state.isDirty && state.activeNodeId) {
                 await saveCurrentNode();
             }
 
@@ -2527,26 +2877,33 @@
             applyNodeEditState(node);
             updateBookmarkButton();
             updateModeUI();
+            applyNodeStats(node);
+            updateTargetBar();
+            updateTreeActiveSelection();
 
             try {
                 const fullNode = await DB.getNode(node);
                 if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
                 Object.assign(state.nodeMap[nodeId], fullNode);
+                applyNodeStats(state.nodeMap[nodeId]);
+                await waitForNextFrame();
+                if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
                 loadNodeContentIntoEditor(state.nodeMap[nodeId]);
             } catch (e) {
+                if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
+                await waitForNextFrame();
                 if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
                 loadNodeContentIntoEditor(node);
             }
 
             if (requestId !== state.activeNodeRequestId || state.activeNodeId !== nodeId) return;
             state.isDirty = false;
-            updateCounts();
-            updateOutline();
             loadInspector(state.nodeMap[nodeId]);
             updateTargetBar();
-            renderTree(dom.binderSearch.value);
+            updateTreeActiveSelection();
+            scheduleEditorMetricsUpdate(true);
 
-            state.sessionStartWords = countWords(state.quill.getText());
+            state.sessionStartWords = state.currentWordCount;
         }
 
         // ============================
@@ -2582,10 +2939,12 @@
             state.pendingSaveAfterCurrent = false;
             state.savePromise = (async () => {
                 try {
+                const editorText = state.quill.getText();
                 const content = isWorkspaceNode(node)
                     ? JSON.stringify(state.quill.getContents())
-                    : getPublishedEditorContent();
-                const wordCount = countWords(state.quill.getText());
+                    : (editorText.trim() ? state.quill.root.innerHTML : '');
+                applyEditorStats(editorText);
+                const wordCount = state.currentWordCount;
                 
                 const data = {
                     title: dom.editorDocTitle.value || node.title,
@@ -2638,16 +2997,34 @@
             return trimmed.split(/\s+/).length;
         }
 
-        function updateCounts() {
-            if (!state.quill) return;
-            const text = state.quill.getText();
+        function applyEditorStats(text) {
             const words = countWords(text);
-            const chars = text.length - 1;
+            const chars = Math.max(0, text.length - 1);
             const paras = text.split('\n').filter(l => l.trim().length > 0).length;
+
+            state.currentWordCount = words;
+            state.currentCharCount = chars;
+            state.currentParaCount = paras;
 
             dom.wordCount.textContent = `${words} words`;
             dom.charCount.textContent = `${chars} chars`;
             dom.paraCount.textContent = `${paras} paragraphs`;
+        }
+
+        function applyNodeStats(node) {
+            const words = node?.word_count || 0;
+            state.currentWordCount = words;
+            state.currentCharCount = 0;
+            state.currentParaCount = 0;
+
+            dom.wordCount.textContent = `${words} words`;
+            dom.charCount.textContent = 'calculating...';
+            dom.paraCount.textContent = 'calculating...';
+        }
+
+        function updateCounts() {
+            if (!state.quill) return;
+            applyEditorStats(state.quill.getText());
         }
 
         // ============================
@@ -2660,7 +3037,7 @@
 
             if (target > 0) {
                 dom.targetBarWrap.classList.add('visible');
-                const words = countWords(state.quill.getText());
+                const words = state.currentWordCount;
                 const pct = Math.min(100, Math.round((words / target) * 100));
                 dom.targetLabel.textContent = `${words} / ${target} words`;
                 dom.targetPct.textContent = `${pct}%`;
@@ -2691,7 +3068,7 @@
             dom.sessionTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 
             if (state.quill && state.activeNodeId) {
-                const currentWords = countWords(state.quill.getText());
+                const currentWords = state.currentWordCount;
                 const sessionWords = Math.max(0, currentWords - state.sessionStartWords);
                 dom.sessionWords.textContent = sessionWords;
 
@@ -3185,11 +3562,21 @@
                 item.style.display = '';
             });
 
-            const workspaceOnlyActions = ['add-child-doc', 'add-child-folder', 'add-character', 'add-location', 'add-note', 'duplicate'];
+            const workspaceOnlyActions = ['add-child-folder', 'add-character', 'add-location', 'add-note', 'duplicate'];
             workspaceOnlyActions.forEach(action => {
                 const item = menu.querySelector(`[data-action="${action}"]`);
                 if (item) item.style.display = isWorkspaceNode(node) && isWorkspaceTree() ? '' : 'none';
             });
+
+            const addDocItem = menu.querySelector('[data-action="add-child-doc"]');
+            if (addDocItem) {
+                const canAddDocument = isWorkspaceNode(node) && isWorkspaceTree();
+                const canAddChapter = state.treeMode === 'published' && node?.id === PUBLISHED_ROOTS.chapters;
+                addDocItem.style.display = canAddDocument || canAddChapter ? '' : 'none';
+                addDocItem.innerHTML = canAddChapter
+                    ? '<i class="fas fa-file-alt"></i> Add Chapter'
+                    : '<i class="fas fa-file-alt"></i> Add Document';
+            }
 
             const renameItem = menu.querySelector('[data-action="rename"]');
             const deleteItem = menu.querySelector('[data-action="delete"]');
@@ -3230,6 +3617,10 @@
                     setTimeout(() => dom.renameInput.focus(), 100);
                     break;
                 case 'add-child-doc':
+                    if (state.treeMode === 'published' && node.id === PUBLISHED_ROOTS.chapters) {
+                        await createPublishedChapter();
+                        return;
+                    }
                     if (!isWorkspaceNode(node) || !isWorkspaceTree()) return;
                     await createNode('document', node.type === 'folder' ? nodeId : node.parent_id);
                     break;
@@ -3267,9 +3658,33 @@
         // ============================
         // CREATE / DELETE / DUPLICATE
         // ============================
+        async function createPublishedChapter() {
+            if (state.treeMode !== 'published') return;
+
+            try {
+                if (!currentStoryId) {
+                    throw new Error("URL is missing a valid story_id parameter.");
+                }
+
+                const newNode = await DB.createPublishedChapter();
+                state.expandedFolders.add(PUBLISHED_ROOTS.chapters);
+                localStorage.setItem('wIDE_expanded', JSON.stringify([...state.expandedFolders]));
+                await loadNodes();
+                openNode(newNode.id);
+                toast('Chapter created as draft', 'success');
+            } catch (e) {
+                console.error("Create Chapter Error:", e);
+                toast(`Chapter creation failed: ${e.message}`, 'error', 5000);
+            }
+        }
+
         async function createNode(type, parentId = null) {
             if (!isWorkspaceTree()) {
-                toast('Creating new records is currently available in the Workspace tree only', 'info');
+                if (state.treeMode === 'published' && type === 'document') {
+                    await createPublishedChapter();
+                    return;
+                }
+                toast('Creating new workspace records is available in the Workspace tree only', 'info');
                 return;
             }
 
@@ -3469,6 +3884,8 @@
 
             dom.btnOutline.addEventListener('click', toggleOutline);
             dom.btnSplitView.addEventListener('click', openSplitPicker);
+            dom.btnRenderMarkdown.addEventListener('click', renderCurrentMarkdown);
+            dom.btnCloseDoc.addEventListener('click', () => closeActiveDocument());
 
             dom.btnSnapshot.addEventListener('click', () => {
                 const activeNode = state.activeNodeId ? state.nodeMap[state.activeNodeId] : null;
@@ -3663,6 +4080,11 @@
             if (isCtrl && e.shiftKey && e.key === 'S') {
                 e.preventDefault();
                 if (state.activeNodeId) dom.btnSnapshot.click();
+            }
+
+            if (isCtrl && e.shiftKey && e.key === 'M') {
+                e.preventDefault();
+                renderCurrentMarkdown();
             }
 
             if (isCtrl && e.key === 'n') {

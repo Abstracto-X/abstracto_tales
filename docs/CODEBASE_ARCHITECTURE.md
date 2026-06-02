@@ -106,6 +106,8 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
   - `savePromise` / `isSaving` / `pendingSaveAfterCurrent` *(Object | Boolean)* — Autosave coordination state that prevents overlapping Supabase writes from marking newer edits as saved.
   - `isDirty` *(Boolean)* — Tracks if the editor has unsaved changes. Changes on text input and resets on successful save.
   - `editorChangeRevision` *(Number)* — Incremented on each Quill text-change so save completions can tell whether newer edits happened while a write was in flight.
+  - `isProgrammaticLoad` *(Boolean)* — Suppresses Quill `text-change` autosave work while large documents are being loaded into the editor.
+  - `currentWordCount` / `currentCharCount` / `currentParaCount` *(Number)* — Cached editor metrics reused by target bars and session stats so long documents are not re-scanned by multiple panels.
   - `searchContentHydratedKey` *(String | null)* — Tracks whether full body text has been loaded on demand for the active story/tree mode global search.
   - `quill` *(Object)* — The Quill rich-text editor instance.
   - `currentTheme` *(String)* — The active UI theme name. Loaded from `localStorage`.
@@ -178,8 +180,11 @@ The bootstrap sequence is triggered entirely within the ES6 module system of `js
    - `setTheme(state.currentTheme)` applies the user's stored theme.
    - `DB.getStories()` populates the workspace dropdown, defaulting to the first or the `?story_id=` URL param.
    - `loadNodes()` fetches lightweight hierarchical document metadata from the DB, building `state.nodes`, `nodeMap`, and `childrenByParent`, then rendering the left sidebar binder. Full node bodies are fetched only when a document is opened or when global search hydrates searchable content on demand.
+   - In Published Tree mode, the Add Document control creates a live draft `chapters` row with the next available `chapter_order`, opens it in the editor, and lets the existing inspector status control publish it directly from `writer.html`.
    - `startSessionTimer()` begins tracking time/word count.
    - During editing, Quill text changes increment a revision counter, schedule a debounced autosave, and batch editor metrics/outline/target updates through `requestAnimationFrame` so typing does not synchronously recompute all panels on every keystroke.
+   - Long document switching first closes and unloads the current editor content, yields frames for the browser to release/render, then opens the requested document. The header close button uses the same unload path so very large documents can be explicitly closed before opening another.
+   - Markdown rendering is manual: the editor header's Render Markdown button (or `Ctrl+Shift+M`) converts the editor's current markdown-like text through the native renderer. This avoids surprise re-processing while typing or deleting, while still allowing explicit conversion inside an already edited document.
 
 ### `cartographer.html`
 1. **`DOMContentLoaded` Event Listener:**

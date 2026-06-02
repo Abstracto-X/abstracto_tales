@@ -49,6 +49,8 @@ Builds recursive folders, updates active lists, and handles node sorting.
   - **Description:** Retrieves pre-sorted children nodes belonging to a parent folder ID.
 - `renderTree(filterText)`
   - **Description:** Traverses the node hierarchy recursively, generating nested list markup (`<ul>` and `<li>`) for the Binder panel.
+- `updateTreeActiveSelection()`
+  - **Description:** Moves the active Binder highlight in place after node switches without rebuilding the full tree.
 - `renderTreeNode(node)`
   - **Description:** Renders individual tree list elements, attaching event handlers for click selection, folder expansion, dragging, and context menus.
 - `toggleFolder(nodeId)`
@@ -63,8 +65,14 @@ Handles document loading, debounced auto-saves, and split-view reference panels.
   - **Description:** Loads a selected node. Auto-saves the active draft first, loads the new content, configures editing locks, populates properties inspectors, and ignores stale async responses after rapid navigation.
 - `scheduleSave() / saveCurrentNode()`
   - **Description:** Automates draft saves. Serializes writes, checks editor revision state, and schedules debounced Supabase writes without letting older saves clear newer edits.
+- `closeActiveDocument(options) / unloadEditorContent()`
+  - **Description:** Saves when needed, closes the current document, clears Quill's large content DOM, hides editor UI, and yields frames before another document opens.
 - `loadNodeContentIntoEditor(node)`
   - **Description:** Inspects document contents (Quill JSON Delta vs raw HTML) and populates the canvas.
+- `isPlainTextDelta(delta) / waitForNextFrame()`
+  - **Description:** Speeds up plain-text Delta loading and yields a browser paint frame before large document injection.
+- `isLikelyMarkdown(text) / markdownToHTML(markdown) / renderCurrentMarkdown()`
+  - **Description:** Detects markdown-like current editor text, converts common markdown syntax to safe HTML while preserving line-based paragraph breaks and blank markdown lines, and inserts it through Quill when the user invokes Render Markdown.
 - `renderNodeContentInSplitView(node)`
   - **Description:** Loads a secondary node as read-only in the split-view panel for reference while writing without creating throwaway Quill instances.
 - `clearActiveSelection()`

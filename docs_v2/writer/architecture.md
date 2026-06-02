@@ -34,6 +34,7 @@ The IDE encapsulates state in a unified `state` manager and global context varia
   - `childrenByParent` *(Object)* — Precomputed binder-tree child index used to avoid repeated full-array scans during recursive rendering.
   - `isDirty` *(Boolean)* — Tracks whether there are unsaved editor changes. Governs auto-saves and navigation warning prompts.
   - `editorChangeRevision` / async request tokens *(Number)* — Guard autosaves, node loads, inspector link renders, and global search against stale async completions.
+  - `currentWordCount` / `currentCharCount` / `currentParaCount` *(Number)* — Cached long-document metrics reused by target bars and session stats.
   - `quill` *(Object)* — The Quill rich-text editor instance.
   - `currentTheme` *(String)* — Name of the active visual theme (e.g. Amber Glow, Solarized Dark). Persisted in `localStorage`.
   - `sessionStartWords` / `sessionStartTime` *(Number)* — word and time markers used to calculate session metrics.
@@ -52,6 +53,8 @@ Upon loading the Writer IDE, the page executes the following IIFE bootstrap proc
    - **Visual Theme Selection:** Recovers saved visual themes from `localStorage` and injects theme classes onto the document root.
    - **Story Lookup:** Queries available stories via Supabase and populates the top dropdown, defaulting to the URL parameters if present.
    - **Tree Builder:** `loadNodes()` fetches lightweight node metadata for the selected story, indexes nodes by ID and parent ID, and renders the left binder tree. Full bodies are loaded on node open or on-demand global search.
+   - **Long Document Switching:** `openNode()` closes and unloads the current document before opening another, yields paint frames between unload/load phases, shows metadata word counts immediately, defers full metric scans, and updates the active binder row without rebuilding the full tree.
+   - **Markdown Rendering:** The editor header's Render Markdown button and `Ctrl+Shift+M` shortcut manually convert the current markdown-like editor text through the native renderer, avoiding surprise re-processing during normal edits.
    - **Session Metric Init:** Records baseline word counts and start times, launching interval timers to update statistics.
 
 ---

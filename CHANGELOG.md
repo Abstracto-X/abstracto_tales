@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-02]
+### Fixed
+- 15:39 +05:30: Fixed `writer.html` Published Tree chapter creation by adding a direct live `chapters` insert path. The Published Tree Add Document action now creates an unpublished draft chapter with the next available chapter order, opens it in the writer, and supports publishing through the existing inspector status control. Updated `docs/CODEBASE_ARCHITECTURE.md` and `docs/FUNCTION_INDEX.md`.
+- 15:29 +05:30: Hardened the ScribbleHub autosync fetch path by using browser-like request headers, logging whether `SCRIBBLEHUB_COOKIE` loaded, and stripping accidental wrapping quotes from `.env` values in `scripts/run_scribblehub_sync.ps1`.
+- 15:22 +05:30: Added a `-Backfill` switch to `scripts/run_scribblehub_sync.ps1` so the PowerShell wrapper can load `.env` and pass `--backfill` through to the ScribbleHub autosync worker.
+
+## [2026-05-29]
+### Fixed
+- 03:35 +05:30: Relaxed the manual `writer.html` Render Markdown guard so it works on the editor's current markdown-like text even after normal editing/formatting, instead of rejecting anything that is not a plain-text Quill Delta.
+- 03:32 +05:30: Converted `writer.html` markdown rendering from automatic to manual. Removed text-change/load auto-render hooks, added a Render Markdown editor-header button plus `Ctrl+Shift+M`, and limited conversion to plain-text Quill documents so normal edits cannot trigger surprise re-rendering.
+- 03:24 +05:30: Fixed `writer.html` markdown rendering so blank markdown lines are preserved as empty Quill paragraphs, keeping visible gaps between rendered paragraphs without reintroducing global paragraph-margin CSS.
+- 03:19 +05:30: Removed the extra `writer.html` Quill paragraph margin CSS added during markdown rendering refinement, returning paragraph spacing to Quill's native behavior while keeping the markdown blob-regression guard.
+- 03:16 +05:30: Fixed a `writer.html` markdown auto-render regression where editing/deleting lines in already-rendered documents could collapse the whole document into one text blob. Auto-render now only runs on plain-text Quill Deltas, and the markdown renderer preserves line-based paragraph breaks.
+- 01:30 +05:30: Refined `writer.html` markdown rendering so markdown-like current editor text auto-renders after edits settle instead of relying on a paste-event hook. Saved plain-text Delta markdown now renders on document open. Updated writer docs and the performance report.
+- 01:21 +05:30: Added native markdown detection/rendering to `writer.html` for LLM copy/paste workflows. Plain-text markdown pasted into Quill is converted to HTML without external libraries, raw markdown bodies are rendered on load when detected, and the writer performance report plus docs were updated.
+- 01:15 +05:30: Added an explicit `writer.html` close-document flow for very large documents. The editor header now includes a close button, switching documents closes/unloads the current Quill content before opening the next node, cached full body content is released on close, split view/inspector/editor chrome reset, and the close path yields frames so the browser can settle between long-document teardown and mount. Updated writer docs and the performance report.
+- 01:04 +05:30: Reduced `writer.html` long-document switching freezes by yielding a paint frame before large Quill content injection, suppressing programmatic-load text-change work, using a faster plain-text Delta load path, deferring full metrics scans to idle time, caching editor counts for target/session panels, and updating the active binder highlight without rebuilding the full tree. Updated the writer performance report and documentation.
+
 ## [2026-05-28]
 ### Fixed
 - 03:28 +05:30: Applied the first `writer.html` performance and correctness pass: lightweight binder queries, lazy global-search body hydration, precomputed binder child indexes, serialized autosave revision guards, stale async node/link/search guards, batched Quill metrics updates, split-view rendering without throwaway Quill instances, and minor HTML escaping/link-search hardening. Added the applied-fixes log to `Internal_tools/performance_report_writer.md` and updated writer architecture/function documentation.
