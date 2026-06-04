@@ -1,4 +1,4 @@
-﻿        /* --- CORE VARIABLES --- */
+        /* --- CORE VARIABLES --- */
         :root {
             --primary-color: #ffffff;
             --accent-color: #ffd700;
@@ -12,6 +12,7 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        input, button, select, textarea { font-family: inherit; }
 
         body {
             background-color: #050505;
@@ -23,9 +24,6 @@
             user-select: none;
         }
 
-
-
-        /* --- BACKGROUND --- */
         #particle-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
         .background-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -382,35 +380,1378 @@
         .lore-wiki-type { font-family: var(--font-ui); text-transform: uppercase; letter-spacing: 2px; color: #888; margin-bottom: 2rem; font-size: 0.9rem; }
         .lore-wiki-text { font-family: var(--font-body); font-size: 1.1rem; line-height: 1.8; color: #d0d0d0; white-space: pre-line; user-select: text; }
 
-        /* --- VIEW: TIMELINE --- */
-        .timeline-wrapper { position: relative; max-width: 800px; margin: 2rem auto; padding: 2rem 0; }
-        .timeline-path { position: absolute; left: 50%; top: 0; transform: translateX(-50%); width: 2px; height: 100%; background: linear-gradient(to bottom, transparent, var(--accent-color), transparent); opacity: 0.3; }
-        .timeline-node { position: relative; width: 100%; margin-bottom: 4rem; display: flex; justify-content: center; }
-        
-        .timeline-content { width: 45%; padding: 1.5rem; position: relative; z-index: 2; }
-        .node-left .timeline-content { margin-right: auto; text-align: right; border-right: 3px solid var(--accent-color); }
-        .node-right .timeline-content { margin-left: auto; text-align: left; border-left: 3px solid var(--accent-color); }
-        
-        .timeline-dot { position: absolute; left: 50%; top: 1.5rem; width: 16px; height: 16px; background: #000; border: 2px solid var(--accent-color); border-radius: 50%; transform: translateX(-50%); z-index: 5; box-shadow: 0 0 10px var(--accent-color); }
-
-        .timeline-content .date { font-weight: bold; color: var(--accent-color); margin-bottom: 0.5rem; font-family: var(--font-ui); letter-spacing: 1px; }
-        .timeline-content .title { font-family: var(--font-header); font-size: 1.4rem; margin-bottom: 0.5rem; color: #fff; }
-        .timeline-content .desc { font-size: 0.95rem; line-height: 1.6; color: #ccc; }
-
-        .timeline-char-box {
-            position: absolute; top: 0; width: 40%; 
-            display: flex; align-items: center; gap: 10px; padding: 10px;
-            cursor: pointer; opacity: 0.7; transition: all 0.3s;
-            border: 1px solid transparent; border-radius: 8px;
+        /* --- VIEW: TIMELINES --- */
+        .timeline-hub-screen,
+        .story-history-screen,
+        .galactic-history-screen { width: min(1180px, 100%); margin: 0 auto; padding: 1rem 0 3rem; }
+        .galactic-history-screen {
+            position: relative;
+            padding: 1rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            background:
+                linear-gradient(180deg, rgba(3, 8, 9, 0.88), rgba(6, 7, 11, 0.94)),
+                repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 74px);
+            box-shadow: 0 24px 70px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
         }
-        .node-left .timeline-char-box { left: 55%; text-align: left; flex-direction: row; }
-        .node-right .timeline-char-box { right: 55%; text-align: right; flex-direction: row-reverse; }
-        
-        .timeline-char-box:hover { opacity: 1; background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); transform: scale(1.02); }
-        .timeline-char-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--glass-border); }
-        .timeline-char-info { display: flex; flex-direction: column; }
-        .timeline-char-name { font-family: var(--font-header); font-size: 0.9rem; color: #fff; }
-        .timeline-char-role { font-size: 0.7rem; color: var(--accent-color); text-transform: uppercase; }
+        .timeline-hub-header { text-align: center; margin: 1rem auto 2rem; max-width: 760px; }
+        .timeline-hub-kicker { font-family: var(--font-ui); color: var(--accent-color); text-transform: uppercase; font-size: 0.72rem; letter-spacing: 0.16em; font-weight: 700; margin-bottom: 0.65rem; }
+        .timeline-hub-title,
+        .story-history-title,
+        .galactic-history-title { font-family: var(--font-header); color: #fff; line-height: 1.05; }
+        .timeline-hub-title { font-size: clamp(2rem, 5vw, 4rem); }
+        .timeline-hub-subtitle,
+        .galactic-history-subtitle { color: #cfcfcf; line-height: 1.7; margin-top: 0.75rem; }
+        .timeline-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+        .timeline-mode-card {
+            position: relative; min-height: 320px; padding: 1.4rem; text-align: left; display: flex; flex-direction: column; justify-content: flex-end; gap: 0.75rem;
+            background: linear-gradient(145deg, rgba(255,255,255,0.12), rgba(5,7,12,0.88)), radial-gradient(circle at 20% 0%, rgba(255,255,255,0.16), transparent 34%);
+            border: 1px solid rgba(255,255,255,0.13); border-radius: 8px; color: #fff; cursor: pointer; overflow: hidden; transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .timeline-mode-card::before { content: ""; position: absolute; inset: 0; background: linear-gradient(120deg, rgba(255,255,255,0.12), transparent 42%); opacity: 0.75; pointer-events: none; }
+        .timeline-mode-card.story { background-color: rgba(16, 32, 38, 0.88); }
+        .timeline-mode-card.galactic { background-color: rgba(35, 24, 20, 0.88); }
+        .timeline-mode-card:hover { transform: translateY(-6px); border-color: var(--accent-color); box-shadow: 0 18px 45px rgba(0,0,0,0.32), 0 0 26px rgba(255,255,255,0.08); }
+        .timeline-mode-icon { position: absolute; top: 1.2rem; right: 1.2rem; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: rgba(0,0,0,0.35); color: var(--accent-color); font-size: 1.35rem; border: 1px solid rgba(255,255,255,0.12); }
+        .timeline-mode-eyebrow,
+        .timeline-mode-meta { position: relative; font-family: var(--font-ui); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--accent-color); font-weight: 700; }
+        .timeline-mode-title { position: relative; font-family: var(--font-header); font-size: 2rem; line-height: 1.05; }
+        .timeline-mode-desc { position: relative; color: #d6d6d6; line-height: 1.55; max-width: 520px; }
+        .timeline-mode-meta { color: #fff; opacity: 0.78; }
+
+        .timeline-explorer-topbar { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1rem; }
+        .timeline-explorer-title { color: #fff; font-family: var(--font-header); font-size: 1.2rem; }
+        .story-history-hero,
+        .galactic-history-hero {
+            display: flex; align-items: center; justify-content: space-between; gap: 1.2rem; margin-bottom: 1rem; padding: 1.4rem;
+            border-radius: 8px; border: 1px solid rgba(255,255,255,0.11); background: rgba(0,0,0,0.36);
+        }
+        .galactic-history-hero {
+            min-height: 180px;
+            align-items: flex-end;
+            background:
+                linear-gradient(120deg, rgba(255,255,255,0.08), transparent 52%),
+                radial-gradient(circle at 88% 20%, rgba(123, 211, 255, 0.16), transparent 34%),
+                linear-gradient(180deg, rgba(21, 32, 29, 0.82), rgba(5, 7, 10, 0.96));
+            border-color: rgba(174, 231, 210, 0.18);
+            box-shadow: inset 0 -1px 0 rgba(255,255,255,0.06);
+        }
+        .story-history-title,
+        .galactic-history-title { font-size: clamp(1.8rem, 4vw, 3.2rem); }
+        .story-history-stats,
+        .galactic-history-metrics { display: grid; grid-template-columns: repeat(3, minmax(90px, 1fr)); gap: 0.6rem; min-width: min(420px, 100%); }
+        .galactic-history-metrics { grid-template-columns: repeat(2, minmax(90px, 1fr)); }
+        .story-history-stats div,
+        .galactic-history-metrics div { padding: 0.85rem; border-radius: 8px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); }
+        .story-history-stats strong,
+        .galactic-history-metrics strong { display: block; color: #fff; font-family: var(--font-header); font-size: 1.25rem; line-height: 1.1; overflow-wrap: anywhere; }
+        .story-history-stats span,
+        .galactic-history-metrics span { display: block; color: #aaa; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.35rem; }
+        .timeline-search-wrapper { position: relative; margin: 0 0 1rem; }
+        .timeline-search { width: 100%; height: 48px; padding: 0 1rem 0 2.7rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.13); background: rgba(0,0,0,0.42); color: #fff; outline: none; font-family: var(--font-ui); }
+        .galactic-history-screen .timeline-search { background: rgba(1, 7, 9, 0.82); border-color: rgba(174, 231, 210, 0.18); }
+        .timeline-search:focus { border-color: var(--accent-color); box-shadow: 0 0 0 3px rgba(255,255,255,0.06); }
+        .timeline-search-icon { position: absolute; top: 50%; left: 1rem; transform: translateY(-50%); color: var(--accent-color); opacity: 0.8; }
+        .story-history-list { position: relative; display: grid; gap: 0.75rem; }
+        .story-history-list::before { content: ""; position: absolute; left: 24px; top: 10px; bottom: 10px; width: 1px; background: linear-gradient(to bottom, transparent, var(--accent-color), transparent); opacity: 0.35; }
+        .story-event-card { position: relative; display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 1rem; padding: 1rem; border-radius: 8px; transition: border-color 0.2s ease, transform 0.2s ease; }
+        .story-event-card:hover { border-color: rgba(255,255,255,0.22); transform: translateX(4px); }
+        .story-event-index { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: #050505; border: 1px solid var(--accent-color); color: var(--accent-color); font-family: var(--font-header); box-shadow: 0 0 16px rgba(255,255,255,0.08); z-index: 1; }
+        .story-event-date { color: var(--accent-color); font-family: var(--font-ui); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.35rem; }
+        .story-event-body h3 { font-family: var(--font-header); color: #fff; font-size: 1.35rem; margin-bottom: 0.35rem; }
+        .story-event-body p { color: #d0d0d0; line-height: 1.6; }
+        .timeline-keyword-link {
+            color: var(--accent-color, #ffd700);
+            text-decoration: none;
+            border-bottom: 1px dotted var(--accent-color, rgba(255, 215, 0, 0.5));
+            transition: border-bottom-color 0.25s ease, color 0.25s ease, text-shadow 0.25s ease;
+        }
+        .timeline-keyword-link:hover {
+            color: #ffffff;
+            border-bottom: 1px solid var(--accent-color, #ffd700);
+            text-shadow: 0 0 6px var(--accent-color, #ffd700);
+        }
+        .timeline-event-images {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        .timeline-event-img-wrapper {
+            position: relative;
+            width: 140px;
+            height: 90px;
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.4);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s;
+        }
+        .timeline-event-img-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .timeline-event-img-wrapper:hover {
+            transform: translateY(-3px) scale(1.02);
+            border-color: var(--accent-color, #ffd700);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.7), 0 0 10px rgba(255, 215, 0, 0.2);
+        }
+        .timeline-event-img-wrapper:hover img {
+            transform: scale(1.08);
+        }
+        .timeline-event-img-caption {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 5px 6px;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 40%, rgba(0,0,0,0.5) 80%, transparent 100%);
+            font-family: var(--font-mono, monospace);
+            font-size: 0.65rem;
+            color: #E2E8F0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            opacity: 0.85;
+            transition: opacity 0.3s, color 0.3s;
+        }
+        .timeline-event-img-wrapper:hover .timeline-event-img-caption {
+            opacity: 1;
+            color: #ffffff;
+        }
+        .story-event-characters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.85rem; }
+        .story-event-character { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.35rem 0.6rem 0.35rem 0.35rem; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.06); color: #fff; cursor: pointer; font-family: var(--font-ui); font-size: 0.75rem; }
+        .story-event-character:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .story-event-character img,
+        .story-event-avatar-fallback { width: 26px; height: 26px; border-radius: 50%; object-fit: cover; display: grid; place-items: center; background: rgba(0,0,0,0.42); }
+
+        .galactic-era-grid { display: grid; gap: 0.85rem; }
+        .galactic-era-card {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(12, 18, 20, 0.96), rgba(5, 6, 9, 0.98));
+            border: 1px solid rgba(174, 231, 210, 0.14);
+            box-shadow: 0 16px 38px rgba(0,0,0,0.28);
+        }
+        .galactic-era-card::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: linear-gradient(to bottom, var(--accent-color), rgba(123,211,255,0.75), transparent); opacity: 0.85; }
+        .galactic-era-summary { width: 100%; display: grid; grid-template-columns: 58px minmax(0, 1fr) 32px; align-items: center; gap: 1rem; padding: 1.05rem 1.2rem; border: 0; background: transparent; color: #fff; text-align: left; cursor: pointer; }
+        .galactic-era-summary:hover .galactic-era-title { color: var(--accent-color); }
+        .galactic-era-number { width: 50px; height: 50px; border-radius: 8px; display: grid; place-items: center; background: rgba(255,255,255,0.06); color: #e8f8ff; font-family: var(--font-header); border: 1px solid rgba(174, 231, 210, 0.18); box-shadow: inset 0 0 18px rgba(123,211,255,0.08); }
+        .galactic-era-main { min-width: 0; }
+        .galactic-era-title { display: block; font-family: var(--font-header); font-size: 1.45rem; line-height: 1.1; transition: color 0.2s ease; }
+        .galactic-era-meta { display: block; color: #aac1c4; font-size: 0.78rem; margin-top: 0.35rem; }
+        .galactic-era-summary i { justify-self: end; color: var(--accent-color); transition: transform 0.2s ease; }
+        .galactic-era-card.open .galactic-era-summary i { transform: rotate(180deg); }
+        .galactic-era-detail { display: none; padding: 0 1.2rem 1.2rem 5.3rem; }
+        .galactic-era-card.open .galactic-era-detail { display: block; }
+        .galactic-section-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+        .galactic-section-chip { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.45rem 0.65rem; border-radius: 999px; border: 1px solid rgba(174,231,210,0.16); background: rgba(255,255,255,0.045); color: #e8e8e8; font-size: 0.78rem; cursor: pointer; transition: 0.2s ease; }
+        .galactic-section-chip:hover,
+        .galactic-section-chip.active { background: rgba(174,231,210,0.12); border-color: rgba(174,231,210,0.35); color: #fff; }
+        .galactic-section-chip small { color: var(--accent-color); }
+        .galactic-record-list { display: grid; gap: 0.55rem; }
+        .galactic-record-row {
+            display: grid;
+            grid-template-columns: 42px minmax(0, 1fr);
+            gap: 0.8rem;
+            padding: 0.75rem;
+            border: 1px solid rgba(255,255,255,0.075);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.035);
+        }
+        .galactic-record-row.is-extra,
+        .galactic-record-row.section-hidden { display: none; }
+        .galactic-era-card.show-all-records .galactic-record-row.is-extra:not(.section-hidden) { display: grid; }
+        .galactic-record-index { color: var(--accent-color); font-family: var(--font-header); font-size: 0.9rem; padding-top: 0.2rem; text-align: center; }
+        .galactic-record-path { color: #9ed3e0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.25rem; }
+        .galactic-record-copy p { color: #e2e2dc; line-height: 1.55; font-size: 0.95rem; }
+        .galactic-show-more {
+            margin-top: 0.85rem;
+            padding: 0.65rem 0.9rem;
+            border-radius: 8px;
+            border: 1px solid rgba(174,231,210,0.2);
+            background: rgba(174,231,210,0.08);
+            color: #fff;
+            cursor: pointer;
+            font-family: var(--font-ui);
+            width: 100%;
+        }
+        .galactic-show-more:hover { border-color: var(--accent-color); color: var(--accent-color); }
+        .galactic-muted { color: #aaa; }
+        .timeline-empty { max-width: 720px; margin: 3rem auto; padding: 2rem; text-align: center; color: #d0d0d0; border-radius: 8px; }
+        .timeline-empty h3 { color: var(--accent-color); font-family: var(--font-header); margin-bottom: 0.75rem; }
+        .timeline-no-results { display: none; padding: 2rem; text-align: center; color: #aaa; border: 1px dashed rgba(255,255,255,0.14); border-radius: 8px; background: rgba(0,0,0,0.25); }
+
+        .galactic-console-shell {
+            width: min(1220px, 100%);
+            min-height: 76vh;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 64px minmax(0, 1fr);
+            border: 1px solid rgba(166, 205, 224, 0.18);
+            border-radius: 8px;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 58% 8%, rgba(189, 151, 98, 0.22), transparent 24%),
+                radial-gradient(circle at 88% 72%, rgba(105, 83, 172, 0.18), transparent 26%),
+                linear-gradient(135deg, rgba(5, 10, 16, 0.98), rgba(8, 20, 21, 0.96) 52%, rgba(9, 8, 16, 0.98));
+            box-shadow: 0 28px 80px rgba(0,0,0,0.56), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+        .galactic-console-rail {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem 0.65rem;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.34);
+        }
+        .galactic-console-brand { color: #f4f4f0; font-family: var(--font-header); font-size: 0.78rem; letter-spacing: 0.12em; margin-bottom: 1rem; }
+        .galactic-rail-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: transparent;
+            color: #9ba9b3;
+            cursor: pointer;
+            transition: 0.2s ease;
+        }
+        .galactic-rail-btn:hover,
+        .galactic-rail-btn.active { color: #fff; background: rgba(128, 171, 207, 0.16); border-color: rgba(166,205,224,0.14); }
+        .galactic-rail-btn.bottom { margin-top: auto; }
+        .galactic-console-shell .galactic-history-screen {
+            width: 100%;
+            padding: 1.35rem 1.65rem;
+            border: 0;
+            border-radius: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+        .galactic-console-top {
+            display: grid;
+            grid-template-columns: auto minmax(280px, 390px);
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .galactic-console-search { margin: 0; }
+        .galactic-overview-panel { display: block; }
+        .galactic-console-shell.is-focused .galactic-overview-panel { display: none; }
+        #galactic-focus-panel { display: none; }
+        .galactic-console-shell.is-focused #galactic-focus-panel { display: block; }
+        .galactic-overview-heading {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 1rem;
+            margin: 0 0 1.35rem;
+        }
+        .galactic-overview-heading .galactic-history-title { font-size: clamp(2rem, 4vw, 3.2rem); }
+        .galactic-view-toggle {
+            display: inline-flex;
+            padding: 0.25rem;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.22);
+        }
+        .galactic-view-toggle span { width: 38px; height: 32px; display: grid; place-items: center; color: #a9b4bd; border-radius: 6px; }
+        .galactic-view-toggle span.active { color: #fff; background: rgba(128,171,207,0.16); }
+        .galactic-era-overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.75rem;
+        }
+        .galactic-era-poster {
+            position: relative;
+            min-height: 220px;
+            padding: 1rem;
+            display: flex;
+            align-items: flex-end;
+            text-align: left;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            overflow: hidden;
+            color: #fff;
+            cursor: pointer;
+            background: #101820;
+            box-shadow: inset 0 0 80px rgba(0,0,0,0.28);
+            transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+        }
+        .galactic-era-poster:hover,
+        .galactic-era-poster.active { transform: translateY(-4px); border-color: rgba(210,235,255,0.7); box-shadow: 0 14px 38px rgba(0,0,0,0.34), inset 0 0 80px rgba(0,0,0,0.22); }
+        .galactic-era-poster::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(to top, rgba(2,5,8,0.88), rgba(2,5,8,0.26) 52%, rgba(255,255,255,0.06)),
+                radial-gradient(circle at 28% 24%, rgba(255,255,255,0.32), transparent 8%),
+                linear-gradient(145deg, rgba(112,145,178,0.2), transparent 40%);
+            z-index: 1;
+        }
+        .galactic-era-poster-art {
+            position: absolute;
+            inset: 0;
+            opacity: 0.82;
+            background:
+                radial-gradient(circle at 35% 34%, rgba(255,255,255,0.28), transparent 8%),
+                radial-gradient(circle at 52% 38%, rgba(255,255,255,0.18), transparent 16%),
+                linear-gradient(150deg, rgba(34, 70, 96, 0.75), rgba(11, 13, 20, 0.94));
+        }
+        .era-theme-1 .galactic-era-poster-art,
+        .era-theme-1.galactic-era-focus::before { background: radial-gradient(circle at 60% 20%, rgba(255,205,121,0.45), transparent 18%), linear-gradient(145deg, rgba(126,76,40,0.72), rgba(22,18,18,0.96)); }
+        .era-theme-2 .galactic-era-poster-art,
+        .era-theme-2.galactic-era-focus::before { background: radial-gradient(circle at 72% 30%, rgba(255,230,171,0.42), transparent 16%), linear-gradient(145deg, rgba(111,86,51,0.72), rgba(19,24,25,0.96)); }
+        .era-theme-3 .galactic-era-poster-art,
+        .era-theme-3.galactic-era-focus::before { background: radial-gradient(circle at 82% 16%, rgba(201,53,61,0.55), transparent 17%), linear-gradient(145deg, rgba(91,19,28,0.78), rgba(12,8,13,0.96)); }
+        .era-theme-4 .galactic-era-poster-art,
+        .era-theme-4.galactic-era-focus::before { background: radial-gradient(circle at 28% 22%, rgba(170,188,204,0.34), transparent 15%), linear-gradient(145deg, rgba(54,67,80,0.78), rgba(9,11,15,0.96)); }
+        .era-theme-5 .galactic-era-poster-art,
+        .era-theme-5.galactic-era-focus::before { background: radial-gradient(circle at 58% 26%, rgba(196,209,154,0.34), transparent 16%), linear-gradient(145deg, rgba(58,82,55,0.72), rgba(12,18,16,0.96)); }
+        .era-theme-6 .galactic-era-poster-art,
+        .era-theme-6.galactic-era-focus::before { background: radial-gradient(circle at 36% 34%, rgba(118,159,223,0.42), transparent 18%), linear-gradient(145deg, rgba(38,55,93,0.78), rgba(8,11,19,0.96)); }
+        .era-theme-7 .galactic-era-poster-art,
+        .era-theme-7.galactic-era-focus::before { background: radial-gradient(circle at 80% 18%, rgba(207,124,213,0.38), transparent 18%), linear-gradient(145deg, rgba(57,38,91,0.76), rgba(13,10,20,0.96)); }
+        .galactic-era-poster-number { position: absolute; top: 0.9rem; left: 0.9rem; z-index: 2; padding: 0.3rem 0.45rem; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #cbd8df; background: rgba(0,0,0,0.28); font-size: 0.75rem; }
+        .galactic-era-poster-body { position: relative; z-index: 2; display: grid; gap: 0.45rem; width: 100%; }
+        .galactic-era-poster-title { font-family: var(--font-header); font-size: 1.35rem; line-height: 1.05; text-transform: uppercase; }
+        .galactic-era-poster-range { color: #f1f1ed; font-size: 0.78rem; }
+        .galactic-era-poster-count { display: grid; gap: 0.05rem; color: #b9c7cc; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.08em; }
+        .galactic-era-poster-count strong { color: #fff; font-size: 1.05rem; letter-spacing: 0; }
+        .galactic-overview-hint { text-align: center; color: #98a9ae; margin-top: 0.9rem; font-size: 0.75rem; }
+        .galactic-era-focus {
+            position: relative;
+            display: grid;
+            grid-template-columns: minmax(0, 1.28fr) minmax(320px, 0.72fr);
+            gap: 0.85rem;
+        }
+        .galactic-era-focus::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 8px;
+            opacity: 0.85;
+            pointer-events: none;
+        }
+        .galactic-focus-left,
+        .galactic-era-timeline {
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+            background: linear-gradient(180deg, rgba(13,19,23,0.78), rgba(7,9,13,0.94));
+        }
+        .galactic-focus-left { min-height: 560px; padding: 1.2rem; }
+        .galactic-focus-back { border: 0; background: transparent; color: #b7c8ce; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.7rem; cursor: pointer; margin-bottom: 1.4rem; }
+        .galactic-focus-back:hover { color: #fff; }
+        .galactic-focus-hero { display: flex; justify-content: space-between; gap: 1rem; min-height: 210px; align-items: flex-start; }
+        .galactic-focus-copy { max-width: 500px; }
+        .galactic-focus-title { font-family: var(--font-header); color: #fff; font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1; display: flex; gap: 0.6rem; align-items: center; }
+        .galactic-focus-title i { color: #93dfff; font-size: 1.6rem; }
+        .galactic-focus-range { color: #d7e4ea; margin-top: 0.7rem; font-size: 1rem; }
+        .galactic-focus-copy p { color: #d0d7d7; line-height: 1.65; margin-top: 1.1rem; }
+        .galactic-focus-stats { display: grid; grid-template-columns: repeat(3, 88px); gap: 0.5rem; }
+        .galactic-focus-stats div { padding: 0.75rem; border-radius: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.08); }
+        .galactic-focus-stats strong { color: #fff; display: block; font-family: var(--font-header); font-size: 1.2rem; }
+        .galactic-focus-stats span { color: #b4c0c2; text-transform: uppercase; font-size: 0.64rem; letter-spacing: 0.08em; }
+        .galactic-subera-heading { margin-top: 1.4rem; color: #c9d6d9; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem; }
+        .galactic-subera-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.65rem; margin-top: 0.75rem; }
+        .galactic-subera-card { min-height: 92px; padding: 0.85rem; text-align: left; border-radius: 8px; border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.07); color: #fff; cursor: pointer; display: grid; align-content: space-between; transition: 0.2s ease; }
+        .galactic-subera-card:hover,
+        .galactic-subera-card.active { border-color: rgba(210,235,255,0.78); background: rgba(255,255,255,0.12); }
+        .galactic-subera-card span { font-weight: 700; }
+        .galactic-subera-card small { color: #c0ced2; }
+        .galactic-event-detail { margin-top: 1rem; min-height: 210px; padding: 1.1rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: linear-gradient(90deg, rgba(16,26,34,0.92), rgba(16,20,26,0.52)); }
+        .galactic-detail-breadcrumb { color: #9fb1b8; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.68rem; }
+        .galactic-detail-date { margin-top: 1rem; color: #d7e4ea; font-size: 1rem; }
+        .galactic-detail-title { margin-top: 0.65rem; color: #fff; font-family: var(--font-header); font-size: 1.55rem; line-height: 1.1; }
+        .galactic-event-detail p { margin-top: 0.9rem; color: #d8dfde; line-height: 1.65; max-width: 660px; }
+        .galactic-detail-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1rem; }
+        .galactic-detail-tags span { padding: 0.35rem 0.55rem; border-radius: 999px; background: rgba(255,255,255,0.08); color: #cbd6d7; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; }
+        .galactic-era-timeline { padding: 1.1rem; max-height: 680px; overflow: hidden; }
+        .galactic-timeline-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
+        .galactic-timeline-title { color: #fff; font-family: var(--font-header); font-size: 1.65rem; line-height: 1.1; }
+        .galactic-filter-btn { width: 34px; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.08); color: #fff; }
+        .galactic-timeline-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.2rem; padding: 0.2rem; margin: 1rem 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; }
+        .galactic-timeline-tabs button { border: 0; background: transparent; color: #9eaaae; padding: 0.55rem; border-radius: 6px; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.08em; }
+        .galactic-timeline-tabs button.active { background: rgba(105,137,165,0.32); color: #fff; }
+        .galactic-timeline-meta { display: inline-grid; margin-bottom: 0.75rem; color: #b9c5c9; text-transform: uppercase; font-size: 0.68rem; letter-spacing: 0.08em; }
+        .galactic-timeline-meta strong { color: #fff; font-family: var(--font-header); font-size: 1.2rem; letter-spacing: 0; }
+        .galactic-focused-records { position: relative; display: grid; gap: 0.7rem; max-height: 500px; overflow-y: auto; padding-left: 0.8rem; }
+        .galactic-focused-records::before { content: ""; position: absolute; left: 12px; top: 8px; bottom: 8px; width: 1px; background: linear-gradient(to bottom, rgba(118,202,255,0.1), rgba(118,202,255,0.75), rgba(118,202,255,0.1)); }
+        .galactic-focused-record { position: relative; display: grid; grid-template-columns: 76px minmax(0,1fr); gap: 0.75rem; align-items: start; border: 0; background: transparent; color: #fff; text-align: left; cursor: pointer; padding: 0; }
+        .galactic-focused-record::before { content: ""; position: absolute; left: -2px; top: 18px; width: 8px; height: 8px; border-radius: 50%; background: #8bd8ff; box-shadow: 0 0 14px #8bd8ff; z-index: 1; }
+        .galactic-focused-date { color: #b4c8cf; font-size: 0.72rem; padding-top: 0.65rem; text-align: right; }
+        .galactic-focused-card { display: grid; gap: 0.35rem; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.065); transition: 0.2s ease; }
+        .galactic-focused-record:hover .galactic-focused-card,
+        .galactic-focused-record.active .galactic-focused-card { border-color: rgba(139,216,255,0.48); background: rgba(255,255,255,0.1); }
+        .galactic-focused-card strong { color: #fff; font-size: 0.9rem; }
+        .galactic-focused-card span { color: #c0c8ca; line-height: 1.45; font-size: 0.78rem; }
+
+        .galactic-console-shell {
+            width: min(1360px, 100%);
+            min-height: 82vh;
+            background:
+                radial-gradient(circle at 60% 6%, rgba(190, 174, 133, 0.22), transparent 23%),
+                radial-gradient(circle at 88% 88%, rgba(70, 55, 124, 0.2), transparent 28%),
+                linear-gradient(135deg, rgba(3, 9, 16, 0.98), rgba(7, 22, 24, 0.96) 52%, rgba(8, 8, 18, 0.98));
+        }
+        .galactic-console-shell .galactic-history-screen { padding: 1.65rem 1.9rem; }
+        .galactic-console-top { grid-template-columns: minmax(0, 1fr) minmax(320px, 430px); }
+        .galactic-overview-heading .galactic-history-title {
+            font-size: clamp(2.6rem, 5vw, 4.7rem);
+            letter-spacing: 0;
+            max-width: 850px;
+        }
+        .galactic-era-overview-grid { gap: 0.9rem; }
+        .galactic-era-poster {
+            min-height: 245px;
+            padding: 1.1rem;
+            border-color: rgba(194,216,228,0.18);
+            background: #09111b;
+        }
+        .galactic-era-poster-art {
+            opacity: 1;
+            background:
+                linear-gradient(to top, rgba(2,5,10,0.9), rgba(2,5,10,0.1) 58%),
+                radial-gradient(ellipse at 32% 26%, rgba(188,224,255,0.42), transparent 11%),
+                radial-gradient(ellipse at 46% 34%, rgba(103,153,199,0.18), transparent 21%),
+                linear-gradient(145deg, #22374d, #0a111c 70%);
+        }
+        .galactic-era-poster-art::before,
+        .galactic-era-poster-art::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+        .galactic-era-poster-art::before {
+            height: 48%;
+            background: linear-gradient(to top, rgba(0,0,0,0.72), transparent);
+            clip-path: polygon(0 72%, 12% 60%, 22% 66%, 34% 42%, 45% 62%, 58% 36%, 71% 58%, 84% 44%, 100% 62%, 100% 100%, 0 100%);
+        }
+        .galactic-era-poster-art::after {
+            height: 100%;
+            opacity: 0.7;
+            background:
+                radial-gradient(circle at 18% 20%, rgba(255,255,255,0.9) 0 1px, transparent 2px),
+                radial-gradient(circle at 72% 18%, rgba(255,255,255,0.65) 0 1px, transparent 2px),
+                radial-gradient(circle at 84% 38%, rgba(255,255,255,0.55) 0 1px, transparent 2px);
+        }
+        .era-theme-1 .galactic-era-poster-art { background: linear-gradient(to top, rgba(4,4,6,0.9), transparent 58%), radial-gradient(ellipse at 64% 26%, rgba(255,199,118,0.46), transparent 14%), linear-gradient(145deg, #6a4732, #161319 72%); }
+        .era-theme-1 .galactic-era-poster-art::before { clip-path: polygon(0 76%, 12% 62%, 19% 68%, 22% 40%, 27% 68%, 34% 46%, 39% 68%, 45% 30%, 51% 68%, 58% 44%, 65% 70%, 76% 48%, 83% 70%, 91% 56%, 100% 72%, 100% 100%, 0 100%); }
+        .era-theme-2 .galactic-era-poster-art { background: linear-gradient(to top, rgba(4,5,5,0.9), transparent 56%), radial-gradient(ellipse at 72% 28%, rgba(245,218,156,0.42), transparent 15%), linear-gradient(145deg, #74624a, #14191a 72%); }
+        .era-theme-2 .galactic-era-poster-art::before { clip-path: polygon(0 76%, 10% 64%, 20% 70%, 30% 56%, 39% 67%, 46% 34%, 53% 66%, 62% 42%, 70% 64%, 78% 36%, 86% 66%, 100% 54%, 100% 100%, 0 100%); }
+        .era-theme-3 .galactic-era-poster-art { background: linear-gradient(to top, rgba(9,3,7,0.92), transparent 58%), radial-gradient(circle at 82% 18%, rgba(205,52,67,0.55), transparent 17%), linear-gradient(145deg, #5e1724, #100911 75%); }
+        .era-theme-3 .galactic-era-poster-art::before { clip-path: polygon(0 78%, 16% 58%, 30% 68%, 43% 28%, 53% 70%, 66% 44%, 78% 64%, 88% 36%, 100% 70%, 100% 100%, 0 100%); }
+        .era-theme-4 .galactic-era-poster-art { background: linear-gradient(to top, rgba(5,7,10,0.92), transparent 60%), radial-gradient(ellipse at 34% 28%, rgba(189,207,222,0.32), transparent 15%), linear-gradient(145deg, #425466, #0b0d13 74%); }
+        .era-theme-4 .galactic-era-poster-art::before { clip-path: polygon(0 68%, 28% 44%, 58% 54%, 100% 36%, 100% 100%, 0 100%); }
+        .era-theme-5 .galactic-era-poster-art { background: linear-gradient(to top, rgba(4,8,7,0.92), transparent 60%), radial-gradient(ellipse at 55% 28%, rgba(194,212,152,0.34), transparent 16%), linear-gradient(145deg, #3b5a42, #0b1513 76%); }
+        .era-theme-6 .galactic-era-poster-art { background: linear-gradient(to top, rgba(4,7,14,0.92), transparent 60%), radial-gradient(ellipse at 34% 32%, rgba(119,163,230,0.42), transparent 18%), linear-gradient(145deg, #253a67, #080b16 76%); }
+        .era-theme-7 .galactic-era-poster-art { background: linear-gradient(to top, rgba(7,5,14,0.92), transparent 60%), radial-gradient(ellipse at 80% 20%, rgba(205,128,221,0.38), transparent 18%), linear-gradient(145deg, #3d2b64, #0d0a18 76%); }
+        .galactic-era-poster-title { font-size: 1.48rem; text-shadow: 0 2px 12px rgba(0,0,0,0.75); }
+        .galactic-era-poster-range,
+        .galactic-era-poster-count { text-shadow: 0 1px 8px rgba(0,0,0,0.7); }
+        .galactic-era-focus {
+            grid-template-columns: minmax(0, 1.45fr) minmax(390px, 0.72fr);
+            gap: 0.95rem;
+        }
+        .galactic-focus-left { min-height: 650px; padding: 1.45rem; }
+        .galactic-focus-hero {
+            min-height: 285px;
+            padding: 0.1rem;
+            align-items: flex-start;
+        }
+        .galactic-focus-title {
+            max-width: 560px;
+            font-size: clamp(2.45rem, 4.8vw, 4.4rem);
+        }
+        .galactic-focus-copy p { max-width: 470px; font-size: 1rem; }
+        .galactic-focus-stats { grid-template-columns: repeat(3, 94px); }
+        .galactic-subera-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .galactic-subera-card {
+            min-height: 108px;
+            background:
+                linear-gradient(to top, rgba(0,0,0,0.58), transparent),
+                rgba(255,255,255,0.075);
+        }
+        .galactic-event-detail {
+            min-height: 240px;
+            background:
+                linear-gradient(90deg, rgba(17,28,39,0.94), rgba(16,20,26,0.44)),
+                radial-gradient(circle at 78% 24%, rgba(139,216,255,0.14), transparent 28%);
+        }
+        .galactic-detail-title {
+            font-size: 1.75rem;
+            max-width: 690px;
+        }
+        .galactic-era-timeline {
+            max-height: 720px;
+            background: linear-gradient(180deg, rgba(18,18,22,0.88), rgba(4,7,12,0.96));
+        }
+        .galactic-timeline-title {
+            font-size: 1.45rem;
+            overflow-wrap: anywhere;
+        }
+        .galactic-focused-records {
+            max-height: 535px;
+            padding-top: 0.35rem;
+            padding-right: 0.25rem;
+        }
+        .galactic-focused-card {
+            min-height: 82px;
+            overflow: hidden;
+        }
+        .galactic-focused-card strong {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.25;
+        }
+        .galactic-focused-card span {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        @supports selector(body:has(.galactic-console-shell)) {
+            body:has(.galactic-console-shell) #app-container {
+                padding: 0;
+                background: #020508;
+            }
+            body:has(.galactic-console-shell) #main-header {
+                display: none;
+            }
+            body:has(.galactic-console-shell) #content-stage {
+                padding: 0.55rem;
+                overflow: hidden;
+                scrollbar-width: none;
+            }
+            body:has(.galactic-console-shell) #content-stage::-webkit-scrollbar {
+                display: none;
+            }
+            body:has(.galactic-console-shell) .background-layer,
+            body:has(.galactic-console-shell) #particle-canvas {
+                opacity: 0;
+            }
+        }
+
+        .galactic-console-shell {
+            --galactic-line: rgba(117, 150, 178, 0.22);
+            --galactic-soft: rgba(184, 212, 231, 0.74);
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 1.1rem);
+            min-height: 720px;
+            margin: 0;
+            grid-template-columns: 94px minmax(0, 1fr);
+            border-radius: 8px;
+            border: 1px solid rgba(126, 164, 190, 0.28);
+            background:
+                linear-gradient(90deg, rgba(3,8,12,0.96), rgba(6,12,19,0.8) 22%, rgba(7,11,17,0.78)),
+                var(--galactic-overview-bg) center / cover no-repeat;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.035), 0 26px 80px rgba(0,0,0,0.85), inset 0 0 80px rgba(56, 92, 121, 0.1);
+        }
+        .galactic-console-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 57% 18%, rgba(217,229,225,0.18), transparent 15%),
+                linear-gradient(to bottom, rgba(3,7,12,0.24), rgba(2,4,7,0.7));
+            z-index: 0;
+        }
+        .galactic-console-shell > * {
+            position: relative;
+            z-index: 1;
+        }
+        .galactic-console-rail {
+            padding: 1.55rem 1.2rem;
+            gap: 1.45rem;
+            border-right: 1px solid var(--galactic-line);
+            background: rgba(1, 7, 12, 0.66);
+        }
+        .galactic-console-brand {
+            align-self: stretch;
+            color: #f0efe6;
+            font-size: 0.95rem;
+            letter-spacing: 0.1em;
+            margin: 0 0 1.5rem;
+            text-align: center;
+        }
+        .galactic-rail-btn {
+            width: 56px;
+            height: 56px;
+            border-radius: 8px;
+            color: #9aa9b6;
+            font-size: 1.12rem;
+        }
+        .galactic-rail-btn:hover,
+        .galactic-rail-btn.active {
+            color: #edf7ff;
+            border-color: rgba(118, 170, 215, 0.28);
+            background: rgba(72, 114, 151, 0.24);
+            box-shadow: inset 0 0 20px rgba(116, 178, 232, 0.12);
+        }
+        .galactic-console-shell .galactic-history-screen {
+            min-height: 0;
+            height: 100%;
+            padding: 2rem 3.25rem 1.25rem 3.8rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .galactic-console-top {
+            grid-template-columns: minmax(0, 1fr) minmax(380px, 540px);
+            margin-bottom: 3rem;
+        }
+        .galactic-console-top .map-hub-back-btn {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            justify-content: center;
+            border: 0;
+            color: #9dacb7;
+            background: transparent;
+            font-size: 0;
+        }
+        .galactic-console-top .map-hub-back-btn i {
+            font-size: 0.95rem;
+        }
+        .galactic-console-search .timeline-search {
+            height: 52px;
+            padding-left: 3.2rem;
+            padding-right: 4.6rem;
+            border-radius: 8px;
+            border-color: rgba(139, 166, 190, 0.24);
+            background: rgba(23, 34, 48, 0.76);
+            box-shadow: inset 0 0 18px rgba(255,255,255,0.025), 0 8px 22px rgba(0,0,0,0.22);
+            color: #dfe8ee;
+            font-weight: 700;
+        }
+        .galactic-console-search::after {
+            content: "⌘K";
+            position: absolute;
+            right: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            padding: 0.3rem 0.45rem;
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            color: #b2b8bd;
+            font-size: 0.68rem;
+            font-weight: 800;
+        }
+        .galactic-console-search .timeline-search-icon {
+            left: 1.25rem;
+            color: #bac7d2;
+            font-size: 1rem;
+        }
+        .galactic-overview-panel {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .galactic-overview-heading {
+            align-items: flex-start;
+            margin-bottom: 1.85rem;
+        }
+        .galactic-overview-heading .timeline-hub-kicker {
+            color: #9daaba;
+            margin-bottom: 0.65rem;
+        }
+        .galactic-overview-heading .galactic-history-title {
+            font-size: clamp(2.35rem, 4vw, 3.25rem);
+            color: #f7f3ec;
+            text-shadow: 0 2px 18px rgba(0,0,0,0.65);
+        }
+        .galactic-overview-heading .galactic-history-subtitle {
+            margin-top: 0.45rem;
+            color: #ccd1d3;
+            font-size: 0.88rem;
+            font-weight: 700;
+        }
+        .galactic-view-toggle {
+            margin-top: 3.5rem;
+            background: rgba(6, 14, 23, 0.55);
+            border-color: rgba(118, 151, 178, 0.18);
+        }
+        .galactic-view-toggle span {
+            width: 43px;
+            height: 38px;
+            color: #82909b;
+        }
+        .galactic-view-toggle span.active {
+            background: rgba(80, 116, 149, 0.36);
+        }
+        .galactic-era-overview-grid {
+            flex: 1;
+            min-height: 0;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-auto-rows: minmax(260px, 1fr);
+            gap: 1rem;
+        }
+        .galactic-era-poster {
+            min-height: 0;
+            padding: 1.35rem 1.45rem;
+            border-color: rgba(171, 190, 203, 0.16);
+            border-radius: 8px;
+            background:
+                linear-gradient(to top, rgba(5, 9, 14, 0.94), rgba(5, 9, 14, 0.34)),
+                var(--galactic-era-image) center / cover no-repeat,
+                #09111b;
+            box-shadow: inset 0 0 70px rgba(0,0,0,0.24), 0 12px 24px rgba(0,0,0,0.22);
+        }
+        .galactic-era-poster:hover,
+        .galactic-era-poster.active {
+            transform: translateY(-2px);
+            border-color: rgba(211, 233, 246, 0.78);
+            box-shadow: 0 16px 44px rgba(0,0,0,0.38), 0 0 0 1px rgba(255,255,255,0.08), inset 0 0 70px rgba(0,0,0,0.18);
+        }
+        .galactic-era-poster::before {
+            background:
+                linear-gradient(to top, rgba(4,8,13,0.95), rgba(4,8,13,0.44) 48%, rgba(255,255,255,0.035)),
+                linear-gradient(90deg, rgba(255,255,255,0.08), transparent 28%, transparent 72%, rgba(255,255,255,0.06));
+        }
+        .galactic-era-poster-art {
+            opacity: 1;
+            inset: 0.9rem;
+            background-image: var(--galactic-era-image);
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: saturate(0.9) contrast(1.02);
+            z-index: 0;
+        }
+        .galactic-era-poster-art::before,
+        .galactic-era-poster-art::after {
+            display: none;
+        }
+        .galactic-era-poster-number {
+            top: 1.25rem;
+            left: 1.25rem;
+            padding: 0.32rem 0.48rem;
+            color: #c5ced7;
+            background: rgba(14, 21, 31, 0.58);
+            border-color: rgba(209, 224, 236, 0.13);
+            font-weight: 800;
+        }
+        .galactic-era-poster-body {
+            gap: 0.6rem;
+        }
+        .galactic-era-poster-title {
+            max-width: 94%;
+            font-size: clamp(1.35rem, 1.9vw, 1.85rem);
+            color: #f7f1e9;
+        }
+        .galactic-era-poster-range {
+            color: #e0e4e7;
+            font-weight: 700;
+            font-size: 0.9rem;
+        }
+        .galactic-era-poster-count {
+            margin-top: 2.65rem;
+            color: #aebbc5;
+            font-weight: 800;
+        }
+        .galactic-era-poster-count strong {
+            font-size: 1.15rem;
+        }
+        .galactic-overview-hint {
+            margin-top: 1rem;
+            color: #9fa8b0;
+            font-weight: 700;
+        }
+        .galactic-console-shell.is-focused .galactic-history-screen {
+            padding: 0;
+        }
+        .galactic-era-focus {
+            height: 100%;
+            grid-template-columns: minmax(0, 1.35fr) minmax(420px, 0.65fr);
+            gap: 0.55rem;
+        }
+        .galactic-focus-left,
+        .galactic-era-timeline {
+            border-radius: 0;
+            border: 0;
+            background: rgba(8, 13, 20, 0.9);
+        }
+        .galactic-focus-left {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 2rem 2.65rem;
+            border-right: 1px solid rgba(126, 164, 190, 0.16);
+            background:
+                linear-gradient(90deg, rgba(7,13,21,0.95), rgba(7,13,21,0.72) 42%, rgba(7,13,21,0.24)),
+                linear-gradient(to bottom, rgba(5,9,15,0.18), rgba(5,9,15,0.92));
+        }
+        .galactic-focus-art {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center top;
+            opacity: 0.78;
+            pointer-events: none;
+        }
+        .galactic-focus-art::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(7,13,21,0.94), rgba(7,13,21,0.68) 42%, rgba(7,13,21,0.22)),
+                linear-gradient(to bottom, rgba(5,9,15,0.08), rgba(5,9,15,0.94));
+        }
+        .galactic-focus-left > :not(.galactic-focus-art) {
+            position: relative;
+            z-index: 1;
+        }
+        .galactic-focus-back {
+            margin-bottom: 1.8rem;
+            color: #a6b1ba;
+            font-weight: 800;
+        }
+        .galactic-focus-hero {
+            min-height: 250px;
+        }
+        .galactic-focus-title {
+            font-size: clamp(2.25rem, 4.2vw, 4.05rem);
+            color: #f8f1e7;
+            text-shadow: 0 2px 18px rgba(0,0,0,0.7);
+        }
+        .galactic-focus-range {
+            font-weight: 700;
+            color: #cfdbe3;
+        }
+        .galactic-focus-copy p {
+            max-width: 560px;
+            color: #d0d9df;
+            font-size: 0.92rem;
+            font-weight: 650;
+        }
+        .galactic-focus-stats div {
+            background: rgba(23, 30, 42, 0.48);
+            border-color: rgba(178, 201, 219, 0.11);
+        }
+        .galactic-subera-heading {
+            margin-top: auto;
+            color: #b9c5cd;
+            font-weight: 800;
+        }
+        .galactic-subera-grid {
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0.65rem;
+        }
+        .galactic-subera-card {
+            position: relative;
+            overflow: hidden;
+            min-height: 96px;
+            padding: 0.85rem;
+            background:
+                linear-gradient(to top, rgba(7,12,18,0.72), rgba(31,42,52,0.3)),
+                var(--galactic-subera-image) center / cover no-repeat,
+                rgba(255,255,255,0.07);
+            backdrop-filter: blur(6px);
+        }
+        .galactic-subera-card-art {
+            position: absolute;
+            inset: 0.45rem;
+            background-image: var(--galactic-subera-image);
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: 0.72;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .galactic-subera-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to top, rgba(6,10,16,0.86), rgba(6,10,16,0.32));
+            z-index: 1;
+        }
+        .galactic-subera-card:hover .galactic-subera-card-art,
+        .galactic-subera-card.active .galactic-subera-card-art {
+            opacity: 0.9;
+            transform: scale(1.02);
+        }
+        .galactic-subera-card span:not(.galactic-subera-card-art),
+        .galactic-subera-card small {
+            position: relative;
+            z-index: 2;
+        }
+        .galactic-event-detail {
+            position: relative;
+            overflow: hidden;
+            flex: 0 0 240px;
+            height: 240px;
+            min-height: 220px;
+            margin-top: 1rem;
+            background:
+                linear-gradient(90deg, rgba(14, 27, 40, 0.94), rgba(9, 13, 18, 0.72));
+        }
+        .galactic-event-detail::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(8,13,19,0.88), rgba(8,13,19,0.5), rgba(8,13,19,0.24));
+            pointer-events: none;
+        }
+        .galactic-event-detail > * {
+            position: relative;
+            z-index: 1;
+        }
+        .galactic-detail-art {
+            position: absolute;
+            inset: 0 0 0 auto;
+            width: 54%;
+            background-image: var(--galactic-detail-image);
+            background-size: cover;
+            background-position: center;
+            opacity: 0.62;
+            z-index: 0;
+        }
+        .galactic-detail-art::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, rgba(14, 27, 40, 1) 0%, rgba(14, 27, 40, 0.8) 40%, transparent 100%);
+        }
+        .galactic-era-timeline {
+            padding: 1.8rem 1.65rem;
+            max-height: none;
+            background:
+                linear-gradient(180deg, rgba(46, 31, 34, 0.86), rgba(4, 10, 16, 0.96) 62%),
+                var(--galactic-timeline-panel) center / cover no-repeat;
+        }
+        .galactic-timeline-header {
+            margin-bottom: 1.35rem;
+        }
+        .galactic-timeline-title {
+            font-size: 1.8rem;
+            color: #f4efe8;
+        }
+        .galactic-timeline-tabs {
+            margin: 1.4rem 0 1rem;
+            background: rgba(8, 10, 15, 0.34);
+        }
+        .galactic-focused-records {
+            max-height: calc(100vh - 310px);
+            gap: 0.78rem;
+            padding-left: 1rem;
+            padding-right: 0.25rem;
+        }
+        .galactic-focused-record {
+            grid-template-columns: 70px minmax(0, 1fr);
+        }
+        .galactic-focused-card {
+            min-height: 86px;
+            padding: 0.85rem 0.95rem;
+            background: rgba(37, 39, 47, 0.72);
+            border-color: rgba(213, 222, 230, 0.08);
+        }
+
+        .galactic-era-poster {
+            background: var(--galactic-era-image) center / cover no-repeat #08111a;
+            isolation: isolate;
+        }
+
+        .galactic-era-poster::before,
+        .galactic-era-poster-art,
+        .galactic-era-poster-art::before,
+        .galactic-era-poster-art::after {
+            display: none;
+        }
+
+        .galactic-era-poster-number,
+        .galactic-era-poster-body {
+            z-index: 1;
+        }
+
+        .galactic-era-poster-title,
+        .galactic-era-poster-range,
+        .galactic-era-poster-count {
+            text-shadow: 0 2px 14px rgba(0, 0, 0, 0.88);
+        }
+
+        .galactic-focus-art {
+            background-image: var(--galactic-focus-era-image);
+            background-position: center;
+        }
+
+        .galactic-subera-card {
+            background:
+                var(--galactic-subera-image) center / cover no-repeat,
+                rgba(8, 13, 20, 0.42);
+            border-color: rgba(220, 238, 255, 0.18);
+            backdrop-filter: blur(16px) saturate(1.25);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 12px 28px rgba(0, 0, 0, 0.18);
+        }
+
+        .galactic-subera-card::before {
+            display: block;
+        }
+
+        .galactic-subera-card:hover,
+        .galactic-subera-card.active {
+            background:
+                var(--galactic-subera-image) center / cover no-repeat,
+                rgba(20, 31, 44, 0.58);
+            border-color: rgba(210, 235, 255, 0.74);
+        }
+
+        .galactic-subera-card:hover::before,
+        .galactic-subera-card.active::before {
+            background: linear-gradient(to top, rgba(6, 10, 16, 0.76), rgba(6, 10, 16, 0.2));
+        }
+
+        .galactic-subera-card span,
+        .galactic-subera-card small {
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.86);
+        }
+
+        .galactic-subera-body {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            z-index: 2;
+        }
+
+        .galactic-subera-title {
+            font-family: var(--font-header);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+            line-height: 1.15;
+        }
+
+        .galactic-subera-range {
+            font-size: 0.72rem;
+            color: rgba(230, 238, 245, 0.76);
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.86);
+            font-family: var(--font-ui);
+            font-weight: 500;
+        }
+
+        .galactic-subera-count {
+            font-family: var(--font-ui);
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #ffd700;
+            text-shadow: 0 1px 6px rgba(0, 0, 0, 0.86);
+            z-index: 2;
+        }
+
+        .galactic-timeline-range {
+            font-family: var(--font-ui);
+            font-size: 0.85rem;
+            color: rgba(220, 235, 250, 0.8);
+            margin-top: 0.25rem;
+            letter-spacing: 0.05em;
+        }
+
+        body:has(.galactic-console-shell) .background-layer,
+        body:has(.galactic-console-shell) #particle-canvas {
+            display: block;
+            opacity: 0.45;
+        }
+
+        .galactic-console-shell {
+            background:
+                linear-gradient(90deg, rgba(3, 8, 12, 0.92), rgba(6, 12, 19, 0.68) 30%, rgba(7, 11, 17, 0.52)),
+                var(--galactic-overview-bg) center / cover no-repeat,
+                rgba(3, 7, 11, 0.72);
+        }
+
+        .galactic-console-rail {
+            background: rgba(1, 7, 12, 0.42);
+            backdrop-filter: blur(18px);
+        }
+
+        .galactic-console-shell.is-focused {
+            grid-template-columns: 70px minmax(0, 1fr);
+            background: rgba(3, 7, 11, 0.42);
+            backdrop-filter: blur(8px);
+        }
+
+        .galactic-console-shell.is-focused .galactic-console-brand {
+            font-size: 0;
+            margin-bottom: 1.2rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-console-brand::before {
+            content: "A";
+            font-size: 1rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-rail-btn {
+            width: 42px;
+            height: 42px;
+            margin-inline: auto;
+        }
+
+        .galactic-console-shell.is-focused .galactic-console-top {
+            display: none;
+        }
+
+        .galactic-console-shell.is-focused #galactic-focus-panel {
+            height: 100%;
+        }
+
+        .galactic-console-shell.is-focused .galactic-era-focus {
+            height: 100%;
+            grid-template-columns: minmax(0, 1.18fr) minmax(430px, 0.72fr);
+            gap: 0;
+            overflow: hidden;
+            border-left: 1px solid rgba(157, 190, 219, 0.14);
+        }
+
+        .galactic-console-shell.is-focused .galactic-era-focus::before {
+            display: none;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-left {
+            padding: 2rem 3rem 1.75rem;
+            background: 
+                linear-gradient(90deg, rgba(5, 9, 15, 0.98) 0%, rgba(5, 9, 15, 0.85) 40%, rgba(5, 9, 15, 0.4) 100%),
+                linear-gradient(to top, rgba(5, 9, 15, 0.95) 0%, transparent 50%);
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-art {
+            background-size: cover;
+            background-position: center;
+            opacity: 0.92;
+            transform: scale(1.02);
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-art::after {
+            background:
+                radial-gradient(circle at 72% 12%, rgba(232, 222, 196, 0.2), transparent 16%),
+                linear-gradient(90deg, rgba(4, 10, 16, 0.95), rgba(5, 12, 18, 0.66) 42%, rgba(5, 12, 18, 0.24)),
+                linear-gradient(to bottom, rgba(5, 9, 15, 0.08), rgba(5, 9, 15, 0.44) 46%, rgba(5, 9, 15, 0.96));
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-back {
+            width: max-content;
+            margin: 0 auto 1.1rem;
+            color: #b7c8d6;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-hero {
+            min-height: 0;
+            align-items: flex-start;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-copy {
+            max-width: 620px;
+            padding-top: 1rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-title {
+            max-width: 600px;
+            font-size: clamp(2.7rem, 4.4vw, 4.75rem);
+            line-height: 0.94;
+            align-items: flex-start;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-title i {
+            font-size: 1.45rem;
+            margin-right: 0.35rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-range {
+            margin-top: 1.2rem;
+            font-size: 1.05rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-copy p {
+            max-width: 520px;
+            margin-top: 1rem;
+            color: rgba(232, 239, 242, 0.9);
+            line-height: 1.55;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-stats {
+            grid-template-columns: repeat(3, 86px);
+            margin-top: 1rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focus-stats div {
+            min-height: 64px;
+            background: rgba(12, 19, 29, 0.48);
+            border-color: rgba(214, 231, 244, 0.12);
+            backdrop-filter: blur(14px);
+        }
+
+        .galactic-console-shell.is-focused .galactic-subera-heading {
+            margin-top: auto;
+            margin-bottom: 0;
+        }
+
+        .galactic-console-shell.is-focused .galactic-subera-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.8rem;
+            margin-top: 0.8rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-subera-card {
+            border: 1px solid rgba(255, 255, 255, 0.05); /* Softer border */
+            background:
+                var(--galactic-subera-image) center / cover no-repeat,
+                rgba(15, 20, 25, 0.4); /* Translucent fill */
+            backdrop-filter: blur(12px); /* The missing glass effect */
+            border-radius: 8px;
+            padding: 1.2rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center; /* Center text vertically */
+        }
+
+        /* Active sub-era card */
+        .galactic-console-shell.is-focused .galactic-subera-card.active {
+            border-color: rgba(124, 216, 255, 0.6); /* Cyan glow */
+            box-shadow: 0 0 20px rgba(124, 216, 255, 0.15);
+            background:
+                var(--galactic-subera-image) center / cover no-repeat,
+                rgba(25, 35, 45, 0.6);
+        }
+
+        .galactic-console-shell.is-focused .galactic-event-detail {
+            position: relative;
+            flex-basis: 210px;
+            height: 210px;
+            min-height: 210px;
+            margin-top: 1rem;
+            padding: 1rem 1.15rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background:
+                linear-gradient(90deg, rgba(8, 16, 25, 0.94), rgba(8, 14, 20, 0.58)),
+                rgba(5, 10, 16, 0.72);
+            backdrop-filter: blur(14px);
+        }
+
+        .galactic-console-shell.is-focused .galactic-detail-title {
+            max-width: 55%;
+            font-size: clamp(1.35rem, 1.8vw, 1.9rem);
+            line-height: 1.05;
+            position: relative;
+            z-index: 2;
+        }
+
+        .galactic-console-shell.is-focused .galactic-event-detail p {
+            max-width: 55%;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            position: relative;
+            z-index: 2;
+        }
+
+        .galactic-console-shell.is-focused .galactic-detail-tags {
+            display: none;
+        }
+
+        .galactic-console-shell.is-focused .galactic-era-timeline {
+            padding: 2rem 1.8rem;
+            background:
+                linear-gradient(180deg, rgba(57, 31, 35, 0.9), rgba(9, 13, 19, 0.96) 46%, rgba(4, 9, 15, 0.98)),
+                var(--galactic-timeline-panel) center / cover no-repeat;
+            border-left: 1px solid rgba(220, 233, 245, 0.1);
+        }
+
+        .galactic-console-shell.is-focused .galactic-timeline-header {
+            margin-bottom: 1.15rem;
+        }
+
+        /* Main titles font letter spacing */
+        .galactic-focus-title, 
+        .galactic-timeline-title {
+            letter-spacing: 0.05em;
+        }
+
+        .galactic-console-shell.is-focused .galactic-timeline-title {
+            max-width: 100%;
+            font-size: 1.1rem; /* Was clamp(1.65rem...) which is way too big */
+            line-height: 1.3;
+            text-transform: uppercase;
+        }
+
+        .galactic-console-shell.is-focused .galactic-timeline-meta {
+            margin: 0.35rem 0 1rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focused-records {
+            max-height: calc(100vh - 255px);
+            gap: 0.74rem;
+            padding-left: 2.5rem; /* Create a dedicated track on the left */
+        }
+
+        /* The vertical line */
+        .galactic-console-shell.is-focused .galactic-focused-records::before {
+            left: 1.25rem; /* Center of the track */
+            top: 10px;
+            bottom: 10px;
+            width: 2px;
+            background: linear-gradient(to bottom, rgba(124, 216, 255, 0.1), rgba(124, 216, 255, 0.5), rgba(124, 216, 255, 0.1));
+        }
+
+        /* The dot */
+        .galactic-console-shell.is-focused .galactic-focused-record::before {
+            left: -1.25rem; /* Pull dot left exactly into the center of the track */
+            transform: translateX(-50%); /* Perfectly center it on the line */
+            top: 24px;
+            width: 6px; /* Smaller, sharper dot */
+            height: 6px;
+            background: #7cd8ff;
+            box-shadow: 0 0 10px #7cd8ff, 0 0 20px rgba(124, 216, 255, 0.4);
+        }
+
+        .galactic-console-shell.is-focused .galactic-focused-record {
+            grid-template-columns: 72px minmax(0, 1fr);
+            gap: 0.85rem;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focused-date {
+            color: rgba(219, 239, 248, 0.78);
+            font-size: 0.68rem;
+            line-height: 1.25;
+        }
+
+        .galactic-console-shell.is-focused .galactic-focused-card {
+            min-height: 84px;
+            padding: 0.85rem 0.95rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(20, 25, 30, 0.5);
+            backdrop-filter: blur(8px);
+        }
+
+        .galactic-console-shell.is-focused .galactic-focused-record:hover .galactic-focused-card,
+        .galactic-console-shell.is-focused .galactic-focused-record.active .galactic-focused-card {
+            border-color: rgba(157, 215, 255, 0.68);
+            background: rgba(55, 56, 68, 0.82);
+        }
 
         /* --- VIEW: MAPS --- */
         .map-layout { display: flex; flex-direction: column; height: 100%; width: 100%; gap: 0.85rem; }
@@ -631,19 +1972,40 @@
             .flex-masonry { gap: 8px; }
             .flex-masonry-col { gap: 8px; }
 
-            .timeline-wrapper { padding: 1rem 0; margin: 0; }
-            .timeline-path { left: 15px; }
-            .timeline-node { flex-direction: column; align-items: flex-start; margin-left: 15px; width: auto; padding-left: 15px; margin-bottom: 1.5rem; }
-            .node-left .timeline-content, .node-right .timeline-content { 
-                width: 100%; text-align: left; border: none; 
-                border-left: 2px solid var(--accent-color); 
-                padding: 0.8rem !important; 
-                margin: 0; 
-            }
-            .timeline-content .title { font-size: 1.1rem; }
-            .timeline-content .desc { font-size: 0.85rem; line-height: 1.4; }
-            .timeline-dot { left: 0; transform: translateX(-50%); }
-            .timeline-char-box { position: relative; width: 100%; left: auto !important; right: auto !important; margin-top: 0.5rem; background: rgba(255,255,255,0.05); flex-direction: row !important; text-align: left !important; opacity: 1; }
+            .timeline-mode-grid { grid-template-columns: 1fr; }
+            .timeline-mode-card { min-height: 240px; }
+            .timeline-explorer-topbar,
+            .story-history-hero,
+            .galactic-history-hero { align-items: flex-start; flex-direction: column; }
+            .story-history-stats,
+            .galactic-history-metrics { width: 100%; grid-template-columns: 1fr; }
+            .story-event-card { grid-template-columns: 42px minmax(0, 1fr); gap: 0.75rem; padding: 0.8rem; }
+            .story-history-list::before { left: 21px; }
+            .story-event-index { width: 42px; height: 42px; font-size: 0.85rem; }
+            .story-event-body h3,
+            .galactic-era-title { font-size: 1.08rem; }
+            .story-event-body p { font-size: 0.9rem; }
+            .galactic-era-summary { grid-template-columns: 42px minmax(0, 1fr) 24px; gap: 0.75rem; padding: 0.8rem; }
+            .galactic-era-number { width: 42px; height: 42px; }
+            .galactic-era-detail { padding: 0 0.8rem 0.9rem; }
+            .galactic-record-row { grid-template-columns: 34px minmax(0, 1fr); gap: 0.55rem; padding: 0.65rem; }
+            .galactic-record-copy p { font-size: 0.88rem; }
+            .galactic-console-shell { grid-template-columns: 1fr; border-radius: 8px; }
+            .galactic-console-rail { display: none; }
+            .galactic-console-shell .galactic-history-screen { padding: 0.9rem; }
+            .galactic-console-top { grid-template-columns: 1fr; align-items: stretch; }
+            .galactic-overview-heading { align-items: flex-start; flex-direction: column; }
+            .galactic-era-overview-grid { grid-template-columns: 1fr; }
+            .galactic-era-poster { min-height: 190px; }
+            .galactic-era-focus { grid-template-columns: 1fr; }
+            .galactic-focus-left { min-height: auto; padding: 0.9rem; }
+            .galactic-focus-hero { flex-direction: column; min-height: auto; }
+            .galactic-focus-stats { width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .galactic-subera-grid { grid-template-columns: 1fr; }
+            .galactic-era-timeline { max-height: none; }
+            .galactic-focused-records { max-height: none; }
+            .galactic-focused-record { grid-template-columns: 62px minmax(0, 1fr); }
+            .galactic-focused-date { font-size: 0.66rem; }
 
             .lore-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .lore-card { height: 220px; }
@@ -926,48 +2288,98 @@
         }
         .map-node {
             position: absolute;
-            width: 8px;
-            height: 8px;
-            background: var(--accent-color);
-            border-radius: 50%;
+            width: 18px;
+            height: 18px;
             transform: translate(-50%, -50%);
             pointer-events: auto;
             cursor: pointer;
-            box-shadow: 0 0 5px var(--accent-color);
-            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 1;
         }
-        .map-node:hover {
-            transform: translate(-50%, -50%) scale(1.5);
-            box-shadow: 0 0 10px var(--accent-color);
-        }
-        .map-node.active {
-            background: #fff;
-            box-shadow: 0 0 20px var(--accent-color), 0 0 8px #fff;
-            transform: translate(-50%, -50%) scale(2);
-        }
+        .map-node:hover,
+        .map-node.active,
         .map-node.selected {
-            background: #8fd3ff;
-            box-shadow: 0 0 18px rgba(143, 211, 255, 0.95), 0 0 8px #fff;
-            transform: translate(-50%, -50%) scale(1.75);
+            z-index: 30;
+        }
+        .map-node-pin {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background:
+                radial-gradient(circle at 50% 50%, #ffffff 0 25%, var(--node-color, var(--accent-color)) 28% 52%, rgba(0,0,0,0.25) 55% 100%);
+            border: 3px solid color-mix(in srgb, var(--node-color, var(--accent-color)) 78%, #ffffff);
+            box-shadow: 0 0 0 3px var(--node-color-soft, color-mix(in srgb, var(--accent-color) 28%, transparent)), 0 0 14px var(--node-color, var(--accent-color));
+            transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+            z-index: 2;
+        }
+        .map-node:hover .map-node-pin {
+            transform: scale(1.18);
+            box-shadow: 0 0 0 4px var(--node-color-soft, color-mix(in srgb, var(--accent-color) 34%, transparent)), 0 0 18px var(--node-color, var(--accent-color)), 0 0 8px #fff;
+        }
+        .map-node.active .map-node-pin {
+            background:
+                radial-gradient(circle at 50% 50%, #ffffff 0 25%, var(--node-color, var(--accent-color)) 28% 52%, rgba(255,255,255,0.34) 55% 100%);
+            box-shadow: 0 0 0 5px var(--node-color-soft, color-mix(in srgb, var(--accent-color) 36%, transparent)), 0 0 24px var(--node-color, var(--accent-color)), 0 0 10px #fff;
+            transform: scale(1.36);
+        }
+        .map-node.selected .map-node-pin {
+            box-shadow: 0 0 0 5px rgba(143, 211, 255, 0.28), 0 0 22px var(--node-color, #8fd3ff), 0 0 8px #fff;
+            transform: scale(1.28);
+        }
+        .map-label-connector {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: var(--label-line-length, 0px);
+            height: 1px;
+            transform: rotate(var(--label-line-angle, 90deg));
+            transform-origin: left center;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 3;
+            background: linear-gradient(90deg, rgba(255,255,255,0.86), rgba(255,255,255,0.18));
+            filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent-color) 65%, transparent));
+            transition: opacity 0.2s;
         }
         .map-node-label {
             position: absolute;
-            top: 12px;
+            top: 50%;
             left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            transform: translate(calc(-50% + var(--label-x, 0px)), calc(-50% + var(--label-y, 22px)));
+            z-index: 5;
+            background: linear-gradient(135deg, rgba(12, 15, 24, 0.84), rgba(28, 24, 10, 0.68));
+            backdrop-filter: blur(8px);
             color: #fff;
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 3px 7px;
+            border-radius: 7px;
+            border: 1px solid rgba(255,255,255,0.18);
             font-size: 0.6rem;
             white-space: nowrap;
+            max-width: 170px;
+            overflow: hidden;
+            text-overflow: ellipsis;
             pointer-events: none;
             opacity: 0;
             transition: opacity 0.2s;
+            box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent-color) 18%, transparent), 0 8px 20px rgba(0,0,0,0.55), 0 0 14px color-mix(in srgb, var(--accent-color) 20%, transparent);
         }
-        .map-node:hover .map-node-label, .map-node.active .map-node-label {
+        .map-node:hover .map-node-label,
+        .map-node.active .map-node-label,
+        .map-node.selected .map-node-label {
             opacity: 1;
         }
+        .map-node:hover .map-label-connector,
+        .map-node.active .map-label-connector,
+        .map-node.selected .map-label-connector {
+            opacity: 1;
+        }
+        .map-node.label-pos-top { --label-x: 0px; --label-y: -58px; }
+        .map-node.label-pos-bottom { --label-x: 0px; --label-y: 58px; }
+        .map-node.label-pos-left { --label-x: -68px; --label-y: 0px; }
+        .map-node.label-pos-right { --label-x: 68px; --label-y: 0px; }
+        .map-node.label-pos-top-left { --label-x: -58px; --label-y: -44px; }
+        .map-node.label-pos-top-right { --label-x: 58px; --label-y: -44px; }
+        .map-node.label-pos-bottom-left { --label-x: -58px; --label-y: 44px; }
+        .map-node.label-pos-bottom-right { --label-x: 58px; --label-y: 44px; }
         .map-edge {
             fill: none;
             stroke: rgba(255, 255, 255, 0.15);
@@ -1004,21 +2416,130 @@
             stroke-width: 2;
             filter: drop-shadow(0 0 8px rgba(114, 215, 255, 0.95));
         }
-        .map-exit-label {
-            fill: #d9f7ff;
-            font-size: 30px;
-            font-family: var(--font-ui);
-            letter-spacing: 0.04em;
-            paint-order: stroke;
-            stroke: rgba(0, 0, 0, 0.75);
-            stroke-width: 6px;
-            pointer-events: none;
-        }
         .map-viewer.hide-labels .map-node-label {
+            display: none;
+        }
+        .map-viewer.hide-labels .map-label-connector {
             display: none;
         }
         .map-viewer.hide-hyperlanes .map-edge {
             opacity: 0;
+        }
+        .map-route-info-overlay {
+            position: absolute;
+            z-index: 80;
+            display: none;
+            max-width: calc(100% - 28px);
+            max-height: calc(100% - 28px);
+            overflow: auto;
+            padding: 1rem;
+            border-radius: 18px;
+            border: 1px solid color-mix(in srgb, var(--accent-color) 32%, rgba(255,255,255,0.16));
+            background:
+                linear-gradient(145deg, rgba(255,255,255,0.12), rgba(255,255,255,0.035)),
+                radial-gradient(circle at top left, color-mix(in srgb, var(--accent-color) 22%, transparent), transparent 55%),
+                rgba(6, 8, 14, 0.72);
+            backdrop-filter: blur(18px) saturate(1.35);
+            box-shadow: 0 22px 54px rgba(0,0,0,0.54), inset 0 1px 0 rgba(255,255,255,0.16), 0 0 32px color-mix(in srgb, var(--accent-color) 24%, transparent);
+            color: #fff;
+            pointer-events: auto;
+        }
+        .map-route-info-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 1px;
+            border-radius: 17px;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .map-route-info-overlay.active {
+            display: block;
+        }
+        .map-route-info-overlay h4 {
+            margin: 0 1.7rem 0.65rem 0;
+            color: var(--accent-color);
+            font-size: 0.95rem;
+            line-height: 1.25;
+            text-shadow: 0 0 16px color-mix(in srgb, var(--accent-color) 42%, transparent);
+        }
+        .map-route-info-close {
+            position: absolute;
+            top: 0.55rem;
+            right: 0.55rem;
+            width: 24px;
+            height: 24px;
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: 50%;
+            background: rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.76);
+            cursor: pointer;
+            line-height: 1;
+            backdrop-filter: blur(8px);
+        }
+        .map-route-info-close:hover,
+        .map-route-info-close:focus-visible {
+            color: #fff;
+            border-color: var(--accent-color);
+            outline: none;
+        }
+        .map-route-info-stats {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem;
+            margin-bottom: 0.65rem;
+        }
+        .map-route-info-stats span {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.075);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 0.55rem;
+            color: rgba(255,255,255,0.58);
+            font-size: 0.66rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .map-route-info-stats strong {
+            color: #fff;
+            font-size: 0.92rem;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+        .map-route-info-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+        .map-route-info-list li {
+            display: grid;
+            grid-template-columns: 58px minmax(0, 1fr);
+            gap: 0.45rem;
+            align-items: center;
+            font-size: 0.76rem;
+        }
+        .map-route-info-list span {
+            color: rgba(255,255,255,0.48);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-size: 0.62rem;
+        }
+        .map-route-info-list strong {
+            min-width: 0;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-weight: 600;
+        }
+        .map-route-info-overlay p {
+            margin: 0.65rem 0 0;
+            color: #d9f7ff;
+            font-size: 0.72rem;
+            line-height: 1.45;
         }
         @keyframes path-pulse {
             0% { filter: drop-shadow(0 0 8px var(--accent-color)); }
@@ -1273,6 +2794,12 @@
             .map-controls {
                 bottom: 14px;
                 right: 14px;
+            }
+            .map-route-info-overlay {
+                padding: 0.75rem;
+            }
+            .map-route-info-list {
+                display: none;
             }
             .routing-panel {
                 border-radius: 18px 18px 0 0;
@@ -1732,4 +3259,1348 @@
 
         body.home-active .link-note {
             color: #7b2ff7; /* Purple accent for internal labels */
+        }
+
+        /* Galactic History: sub-era timebar and eventful-year navigator */
+        .galactic-console-shell.is-focused .galactic-era-focus,
+        .galactic-era-focus {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+            gap: 1rem;
+            overflow: visible;
+        }
+
+        .galactic-era-focus > .galactic-focus-art {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(4, 8, 13, 0.78), rgba(4, 8, 13, 0.96)), var(--galactic-focus-era-image) center / cover no-repeat;
+            opacity: 0.72;
+            pointer-events: none;
+        }
+
+        .galactic-era-overview-strip,
+        .galactic-year-navigator {
+            position: relative;
+            z-index: 1;
+            border: 1px solid rgba(220, 238, 255, 0.13);
+            border-radius: 8px;
+            background: rgba(7, 12, 18, 0.86);
+            backdrop-filter: blur(18px) saturate(1.18);
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.32);
+        }
+
+        .galactic-era-overview-strip {
+            display: grid;
+            grid-template-columns: minmax(240px, 0.34fr) minmax(0, 1fr);
+            gap: 1.2rem;
+            padding: 1.25rem;
+        }
+
+        .galactic-era-overview-copy {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 0.55rem;
+            min-width: 0;
+        }
+
+        .galactic-era-overview-copy p {
+            max-width: 440px;
+            margin: 0.4rem 0 0;
+            color: rgba(225, 235, 240, 0.78);
+            line-height: 1.55;
+        }
+
+        .galactic-frequency-panel {
+            min-width: 0;
+            padding: 0.9rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            background: linear-gradient(180deg, rgba(14, 21, 30, 0.88), rgba(6, 10, 15, 0.9));
+        }
+
+        .galactic-frequency-header,
+        .galactic-year-nav-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .galactic-frequency-title {
+            color: #f4efe8;
+            font-family: var(--font-header);
+            font-size: 1rem;
+            line-height: 1.2;
+            text-transform: uppercase;
+        }
+
+        .galactic-frequency-meta {
+            flex: 0 0 auto;
+            padding: 0.35rem 0.55rem;
+            border: 1px solid rgba(157, 215, 255, 0.22);
+            border-radius: 6px;
+            color: #cdefff;
+            font-size: 0.68rem;
+            text-transform: uppercase;
+        }
+
+        .galactic-timebar {
+            position: relative;
+            display: flex;
+            align-items: stretch;
+            min-height: 190px;
+            margin-top: 1rem;
+            padding: 0.65rem 0.25rem 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .galactic-timebar::before {
+            content: "";
+            position: absolute;
+            left: 0.25rem;
+            right: 0.25rem;
+            bottom: 72px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(157, 215, 255, 0.12), rgba(239, 212, 170, 0.58), rgba(157, 215, 255, 0.12));
+        }
+
+        .galactic-timebar-subera {
+            position: relative;
+            flex: 1 1 var(--subera-width);
+            min-width: 92px;
+            min-height: 176px;
+            border: 0;
+            border-left: 1px solid rgba(255, 255, 255, 0.08);
+            background: linear-gradient(to top, rgba(5, 8, 12, 0.92), rgba(5, 8, 12, 0.42)), var(--galactic-subera-image) center / cover no-repeat;
+            color: #eef7fb;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 0.24rem;
+            padding: 0.75rem 0.65rem;
+            text-align: left;
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        }
+
+        .galactic-timebar-subera:first-child { border-left: 0; border-radius: 8px 0 0 8px; }
+        .galactic-timebar-subera:last-child { border-radius: 0 8px 8px 0; }
+        .galactic-timebar-subera:hover,
+        .galactic-timebar-subera.active {
+            z-index: 2;
+            transform: translateY(-3px);
+            box-shadow: inset 0 0 0 1px rgba(157, 215, 255, 0.66), 0 14px 34px rgba(0, 0, 0, 0.28);
+            filter: saturate(1.12);
+        }
+
+        .galactic-timebar-bar {
+            position: absolute;
+            left: 50%;
+            bottom: 72px;
+            width: min(42px, calc(100% - 18px));
+            height: var(--subera-height);
+            transform: translateX(-50%);
+            border-radius: 999px 999px 0 0;
+            background: linear-gradient(180deg, rgba(255, 221, 177, 0.88), rgba(111, 188, 255, 0.25));
+            box-shadow: 0 0 24px rgba(255, 218, 171, 0.18);
+        }
+
+        .galactic-timebar-label,
+        .galactic-timebar-subera strong,
+        .galactic-timebar-subera small {
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 12px rgba(0, 0, 0, 0.9);
+        }
+
+        .galactic-timebar-label {
+            width: fit-content;
+            padding: 0.16rem 0.32rem;
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 4px;
+            color: #cdefff;
+            font-size: 0.62rem;
+        }
+
+        .galactic-timebar-subera strong {
+            font-family: var(--font-header);
+            font-size: 0.82rem;
+            line-height: 1.12;
+            overflow-wrap: anywhere;
+        }
+
+        .galactic-timebar-subera small {
+            color: rgba(232, 241, 247, 0.74);
+            font-size: 0.66rem;
+        }
+
+        .galactic-year-navigator {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) minmax(300px, 0.36fr);
+            gap: 1rem;
+            padding: 1.25rem;
+        }
+
+        .galactic-year-nav-header {
+            grid-column: 1 / -1;
+        }
+
+        .galactic-year-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .galactic-year-controls button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #eff8ff;
+            cursor: pointer;
+        }
+
+        .galactic-year-controls button:hover { background: rgba(157, 215, 255, 0.16); }
+
+        #galactic-year-counter {
+            min-width: 64px;
+            color: #cbd6db;
+            font-size: 0.78rem;
+            text-align: center;
+        }
+
+        .galactic-year-stage {
+            position: relative;
+            min-height: 360px;
+            padding: 1rem 0 1rem 1rem;
+        }
+
+        .galactic-year-stage::before {
+            content: "";
+            position: absolute;
+            left: 7.25rem;
+            top: 1rem;
+            bottom: 1rem;
+            width: 2px;
+            background: linear-gradient(180deg, rgba(157, 215, 255, 0.05), rgba(239, 212, 170, 0.62), rgba(157, 215, 255, 0.05));
+        }
+
+        .galactic-year-event-group {
+            display: none;
+            grid-template-columns: 6.5rem minmax(0, 1fr);
+            gap: 2.1rem;
+            align-items: start;
+        }
+
+        .galactic-year-event-group.active { display: grid; }
+
+        .galactic-year-node {
+            position: sticky;
+            top: 0;
+            display: grid;
+            gap: 0.25rem;
+            padding: 0.7rem 0.6rem;
+            border: 1px solid rgba(239, 212, 170, 0.3);
+            border-radius: 8px;
+            background: rgba(18, 21, 27, 0.88);
+            color: #ffe3bc;
+            text-align: center;
+        }
+
+        .galactic-year-node span {
+            font-family: var(--font-header);
+            font-size: 1rem;
+        }
+
+        .galactic-year-node small {
+            color: rgba(240, 235, 225, 0.66);
+            font-size: 0.66rem;
+            text-transform: uppercase;
+        }
+
+        .galactic-year-branches {
+            display: grid;
+            gap: 0.8rem;
+        }
+
+        .galactic-year-event {
+            position: relative;
+            display: grid;
+            gap: 0.35rem;
+            min-height: 86px;
+            padding: 0.85rem 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.065);
+            color: #eff8ff;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .galactic-year-event::before {
+            content: "";
+            position: absolute;
+            left: -2.1rem;
+            top: 1.6rem;
+            width: 2.1rem;
+            height: 1px;
+            background: rgba(239, 212, 170, 0.44);
+        }
+
+        .galactic-year-branch-dot {
+            position: absolute;
+            left: -2.35rem;
+            top: calc(1.6rem - 4px);
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #ffe0ad;
+            box-shadow: 0 0 14px rgba(255, 224, 173, 0.72);
+        }
+
+        .galactic-year-event:hover,
+        .galactic-year-event.active {
+            border-color: rgba(157, 215, 255, 0.68);
+            background: rgba(38, 48, 61, 0.78);
+        }
+
+        .galactic-year-event strong {
+            font-size: 0.92rem;
+            color: #fff;
+        }
+
+        .galactic-year-event span:not(.galactic-year-branch-dot) {
+            color: rgba(220, 229, 235, 0.76);
+            font-size: 0.78rem;
+            line-height: 1.45;
+        }
+
+        .galactic-year-navigator .galactic-event-detail {
+            margin-top: 0;
+            min-height: 360px;
+            height: auto;
+            flex-basis: auto;
+            background: linear-gradient(90deg, rgba(8, 13, 19, 0.9), rgba(8, 13, 19, 0.62)), var(--galactic-detail-image) center / cover no-repeat;
+        }
+
+        .galactic-year-navigator .galactic-event-detail p {
+            max-width: 100%;
+            display: block;
+            -webkit-line-clamp: unset;
+        }
+
+        @media (max-width: 900px) {
+            .galactic-era-overview-strip,
+            .galactic-year-navigator {
+                grid-template-columns: 1fr;
+            }
+
+            .galactic-timebar {
+                overflow-x: auto;
+                padding-bottom: 0.5rem;
+            }
+
+            .galactic-timebar-subera {
+                flex-basis: 170px;
+            }
+
+            .galactic-year-stage {
+                padding-left: 0;
+            }
+
+            .galactic-year-stage::before {
+                left: 5.75rem;
+            }
+
+            .galactic-year-event-group {
+                grid-template-columns: 5.25rem minmax(0, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
+        /* Galactic History technical-spec implementation - AAA Codex Rebuild */
+        @keyframes aaaFadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes aaaFadeInLeft {
+            from { opacity: 0; transform: translateX(-40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes aaaFadeInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes aaaPulseGlow {
+            0%, 100% { opacity: 0.5; filter: drop-shadow(0 0 2px rgba(212, 175, 55, 0.4)); }
+            50% { opacity: 1; filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.8)); }
+        }
+
+        @keyframes aaaScanlineMove {
+            0% { top: -100px; }
+            100% { top: 100%; }
+        }
+
+        @keyframes drawTimeline {
+            to { stroke-dashoffset: 0; }
+        }
+
+        .aaa-codex-shell {
+            position: relative;
+            min-height: 100vh;
+            margin: -1rem;
+            color: #E2E8F0;
+            background: transparent;
+            overflow-x: hidden;
+            font-family: var(--font-body);
+            z-index: 1;
+        }
+
+        .aaa-codex-bg {
+            position: fixed;
+            inset: 0;
+            background-color: #020408;
+            background-image: var(--bg-image);
+            background-position: center;
+            background-size: cover;
+            filter: blur(8px) brightness(0.38);
+            transition: background-image 1s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .aaa-codex-bg::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(2, 4, 8, 0.15) 0%, rgba(2, 4, 8, 0.75) 90%);
+        }
+
+        .aaa-codex-scanline {
+            pointer-events: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background-size: 100% 4px;
+            z-index: 999;
+            opacity: 0.15;
+        }
+
+        .aaa-codex-scanline-beam {
+            position: fixed;
+            left: 0;
+            width: 100%;
+            height: 120px;
+            background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.02) 50%, transparent);
+            z-index: 998;
+            pointer-events: none;
+            animation: aaaScanlineMove 10s linear infinite;
+        }
+
+        .aaa-codex-ambient-glow {
+            position: fixed;
+            pointer-events: none;
+            inset: 0;
+            background: radial-gradient(circle 600px at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(212, 175, 55, 0.05) 0%, rgba(6, 182, 212, 0.02) 50%, transparent 100%);
+            z-index: 1;
+            transition: background 0.1s ease;
+        }
+
+        .aaa-codex-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: 0;
+            color: #94A3B8;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.72rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: color 0.3s;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .aaa-codex-back-btn:hover {
+            color: #FFE4B5;
+        }
+
+        .aaa-codex-topbar {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1.5rem 2rem 0;
+        }
+
+        .aaa-codex-search-wrapper {
+            position: relative;
+            width: 320px;
+            align-self: flex-end;
+        }
+
+        .aaa-codex-search-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 0.85rem;
+        }
+
+        .aaa-codex-search {
+            width: 100%;
+            background: rgba(10, 15, 30, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 2px;
+            padding: 0.65rem 1rem 0.65rem 2.5rem;
+            color: #FFFFFF;
+            font-size: 0.85rem;
+            outline: none;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+
+        .aaa-codex-search:focus {
+            border-color: rgba(212, 175, 55, 0.5);
+            background: rgba(10, 15, 30, 0.8);
+        }
+
+        /* View 1: Era Grid matching screenshot 1 */
+        .aaa-codex-header-row {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            max-width: 1400px;
+            margin: 2rem auto 0;
+            padding: 2rem 2rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: left;
+        }
+
+        .aaa-codex-header-row h2 {
+            font-family: var(--font-header);
+            font-size: 3rem;
+            font-weight: 300;
+            color: #FFFFFF;
+            margin: 0.25rem 0 0.5rem;
+            letter-spacing: 0.03em;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
+        .aaa-codex-header-row .viewport-kicker {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.25em;
+            text-transform: uppercase;
+        }
+
+        .aaa-codex-subtitle {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #94A3B8;
+        }
+
+        .aaa-codex-era-grid {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .aaa-codex-era-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .aaa-codex-era-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .aaa-codex-era-card {
+            position: relative;
+            background: 
+                linear-gradient(to top, rgba(2, 4, 8, 0.95) 0%, rgba(2, 4, 8, 0.3) 60%, rgba(2, 4, 8, 0.5) 100%),
+                var(--card-bg) center / cover no-repeat;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 250px;
+            padding: 1.5rem;
+            overflow: hidden;
+            text-align: left;
+        }
+
+        .aaa-codex-era-card:hover {
+            border-color: rgba(212, 175, 55, 0.45);
+            box-shadow: 0 12px 35px rgba(212, 175, 55, 0.12);
+            transform: translateY(-4px);
+        }
+
+        .aaa-codex-era-card .card-index-box {
+            position: relative;
+            z-index: 2;
+            align-self: flex-start;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 3px;
+            padding: 2px 6px;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.72rem;
+            color: rgba(255, 255, 255, 0.5);
+            background: rgba(2, 4, 8, 0.4);
+        }
+
+        .aaa-codex-era-card h3 {
+            position: relative;
+            z-index: 2;
+            font-family: var(--font-header);
+            font-size: 1.45rem;
+            color: #FFFFFF;
+            margin: 0.75rem 0 0.25rem;
+            font-weight: 300;
+            line-height: 1.2;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+
+        .aaa-codex-era-card .card-range {
+            position: relative;
+            z-index: 2;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.6);
+            letter-spacing: 0.02em;
+        }
+
+        .aaa-codex-era-card .card-records {
+            position: relative;
+            z-index: 2;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.7rem;
+            color: rgba(212, 175, 55, 0.85);
+            letter-spacing: 0.08em;
+            margin-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            padding-top: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        /* View 2: Sub-Era Selection Split Pane */
+        .aaa-codex-split-pane {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            grid-template-columns: minmax(360px, 35%) 1fr;
+            min-height: calc(100vh - 86px);
+            gap: 0;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 2rem 2rem;
+        }
+
+        .aaa-codex-left-index {
+            overflow-y: auto;
+            max-height: calc(100vh - 120px);
+            padding-right: 1.5rem;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .aaa-codex-left-index::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .aaa-codex-left-index::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+        }
+
+        .aaa-codex-left-index::-webkit-scrollbar-thumb {
+            background: rgba(212, 175, 55, 0.2);
+            border-radius: 99px;
+        }
+
+        .aaa-codex-left-index::-webkit-scrollbar-thumb:hover {
+            background: rgba(212, 175, 55, 0.6);
+        }
+
+        .aaa-codex-index-row {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            padding: 1.25rem 1.5rem;
+            background: rgba(10, 15, 30, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+            animation: aaaFadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .aaa-codex-index-row:hover,
+        .aaa-codex-index-row.active {
+            background: linear-gradient(90deg, rgba(212, 175, 55, 0.1) 0%, rgba(10, 15, 30, 0.6) 100%);
+            border-color: rgba(212, 175, 55, 0.4);
+            padding-left: 2rem;
+        }
+
+        .aaa-codex-index-row::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: rgba(212, 175, 55, 0.8);
+            transform: scaleY(0);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .aaa-codex-index-row:hover::before,
+        .aaa-codex-index-row.active::before {
+            transform: scaleY(1);
+        }
+
+        .aaa-codex-index-row .row-num {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.7rem;
+            color: rgba(212, 175, 55, 0.6);
+            margin-bottom: 0.25rem;
+        }
+
+        .aaa-codex-index-row strong {
+            font-family: var(--font-header);
+            font-size: 1.15rem;
+            color: #FFFFFF;
+            font-weight: 300;
+        }
+
+        .aaa-codex-index-row .row-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #94A3B8;
+            margin-top: 0.5rem;
+        }
+
+        .aaa-codex-right-viewport {
+            padding-left: 3rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .aaa-codex-viewport-frame {
+            position: relative;
+            width: 100%;
+            min-height: 480px;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.3) 65%, transparent 100%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 3rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+            animation: aaaFadeInRight 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .aaa-codex-viewport-img {
+            position: absolute;
+            inset: 0;
+            background-image: var(--preview-img);
+            background-position: center;
+            background-size: cover;
+            z-index: 0;
+            filter: brightness(0.65);
+            transition: background-image 0.5s ease-in-out;
+        }
+
+        .aaa-codex-viewport-frame::before {
+            content: "";
+            position: absolute;
+            inset: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-top: 0;
+            border-bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .aaa-codex-hud-corner {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid rgba(212, 175, 55, 0.4);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .aaa-codex-hud-corner.tl { top: 15px; left: 15px; border-right: 0; border-bottom: 0; }
+        .aaa-codex-hud-corner.tr { top: 15px; right: 15px; border-left: 0; border-bottom: 0; }
+        .aaa-codex-hud-corner.bl { bottom: 15px; left: 15px; border-right: 0; border-top: 0; }
+        .aaa-codex-hud-corner.br { bottom: 15px; right: 15px; border-left: 0; border-top: 0; }
+
+        .aaa-codex-viewport-content {
+            position: relative;
+            z-index: 2;
+            max-width: 600px;
+        }
+
+        .aaa-codex-viewport-content .viewport-kicker {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.72rem;
+            color: rgba(212, 175, 55, 0.8);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .aaa-codex-viewport-content h2 {
+            font-family: var(--font-header);
+            font-size: 2.8rem;
+            font-weight: 300;
+            color: #FFFFFF;
+            margin: 0 0 0.5rem;
+            line-height: 1.1;
+            letter-spacing: -0.02em;
+        }
+
+        .aaa-codex-viewport-content .viewport-range {
+            font-size: 0.95rem;
+            color: #94A3B8;
+            margin-bottom: 1.5rem;
+        }
+
+        .aaa-codex-viewport-content p {
+            font-size: 0.95rem;
+            color: #CBD5E1;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .aaa-codex-terminal-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(212, 175, 55, 0.12);
+            border: 1px solid rgba(212, 175, 55, 0.6);
+            color: #FFFFFF;
+            padding: 0.85rem 1.75rem;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            cursor: pointer;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+            transition: all 0.3s ease;
+        }
+
+        .aaa-codex-terminal-btn:hover {
+            background: rgba(212, 175, 55, 0.25);
+            border-color: rgba(212, 175, 55, 1);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* View 3: Detailed Timeline Page */
+        .aaa-codex-timeline-page {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem 6rem;
+            position: relative;
+            z-index: 2;
+            animation: aaaFadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .aaa-codex-detail-header {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            text-align: left;
+        }
+
+        .aaa-codex-detail-header::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 60px;
+            height: 1px;
+            background: rgba(212, 175, 55, 0.8);
+        }
+
+        .aaa-codex-detail-header .viewport-kicker {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.72rem;
+            color: rgba(212, 175, 55, 0.8);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+        }
+
+        .aaa-codex-detail-header h2 {
+            font-family: var(--font-header);
+            font-size: 2.8rem;
+            font-weight: 300;
+            color: #FFFFFF;
+            margin: 0 0 0.5rem;
+            line-height: 1.1;
+        }
+
+        .aaa-codex-detail-header p {
+            margin: 0;
+            font-size: 0.95rem;
+            color: #94A3B8;
+        }
+
+        .aaa-codex-telemetry-panel {
+            position: sticky;
+            top: 1rem;
+            z-index: 10;
+            background: linear-gradient(180deg, rgba(8, 12, 24, 0.85), rgba(4, 6, 12, 0.95));
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(255, 255, 255, 0.01);
+            border-radius: 4px;
+            padding: 1.25rem;
+            margin-bottom: 4rem;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .aaa-codex-telemetry-labels {
+            display: flex;
+            justify-content: space-between;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.7rem;
+            color: #94A3B8;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .aaa-codex-telemetry-labels strong {
+            color: #FFFFFF;
+            font-family: var(--font-header);
+            font-size: 0.9rem;
+            letter-spacing: 0;
+        }
+
+        .aaa-codex-telemetry-chart {
+            height: 60px;
+            margin: 0.75rem 0;
+        }
+
+        .aaa-codex-telemetry-chart path {
+            fill: rgba(6, 182, 212, 0.06);
+            stroke: rgba(6, 182, 212, 0.6);
+            stroke-width: 1.5;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: drawTimeline 1.5s ease-out forwards;
+            filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.4));
+        }
+
+        .aaa-codex-scrubber-track {
+            position: relative;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 99px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin-top: 0.5rem;
+        }
+
+        .aaa-codex-scrubber-handle {
+            position: absolute;
+            top: -6px;
+            left: 0;
+            width: 24px;
+            height: 18px;
+            background: #020408;
+            border: 1.5px solid rgba(212, 175, 55, 0.8);
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+            cursor: pointer;
+            transition: left 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .aaa-codex-scrubber-handle::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            left: 10px;
+            width: 2px;
+            height: 8px;
+            background: rgba(212, 175, 55, 0.6);
+        }
+
+        .aaa-codex-timeline-stream {
+            position: relative;
+            padding: 2rem 0;
+        }
+
+        .aaa-codex-timeline-stream::before {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            transform: translateX(-50%);
+            background: linear-gradient(to bottom, transparent, rgba(212, 175, 55, 0.3) 10%, rgba(212, 175, 55, 0.3) 90%, transparent 100%);
+        }
+
+        .aaa-codex-year-group {
+            position: relative;
+            margin-bottom: 5rem;
+            scroll-margin-top: 180px;
+        }
+
+        .aaa-codex-year-node {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 2;
+        }
+
+        .aaa-codex-node-ring {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(212, 175, 55, 1);
+            background: #020408;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            position: relative;
+        }
+
+        .aaa-codex-node-ring::after {
+            content: "";
+            position: absolute;
+            inset: 3px;
+            background: rgba(212, 175, 55, 0.8);
+            border-radius: 50%;
+            animation: aaaPulseGlow 2s infinite ease-in-out;
+        }
+
+        .aaa-codex-year-node strong {
+            margin-top: 0.5rem;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.78rem;
+            color: rgba(212, 175, 55, 0.9);
+            letter-spacing: 0.05em;
+            background: #020408;
+            padding: 2px 6px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+        }
+
+        .aaa-codex-event-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 120px minmax(0, 1fr);
+            gap: 1rem;
+        }
+
+        .aaa-codex-event-card {
+            position: relative;
+            background: linear-gradient(180deg, rgba(12, 18, 30, 0.75), rgba(6, 9, 16, 0.85));
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-top: 2px solid rgba(212, 175, 55, 0.4);
+            padding: 1.5rem;
+            border-radius: 3px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: left;
+        }
+
+        .aaa-codex-event-card.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .aaa-codex-event-card:hover {
+            border-color: rgba(212, 175, 55, 0.3);
+            border-top-color: rgba(212, 175, 55, 0.8);
+            box-shadow: 0 15px 40px rgba(212, 175, 55, 0.05), 0 10px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        .aaa-codex-event-card .card-header {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.68rem;
+            color: rgba(255, 255, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .aaa-codex-event-card .card-header span {
+            color: rgba(212, 175, 55, 0.6);
+        }
+
+        .aaa-codex-event-card p {
+            margin: 0;
+            color: #E2E8F0;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            user-select: text;
+        }
+
+        .aaa-codex-event-card.left,
+        .aaa-codex-event-wrapper.left {
+            grid-column: 1;
+            justify-self: end;
+            width: min(100%, 460px);
+        }
+
+        .aaa-codex-event-card.right,
+        .aaa-codex-event-wrapper.right {
+            grid-column: 3;
+            justify-self: start;
+            width: min(100%, 460px);
+        }
+
+        .aaa-codex-event-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .aaa-codex-event-wrapper .aaa-codex-event-card {
+            width: 100%;
+            grid-column: auto;
+            justify-self: auto;
+        }
+
+        .aaa-codex-event-card::before {
+            content: "";
+            position: absolute;
+            top: 24px;
+            width: 20px;
+            height: 1px;
+            background: rgba(212, 175, 55, 0.25);
+        }
+
+        .aaa-codex-event-card.left::before {
+            right: -20px;
+        }
+
+        .aaa-codex-event-card.right::before {
+            left: -20px;
+        }
+
+        /* Borderless Tiled Timeline Images */
+        .timeline-event-images-tiled {
+            width: 100%;
+        }
+
+        .timeline-event-images-tiled.opposite.left {
+            grid-column: 1;
+            justify-self: end;
+            width: min(100%, 580px); /* Expanded max-width to make images bigger when space is available */
+            margin-top: 1rem;
+        }
+
+        .timeline-event-images-tiled.opposite.right {
+            grid-column: 3;
+            justify-self: start;
+            width: min(100%, 580px); /* Expanded max-width to make images bigger when space is available */
+            margin-top: 1rem;
+        }
+
+        .timeline-event-images-tiled.opposite {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+        }
+
+        .timeline-event-images-tiled.opposite .timeline-event-img-tile {
+            width: 100%;
+            height: auto;
+        }
+
+        /* If there's only a single image in opposite layout, span both columns to make it big */
+        .timeline-event-images-tiled.opposite .timeline-event-img-tile:only-child {
+            grid-column: span 2;
+        }
+
+        .timeline-event-images-tiled.below {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+
+        .timeline-event-images-tiled.below .timeline-event-img-tile {
+            flex: 1;
+            max-width: calc(50% - 0.375rem); /* Keeps them small to fit when multiple */
+            height: auto;
+        }
+
+        /* If there's only a single image in below layout, make it span full width (big) */
+        .timeline-event-images-tiled.below .timeline-event-img-tile:only-child {
+            max-width: 100%;
+        }
+
+        .timeline-event-img-tile {
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+            position: relative;
+            background: rgba(0, 0, 0, 0.15); /* Soft transparent background */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .timeline-event-img-tile:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .timeline-event-img-tile img {
+            width: 100%;
+            height: auto;
+            max-height: 380px; /* Clamps max vertical height for extremely tall images */
+            object-fit: contain; /* Full image is visible and not cropped to fix size */
+            filter: grayscale(0.25) brightness(0.85);
+            transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), filter 0.3s ease;
+            display: block;
+        }
+
+        .timeline-event-img-tile:hover img {
+            transform: scale(1.03);
+            filter: grayscale(0) brightness(1.05);
+        }
+
+        /* Scroll Reveal transition for images in Galactic History detailed view */
+        .aaa-codex-timeline-stream .timeline-event-images-tiled {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .aaa-codex-timeline-stream .timeline-event-images-tiled.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .aaa-codex-watermark {
+            position: absolute;
+            bottom: 1.5rem;
+            left: 2rem;
+            font-size: 5rem;
+            font-family: var(--font-header);
+            color: transparent;
+            -webkit-text-stroke: 1px rgba(255, 255, 255, 0.03);
+            pointer-events: none;
+            line-height: 1;
+        }
+
+        @media (max-width: 960px) {
+            .aaa-codex-topbar {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .aaa-codex-search-wrapper {
+                width: 100%;
+            }
+
+            .aaa-codex-split-pane {
+                grid-template-columns: 1fr;
+                padding: 0 1rem 2rem;
+            }
+
+            .aaa-codex-left-index {
+                border-right: 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                padding-right: 0;
+                padding-bottom: 1.5rem;
+                max-height: 300px;
+            }
+
+            .aaa-codex-right-viewport {
+                padding-left: 0;
+                padding-top: 1.5rem;
+            }
+
+            .aaa-codex-viewport-frame {
+                min-height: auto;
+                padding: 1.5rem;
+            }
+
+            .aaa-codex-timeline-stream::before,
+            .aaa-codex-year-node {
+                left: 20px;
+                transform: none;
+            }
+
+            .aaa-codex-year-node {
+                align-items: flex-start;
+            }
+
+            .aaa-codex-year-node strong {
+                margin-top: 0.25rem;
+            }
+
+            .aaa-codex-event-row {
+                grid-template-columns: 35px minmax(0, 1fr);
+                gap: 0.5rem;
+            }
+
+            .aaa-codex-event-card.left,
+            .aaa-codex-event-card.right,
+            .aaa-codex-event-wrapper.left,
+            .aaa-codex-event-wrapper.right,
+            .timeline-event-images-tiled.opposite.left,
+            .timeline-event-images-tiled.opposite.right {
+                grid-column: 2;
+                justify-self: stretch;
+                width: 100%;
+            }
+
+            .aaa-codex-event-card::before {
+                left: -15px;
+                right: auto;
+                width: 15px;
+            }
         }

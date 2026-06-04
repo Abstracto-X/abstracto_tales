@@ -5,6 +5,7 @@ import { UI, Actions, Visuals, ReaderFeatures } from './ui.js';
 import { CommentsManager } from './comments.js';
 import { MapViewer } from './maps/MapViewer.js';
 import { MapHub } from './maps/MapHub.js';
+import { TimelineHub } from './timelines/TimelineHub.js';
 import { UserAuth } from './auth.js';
 
 export const Render = {
@@ -102,20 +103,15 @@ export const Render = {
         UI.showWallpaperButton();
         document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-        const hasWorldData = hubData.lore.length > 0 || hubData.timeline.length > 0 || hubData.maps.length > 0;
-
-        let barHTML = '';
-        if (hasWorldData) {
-            barHTML = `
-                <div class="world-hub-bar glass-box">
-                    <div class="bar-title">${story.world_title || 'World Encyclopedia'}</div>
-                    <div class="bar-actions">
-                        ${hubData.timeline.length > 0 ? `<button class="btn-large" onclick="window.Router.navigate('timeline/${slug}')"><i class="fas fa-stream"></i> Timeline</button>` : ''}
-                        ${hubData.maps.length > 0 ? `<button class="btn-large" onclick="window.Router.navigate('maps/${slug}')"><i class="fas fa-map-marked-alt"></i> Maps</button>` : ''}
-                        ${hubData.lore.length > 0 ? `<button class="btn-large" onclick="window.Router.navigate('lore/${slug}')"><i class="fas fa-book-dead"></i> Lore</button>` : ''}
-                    </div>
-                </div>`;
-        }
+        const barHTML = `
+            <div class="world-hub-bar glass-box">
+                <div class="bar-title">${story.world_title || 'World Encyclopedia'}</div>
+                <div class="bar-actions">
+                    <button class="btn-large" onclick="window.Router.navigate('timeline/${slug}')"><i class="fas fa-stream"></i> Timelines</button>
+                    ${hubData.maps.length > 0 ? `<button class="btn-large" onclick="window.Router.navigate('maps/${slug}')"><i class="fas fa-map-marked-alt"></i> Maps</button>` : ''}
+                    ${hubData.lore.length > 0 ? `<button class="btn-large" onclick="window.Router.navigate('lore/${slug}')"><i class="fas fa-book-dead"></i> Lore</button>` : ''}
+                </div>
+            </div>`;
 
         Render.stage.innerHTML = `
             <div class="story-hub-wrapper">
@@ -428,7 +424,7 @@ export const Render = {
             </div>`;
     },
 
-    timeline: async (slug) => {
+    timeline: async (slug, mode = null) => {
         UI.showLoading();
         
         const hubData = await DB.getStoryHubData(slug);
@@ -439,42 +435,35 @@ export const Render = {
         UI.setBg(story.background_image_url);
         document.documentElement.style.setProperty('--accent-color', story.theme_color || '#ffd700');
 
-        const events = hubData.timeline;
-        
-        if (!events || events.length === 0) {
-            Render.stage.innerHTML = `<div style="padding:2rem;text-align:center">No timeline data.</div>`;
+        const events = hubData.timeline || [];
+
+        if (mode === 'story') {
+            UI.setBackButton(`window.Router.navigate('timeline/${slug}')`, "Timelines");
+            await TimelineHub.initKeywordLinks().catch(console.error);
+            Render.stage.innerHTML = TimelineHub.renderStoryHistory(events, slug);
+            TimelineHub.initStoryHistory();
             return;
         }
 
-        let html = '<div class="timeline-wrapper"><div class="timeline-path"></div>';
-        events.forEach((evt, i) => {
-            const sideClass = i % 2 === 0 ? 'node-left' : 'node-right';
-            
-            let charHTML = '';
-            if (evt.characters && evt.characters.length > 0) {
-                const char = evt.characters[0]; // First linked character
-                charHTML = `
-                    <div class="timeline-char-box glass-box" onclick="window.Router.navigate('gallery/${slug}/${char.id}')">
-                        <img src="${char.profile_image_url || ''}" class="timeline-char-img">
-                        <div class="timeline-char-info">
-                            <div class="timeline-char-role">Introduced</div>
-                            <div class="timeline-char-name">${char.name}</div>
-                        </div>
+        if (mode === 'galactic') {
+            UI.setBackButton(`window.Router.navigate('timeline/${slug}')`, "Timelines");
+            try {
+                const tree = await TimelineHub.fetchGalacticTree();
+                Render.stage.innerHTML = TimelineHub.renderGalacticExplorer(tree, slug);
+                TimelineHub.initGalacticExplorer();
+            } catch (err) {
+                console.error('Failed to load galactic history:', err);
+                Render.stage.innerHTML = `
+                    <div class="timeline-empty glass-box">
+                        <h3>Galactic history unavailable</h3>
+                        <p>The local history index could not be loaded. Please confirm <code>data/timeline/timeline_tree.json</code> is present.</p>
                     </div>`;
             }
-            
-            html += `
-                <div class="timeline-node ${sideClass}">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content glass-box">
-                        <div class="date">${evt.event_date}</div>
-                        <div class="title">${evt.title}</div>
-                        <div class="desc">${evt.description}</div>
-                    </div>
-                    ${charHTML}
-                </div>`;
-        });
-        Render.stage.innerHTML = html + '</div>';
+            return;
+        }
+
+        Render.stage.innerHTML = TimelineHub.renderLanding(events, slug);
+        TimelineHub.initLanding();
     },
 
     maps: async (slug, mapId = null) => {
@@ -566,7 +555,7 @@ export const Render = {
                             </div>
                             <div class="map-viewer" id="map-viewer">
                                 <div class="map-canvas" id="map-canvas">
-                                    <img src="${activeMap.image_url}" id="map-image" draggable="false">
+                                    <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous">
                                     <svg id="map-svg-layer"></svg>
                                     <div id="map-nodes-layer"></div>
                                 </div>

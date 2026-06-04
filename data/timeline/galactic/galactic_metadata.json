@@ -1,0 +1,242 @@
+[
+  {
+    "id": "before-the-republic",
+    "title": "Before the Republic",
+    "rangeLabel": "eons - 25,025 BBY",
+    "asset": "data/timeline/galactic/era-before-republic.png",
+    "sourceTitle": "Before the Republic (eons–25,025 BBY)",
+    "subEras": [
+      {
+        "id": "sentient-species-prehistory",
+        "title": "Sentient species prehistory",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "Sentient species prehistory"
+      },
+      {
+        "id": "sentient-species-history",
+        "title": "Sentient species history",
+        "rangeLabel": "exact chronology undefined",
+        "asset": "data/timeline/galactic/subera-dummy-02.svg",
+        "sourceTitle": "Sentient species history (exact chronology undefined)"
+      }
+    ]
+  },
+  {
+    "id": "the-old-republic",
+    "title": "The Old Republic",
+    "rangeLabel": "c. 25,025 - c. 1000 BBY",
+    "asset": "data/timeline/galactic/era-old-republic.png",
+    "sourceTitle": "The Old Republic (c. 25,025 – c. 1000 BBY)",
+    "subEras": [
+      {
+        "id": "dawn-of-the-jedi",
+        "title": "Dawn of the Jedi",
+        "rangeLabel": "c. 25,025 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "Dawn of the Jedi (c. 25,025 BBY)"
+      },
+      {
+        "id": "expansionist-period",
+        "title": "Expansionist Period",
+        "rangeLabel": "25,000 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-02.svg",
+        "sourceTitle": "Expansionist Period (25,000 BBY)"
+      },
+      {
+        "id": "millennia-before-the-imperial-era",
+        "title": "Millennia before the Imperial Era",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-03.svg",
+        "sourceTitle": "Millennia before the Imperial Era"
+      },
+      {
+        "id": "22-000-5000-bby",
+        "title": "22,000–5000 BBY",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-04.svg",
+        "sourceTitle": "22,000–5000 BBY"
+      },
+      {
+        "id": "wars-of-the-old-republic",
+        "title": "Wars of the Old Republic",
+        "rangeLabel": "c. 5000 - c. 1000 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-05.svg",
+        "sourceTitle": "Wars of the Old Republic (c. 5000 – c. 1000 BBY)"
+      }
+    ]
+  },
+  {
+    "id": "republic-era",
+    "title": "Republic Era",
+    "rangeLabel": "c. 1000 - 19 BBY",
+    "asset": "data/timeline/galactic/era-republic.png",
+    "sourceTitle": "Republic Era (c. 1000 – 19 BBY)",
+    "subEras": [
+      {
+        "id": "reformation-of-the-republic",
+        "title": "Reformation of the Republic",
+        "rangeLabel": "c. 1000 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-06.svg",
+        "sourceTitle": "Reformation of the Republic (c. 1000 BBY)"
+      },
+      {
+        "id": "c-1000-c-500-bby",
+        "title": "c. 1000 – c. 500 BBY",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-02.svg",
+        "sourceTitle": "c. 1000 – c. 500 BBY"
+      },
+      {
+        "id": "high-republic-era",
+        "title": "High Republic Era",
+        "rangeLabel": "c. 500 - 100 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "High Republic Era (c. 500 – 100 BBY)"
+      },
+      {
+        "id": "c-100-32-bby",
+        "title": "c. 100 – 32 BBY",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-04.svg",
+        "sourceTitle": "c. 100 – 32 BBY"
+      },
+      {
+        "id": "fall-of-the-republic",
+        "title": "Fall of the Republic",
+        "rangeLabel": "32 - 19 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-03.svg",
+        "sourceTitle": "Fall of the Republic (32–19 BBY)"
+      }
+    ]
+  },
+  {
+    "id": "imperial-era",
+    "title": "Imperial Era",
+    "rangeLabel": "19 BBY - 5 ABY",
+    "asset": "data/timeline/galactic/era-imperial.png",
+    "sourceTitle": "Imperial Era (19 BBY – 5 ABY)",
+    "subEras": [
+      {
+        "id": "clone-wars",
+        "title": "Clone Wars",
+        "rangeLabel": "continued; 19 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-04.svg",
+        "sourceTitle": "Clone Wars (continued; 19 BBY)"
+      },
+      {
+        "id": "the-dark-times",
+        "title": "\"The Dark Times\"",
+        "rangeLabel": "19 - 1 BBY",
+        "asset": "data/timeline/galactic/subera-dummy-08.svg",
+        "sourceTitle": "\"The Dark Times\" (19–1 BBY)"
+      },
+      {
+        "id": "battle-of-yavin",
+        "title": "Battle of Yavin",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-09.svg",
+        "sourceTitle": "Battle of Yavin"
+      },
+      {
+        "id": "galactic-civil-war-after-the-battle-of-yavin",
+        "title": "Galactic Civil War—after the Battle of Yavin",
+        "rangeLabel": "0 - 5 ABY",
+        "asset": "data/timeline/galactic/subera-dummy-10.svg",
+        "sourceTitle": "Galactic Civil War—after the Battle of Yavin (0–5 ABY)"
+      }
+    ]
+  },
+  {
+    "id": "new-republic-era",
+    "title": "New Republic Era",
+    "rangeLabel": "5 - 34 ABY",
+    "asset": "data/timeline/galactic/era-new-republic.png",
+    "sourceTitle": "New Republic Era (5–34 ABY)",
+    "subEras": [
+      {
+        "id": "galactic-civil-war",
+        "title": "Galactic Civil War",
+        "rangeLabel": "continued; 5 ABY",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "Galactic Civil War (continued; 5 ABY)"
+      },
+      {
+        "id": "peace",
+        "title": "Peace",
+        "rangeLabel": "5 - 28 ABY",
+        "asset": "data/timeline/galactic/subera-dummy-11.svg",
+        "sourceTitle": "Peace (5–28 ABY)"
+      },
+      {
+        "id": "cold-war",
+        "title": "Cold War",
+        "rangeLabel": "29 - 34 ABY",
+        "asset": "data/timeline/galactic/subera-dummy-12.svg",
+        "sourceTitle": "Cold War (29–34 ABY)"
+      }
+    ]
+  },
+  {
+    "id": "first-order-resistance-war",
+    "title": "First Order-Resistance War",
+    "rangeLabel": "34 - 35 ABY",
+    "asset": "data/timeline/galactic/era-first-order.png",
+    "sourceTitle": "First Order-Resistance War (34 – 35 ABY)",
+    "subEras": [
+      {
+        "id": "34-aby",
+        "title": "34 ABY",
+        "rangeLabel": "continued",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "34 ABY (continued)"
+      },
+      {
+        "id": "35-aby",
+        "title": "35 ABY",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-02.svg",
+        "sourceTitle": "35 ABY"
+      }
+    ]
+  },
+  {
+    "id": "new-jedi-order",
+    "title": "New Jedi Order",
+    "rangeLabel": "35 ABY - ",
+    "asset": "data/timeline/galactic/era-beyond-first-order.png",
+    "sourceTitle": "New Jedi Order (35 ABY–)",
+    "subEras": [
+      {
+        "id": "35-aby",
+        "title": "35 ABY",
+        "rangeLabel": "continued",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "35 ABY (continued)"
+      },
+      {
+        "id": "50-aby",
+        "title": "50 ABY",
+        "rangeLabel": "Chronology uncertain",
+        "asset": "data/timeline/galactic/subera-dummy-02.svg",
+        "sourceTitle": "50 ABY"
+      }
+    ]
+  },
+  {
+    "id": "thereafter",
+    "title": "Thereafter",
+    "rangeLabel": "Chronology uncertain",
+    "asset": "data/timeline/galactic/era-beyond-first-order.png",
+    "sourceTitle": "Thereafter",
+    "subEras": [
+      {
+        "id": "a-long-time-after-the-battle-of-yavin",
+        "title": "A long time after the Battle of Yavin",
+        "rangeLabel": "exact chronology undefined",
+        "asset": "data/timeline/galactic/subera-dummy-01.svg",
+        "sourceTitle": "A long time after the Battle of Yavin (exact chronology undefined)"
+      }
+    ]
+  }
+]

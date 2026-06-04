@@ -14,6 +14,8 @@ The public-facing frontend designed for readers to browse and read stories. Whil
 - **`js/ui.js`**: Interface templates, particle engines, audio controllers, and lightsaber indicators.
 - **`js/render.js`**: Dynamic HTML generator functions for pages and tabs.
 - **`js/router.js`**: Custom client-side hash router and stage transition handling.
+- **`js/timelines/TimelineHub.js`**: Two-phase chronology explorer for Story History and the local Galactic History JSON tree.
+- **`js/timelines/galacticTimelineAssets.js`**: Central image registry exporting named Galactic History art variables and grouped asset maps used by `TimelineHub`.
 - **`js/maps/MapViewer.js`**: Star chart SVG rendering and Dijkstra pathfinder.
 - **`js/maps/MapHub.js`**: Star chart selector grids and dynamic catalog filters.
 
@@ -75,9 +77,16 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
 - `MapViewer.componentIndex` / `MapViewer.nodeComponentIndex` — Connected-component indexes used to separate routeable hyperlane clusters from isolated worlds.
 - `MapViewer.edgeLengthIndex` — Cached per-edge geometry lengths reused by routing and nearest-exit calculations.
 - `MapViewer.routeState.offlaneSegments` / `routeState.accessPoints` / `routeState.advisory` — Hybrid-route metadata for snapped exits, straight-line off-lane travel, and reader-facing warnings about unregistered approach legs.
+- `MapViewer.routeOverlayDismissed` — Tracks whether the reader manually hid the current in-map route information overlay, resetting when a new course is plotted or cleared.
 - `MapViewer.crossMapIndex` — Bidirectional cross-map indexing mapping lowercase planet names to a list of `{ mapId, mapName }` records where they exist across all charts in the current story, enabling cross-map search and snap hints.
 - `MapViewer.storyMaps` — Local cache of all maps for the current story to enable quick name and metadata mapping.
 - `MapViewer.storySlug` — Stores the current story slug to construct clean relative routing paths during map switching.
+
+#### `index.html` TimelineHub state additions
+- `TimelineHub._galacticTree` - Cached parsed copy of `data/timeline/timeline_tree.json`, loaded only when the reader opens Galactic History.
+- `TimelineHub._galacticMetadata` - Cached parsed copy of `data/timeline/galactic_metadata.json`, loaded in parallel to decouple headers and assets from raw events.
+- `TimelineHub._galacticData` - Cached normalized Galactic History state produced by `TimelineHub.parseWikiData(rawJson, metadata)`, containing eras, sub-eras, parsed BBY/ABY events, image assets, and chronology sort metadata for the UI.
+- `TimelineHub._GALACTIC_TREE_URL` - Local JSON path used by the Galactic History explorer.
 
 ### `admin.html`
 - `State` *(Object)* — The primary global state container for the admin panel.
@@ -243,9 +252,20 @@ Media assets are managed using Supabase Storage buckets.
 - `MapViewer.routeState` persists selected endpoints plus computed route metadata, while `MapViewer.displayState` stores reader-facing layer toggles such as labels and hyperlanes.
 - `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` by `map_id`, then remaps edge foreign-key fields into the legacy `source` / `target` shape expected by the routing engine.
 - Map reader controls include layer toggles for labels and hyperlanes, explicit route actions (`Plot`, `Swap`, `Clear`, `Center Route`), and responsive layout behavior for smaller screens.
+- Active route labels now run through a collision-aware placement pass that offsets important planet names around their nodes, raises those labels above nearby pins, and draws connector stems back to the owning planet node. Access-point markers no longer render separate "Exit" / "Approach" text labels, keeping hybrid route clusters less crowded.
+- Reader map planet pins use a double-ring marker style. When the map image can be sampled safely, `MapViewer` derives each node's CSS color from nearby pixels on the underlying map image and falls back to the story accent color if canvas sampling is blocked.
+- After plotting a course, MapViewer mirrors route distance, hop count, and a compact itinerary into a glassmorphic in-map overlay card. The card chooses a low-obstruction viewport corner based on the active route and route nodes, while also reserving vertical space below the top label/hyperlane controls and active map chip.
 - `MapViewer.buildComponents()` now derives connected hyperlane clusters after graph construction so isolated worlds can be recognized without extra fetches.
 - `MapViewer.edgeLengthIndex` caches polyline lengths for each lane so nearest-exit snapping and route totals reuse the same geometry measurements.
 - When a selected world has no registered lane links, `MapViewer.calculateRoute()` falls back to a hybrid route that snaps to the nearest linked world or point on a hyperlane, renders a cyan straight-line off-lane segment, and adds itinerary/summary advisory copy warning that the remaining approach uses unregistered travel.
+
+### Reader Timeline Conventions
+- **Two-Phase Timeline Discovery:** The timeline route now opens a chronology chooser at `#timeline/{slug}`. Readers select either **Story History** (`#timeline/{slug}/story`) or **Timeline of Galactic History** (`#timeline/{slug}/galactic`) instead of landing directly in one long alternating list.
+- **Story History:** The existing Supabase `timeline_events` stream is rendered as a searchable, compact long-history list with event counts, first/latest date stats, and linked character chips that navigate to the character gallery.
+- **Galactic History:** The galactic reference view loads `data/timeline/timeline_tree.json` on demand through `TimelineHub.fetchGalacticTree()`. The parser expects the extractor shape `{ title, children, lists }` with nested list items shaped like `{ text, children }`, ranks duplicate "Timeline of galactic history" sections by child-era count and recursive record count, then runs `TimelineHub.parseWikiData(rawJson)` to normalize raw Wookieepedia scrape nodes into UI-ready eras, sub-eras, and `{ year, era, text }` event objects. Date parsing supports BBY/ABY values and implied-era ranges such as `34 - 35 ABY`.
+- **Galactic History Browsing:** The first screen is the searchable major-era poster grid. Selecting an era opens Page 2, a parent-era-background sub-era selection page with a left-aligned 40%-width hero, a glassmorphic "View timeline overview" action, and an image-backed responsive sub-era card grid. Selecting a sub-era or overview opens Page 3, a detailed timeline view that uses the active sub-era image (or era image for overview), a sticky SVG mountain frequency chart, a glassmorphic viewport scrubber, and a centered vertical event list. Event cards contain only a quote icon and parsed paragraph text; same-year events branch left/right according to count, and left/right arrow keys jump between eventful years.
+- **Galactic History Images:** `js/timelines/galacticTimelineAssets.js` exports `ImageMapping`, a normalized title-to-image configuration object, because `timeline_tree.json` does not contain image URLs. Fallback era and sub-era image arrays keep dynamic parsed sections image-backed even before final art is assigned.
+- **Performance Boundary:** The large galactic JSON is not fetched on story hub load or timeline chooser load; it is cached in memory only after a reader enters the Galactic History view.
 
 ### `cartographer.html` Updates
 

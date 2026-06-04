@@ -107,7 +107,7 @@ export const Router = {
                 if(subId) await Render.loreDetail(id, subId);
                 else await Render.lore(id);
             }
-            else if (view === 'timeline') await Render.timeline(id);
+            else if (view === 'timeline') await Render.timeline(id, subId);
             else if (view === 'maps') await Render.maps(id, subId);
             else await Render.home();
         })();

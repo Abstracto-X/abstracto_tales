@@ -91,6 +91,39 @@ The functions and components of the public reader SPA are now fully modularized 
 - `init()` — Binds input events to the registry search bar.
 - `onSearch(e)` — Filters displayed maps and hides empty sections in real-time as users type.
 
+### `TimelineHub` (Chronology Explorer - `js/timelines/TimelineHub.js`)
+- `fetchGalacticTree()` - Lazily fetches `data/timeline/timeline_tree.json` and `data/timeline/galactic_metadata.json` in parallel and caches them for the Galactic History route.
+- `initKeywordLinks()` - Fetches `timeline_simple_links.json`, filters out noise/lowercase entries to target proper nouns, and compiles a longest-match-first global regular expression with word boundaries.
+- `applyKeywordLinks(text)` - Escapes HTML markup and replaces recognized proper nouns with target hyperlinked elements.
+- `getEventImages(text)` - Scans the text for matched keywords, resolving each to its Wookieepedia page URL, and checks if it exists in the image lookup to return a list of matching images.
+- `renderEventImages(images)` - Generates glassmorphic container cards for matched images with animated scales, glows, and name captions.
+- `getGalacticRoot(tree)` - Resolves the generated tree root or richest nested "Timeline of galactic history" section, handling duplicate title sections from the local extractor output.
+- `parseWikiData(rawJson, metadata)` - Decouples headers, ranges, and assets from event text by mapping over the metadata configuration and dynamically pulling events from corresponding raw nodes.
+- `findSectionByTitle(node, targetTitle)` / `findSubEraNode(eraNode, sourceTitle)` - Locate raw era and sub-era nodes recursively within the raw JSON tree to merge events.
+- `getSubEraNodes(eraNode)` / `collectParsedEvents(section, fallbackRange)` - Discover sub-era source nodes and recursively flatten year-header children into timeline event records.
+- `parseSingleYear(value)` / `parseRangeFromTitle(title)` / `normalizeDateText(value)` / `cleanTimelineText(value)` - Extract and clean BBY/ABY dates, including implied-era ranges such as `34 - 35 ABY`.
+- `getTimelineOrder(event)` / `formatYearLabel(year)` / `groupEventsByYear(events)` - Map BBY in reverse and ABY forward for chronological sorting and eventful-year grouping.
+- `buildFrequencyPath(events)` - Buckets normalized events and builds the SVG mountain chart path for the detailed timeline.
+- `countListItems(items)` / `countSectionEvents(section)` - Recursively count nested galactic history records for era metrics.
+- `isChronologyHeading(text, hasChildren)` - Detects generated date/heading rows so they remain structural context instead of malformed event cards.
+- `getGalacticData(tree)` - Returns the cached normalized Galactic History state, parsing the raw tree once if needed.
+- `getEraTitle(title)` / `getEraRange(title)` - Derive display labels and date range strings from generated era titles.
+- `getEraPosterAsset(index)` / `getSubEraAsset(index)` - Resolve configured Galactic History image variables for era posters and sub-era cards.
+- `renderLanding(storyEvents, slug)` - Renders the two-choice timeline registry for Story History and Galactic History.
+- `renderStoryHistory(events, slug)` / `renderStoryEventCard(evt, index, slug)` - Render the upgraded searchable Story History event list and linked character chips.
+- `renderGalacticExplorer(tree, slug)` / `renderEraOverviewCard(era, index)` - Render the full-viewport concept-style Galactic History console and major-era poster grid with single-layer contained era poster art.
+- `renderSubEraSelectionPage(era, eraIndex)` / `renderSubEraSelectionCard(subEra, eraIndex, subIndex)` - Render Page 2: parent-era background, left-aligned hero, overview action, and image-backed glassmorphic sub-era card grid.
+- `renderDetailedTimelinePage(era, subEra)` / `renderBranchingYearGroup(group, groupIndex)` / `renderBranchingEventCard(event, count, groupIndex, eventIndex)` / `getBranchSide(count, groupIndex, eventIndex)` - Render Page 3: sub-era/era background, sticky SVG frequency chart, viewport scrubber, centered vertical line, and branching year cards.
+- `initStoryHistory()` / `filterStoryEvents(event)` - Bind and execute Story History search filtering.
+- `initGalacticExplorer()` / `initTimelineKeyboard()` / `initTimelineScrollSync()` / `filterGalacticEras(event)` - Bind search, arrow-key year navigation, and viewport scrubber updates.
+- `openGalacticEra(index)` / `showEraOverview()` / `openEraTimeline(eraIndex)` / `openSubEraTimeline(eraIndex, subEraIndex)` / `renderTimelineIntoHost(era, subEra)` / `navigateEventfulYear(direction)` - Switch between Page 1, Page 2, and Page 3, including arrow-key jumps between eventful years.
+- `selectSubEra()` / `openRecordDetail()` / `toggleEra()` / `filterEraSection()` / `toggleEraRecords()` - Legacy no-op compatibility handlers for cached older Galactic History markup.
+
+### `GalacticTimelineAssets` (Timeline Image Registry - `js/timelines/galacticTimelineAssets.js`)
+- Named exports such as `GALACTIC_OVERVIEW_BACKGROUND`, `GALACTIC_ERA_REPUBLIC`, and `GALACTIC_SUBERA_CLONE_WARS` expose one variable per Galactic History image asset.
+- `ImageMapping` - Title-normalized era/sub-era image mapping used by `TimelineHub` because `timeline_tree.json` does not contain image URLs.
+- `GALACTIC_TIMELINE_ASSETS` - Groups overview, focus, detail, timeline-panel, era poster, and sub-era card images for `TimelineHub` rendering. The sub-era registry includes twelve SVG placeholder variables so dynamically discovered sub-era sets from `timeline_tree.json` have image-backed cards even before final art is assigned.
+
 ### `MapViewer` (Interactive Map & Routing - `js/maps/MapViewer.js`)
 - `MinPriorityQueue` — Lightweight binary heap class providing `enqueue`, `dequeue`, and `isEmpty` methods for the pathfinding engine.
 - `init()` - Initializes the transform-based panning/zooming engine for a specific Supabase map record, resetting route state, clearing stale overlays, and setting up the SVG/HTML overlay containers.
@@ -124,6 +157,10 @@ The functions and components of the public reader SPA are now fully modularized 
 - `handleSearch()` — Focuses the map on an exact world search hit from the navicomputer search field.
 - `renderNodeCard()` / `renderSummary()` — Renders the focused-world card plus the route summary metrics panel.
 - `renderRouteOverlay()` — Draws cyan straight-line off-lane segments and exit markers for hybrid routes.
+- `applyNodeNaturalColors()` — Samples nearby pixels from the loaded map image when possible and assigns per-node CSS colors for the double-ring planet markers, falling back gracefully when canvas reads are blocked.
+- `ensureRouteInfoOverlay()` / `renderRouteInfoOverlay()` / `dismissRouteInfoOverlay()` — Creates and manages the in-map route information card that appears after plotting a course.
+- `positionRouteInfoOverlay()` / `getRouteScreenBounds()` / `getNodeScreenPoint()` — Chooses a low-obstruction viewport corner for the route information overlay based on the active route and planet node screen positions, with top spacing reserved for map controls.
+- `layoutRouteLabels()` — Applies collision-aware directional offsets and connector-line geometry to selected and active route planet labels so important names avoid nearby labels and planet nodes.
 - `toggleLayer(key)` / `applyDisplayState()` — Manages reader-facing label and hyperlane visibility controls.
 - `crossMapSearch(name)` — Searches for a world name across all other maps of the same story.
 - `updateCrossMapHint(name, hintId)` — Displays a non-intrusive navigation suggestion below the field if the searched planet exists in another chart.

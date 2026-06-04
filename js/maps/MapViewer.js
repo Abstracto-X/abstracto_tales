@@ -99,6 +99,7 @@ export const MapViewer = {
         isHybrid: false,
         advisory: ''
     },
+    routeOverlayDismissed: false,
     displayState: {
         showLabels: true,
         showHyperlanes: true
@@ -123,6 +124,7 @@ export const MapViewer = {
         MapViewer.viewer = document.getElementById('map-viewer');
         MapViewer.canvas = document.getElementById('map-canvas');
         MapViewer.img = document.getElementById('map-image');
+        if (MapViewer.img) MapViewer.img.crossOrigin = 'anonymous';
         MapViewer.ui = {
             selectorButtons: Array.from(document.querySelectorAll('.map-selector-btn')),
             zoomInBtn: document.getElementById('zoom-in-btn'),
@@ -147,18 +149,21 @@ export const MapViewer = {
             setDestBtn: document.getElementById('set-destination-btn'),
             activeMapChip: document.getElementById('active-map-chip')
         };
+        MapViewer.ensureRouteInfoOverlay();
         
         MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0, pendingX: 0, pendingY: 0, dragTicking: false };
         MapViewer.currentMap = { id, src, name: mapName || 'Map', width: width || 4000, height: height || 4000 };
         MapViewer.mapHeight = height || 4000;
         MapViewer.mapData = null;
         MapViewer.routeState = MapViewer.createEmptyRouteState();
+        MapViewer.routeOverlayDismissed = false;
         MapViewer.selectedNodeId = null;
 
         MapViewer.bindUI(signal);
         MapViewer.applyDisplayState();
         MapViewer.img.onload = () => {
             MapViewer.centerMap();
+            MapViewer.applyNodeNaturalColors();
         };
 
         MapViewer.setMapSource(src, mapName || 'Map');
@@ -298,7 +303,10 @@ export const MapViewer = {
             el.id = node.id;
             el.style.left = `${node.x}px`;
             el.style.top = `${flippedY}px`;
-            el.innerHTML = `<div class="map-node-label">${Utils.escapeHtml(node.name)}</div>`;
+            el.innerHTML = `
+                <span class="map-node-pin" aria-hidden="true"></span>
+                <span class="map-label-connector" aria-hidden="true"></span>
+                <div class="map-node-label">${Utils.escapeHtml(node.name)}</div>`;
             el.addEventListener('click', () => MapViewer.selectNode(node.id));
             nodesLayer.appendChild(el);
 
@@ -308,6 +316,7 @@ export const MapViewer = {
         });
 
         MapViewer.applyDisplayState();
+        MapViewer.applyNodeNaturalColors();
         MapViewer.refreshNodeStates();
         MapViewer.syncInputs();
         MapViewer.renderNodeCard();
@@ -347,6 +356,7 @@ export const MapViewer = {
 
     setMapSource: (src, mapName = 'Map') => {
         if (!MapViewer.img || !src) return;
+        MapViewer.img.crossOrigin = 'anonymous';
         MapViewer.currentMap.src = src;
         MapViewer.currentMap.name = mapName;
         if (MapViewer.ui.activeMapChip) {
@@ -703,6 +713,7 @@ export const MapViewer = {
         MapViewer.routeState.accessPoints = { origin: null, destination: null };
         MapViewer.routeState.isHybrid = false;
         MapViewer.routeState.advisory = '';
+        MapViewer.routeOverlayDismissed = false;
         document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
         MapViewer.renderRouteOverlay();
         MapViewer.syncInputs();
@@ -714,6 +725,7 @@ export const MapViewer = {
     },
 
     calculateRoute: () => {
+        MapViewer.routeOverlayDismissed = false;
         if (!MapViewer.graph) return;
         const sourceNode = MapViewer.findNodeByName(MapViewer.ui.originInput.value);
         const targetNode = MapViewer.findNodeByName(MapViewer.ui.destInput.value);
@@ -796,6 +808,7 @@ export const MapViewer = {
             }
         });
         MapViewer.renderRouteOverlay();
+        MapViewer.layoutRouteLabels();
 
         const container = MapViewer.ui.itinerary;
         container.classList.add('active');
@@ -851,6 +864,7 @@ export const MapViewer = {
 
         container.innerHTML = itineraryHtml;
         MapViewer.renderSummary();
+        MapViewer.renderRouteInfoOverlay();
         MapViewer.zoomToRoute(options.zoomNodeIds || Array.from(new Set([
             MapViewer.routeState.originId,
             ...pathNodes,
@@ -860,6 +874,7 @@ export const MapViewer = {
 
     clearRoute: () => {
         MapViewer.routeState = MapViewer.createEmptyRouteState();
+        MapViewer.routeOverlayDismissed = false;
         document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
         MapViewer.renderRouteOverlay();
         MapViewer.syncInputs();
@@ -884,6 +899,7 @@ export const MapViewer = {
         MapViewer.routeState.accessPoints = { origin: null, destination: null };
         MapViewer.routeState.isHybrid = false;
         MapViewer.routeState.advisory = '';
+        MapViewer.routeOverlayDismissed = false;
         document.querySelectorAll('.map-edge.route-glow').forEach(el => el.classList.remove('route-glow', 'route-glow-reverse'));
         MapViewer.renderRouteOverlay();
         MapViewer.syncInputs();
@@ -988,6 +1004,7 @@ export const MapViewer = {
             summary.innerHTML = `<h4>Route Summary</h4><p class="routing-kicker">No active course. Choose an origin and destination to generate an itinerary.</p>`;
             itinerary.classList.remove('active');
             itinerary.innerHTML = '';
+            MapViewer.renderRouteInfoOverlay();
             return;
         }
 
@@ -1025,6 +1042,224 @@ export const MapViewer = {
             ${isHybrid ? `<p class="routing-kicker" style="margin-top:0.85rem; color:#d9f7ff;">${Utils.escapeHtml(advisory)}</p>` : ''}`;
     },
 
+    ensureRouteInfoOverlay: () => {
+        if (!MapViewer.viewer) return null;
+        let overlay = document.getElementById('map-route-info-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'map-route-info-overlay';
+            overlay.className = 'map-route-info-overlay';
+            MapViewer.viewer.appendChild(overlay);
+        }
+        MapViewer.ui.routeInfoOverlay = overlay;
+        return overlay;
+    },
+
+    dismissRouteInfoOverlay: () => {
+        MapViewer.routeOverlayDismissed = true;
+        MapViewer.renderRouteInfoOverlay();
+    },
+
+    renderRouteInfoOverlay: () => {
+        const overlay = MapViewer.ui.routeInfoOverlay || MapViewer.ensureRouteInfoOverlay();
+        if (!overlay) return;
+        const { pathNodes, totalDistance, isHybrid, advisory } = MapViewer.routeState;
+        if (!pathNodes.length || MapViewer.routeOverlayDismissed) {
+            overlay.classList.remove('active');
+            overlay.innerHTML = '';
+            return;
+        }
+
+        const originNode = MapViewer.nodeIndex[MapViewer.routeState.originId] || MapViewer.nodeIndex[pathNodes[0]];
+        const destinationNode = MapViewer.nodeIndex[MapViewer.routeState.destinationId] || MapViewer.nodeIndex[pathNodes[pathNodes.length - 1]];
+        const hopCount = Math.max(pathNodes.length - 1, 0);
+        const itineraryItems = pathNodes.slice(0, 5).map((nid, index) => {
+            const node = MapViewer.nodeIndex[nid];
+            if (!node) return '';
+            const label = index === 0 ? 'Origin' : index === pathNodes.length - 1 ? 'Arrival' : `Hop ${index}`;
+            return `<li><span>${label}</span><strong>${Utils.escapeHtml(node.name)}</strong></li>`;
+        }).join('');
+        const remaining = Math.max(pathNodes.length - 5, 0);
+
+        overlay.innerHTML = `
+            <button class="map-route-info-close" type="button" aria-label="Hide route information" onclick="MapViewer.dismissRouteInfoOverlay()">x</button>
+            <h4>${Utils.escapeHtml(originNode?.name || 'Route')} to ${Utils.escapeHtml(destinationNode?.name || '')}</h4>
+            <div class="map-route-info-stats">
+                <span><strong>${MapViewer.formatDistance(totalDistance)}</strong>Distance</span>
+                <span><strong>${hopCount}</strong>Hops</span>
+            </div>
+            <ol class="map-route-info-list">
+                ${itineraryItems}
+                ${remaining ? `<li><span>More</span><strong>${remaining} additional stop${remaining === 1 ? '' : 's'}</strong></li>` : ''}
+            </ol>
+            ${isHybrid ? `<p>${Utils.escapeHtml(advisory)}</p>` : ''}`;
+        overlay.classList.add('active');
+        MapViewer.positionRouteInfoOverlay();
+    },
+
+    getNodeScreenPoint: (node) => ({
+        x: MapViewer.state.x + node.x * MapViewer.state.scale,
+        y: MapViewer.state.y + (MapViewer.mapHeight - node.y) * MapViewer.state.scale
+    }),
+
+    getRouteScreenBounds: () => {
+        const routeNodeIds = Array.from(new Set([
+            MapViewer.routeState.originId,
+            ...MapViewer.routeState.pathNodes,
+            MapViewer.routeState.destinationId
+        ].filter(Boolean)));
+        const points = [];
+        routeNodeIds.forEach(nid => {
+            const node = MapViewer.nodeIndex[nid];
+            if (node) points.push(MapViewer.getNodeScreenPoint(node));
+        });
+        MapViewer.routeState.offlaneSegments.forEach(segment => {
+            if (!segment?.access) return;
+            points.push({
+                x: MapViewer.state.x + segment.access.x * MapViewer.state.scale,
+                y: MapViewer.state.y + (MapViewer.mapHeight - segment.access.y) * MapViewer.state.scale
+            });
+        });
+        if (!points.length) return null;
+        return points.reduce((box, point) => ({
+            left: Math.min(box.left, point.x),
+            right: Math.max(box.right, point.x),
+            top: Math.min(box.top, point.y),
+            bottom: Math.max(box.bottom, point.y)
+        }), { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity });
+    },
+
+    positionRouteInfoOverlay: () => {
+        const overlay = MapViewer.ui.routeInfoOverlay;
+        if (!overlay || !overlay.classList.contains('active') || !MapViewer.viewer) return;
+        const vw = MapViewer.viewer.clientWidth;
+        const vh = MapViewer.viewer.clientHeight;
+        const width = Math.min(320, Math.max(250, vw - 28));
+        const height = Math.min(overlay.offsetHeight || 220, Math.max(180, vh - 28));
+        const margin = 16;
+        const topChromeOffset = vw <= 720 ? 108 : 82;
+        const routeBox = MapViewer.getRouteScreenBounds();
+        const chromeBoxes = [
+            { left: 0, top: 0, right: Math.min(vw, 330), bottom: topChromeOffset - 8 },
+            { left: Math.max(0, vw - 360), top: 0, right: vw, bottom: topChromeOffset - 8 },
+            { left: Math.max(0, vw - 86), top: Math.max(0, vh - 260), right: vw, bottom: vh }
+        ];
+        const candidates = [
+            { anchor: 'top-left', left: margin, top: topChromeOffset },
+            { anchor: 'top-right', left: vw - width - margin, top: topChromeOffset },
+            { anchor: 'bottom-left', left: margin, top: vh - height - margin },
+            { anchor: 'bottom-right', left: vw - width - margin, top: vh - height - margin }
+        ].map(candidate => ({
+            ...candidate,
+            left: Math.max(margin, Math.min(candidate.left, vw - width - margin)),
+            top: Math.max(margin, Math.min(candidate.top, vh - height - margin))
+        }));
+
+        const scoreCandidate = (candidate) => {
+            const box = { left: candidate.left, right: candidate.left + width, top: candidate.top, bottom: candidate.top + height };
+            let score = 0;
+            if (routeBox) {
+                const overlapX = Math.max(0, Math.min(box.right, routeBox.right + 34) - Math.max(box.left, routeBox.left - 34));
+                const overlapY = Math.max(0, Math.min(box.bottom, routeBox.bottom + 34) - Math.max(box.top, routeBox.top - 34));
+                score += overlapX * overlapY;
+            }
+            chromeBoxes.forEach(chromeBox => {
+                const overlapX = Math.max(0, Math.min(box.right, chromeBox.right) - Math.max(box.left, chromeBox.left));
+                const overlapY = Math.max(0, Math.min(box.bottom, chromeBox.bottom) - Math.max(box.top, chromeBox.top));
+                score += overlapX * overlapY * 2;
+            });
+            MapViewer.routeState.pathNodes.forEach(nid => {
+                const node = MapViewer.nodeIndex[nid];
+                if (!node) return;
+                const point = MapViewer.getNodeScreenPoint(node);
+                if (point.x >= box.left - 18 && point.x <= box.right + 18 && point.y >= box.top - 18 && point.y <= box.bottom + 18) {
+                    score += 6000;
+                }
+            });
+            return score;
+        };
+
+        const best = candidates.sort((a, b) => scoreCandidate(a) - scoreCandidate(b))[0];
+        overlay.style.width = `${width}px`;
+        overlay.style.left = `${best.left}px`;
+        overlay.style.top = `${best.top}px`;
+    },
+
+    layoutRouteLabels: () => {
+        const nodeEls = Array.from(document.querySelectorAll('.map-node'));
+        nodeEls.forEach(el => {
+            el.classList.remove('label-pos-top', 'label-pos-bottom', 'label-pos-left', 'label-pos-right', 'label-pos-top-left', 'label-pos-top-right', 'label-pos-bottom-left', 'label-pos-bottom-right');
+            el.style.removeProperty('--label-x');
+            el.style.removeProperty('--label-y');
+            el.style.removeProperty('--label-line-length');
+            el.style.removeProperty('--label-line-angle');
+        });
+
+        const activeIds = Array.from(new Set([
+            MapViewer.selectedNodeId,
+            MapViewer.routeState.originId,
+            ...MapViewer.routeState.pathNodes,
+            MapViewer.routeState.destinationId
+        ].filter(Boolean)));
+        const placed = [];
+        const nodeBoxes = Object.values(MapViewer.nodeIndex).map(node => ({
+            left: node.x - 24,
+            right: node.x + 24,
+            top: (MapViewer.mapHeight - node.y) - 24,
+            bottom: (MapViewer.mapHeight - node.y) + 24
+        }));
+        const positions = [
+            { cls: 'label-pos-top', dx: 0, dy: -58 },
+            { cls: 'label-pos-bottom', dx: 0, dy: 58 },
+            { cls: 'label-pos-right', dx: 68, dy: 0 },
+            { cls: 'label-pos-left', dx: -68, dy: 0 },
+            { cls: 'label-pos-top-right', dx: 58, dy: -44 },
+            { cls: 'label-pos-top-left', dx: -58, dy: -44 },
+            { cls: 'label-pos-bottom-right', dx: 58, dy: 44 },
+            { cls: 'label-pos-bottom-left', dx: -58, dy: 44 },
+            { cls: 'label-pos-top-right', dx: 86, dy: -70 },
+            { cls: 'label-pos-top-left', dx: -86, dy: -70 },
+            { cls: 'label-pos-bottom-right', dx: 86, dy: 70 },
+            { cls: 'label-pos-bottom-left', dx: -86, dy: 70 }
+        ];
+        const overlaps = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+        activeIds.forEach(nid => {
+            const node = MapViewer.nodeIndex[nid];
+            const el = document.getElementById(nid);
+            if (!node || !el) return;
+            const labelWidth = Math.min(Math.max((node.name || '').length * 8.5 + 24, 70), 190);
+            const labelHeight = 30;
+            const nodeX = node.x;
+            const nodeY = MapViewer.mapHeight - node.y;
+            let best = null;
+            positions.forEach(pos => {
+                const left = nodeX + pos.dx - labelWidth / 2;
+                const top = nodeY + pos.dy - labelHeight / 2;
+                const box = { left, right: left + labelWidth, top, bottom: top + labelHeight };
+                let score = 0;
+                placed.forEach(existing => { if (overlaps(box, existing)) score += 2500; });
+                nodeBoxes.forEach(existing => { if (overlaps(box, existing)) score += 700; });
+                if (box.left < 0 || box.top < 0 || box.right > MapViewer.currentMap.width || box.bottom > MapViewer.mapHeight) score += 500;
+                if (!best || score < best.score) best = { ...pos, score };
+            });
+            if (!best) return;
+            el.classList.add(best.cls);
+            el.style.setProperty('--label-x', `${best.dx}px`);
+            el.style.setProperty('--label-y', `${best.dy}px`);
+            const lineLength = Math.max(12, Math.hypot(best.dx, best.dy) - 14);
+            const lineAngle = Math.atan2(best.dy, best.dx) * 180 / Math.PI;
+            el.style.setProperty('--label-line-length', `${lineLength}px`);
+            el.style.setProperty('--label-line-angle', `${lineAngle}deg`);
+            placed.push({
+                left: nodeX + best.dx - labelWidth / 2,
+                right: nodeX + best.dx + labelWidth / 2,
+                top: nodeY + best.dy - labelHeight / 2,
+                bottom: nodeY + best.dy + labelHeight / 2
+            });
+        });
+    },
+
     refreshNodeStates: () => {
         document.querySelectorAll('.map-node').forEach(el => {
             el.classList.remove('active', 'selected');
@@ -1039,6 +1274,7 @@ export const MapViewer = {
             const el = document.getElementById(nid);
             if (el) el.classList.add('active');
         });
+        MapViewer.layoutRouteLabels();
     },
 
     syncInputs: () => {
@@ -1082,6 +1318,59 @@ export const MapViewer = {
 
     formatDistance: (value) => `${Math.round(value).toLocaleString()} u`,
 
+    applyNodeNaturalColors: () => {
+        if (!MapViewer.img || !MapViewer.img.complete || !MapViewer.img.naturalWidth || !MapViewer.mapData?.nodes?.length) return;
+        const sampleCanvas = document.createElement('canvas');
+        sampleCanvas.width = 1;
+        sampleCanvas.height = 1;
+        const ctx = sampleCanvas.getContext('2d');
+        if (!ctx) return;
+
+        const scaleX = MapViewer.img.naturalWidth / (MapViewer.currentMap.width || MapViewer.mapHeight || MapViewer.img.naturalWidth);
+        const scaleY = MapViewer.img.naturalHeight / (MapViewer.mapHeight || MapViewer.currentMap.height || MapViewer.img.naturalHeight);
+        const offsets = [
+            [0, 0], [8, 0], [-8, 0], [0, 8], [0, -8],
+            [6, 6], [-6, 6], [6, -6], [-6, -6],
+            [12, 0], [-12, 0], [0, 12], [0, -12]
+        ];
+
+        try {
+            MapViewer.mapData.nodes.forEach(node => {
+                const el = document.getElementById(node.id);
+                if (!el) return;
+                let best = null;
+                offsets.forEach(([dx, dy]) => {
+                    const sx = Math.max(0, Math.min(MapViewer.img.naturalWidth - 1, Math.round((node.x + dx) * scaleX)));
+                    const sy = Math.max(0, Math.min(MapViewer.img.naturalHeight - 1, Math.round((MapViewer.mapHeight - node.y + dy) * scaleY)));
+                    ctx.clearRect(0, 0, 1, 1);
+                    ctx.drawImage(MapViewer.img, sx, sy, 1, 1, 0, 0, 1, 1);
+                    const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+                    if (a < 20) return;
+                    const max = Math.max(r, g, b);
+                    const min = Math.min(r, g, b);
+                    const lightness = (max + min) / 510;
+                    const saturation = max === 0 ? 0 : (max - min) / max;
+                    const whitePenalty = max > 225 && min > 205 ? 0.7 : 0;
+                    const darkPenalty = max < 45 ? 0.5 : 0;
+                    const score = saturation * 1.8 + lightness * 0.55 - whitePenalty - darkPenalty;
+                    if (!best || score > best.score) best = { r, g, b, score };
+                });
+                if (best && best.score > 0.2) {
+                    el.style.setProperty('--node-color', `rgb(${best.r}, ${best.g}, ${best.b})`);
+                    el.style.setProperty('--node-color-soft', `rgba(${best.r}, ${best.g}, ${best.b}, 0.28)`);
+                }
+            });
+        } catch (err) {
+            MapViewer.mapData.nodes.forEach(node => {
+                const el = document.getElementById(node.id);
+                if (el) {
+                    el.style.removeProperty('--node-color');
+                    el.style.removeProperty('--node-color-soft');
+                }
+            });
+        }
+    },
+
     renderRouteOverlay: () => {
         const overlay = document.getElementById('map-route-overlay-group');
         if (!overlay) return;
@@ -1119,11 +1408,10 @@ export const MapViewer = {
             // 3. Draw Labels/Markers
             if (segment.distance > 0 || segment.access.kind === 'edge') {
                 if (segment.distance > 0 || segment.access.kind === 'edge') {
-                    const markerKey = `${segment.role}:${segment.access.x}:${segment.access.y}`;
-                    if (!seenMarkers.has(markerKey)) {
-                        seenMarkers.add(markerKey);
-                        overlayParts.push(`<circle class="map-exit-marker" cx="${segment.access.x}" cy="${accessY}" r="12"></circle>`);
-                        overlayParts.push(`<text class="map-exit-label" x="${segment.access.x + 22}" y="${accessY - 16}">${Utils.escapeHtml(segment.role === 'origin' ? 'Exit' : 'Approach')}</text>`);
+                        const markerKey = `${segment.role}:${segment.access.x}:${segment.access.y}`;
+                        if (!seenMarkers.has(markerKey)) {
+                            seenMarkers.add(markerKey);
+                            overlayParts.push(`<circle class="map-exit-marker" cx="${segment.access.x}" cy="${accessY}" r="12"></circle>`);
                     }
                 }
             }
@@ -1241,6 +1529,7 @@ export const MapViewer = {
         const { x, y, scale } = MapViewer.state;
         if (!MapViewer.canvas) return;
         MapViewer.canvas.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+        MapViewer.positionRouteInfoOverlay();
     },
 
     clamp: () => {
@@ -1275,7 +1564,7 @@ export const MapViewer = {
     },
 
     onPointerDown: (e) => {
-        if (e.target.closest('.map-node') || e.target.closest('.map-edge')) {
+        if (e.target.closest('.map-node') || e.target.closest('.map-edge') || e.target.closest('.map-route-info-overlay')) {
             return;
         }
         if (e.isPrimary) {
