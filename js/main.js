@@ -17,6 +17,7 @@ import {
 import { MapViewer } from './maps/MapViewer.js';
 import { MapHub } from './maps/MapHub.js';
 import { TimelineHub } from './timelines/TimelineHub.js';
+import { LocationHistoryIndex } from './timelines/LocationHistoryIndex.js';
 import { Render } from './render.js';
 import { Router } from './router.js';
 
@@ -38,6 +39,7 @@ window.Actions = Actions;
 window.MapViewer = MapViewer;
 window.MapHub = MapHub;
 window.TimelineHub = TimelineHub;
+window.LocationHistoryIndex = LocationHistoryIndex;
 window.Render = Render;
 window.Router = Router;
 

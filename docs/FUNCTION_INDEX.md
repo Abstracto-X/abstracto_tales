@@ -119,6 +119,16 @@ The functions and components of the public reader SPA are now fully modularized 
 - `openGalacticEra(index)` / `showEraOverview()` / `openEraTimeline(eraIndex)` / `openSubEraTimeline(eraIndex, subEraIndex)` / `renderTimelineIntoHost(era, subEra)` / `navigateEventfulYear(direction)` - Switch between Page 1, Page 2, and Page 3, including arrow-key jumps between eventful years.
 - `selectSubEra()` / `openRecordDetail()` / `toggleEra()` / `filterEraSection()` / `toggleEraRecords()` - Legacy no-op compatibility handlers for cached older Galactic History markup.
 
+### `LocationHistoryIndex` (Map Planet History Overlay - `js/timelines/LocationHistoryIndex.js`)
+- `normalizeText(value)` - Lowercases and normalizes text into a whitespace-padded phrase for exact location matching.
+- `getLocationTerms(locationName)` - Builds normalized search terms from the selected map node name, including a parenthetical-stripped variant.
+- `textMatchesLocation(text, terms)` - Checks whether a normalized timeline text contains any location term as a phrase.
+- `findStoryEvents(locationName, storyEvents)` - Scans the current story's `timeline_events` payload for matching title/description text and maps matches into overlay records.
+- `findGalacticEvents(locationName)` - Lazy-loads parsed Galactic History through `TimelineHub`, scans event text by location phrase, sorts matches chronologically, and caches results by normalized location name.
+- `search(locationName, storyEvents)` - Combines Story History and Galactic History matches into a single grouped result payload.
+- `ensureOverlay()` / `open(locationName, storyEvents)` / `close()` - Creates, opens, and closes the reusable map planet history overlay.
+- `render(locationName, results)` / `renderEvent(event)` - Renders grouped time/era event results with existing timeline keyword links.
+
 ### `GalacticTimelineAssets` (Timeline Image Registry - `js/timelines/galacticTimelineAssets.js`)
 - Named exports such as `GALACTIC_OVERVIEW_BACKGROUND`, `GALACTIC_ERA_REPUBLIC`, and `GALACTIC_SUBERA_CLONE_WARS` expose one variable per Galactic History image asset.
 - `ImageMapping` - Title-normalized era/sub-era image mapping used by `TimelineHub` because `timeline_tree.json` does not contain image URLs.
@@ -166,6 +176,9 @@ The functions and components of the public reader SPA are now fully modularized 
 - `updateCrossMapHint(name, hintId)` — Displays a non-intrusive navigation suggestion below the field if the searched planet exists in another chart.
 - `hideCrossMapHint(hintId)` — Hides the cross-map hint for the specified field.
 - `switchToMap(mapId)` — Switches active map in the viewer to the specified mapId using Router.navigate.
+
+- `ensureLocationHistoryOverlay()` / `renderLocationHistoryOverlay(node)` / `renderLocationHistoryResults(node, results)` / `dismissLocationHistoryOverlay()` - Creates and manages the compact scrollable in-map planet-history overlay shown when a map node is clicked.
+- `openSelectedNodeHistory()` - Opens the selected world's expanded full-screen location-history overlay by passing the planet name and current story timeline into `LocationHistoryIndex`.
 
 ### `Particles` (Background Engine - `js/ui.js`)
 - `init()` — Sets up the HTML5 Canvas, spawns particles, and registers `visibilitychange` listener for pause/resume.

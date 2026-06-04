@@ -15,6 +15,7 @@ The public-facing frontend designed for readers to browse and read stories. Whil
 - **`js/render.js`**: Dynamic HTML generator functions for pages and tabs.
 - **`js/router.js`**: Custom client-side hash router and stage transition handling.
 - **`js/timelines/TimelineHub.js`**: Two-phase chronology explorer for Story History and the local Galactic History JSON tree.
+- **`js/timelines/LocationHistoryIndex.js`**: Lazy location-history lookup that scans Story History plus parsed Galactic History events and renders the map planet history overlay.
 - **`js/timelines/galacticTimelineAssets.js`**: Central image registry exporting named Galactic History art variables and grouped asset maps used by `TimelineHub`.
 - **`js/maps/MapViewer.js`**: Star chart SVG rendering and Dijkstra pathfinder.
 - **`js/maps/MapHub.js`**: Star chart selector grids and dynamic catalog filters.
@@ -82,11 +83,18 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
 - `MapViewer.storyMaps` — Local cache of all maps for the current story to enable quick name and metadata mapping.
 - `MapViewer.storySlug` — Stores the current story slug to construct clean relative routing paths during map switching.
 
+- `MapViewer.storyTimeline` - Stores the current story's timeline events while the reader map route is active so selected planets can search local Story History without another Supabase fetch.
+- `MapViewer._historyRequestId` - Monotonic token that ignores stale compact planet-history overlay searches when readers click between map nodes quickly.
+
 #### `index.html` TimelineHub state additions
 - `TimelineHub._galacticTree` - Cached parsed copy of `data/timeline/timeline_tree.json`, loaded only when the reader opens Galactic History.
 - `TimelineHub._galacticMetadata` - Cached parsed copy of `data/timeline/galactic_metadata.json`, loaded in parallel to decouple headers and assets from raw events.
 - `TimelineHub._galacticData` - Cached normalized Galactic History state produced by `TimelineHub.parseWikiData(rawJson, metadata)`, containing eras, sub-eras, parsed BBY/ABY events, image assets, and chronology sort metadata for the UI.
 - `TimelineHub._GALACTIC_TREE_URL` - Local JSON path used by the Galactic History explorer.
+
+#### `index.html` LocationHistoryIndex state additions
+- `LocationHistoryIndex._galacticCache` - In-memory Map keyed by normalized location name, caching Galactic History matches after the first planet-history lookup.
+- `LocationHistoryIndex._overlay` - Reusable DOM overlay attached to `document.body` for map planet history results.
 
 ### `admin.html`
 - `State` *(Object)* — The primary global state container for the admin panel.
@@ -258,6 +266,7 @@ Media assets are managed using Supabase Storage buckets.
 - `MapViewer.buildComponents()` now derives connected hyperlane clusters after graph construction so isolated worlds can be recognized without extra fetches.
 - `MapViewer.edgeLengthIndex` caches polyline lengths for each lane so nearest-exit snapping and route totals reuse the same geometry measurements.
 - When a selected world has no registered lane links, `MapViewer.calculateRoute()` falls back to a hybrid route that snaps to the nearest linked world or point on a hyperlane, renders a cyan straight-line off-lane segment, and adds itinerary/summary advisory copy warning that the remaining approach uses unregistered travel.
+- Clicking a planet opens a compact, scrollable in-map history overlay first. `MapViewer.renderLocationHistoryOverlay()` passes the selected planet name and current story timeline into `LocationHistoryIndex`, which lazy-loads Galactic History if needed, scans by normalized exact location phrase, and caches Galactic matches in memory. The focused-world card and compact overlay still provide a Full History / Open Full Archive action through `MapViewer.openSelectedNodeHistory()` for the larger full-screen archive.
 
 ### Reader Timeline Conventions
 - **Two-Phase Timeline Discovery:** The timeline route now opens a chronology chooser at `#timeline/{slug}`. Readers select either **Story History** (`#timeline/{slug}/story`) or **Timeline of Galactic History** (`#timeline/{slug}/galactic`) instead of landing directly in one long alternating list.

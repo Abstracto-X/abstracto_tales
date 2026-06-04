@@ -1,6 +1,7 @@
 // js/maps/MapViewer.js
 import { Utils } from '../config.js';
 import { DB } from '../db.js';
+import { LocationHistoryIndex } from '../timelines/LocationHistoryIndex.js';
 
 export class MinPriorityQueue {
     constructor() {
@@ -112,6 +113,8 @@ export const MapViewer = {
     crossMapIndex: {},  // { 'planet name lowercase': [{mapId, mapName}] }
     storyMaps: [],      // All maps for the current story
     storySlug: '',      // Slug of the current story
+    storyTimeline: [],   // Current story timeline events for location history lookup
+    _historyRequestId: 0,
 
     init: ({ id, src, mapName, width, height }) => {
         if (MapViewer._abortController) {
@@ -150,6 +153,7 @@ export const MapViewer = {
             activeMapChip: document.getElementById('active-map-chip')
         };
         MapViewer.ensureRouteInfoOverlay();
+        MapViewer.ensureLocationHistoryOverlay();
         
         MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0, pendingX: 0, pendingY: 0, dragTicking: false };
         MapViewer.currentMap = { id, src, name: mapName || 'Map', width: width || 4000, height: height || 4000 };
@@ -667,10 +671,11 @@ export const MapViewer = {
 
     selectNode: (nodeId) => {
         if (!MapViewer.nodeIndex[nodeId]) return;
+        const node = MapViewer.nodeIndex[nodeId];
         MapViewer.selectedNodeId = nodeId;
         MapViewer.refreshNodeStates();
         MapViewer.renderNodeCard();
-        const node = MapViewer.nodeIndex[nodeId];
+        MapViewer.renderLocationHistoryOverlay(node);
         MapViewer.ui.searchInput.value = node.name;
         MapViewer.setStatus(`${node.name} selected. Set it as origin or destination, or focus it directly.`, 'info');
     },
@@ -967,6 +972,96 @@ export const MapViewer = {
         window.Router.navigate(`maps/${MapViewer.storySlug}/${mapId}`);
     },
 
+    openSelectedNodeHistory: () => {
+        const node = MapViewer.selectedNodeId ? MapViewer.nodeIndex[MapViewer.selectedNodeId] : null;
+        if (!node) {
+            MapViewer.setStatus('Select a world before opening the historical index.', 'error');
+            return;
+        }
+        LocationHistoryIndex.open(node.name, MapViewer.storyTimeline || []);
+        MapViewer.setStatus(`Historical index opened for ${node.name}.`, 'info');
+    },
+
+    ensureLocationHistoryOverlay: () => {
+        if (!MapViewer.viewer) return null;
+        let overlay = document.getElementById('map-location-history-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'map-location-history-overlay';
+            overlay.className = 'map-location-history-overlay';
+            MapViewer.viewer.appendChild(overlay);
+        }
+        MapViewer.ui.locationHistoryOverlay = overlay;
+        return overlay;
+    },
+
+    dismissLocationHistoryOverlay: () => {
+        const overlay = MapViewer.ui.locationHistoryOverlay;
+        if (!overlay) return;
+        overlay.classList.remove('active');
+        overlay.innerHTML = '';
+    },
+
+    renderLocationHistoryOverlay: async (node) => {
+        const overlay = MapViewer.ui.locationHistoryOverlay || MapViewer.ensureLocationHistoryOverlay();
+        if (!overlay || !node) return;
+        const requestId = MapViewer._historyRequestId + 1;
+        MapViewer._historyRequestId = requestId;
+
+        overlay.innerHTML = `
+            <button class="map-location-history-close" type="button" aria-label="Hide planet history" onclick="MapViewer.dismissLocationHistoryOverlay()">x</button>
+            <div class="map-location-history-kicker">Historical Index</div>
+            <h4>${Utils.escapeHtml(node.name)}</h4>
+            <p class="map-location-history-loading">Scanning local and galactic records...</p>`;
+        overlay.classList.add('active');
+
+        try {
+            const results = await LocationHistoryIndex.search(node.name, MapViewer.storyTimeline || []);
+            if (requestId !== MapViewer._historyRequestId) return;
+            MapViewer.renderLocationHistoryResults(node, results);
+        } catch (err) {
+            console.error('Compact location history failed:', err);
+            if (requestId !== MapViewer._historyRequestId) return;
+            overlay.innerHTML = `
+                <button class="map-location-history-close" type="button" aria-label="Hide planet history" onclick="MapViewer.dismissLocationHistoryOverlay()">x</button>
+                <div class="map-location-history-kicker">Historical Index</div>
+                <h4>${Utils.escapeHtml(node.name)}</h4>
+                <p class="map-location-history-empty">Unable to scan history records for this world.</p>
+                <button class="map-location-history-expand" type="button" onclick="MapViewer.openSelectedNodeHistory()">Open Full Archive</button>`;
+        }
+    },
+
+    renderLocationHistoryResults: (node, results) => {
+        const overlay = MapViewer.ui.locationHistoryOverlay || MapViewer.ensureLocationHistoryOverlay();
+        if (!overlay) return;
+        const events = (results.combined || []).slice(0, 10);
+        const total = (results.combined || []).length;
+        const eventHtml = events.map(event => `
+            <article class="map-location-history-event">
+                <div class="map-location-history-meta">
+                    <span>${Utils.escapeHtml(event.label || 'Undated')}</span>
+                    <span>${Utils.escapeHtml(event.source || 'History')}</span>
+                </div>
+                ${event.title ? `<strong>${Utils.escapeHtml(event.title)}</strong>` : ''}
+                <p>${Utils.escapeHtml(event.text || '').slice(0, 220)}${(event.text || '').length > 220 ? '...' : ''}</p>
+            </article>
+        `).join('');
+
+        overlay.innerHTML = `
+            <button class="map-location-history-close" type="button" aria-label="Hide planet history" onclick="MapViewer.dismissLocationHistoryOverlay()">x</button>
+            <div class="map-location-history-kicker">Historical Index</div>
+            <h4>${Utils.escapeHtml(node.name)}</h4>
+            <div class="map-location-history-stats">
+                <span>${results.galacticMatches.length} Galactic</span>
+                <span>${results.storyMatches.length} Story</span>
+                <span>${total} Total</span>
+            </div>
+            <div class="map-location-history-list">
+                ${eventHtml || `<p class="map-location-history-empty">No indexed events mention this world yet.</p>`}
+            </div>
+            <button class="map-location-history-expand" type="button" onclick="MapViewer.openSelectedNodeHistory()">Open Full Archive</button>`;
+    },
+
     renderNodeCard: () => {
         const card = MapViewer.ui.nodeCard;
         const node = MapViewer.selectedNodeId ? MapViewer.nodeIndex[MapViewer.selectedNodeId] : null;
@@ -992,6 +1087,7 @@ export const MapViewer = {
                 <button class="routing-btn" type="button" onclick="MapViewer.setRouteEndpoint('origin', '${node.id}')">Set Origin</button>
                 <button class="routing-btn" type="button" onclick="MapViewer.setRouteEndpoint('destination', '${node.id}')">Set Destination</button>
                 <button class="routing-btn" type="button" onclick="MapViewer.selectNode('${node.id}'); MapViewer.zoomToRoute(['${node.id}'])">Center World</button>
+                <button class="routing-btn" type="button" onclick="MapViewer.openSelectedNodeHistory()">Full History</button>
             </div>`;
     },
 
@@ -1564,7 +1660,7 @@ export const MapViewer = {
     },
 
     onPointerDown: (e) => {
-        if (e.target.closest('.map-node') || e.target.closest('.map-edge') || e.target.closest('.map-route-info-overlay')) {
+        if (e.target.closest('.map-node') || e.target.closest('.map-edge') || e.target.closest('.map-route-info-overlay') || e.target.closest('.map-location-history-overlay')) {
             return;
         }
         if (e.isPrimary) {

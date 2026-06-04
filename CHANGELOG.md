@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-05]
+### Added
+- 03:38 +05:30: Linked reader maps with Galactic/Story History through a new `js/timelines/LocationHistoryIndex.js` module. Focused map worlds now expose a History action that opens a reusable overlay, scans current story timeline events plus parsed Galactic History for normalized location mentions, groups results by era/time, and caches Galactic matches in memory for repeat lookups. Updated `MapViewer`, `Render.maps`, `main.js`, `styles.css`, and reader documentation.
+
+### Changed
+- 03:58 +05:30: Changed the reader map planet-history interaction so clicking a planet opens a compact scrollable in-map history panel first, styled like the route information overlay. The full-screen location-history overlay remains available through the compact panel's Open Full Archive action and the focused-world card's Full History button. Updated `MapViewer`, `styles.css`, and reader documentation.
+
 ## [2026-06-03]
 ### Changed
 - 20:05 +05:30: Added stylesheet rules for tiled borderless images and alignment wrappers (`.aaa-codex-event-wrapper`) in `styles.css`. Implemented a 2x2 grid for opposite column layout (years with 1 card) and side-by-side flex layouts for below-card layout (years with multiple cards and Story History). Applied grayscale desaturation filters with full-color hover transitions and visual vertical spacing adjustments. Modified `TimelineHub.js` to ensure uniform card-then-images DOM order and registered tiled image grids under the IntersectionObserver scroll reveal system. Added page-level image deduplication (`_renderedImagesThisPage` Set) to prevent repeated images on a timeline view. Enforced uncropped containment (`object-fit: contain` and auto aspect ratios) to keep full images visible, and used `:only-child` CSS selectors to dynamically enlarge single image tiles while keeping multiple images small to fit. Made opposite column layout containers wider (`max-width: 580px`) to utilize large available screen space.

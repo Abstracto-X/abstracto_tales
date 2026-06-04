@@ -483,6 +483,10 @@ export const Render = {
             return;
         }
 
+        MapViewer.storyMaps = maps;
+        MapViewer.storySlug = slug;
+        MapViewer.storyTimeline = hubData.timeline || [];
+
         // Populate global cross-map indexes
         try {
             const nodeNames = await DB.getAllMapNodeNames(story.id);
@@ -499,8 +503,6 @@ export const Render = {
                 }
             });
             MapViewer.crossMapIndex = crossIndex;
-            MapViewer.storyMaps = maps;
-            MapViewer.storySlug = slug;
         } catch (e) {
             console.error("Failed to build cross-map search index:", e);
         }
