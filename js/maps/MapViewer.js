@@ -100,6 +100,12 @@ export const MapViewer = {
         isHybrid: false,
         advisory: ''
     },
+    dockState: {
+        navicomputer: { open: false, pinned: false },
+        worldIntel:   { open: false, pinned: false },
+        itinerary:    { open: false, pinned: false },
+        charts:       { open: false }
+    },
     routeOverlayDismissed: false,
     displayState: {
         showLabels: true,
@@ -154,6 +160,14 @@ export const MapViewer = {
         };
         MapViewer.ensureRouteInfoOverlay();
         MapViewer.ensureLocationHistoryOverlay();
+        
+        MapViewer.dockState = {
+            navicomputer: { open: false, pinned: false },
+            worldIntel:   { open: false, pinned: false },
+            itinerary:    { open: false, pinned: false },
+            charts:       { open: false }
+        };
+        MapViewer.initDocks(signal);
         
         MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0, pendingX: 0, pendingY: 0, dragTicking: false };
         MapViewer.currentMap = { id, src, name: mapName || 'Map', width: width || 4000, height: height || 4000 };
@@ -221,8 +235,20 @@ export const MapViewer = {
             else MapViewer.hideCrossMapHint('dest');
         }, { signal });
 
+        // Trigger bindings for docks
+        const chartsTrigger = document.getElementById('charts-trigger');
+        const navTrigger = document.getElementById('navicomputer-trigger');
+        const intelTrigger = document.getElementById('world-intel-trigger');
+        const beaconTrigger = document.getElementById('cartographer-beacon-trigger');
+
+        if (chartsTrigger) chartsTrigger.addEventListener('click', () => MapViewer.toggleDock('charts'), { signal });
+        if (navTrigger) navTrigger.addEventListener('click', () => MapViewer.toggleDock('navicomputer'), { signal });
+        if (intelTrigger) intelTrigger.addEventListener('click', () => MapViewer.toggleDock('worldIntel'), { signal });
+        if (beaconTrigger) beaconTrigger.addEventListener('click', () => MapViewer.toggleBeacon(), { signal });
+
         ui.selectorButtons.forEach(btn => {
             btn.addEventListener('click', () => {
+                MapViewer.closeDock('charts');
                 if (MapViewer.storySlug) {
                     window.Router.navigate(`maps/${MapViewer.storySlug}/${btn.dataset.id}`);
                 } else {
@@ -678,6 +704,7 @@ export const MapViewer = {
         MapViewer.renderLocationHistoryOverlay(node);
         MapViewer.ui.searchInput.value = node.name;
         MapViewer.setStatus(`${node.name} selected. Set it as origin or destination, or focus it directly.`, 'info');
+        MapViewer.openDock('worldIntel');
     },
 
     assignSelectedNode: (type) => {
@@ -868,8 +895,11 @@ export const MapViewer = {
             });
 
         container.innerHTML = itineraryHtml;
+        const itineraryDockBody = document.getElementById('itinerary-dock-body');
+        if (itineraryDockBody) itineraryDockBody.innerHTML = itineraryHtml;
         MapViewer.renderSummary();
         MapViewer.renderRouteInfoOverlay();
+        MapViewer.openDock('itinerary');
         MapViewer.zoomToRoute(options.zoomNodeIds || Array.from(new Set([
             MapViewer.routeState.originId,
             ...pathNodes,
@@ -983,23 +1013,15 @@ export const MapViewer = {
     },
 
     ensureLocationHistoryOverlay: () => {
-        if (!MapViewer.viewer) return null;
-        let overlay = document.getElementById('map-location-history-overlay');
-        if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'map-location-history-overlay';
-            overlay.className = 'map-location-history-overlay';
-            MapViewer.viewer.appendChild(overlay);
-        }
+        const overlay = document.getElementById('world-intel-body');
         MapViewer.ui.locationHistoryOverlay = overlay;
         return overlay;
     },
 
     dismissLocationHistoryOverlay: () => {
+        MapViewer.forceCloseDock('worldIntel');
         const overlay = MapViewer.ui.locationHistoryOverlay;
-        if (!overlay) return;
-        overlay.classList.remove('active');
-        overlay.innerHTML = '';
+        if (overlay) overlay.innerHTML = '';
     },
 
     renderLocationHistoryOverlay: async (node) => {
@@ -1009,11 +1031,9 @@ export const MapViewer = {
         MapViewer._historyRequestId = requestId;
 
         overlay.innerHTML = `
-            <button class="map-location-history-close" type="button" aria-label="Hide planet history" onclick="MapViewer.dismissLocationHistoryOverlay()">x</button>
             <div class="map-location-history-kicker">Historical Index</div>
             <h4>${Utils.escapeHtml(node.name)}</h4>
             <p class="map-location-history-loading">Scanning local and galactic records...</p>`;
-        overlay.classList.add('active');
 
         try {
             const results = await LocationHistoryIndex.search(node.name, MapViewer.storyTimeline || []);
@@ -1023,11 +1043,12 @@ export const MapViewer = {
             console.error('Compact location history failed:', err);
             if (requestId !== MapViewer._historyRequestId) return;
             overlay.innerHTML = `
-                <button class="map-location-history-close" type="button" aria-label="Hide planet history" onclick="MapViewer.dismissLocationHistoryOverlay()">x</button>
                 <div class="map-location-history-kicker">Historical Index</div>
                 <h4>${Utils.escapeHtml(node.name)}</h4>
                 <p class="map-location-history-empty">Unable to scan history records for this world.</p>
-                <button class="map-location-history-expand" type="button" onclick="MapViewer.openSelectedNodeHistory()">Open Full Archive</button>`;
+                <button class="routing-btn" type="button" onclick="MapViewer.openSelectedNodeHistory()" style="margin-top: 10px; width: 100%;">
+                    <i class="fas fa-book-open"></i> Open Full Archive
+                </button>`;
         }
     },
 
@@ -1037,29 +1058,30 @@ export const MapViewer = {
         const events = (results.combined || []).slice(0, 10);
         const total = (results.combined || []).length;
         const eventHtml = events.map(event => `
-            <article class="map-location-history-event">
-                <div class="map-location-history-meta">
+            <article class="map-location-history-event" style="margin-bottom: 0.65rem; padding-bottom: 0.65rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
+                <div class="map-location-history-meta" style="display: flex; justify-content: space-between; font-size: 0.65rem; color: rgba(255,255,255,0.45); margin-bottom: 0.25rem;">
                     <span>${Utils.escapeHtml(event.label || 'Undated')}</span>
                     <span>${Utils.escapeHtml(event.source || 'History')}</span>
                 </div>
-                ${event.title ? `<strong>${Utils.escapeHtml(event.title)}</strong>` : ''}
-                <p>${Utils.escapeHtml(event.text || '').slice(0, 220)}${(event.text || '').length > 220 ? '...' : ''}</p>
+                ${event.title ? `<strong style="display: block; font-size: 0.8rem; color: #fff; margin-bottom: 0.15rem;">${Utils.escapeHtml(event.title)}</strong>` : ''}
+                <p style="font-size: 0.75rem; color: rgba(255,255,255,0.7); line-height: 1.45; margin: 0;">${Utils.escapeHtml(event.text || '').slice(0, 220)}${(event.text || '').length > 220 ? '...' : ''}</p>
             </article>
         `).join('');
 
         overlay.innerHTML = `
-            <button class="map-location-history-close" type="button" aria-label="Hide planet history" onclick="MapViewer.dismissLocationHistoryOverlay()">x</button>
             <div class="map-location-history-kicker">Historical Index</div>
             <h4>${Utils.escapeHtml(node.name)}</h4>
-            <div class="map-location-history-stats">
-                <span>${results.galacticMatches.length} Galactic</span>
-                <span>${results.storyMatches.length} Story</span>
-                <span>${total} Total</span>
+            <div class="map-location-history-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.4rem; margin: 0.5rem 0;">
+                <span style="font-size: 0.65rem; padding: 0.25rem; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">${results.galacticMatches.length} Gal</span>
+                <span style="font-size: 0.65rem; padding: 0.25rem; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">${results.storyMatches.length} Story</span>
+                <span style="font-size: 0.65rem; padding: 0.25rem; text-align: center; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px;">${total} Tot</span>
             </div>
-            <div class="map-location-history-list">
+            <div class="map-location-history-list" style="max-height: 300px; overflow-y: auto; margin-bottom: 0.5rem;">
                 ${eventHtml || `<p class="map-location-history-empty">No indexed events mention this world yet.</p>`}
             </div>
-            <button class="map-location-history-expand" type="button" onclick="MapViewer.openSelectedNodeHistory()">Open Full Archive</button>`;
+            <button class="routing-btn" type="button" onclick="MapViewer.openSelectedNodeHistory()" style="margin-top: 10px; width: 100%;">
+                <i class="fas fa-book-open"></i> Open Full Archive
+            </button>`;
     },
 
     renderNodeCard: () => {
@@ -1660,12 +1682,13 @@ export const MapViewer = {
     },
 
     onPointerDown: (e) => {
-        if (e.target.closest('.map-node') || e.target.closest('.map-edge') || e.target.closest('.map-route-info-overlay') || e.target.closest('.map-location-history-overlay')) {
+        if (e.target.closest('.map-node') || e.target.closest('.map-edge') || e.target.closest('.map-route-info-overlay') || e.target.closest('.map-location-history-overlay') || e.target.closest('.map-dock') || e.target.closest('.cartographer-beacon') || e.target.closest('.map-hud-bar') || e.target.closest('.map-controls') || e.target.closest('.dock-edge-trigger')) {
             return;
         }
         if (e.isPrimary) {
             e.preventDefault();
             MapViewer.startDrag(e.clientX, e.clientY);
+            MapViewer.closeAllUnpinnedDocks();
         }
     },
 
@@ -1753,6 +1776,112 @@ export const MapViewer = {
         } else {
             MapViewer.clamp();
             MapViewer.update();
+        }
+    },
+
+    initDocks: (signal) => {
+        const closeNav = document.getElementById('close-navicomputer');
+        const closeIntel = document.getElementById('close-world-intel');
+        const closeItin = document.getElementById('close-itinerary');
+
+        if (closeNav) closeNav.addEventListener('click', () => MapViewer.forceCloseDock('navicomputer'), { signal });
+        if (closeIntel) closeIntel.addEventListener('click', () => MapViewer.dismissLocationHistoryOverlay(), { signal });
+        if (closeItin) closeItin.addEventListener('click', () => MapViewer.forceCloseDock('itinerary'), { signal });
+
+        const pinNav = document.getElementById('pin-navicomputer');
+        const pinIntel = document.getElementById('pin-world-intel');
+
+        if (pinNav) {
+            pinNav.addEventListener('click', () => {
+                MapViewer.dockState.navicomputer.pinned = !MapViewer.dockState.navicomputer.pinned;
+                pinNav.classList.toggle('pinned', MapViewer.dockState.navicomputer.pinned);
+            }, { signal });
+        }
+        if (pinIntel) {
+            pinIntel.addEventListener('click', () => {
+                MapViewer.dockState.worldIntel.pinned = !MapViewer.dockState.worldIntel.pinned;
+                pinIntel.classList.toggle('pinned', MapViewer.dockState.worldIntel.pinned);
+            }, { signal });
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                MapViewer.closeAllUnpinnedDocks();
+            }
+        }, { signal });
+    },
+
+    openDock: (id) => {
+        const el = document.getElementById(`${id}-dock`);
+        if (!el) return;
+        el.classList.add('open');
+        if (MapViewer.dockState[id]) {
+            MapViewer.dockState[id].open = true;
+        }
+        if (id === 'navicomputer') {
+            const trigger = document.getElementById('navicomputer-trigger');
+            if (trigger) trigger.classList.add('open');
+        }
+    },
+
+    closeDock: (id) => {
+        if (MapViewer.dockState[id] && MapViewer.dockState[id].pinned) return;
+        const el = document.getElementById(`${id}-dock`);
+        if (!el) return;
+        el.classList.remove('open');
+        if (MapViewer.dockState[id]) {
+            MapViewer.dockState[id].open = false;
+        }
+        if (id === 'navicomputer') {
+            const trigger = document.getElementById('navicomputer-trigger');
+            if (trigger) trigger.classList.remove('open');
+        }
+    },
+
+    forceCloseDock: (id) => {
+        const el = document.getElementById(`${id}-dock`);
+        if (!el) return;
+        el.classList.remove('open');
+        if (MapViewer.dockState[id]) {
+            MapViewer.dockState[id].open = false;
+            MapViewer.dockState[id].pinned = false;
+        }
+        const pinBtn = document.getElementById(`pin-${id}`);
+        if (pinBtn) pinBtn.classList.remove('pinned');
+        
+        if (id === 'navicomputer') {
+            const trigger = document.getElementById('navicomputer-trigger');
+            if (trigger) trigger.classList.remove('open');
+        }
+    },
+
+    toggleDock: (id) => {
+        const isOpen = MapViewer.dockState[id]?.open;
+        if (isOpen) {
+            MapViewer.forceCloseDock(id);
+        } else {
+            MapViewer.openDock(id);
+        }
+    },
+
+    closeAllUnpinnedDocks: () => {
+        if (MapViewer.dockState.navicomputer && !MapViewer.dockState.navicomputer.pinned) {
+            MapViewer.closeDock('navicomputer');
+        }
+        if (MapViewer.dockState.worldIntel && !MapViewer.dockState.worldIntel.pinned) {
+            MapViewer.closeDock('worldIntel');
+        }
+        MapViewer.closeDock('charts');
+        MapViewer.closeDock('itinerary');
+        
+        const beaconCard = document.getElementById('cartographer-beacon-card');
+        if (beaconCard) beaconCard.classList.remove('open');
+    },
+
+    toggleBeacon: () => {
+        const beaconCard = document.getElementById('cartographer-beacon-card');
+        if (beaconCard) {
+            beaconCard.classList.toggle('open');
         }
     }
 };

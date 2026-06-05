@@ -536,103 +536,161 @@ export const Render = {
         });
         
         Render.stage.innerHTML = `
-            <div class="map-layout">
-                <div class="map-hub-backbar">
-                    <button class="map-hub-back-btn" onclick="window.Router.navigate('maps/${slug}')">
+            <div class="map-console-shell">
+                <!-- HUD Command Bar -->
+                <div class="map-hud-bar">
+                    <button class="map-hud-back" onclick="window.Router.navigate('maps/${slug}')">
                         <i class="fas fa-arrow-left"></i> Registry
                     </button>
-                    <div class="map-selector glass-box" style="margin:0; flex:1; justify-content:flex-start;">${btns}</div>
+                    <div class="map-hud-title">✦ Galactic Atlas · <span id="active-map-chip">${Utils.escapeHtml(activeMap.map_name)}</span></div>
+                    <div class="map-hud-actions">
+                        <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
+                        <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
+                        <button class="map-hud-btn" id="charts-trigger" type="button">
+                            <i class="fas fa-layer-group"></i> Charts
+                        </button>
+                    </div>
                 </div>
-                <div class="map-workspace">
-                    <div class="map-column-left" style="display: flex; flex-direction: column; gap: 0.85rem; min-width: 0;">
-                        <div class="map-stage">
-                            <div class="map-topbar">
-                                <div class="map-topbar-group">
-                                    <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
-                                    <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
-                                </div>
-                                <div class="map-topbar-group">
-                                    <div class="map-chip" id="active-map-chip">${Utils.escapeHtml(activeMap.map_name)}</div>
-                                </div>
-                            </div>
-                            <div class="map-viewer" id="map-viewer">
-                                <div class="map-canvas" id="map-canvas">
-                                    <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous">
-                                    <svg id="map-svg-layer"></svg>
-                                    <div id="map-nodes-layer"></div>
-                                </div>
-                            </div>
-                            <div class="map-controls">
-                                <button class="map-control-btn cartographer-link" type="button" title="Access Cartographer Terminal" onclick="window.open('cartographer.html', '_blank')" style="color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); margin-bottom: 12px;"><i class="fab fa-galactic-republic"></i></button>
-                                <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
-                                <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
-                                <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
-                                <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
+
+                <!-- Charts Dock (map selector dropdown) -->
+                <div class="charts-dock" id="charts-dock">
+                    ${btns}
+                </div>
+
+                <!-- Full-Viewport Map Stage -->
+                <div class="map-stage">
+                    <!-- Map Viewer -->
+                    <div class="map-viewer" id="map-viewer">
+                        <div class="map-canvas" id="map-canvas">
+                            <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous">
+                            <svg id="map-svg-layer"></svg>
+                            <div id="map-nodes-layer"></div>
+                        </div>
+                    </div>
+
+                    <!-- World Intel Dock (left) -->
+                    <button class="dock-edge-trigger left" id="world-intel-trigger" aria-label="World Intel" type="button">
+                        <i class="fas fa-globe"></i>
+                    </button>
+                    <div class="map-dock dock-left" id="world-intel-dock">
+                        <div class="dock-header">
+                            <span class="dock-header-title"><i class="fas fa-globe"></i> World Intel</span>
+                            <div class="dock-controls">
+                                <button class="dock-btn" id="pin-world-intel" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
+                                <button class="dock-btn" id="close-world-intel" title="Close" type="button"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
-                        <div class="map-promo-block shadow-box" style="padding: 20px; text-align: center; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
-                            <h3 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 10px;">Help Chart the Galaxy</h3>
-                            <p style="font-family: var(--font-body); line-height: 1.6; max-width: 800px; margin: 0 auto 15px auto;">
-                                Want to contribute to the first navigable map database in Star Wars? You can propose new maps, add undocumented planets, and chart hyperlanes easily through the Cartographer Terminal. Collaborate with millions of Star Wars fans around the globe to map a galaxy far, far away!
-                            </p>
-                            <button class="form-btn primary" onclick="window.open('cartographer.html', '_blank')" style="font-size: 1.1em; padding: 10px 24px;">
-                                <i class="fab fa-galactic-republic" style="margin-right: 8px;"></i> Access Cartographer Terminal
+                        <div class="dock-body" id="world-intel-body">
+                            <!-- renderLocationHistoryOverlay targets this -->
+                        </div>
+                    </div>
+
+                    <!-- Navicomputer Dock (right) -->
+                    <div class="map-dock dock-right" id="navicomputer-dock">
+                        <div class="dock-header">
+                            <span class="dock-header-title"><i class="fas fa-satellite-dish"></i> Navicomputer</span>
+                            <div class="dock-controls">
+                                <button class="dock-btn" id="pin-navicomputer" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
+                                <button class="dock-btn" id="close-navicomputer" title="Close" type="button"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="dock-body">
+                            <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
+                            <div class="routing-status" id="routing-status">Loading navicomputer...</div>
+                            
+                            <!-- Focus section -->
+                            <div class="routing-section">
+                                <div class="routing-field-row">
+                                    <label for="planet-search">Focus</label>
+                                    <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist">
+                                </div>
+                                <div id="cross-map-hint-search" class="routing-cross-map-hint"></div>
+                                <div class="routing-inline-actions">
+                                    <button class="routing-btn" id="focus-route-btn" type="button">Focus World</button>
+                                    <button class="routing-btn" id="set-origin-btn" type="button">Set Selected as Origin</button>
+                                    <button class="routing-btn" id="set-destination-btn" type="button">Set Selected as Destination</button>
+                                </div>
+                            </div>
+
+                            <!-- Node card -->
+                            <div class="routing-node-card empty" id="routing-node-card">
+                                <h4>Node Focus</h4>
+                                <p class="routing-kicker">Click a world on the chart to inspect it.</p>
+                            </div>
+
+                            <!-- Route section -->
+                            <div class="routing-section">
+                                <div class="routing-field-row">
+                                    <label for="route-origin">Origin</label>
+                                    <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist">
+                                </div>
+                                <div id="cross-map-hint-origin" class="routing-cross-map-hint"></div>
+                                <div class="routing-field-row">
+                                    <label for="route-dest">Destination</label>
+                                    <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist">
+                                </div>
+                                <div id="cross-map-hint-dest" class="routing-cross-map-hint"></div>
+                                <datalist id="planet-datalist"></datalist>
+                                <div class="routing-main-actions">
+                                    <button class="routing-btn primary" id="plot-course-btn" type="button">Plot Course</button>
+                                    <button class="routing-btn" id="swap-route-btn" type="button">Swap</button>
+                                    <button class="routing-btn" id="clear-route-btn" type="button">Clear</button>
+                                </div>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="routing-summary empty" id="routing-summary">
+                                <h4>Route Summary</h4>
+                                <p class="routing-kicker">No active course.</p>
+                            </div>
+
+                            <!-- Itinerary (scrolls within dock body) -->
+                            <div id="routing-itinerary" class="routing-itinerary"></div>
+                        </div>
+                    </div>
+
+                    <!-- Itinerary Bottom Dock -->
+                    <div class="map-dock dock-bottom" id="itinerary-dock">
+                        <div class="dock-header">
+                            <span class="dock-header-title"><i class="fas fa-route"></i> Route Itinerary</span>
+                            <button class="dock-btn" id="close-itinerary" type="button"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="dock-body" id="itinerary-dock-body">
+                            <!-- route itinerary steps rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Cartographer Beacon (center-bottom, permanent) -->
+                    <div class="cartographer-beacon">
+                        <div class="cartographer-beacon-card" id="cartographer-beacon-card">
+                            <h4>Help Chart the Galaxy</h4>
+                            <p>Propose new maps, add undocumented planets, and chart hyperlanes through the Cartographer Terminal.</p>
+                            <button class="routing-btn primary" onclick="window.open('cartographer.html', '_blank')" type="button">
+                                <i class="fab fa-galactic-republic"></i> Access Cartographer Terminal
                             </button>
-                            ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.85em; margin-top: 15px; font-style: italic;">Note: You need to be registered in order to contribute. Please create a profile or sign in.</p>'}
+                            ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.72rem; margin-top: 5px; font-style: italic;">Note: You need to be registered in order to contribute.</p>'}
                         </div>
+                        <button class="cartographer-beacon-pill" id="cartographer-beacon-trigger" type="button">
+                            <i class="fab fa-galactic-republic"></i> Contribute
+                        </button>
                     </div>
-                    <div class="routing-panel shadow-box">
-                        <h3>Navicomputer</h3>
-                        <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
 
-                        <div class="routing-status" id="routing-status">Loading navicomputer...</div>
-
-                        <div class="routing-section">
-                            <div class="routing-field-row">
-                                <label for="planet-search">Focus</label>
-                                <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist">
-                            </div>
-                            <div id="cross-map-hint-search" class="routing-cross-map-hint"></div>
-                            <div class="routing-inline-actions">
-                                <button class="routing-btn" id="focus-route-btn" type="button">Focus World</button>
-                                <button class="routing-btn" id="set-origin-btn" type="button">Set Selected as Origin</button>
-                                <button class="routing-btn" id="set-destination-btn" type="button">Set Selected as Destination</button>
-                            </div>
-                        </div>
-
-                        <div class="routing-node-card empty" id="routing-node-card">
-                            <h4>Node Focus</h4>
-                            <p class="routing-kicker">Click a world on the chart to inspect it and assign route endpoints.</p>
-                        </div>
-
-                        <div class="routing-section">
-                            <div class="routing-field-row">
-                                <label for="route-origin">Origin</label>
-                                <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist">
-                            </div>
-                            <div id="cross-map-hint-origin" class="routing-cross-map-hint"></div>
-                            <div class="routing-field-row">
-                                <label for="route-dest">Destination</label>
-                                <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist">
-                            </div>
-                            <div id="cross-map-hint-dest" class="routing-cross-map-hint"></div>
-                            <datalist id="planet-datalist"></datalist>
-                            <div class="routing-main-actions">
-                                <button class="routing-btn primary" id="plot-course-btn" type="button">Plot Course</button>
-                                <button class="routing-btn" id="swap-route-btn" type="button">Swap</button>
-                                <button class="routing-btn" id="clear-route-btn" type="button">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="routing-summary empty" id="routing-summary">
-                            <h4>Route Summary</h4>
-                            <p class="routing-kicker">No active course. Choose an origin and destination to generate an itinerary.</p>
-                        </div>
-
-                        <div id="routing-itinerary" class="routing-itinerary"></div>
+                    <!-- Map Controls Cluster (bottom-right) -->
+                    <div class="map-controls">
+                        <!-- Astrogation Dial is the topmost -->
+                        <button class="astrogation-dial" id="navicomputer-trigger" aria-label="Open Navicomputer" type="button">
+                            <span class="dial-ring outer"></span>
+                            <span class="dial-ring inner"></span>
+                            <i class="fas fa-satellite-dish dial-icon"></i>
+                        </button>
+                        <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
+                        <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                        <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
+                        <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
                     </div>
-                </div>
-            </div>`;
+
+                </div><!-- /.map-stage -->
+            </div><!-- /.map-console-shell -->`;
         
         setTimeout(() => MapViewer.init({ 
             id: activeMap.id, 

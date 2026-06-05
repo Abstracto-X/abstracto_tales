@@ -8,6 +8,7 @@ Agents MUST update this file whenever they complete a task or make significant u
 - 03:38 +05:30: Linked reader maps with Galactic/Story History through a new `js/timelines/LocationHistoryIndex.js` module. Focused map worlds now expose a History action that opens a reusable overlay, scans current story timeline events plus parsed Galactic History for normalized location mentions, groups results by era/time, and caches Galactic matches in memory for repeat lookups. Updated `MapViewer`, `Render.maps`, `main.js`, `styles.css`, and reader documentation.
 
 ### Changed
+- 06:40 +05:30: Overhauled the reader map viewer into a full-viewport sci-fi console layout. Replaced grid-split layout with edge-docked glassmorphic panels for the Navicomputer, World Intel, Itinerary, and Charts selector. Added an animated Astrogation Dial trigger, a scanline CRT terminal overlay, a cinematic vignette darkening overlay, and a permanent Contribute beacon button at bottom center. Modified `js/maps/MapViewer.js`, `js/render.js`, and `styles.css`.
 - 03:58 +05:30: Changed the reader map planet-history interaction so clicking a planet opens a compact scrollable in-map history panel first, styled like the route information overlay. The full-screen location-history overlay remains available through the compact panel's Open Full Archive action and the focused-world card's Full History button. Updated `MapViewer`, `styles.css`, and reader documentation.
 
 ## [2026-06-03]

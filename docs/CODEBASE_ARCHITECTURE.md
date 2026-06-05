@@ -82,6 +82,7 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
 - `MapViewer.crossMapIndex` — Bidirectional cross-map indexing mapping lowercase planet names to a list of `{ mapId, mapName }` records where they exist across all charts in the current story, enabling cross-map search and snap hints.
 - `MapViewer.storyMaps` — Local cache of all maps for the current story to enable quick name and metadata mapping.
 - `MapViewer.storySlug` — Stores the current story slug to construct clean relative routing paths during map switching.
+- `MapViewer.dockState` — Object managing open and pinned states for Navicomputer, World Intel, Itinerary, and Charts docks.
 
 - `MapViewer.storyTimeline` - Stores the current story's timeline events while the reader map route is active so selected planets can search local Story History without another Supabase fetch.
 - `MapViewer._historyRequestId` - Monotonic token that ignores stale compact planet-history overlay searches when readers click between map nodes quickly.
@@ -253,11 +254,10 @@ Media assets are managed using Supabase Storage buckets.
 - **Star Chart Registry (Map Hub):** A modern, grid-based interface displaying all charted maps associated with a story. Maps are dynamically grouped into **Galactic**, **Regional / Sector**, and **Local** categories, featuring live stats (node and hyperlane counts) on each thumbnail card.
 - **Dynamic Search & Filtering:** The Map Hub includes a real-time responsive search bar to filter charts instantly by name or type category, dynamically hiding empty sections.
 - **Cross-Map Planet Search & Navigation:** Navicomputer input fields (`Focus`, `Origin`, `Destination`) are enhanced with cross-map lookups. When a user queries a planet not charting on the current map, a non-intrusive hint detects if the world is charted in any other story map and provides one-click navigation links to switch charts instantly.
-- The `maps` route renders as a two-pane workspace: a panoramic map stage plus a dedicated navicomputer panel.
-- Map selector buttons carry each map row's `id`, `width`, and `height` so the reader can fully swap both the background image and the underlying route graph.
-- `MapViewer.init()` now binds navicomputer controls and layer toggles as part of map bootstrapping, resets any active route state, and reloads topology for the selected Supabase map record.
-- `MapViewer` owns map switching, node selection, route plotting, inline routing status, route summaries, and itinerary generation.
-- `MapViewer.routeState` persists selected endpoints plus computed route metadata, while `MapViewer.displayState` stores reader-facing layer toggles such as labels and hyperlanes.
+- The `maps` route renders as a full-viewport sci-fi console shell where the map fills 100% of the stage and all modules (Navicomputer, World Intel, Itinerary, and Map selector) live as edge-docked glassmorphic panels triggered dynamically.
+- `MapViewer.init()` binds the interactive dial trigger, edge dock controls, layer toggles, and resets active route/dock states.
+- `MapViewer` owns map switching, dock management, node selection, route plotting, inline routing status, route summaries, and itinerary generation.
+- `MapViewer.routeState` persists selected endpoints plus computed route metadata, while `MapViewer.dockState` manages open/pinned states for all edge panels.
 - `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` by `map_id`, then remaps edge foreign-key fields into the legacy `source` / `target` shape expected by the routing engine.
 - Map reader controls include layer toggles for labels and hyperlanes, explicit route actions (`Plot`, `Swap`, `Clear`, `Center Route`), and responsive layout behavior for smaller screens.
 - Active route labels now run through a collision-aware placement pass that offsets important planet names around their nodes, raises those labels above nearby pins, and draws connector stems back to the owning planet node. Access-point markers no longer render separate "Exit" / "Approach" text labels, keeping hybrid route clusters less crowded.

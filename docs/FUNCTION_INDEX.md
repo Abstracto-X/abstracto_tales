@@ -177,8 +177,12 @@ The functions and components of the public reader SPA are now fully modularized 
 - `hideCrossMapHint(hintId)` — Hides the cross-map hint for the specified field.
 - `switchToMap(mapId)` — Switches active map in the viewer to the specified mapId using Router.navigate.
 
-- `ensureLocationHistoryOverlay()` / `renderLocationHistoryOverlay(node)` / `renderLocationHistoryResults(node, results)` / `dismissLocationHistoryOverlay()` - Creates and manages the compact scrollable in-map planet-history overlay shown when a map node is clicked.
+- `ensureLocationHistoryOverlay()` / `renderLocationHistoryOverlay(node)` / `renderLocationHistoryResults(node, results)` / `dismissLocationHistoryOverlay()` - Renders planet historical data inside the left World Intel dock panel instead of a floating overlay.
 - `openSelectedNodeHistory()` - Opens the selected world's expanded full-screen location-history overlay by passing the planet name and current story timeline into `LocationHistoryIndex`.
+- `initDocks(signal)` — Registers all dock triggers, close buttons, pin buttons, Escape key handlers, and click-dismiss listeners.
+- `openDock(id)` / `closeDock(id)` / `forceCloseDock(id)` / `toggleDock(id)` — Controls the sliding and pinned visibility state of edge panels.
+- `closeAllUnpinnedDocks()` — Iterates and collapses all open docks that are not explicitly pinned.
+- `toggleBeacon()` — Toggles the Contribute beacon overlay card at the center bottom.
 
 ### `Particles` (Background Engine - `js/ui.js`)
 - `init()` — Sets up the HTML5 Canvas, spawns particles, and registers `visibilitychange` listener for pause/resume.
