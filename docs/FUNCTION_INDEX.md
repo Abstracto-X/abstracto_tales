@@ -179,6 +179,13 @@ The functions and components of the public reader SPA are now fully modularized 
 
 - `ensureLocationHistoryOverlay()` / `renderLocationHistoryOverlay(node)` / `renderLocationHistoryResults(node, results)` / `dismissLocationHistoryOverlay()` - Renders planet historical data inside the left World Intel dock panel instead of a floating overlay.
 - `openSelectedNodeHistory()` - Opens the selected world's expanded full-screen location-history overlay by passing the planet name and current story timeline into `LocationHistoryIndex`.
+- `getStringHash(str)` — Returns a deterministic numeric hash of a string.
+- `getNodeSpecs(node)` — Generates deterministic specifications (Class, Affiliation, Governance, Population, Resources, Threat Level) for a world.
+- `getPlanetOrbGradient(planetClass)` — Returns a CSS gradient matching the world's planetary classification.
+- `getNodeDescription(node, specs)` — Generates a deterministic description of the world.
+- `isInWatchlist(planetName)` / `toggleWatchlist(planetName)` — Handles watchlist state checking and synchronization to local storage.
+- `renderWorldIntel(node)` — Overhauls the Left Dock panel layout with planetary orb, navigation tabs, and quick actions.
+- `switchIntelTab(tabName, node)` / `renderIntelTabContent(tabName, node)` — Drives the tab switching and content generation for Overview, History, Routes, Political, and Nearby tabs.
 - `initDocks(signal)` — Registers all dock triggers, close buttons, pin buttons, Escape key handlers, and click-dismiss listeners.
 - `openDock(id)` / `closeDock(id)` / `forceCloseDock(id)` / `toggleDock(id)` — Controls the sliding and pinned visibility state of edge panels.
 - `closeAllUnpinnedDocks()` — Iterates and collapses all open docks that are not explicitly pinned.

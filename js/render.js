@@ -542,23 +542,33 @@ export const Render = {
                     <button class="map-hud-back" onclick="window.Router.navigate('maps/${slug}')">
                         <i class="fas fa-arrow-left"></i> Registry
                     </button>
-                    <div class="map-hud-title">✦ Galactic Atlas · <span id="active-map-chip">${Utils.escapeHtml(activeMap.map_name)}</span></div>
+                    <div class="map-hud-title">Aether</div>
                     <div class="map-hud-actions">
-                        <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
-                        <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
-                        <button class="map-hud-btn" id="charts-trigger" type="button">
-                            <i class="fas fa-layer-group"></i> Charts
+                        <button class="map-hud-icon-btn" id="hud-theme-toggle" title="Toggle UI Theme" type="button">
+                            <i class="fas fa-magic"></i>
                         </button>
+                        <button class="map-hud-icon-btn" id="hud-volume-toggle" title="Toggle Ambient Audio" type="button">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <button class="map-hud-icon-btn" id="hud-settings-toggle" title="Astrogation Options" type="button">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <img src="${UserAuth.profile?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="map-hud-avatar" id="hud-avatar-trigger" title="User Profile">
+                        <span id="active-map-chip" style="display: none;">${Utils.escapeHtml(activeMap.map_name)}</span>
                     </div>
                 </div>
 
                 <!-- Charts Dock (map selector dropdown) -->
-                <div class="charts-dock" id="charts-dock">
+                <div class="charts-dock" id="charts-dock" style="display: none;">
                     ${btns}
                 </div>
 
                 <!-- Full-Viewport Map Stage -->
                 <div class="map-stage">
+                    <!-- Minimize Panels Trigger -->
+                    <button class="minimize-panels-btn" id="minimize-panels-btn" type="button">
+                        <i class="fas fa-compress"></i> Minimize Panels
+                    </button>
                     <!-- Map Viewer -->
                     <div class="map-viewer" id="map-viewer">
                         <div class="map-canvas" id="map-canvas">
@@ -568,21 +578,16 @@ export const Render = {
                         </div>
                     </div>
 
-                    <!-- World Intel Dock (left) -->
-                    <button class="dock-edge-trigger left" id="world-intel-trigger" aria-label="World Intel" type="button">
-                        <i class="fas fa-globe"></i>
-                    </button>
+                    <!-- World Inspector (left) -->
                     <div class="map-dock dock-left" id="world-intel-dock">
                         <div class="dock-header">
-                            <span class="dock-header-title"><i class="fas fa-globe"></i> World Intel</span>
+                            <span class="dock-header-title"><i class="fas fa-globe"></i> World Inspector</span>
                             <div class="dock-controls">
                                 <button class="dock-btn" id="pin-world-intel" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
                                 <button class="dock-btn" id="close-world-intel" title="Close" type="button"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
-                        <div class="dock-body" id="world-intel-body">
-                            <!-- renderLocationHistoryOverlay targets this -->
-                        </div>
+                        <div class="dock-body" id="world-intel-body"></div>
                     </div>
 
                     <!-- Navicomputer Dock (right) -->

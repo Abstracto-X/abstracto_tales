@@ -107,6 +107,7 @@ export const MapViewer = {
         charts:       { open: false }
     },
     routeOverlayDismissed: false,
+    activeIntelTab: 'overview',
     displayState: {
         showLabels: true,
         showHyperlanes: true
@@ -123,6 +124,7 @@ export const MapViewer = {
     _historyRequestId: 0,
 
     init: ({ id, src, mapName, width, height }) => {
+        document.body.classList.add('fullscreen-map-active');
         if (MapViewer._abortController) {
             MapViewer.destroy();
         }
@@ -176,6 +178,7 @@ export const MapViewer = {
         MapViewer.routeState = MapViewer.createEmptyRouteState();
         MapViewer.routeOverlayDismissed = false;
         MapViewer.selectedNodeId = null;
+        MapViewer.activeIntelTab = 'overview';
 
         MapViewer.bindUI(signal);
         MapViewer.applyDisplayState();
@@ -211,8 +214,8 @@ export const MapViewer = {
         ui.swapBtn.addEventListener('click', () => MapViewer.swapRoute(), { signal });
         ui.clearBtn.addEventListener('click', () => MapViewer.clearRoute(), { signal });
         ui.focusBtn.addEventListener('click', () => MapViewer.handleSearch(), { signal });
-        ui.labelsToggle.addEventListener('click', () => MapViewer.toggleLayer('showLabels'), { signal });
-        ui.hyperlanesToggle.addEventListener('click', () => MapViewer.toggleLayer('showHyperlanes'), { signal });
+        if (ui.labelsToggle) ui.labelsToggle.addEventListener('click', () => MapViewer.toggleLayer('showLabels'), { signal });
+        if (ui.hyperlanesToggle) ui.hyperlanesToggle.addEventListener('click', () => MapViewer.toggleLayer('showHyperlanes'), { signal });
         ui.setOriginBtn.addEventListener('click', () => MapViewer.assignSelectedNode('origin'), { signal });
         ui.setDestBtn.addEventListener('click', () => MapViewer.assignSelectedNode('destination'), { signal });
 
@@ -701,7 +704,8 @@ export const MapViewer = {
         MapViewer.selectedNodeId = nodeId;
         MapViewer.refreshNodeStates();
         MapViewer.renderNodeCard();
-        MapViewer.renderLocationHistoryOverlay(node);
+        MapViewer.activeIntelTab = 'overview';
+        MapViewer.renderWorldIntel(node);
         MapViewer.ui.searchInput.value = node.name;
         MapViewer.setStatus(`${node.name} selected. Set it as origin or destination, or focus it directly.`, 'info');
         MapViewer.openDock('worldIntel');
@@ -1013,7 +1017,7 @@ export const MapViewer = {
     },
 
     ensureLocationHistoryOverlay: () => {
-        const overlay = document.getElementById('world-intel-body');
+        const overlay = document.getElementById('world-intel-tab-content');
         MapViewer.ui.locationHistoryOverlay = overlay;
         return overlay;
     },
@@ -1082,6 +1086,367 @@ export const MapViewer = {
             <button class="routing-btn" type="button" onclick="MapViewer.openSelectedNodeHistory()" style="margin-top: 10px; width: 100%;">
                 <i class="fas fa-book-open"></i> Open Full Archive
             </button>`;
+    },
+
+    getStringHash: (str) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = str.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return Math.abs(hash);
+    },
+
+    getNodeSpecs: (node) => {
+        const hash = MapViewer.getStringHash(node.name);
+        
+        const classes = [
+            'Class M (Terrestrial)',
+            'Class H (Desert)',
+            'Class L (Ice World)',
+            'Class J (Gas Giant)',
+            'Class K (Volcanic)',
+            'Class O (Oceanic)',
+            'Class N (Swamp)',
+            'Class P (Barren World)',
+            'Class M (Ecumenopolis)',
+            'Class T (Forest World)'
+        ];
+        
+        const affiliations = [
+            'The Galaxy (Political)',
+            'Botian Space',
+            'Disputed Territory',
+            'Independent Alliance',
+            'Unknown Space'
+        ];
+        
+        const governments = [
+            'Representative Democracy',
+            'Corporate Oligarchy',
+            'Military Dictatorship',
+            'Feudal Monarchy',
+            'Technocracy',
+            'Syndicate Council',
+            'Anarchy'
+        ];
+        
+        const populations = [
+            'Uninhabited',
+            'Minimal (< 100K)',
+            '1.2 Million',
+            '45 Million',
+            '420 Million',
+            '2.8 Billion',
+            '8.6 Billion',
+            '14.5 Billion'
+        ];
+        
+        const resources = [
+            'Titanium, Heliox, Water',
+            'Tibanna Gas, Fuel',
+            'Hypermatter, Rare Gases',
+            'Quadranium Ore, Metals',
+            'Agricultural Goods, Water',
+            'Rare Kyber Crystals',
+            'Durasteel Alloys',
+            'Consumer Goods, Tech',
+            'Exotic Spices, Minerals'
+        ];
+        
+        const threats = ['Low', 'Medium', 'High', 'Extreme', 'Critical'];
+        const threatColors = ['#4ade80', '#fbbf24', '#f87171', '#ef4444', '#f43f5e'];
+        
+        const threatIndex = hash % threats.length;
+        
+        return {
+            class: classes[hash % classes.length],
+            affiliation: affiliations[hash % affiliations.length],
+            governance: governments[hash % governments.length],
+            population: populations[hash % populations.length],
+            resources: resources[hash % resources.length],
+            threatLevel: threats[threatIndex],
+            threatColor: threatColors[threatIndex]
+        };
+    },
+
+    getPlanetOrbGradient: (planetClass) => {
+        const cls = planetClass.toLowerCase();
+        if (cls.includes('volcanic')) {
+            return 'radial-gradient(circle at 30% 30%, #ff5500 0%, #3a0000 70%, #050000 100%)';
+        } else if (cls.includes('ice') || cls.includes('frozen')) {
+            return 'radial-gradient(circle at 30% 30%, #e0f7fa 0%, #80deea 40%, #006064 85%)';
+        } else if (cls.includes('gas giant')) {
+            return 'radial-gradient(circle at 30% 30%, #ffcc80 0%, #d84315 50%, #3e2723 90%)';
+        } else if (cls.includes('oceanic') || cls.includes('water')) {
+            return 'radial-gradient(circle at 30% 30%, #4fc3f7 0%, #0288d1 60%, #01579b 95%)';
+        } else if (cls.includes('desert') || cls.includes('barren')) {
+            return 'radial-gradient(circle at 30% 30%, #ffe082 0%, #bcaaa4 50%, #4e342e 90%)';
+        } else if (cls.includes('swamp') || cls.includes('forest')) {
+            return 'radial-gradient(circle at 30% 30%, #a5d6a7 0%, #2e7d32 60%, #1b5e20 95%)';
+        } else if (cls.includes('ecumenopolis') || cls.includes('city')) {
+            return 'radial-gradient(circle at 30% 30%, #cfd8dc 0%, #546e7a 60%, #263238 95%)';
+        }
+        return 'radial-gradient(circle at 30% 30%, #81c784 0%, #2b6cb0 60%, #1a202c 95%)';
+    },
+
+    getNodeDescription: (node, specs) => {
+        const hash = MapViewer.getStringHash(node.name);
+        const templates = [
+            `${node.name} is a recently colonized world at the edge of known space. Its rapid terraform program makes it a strategic frontier outpost.`,
+            `As a key hub for ${specs.resources.toLowerCase()}, ${node.name} serves as a vital trading post within the ${node.sector || 'outer sector'}.`,
+            `The harsh environmental conditions of ${node.name} have forged a resilient population, making it a bastion of ${specs.affiliation.toLowerCase()} governance.`,
+            `With its extensive ${specs.resources.toLowerCase()} reserves, ${node.name} remains a contested territory, monitored closely due to its ${specs.threatLevel.toLowerCase()} threat status.`,
+            `Renowned for its unique ${specs.class.toLowerCase()} biosphere, ${node.name} is a sanctuary of scientific research and deep-space observation.`,
+            `${node.name} is an ancient world steeped in galactic history, holding strategic lanes that connect multiple regional hyperlane clusters.`
+        ];
+        return templates[hash % templates.length];
+    },
+
+    isInWatchlist: (planetName) => {
+        const key = `abstracto_watchlist_${MapViewer.storySlug}`;
+        let watchlist = [];
+        try {
+            watchlist = JSON.parse(localStorage.getItem(key)) || [];
+        } catch (e) {
+            watchlist = [];
+        }
+        return watchlist.includes(planetName);
+    },
+
+    toggleWatchlist: (planetName) => {
+        const key = `abstracto_watchlist_${MapViewer.storySlug}`;
+        let watchlist = [];
+        try {
+            watchlist = JSON.parse(localStorage.getItem(key)) || [];
+        } catch (e) {
+            watchlist = [];
+        }
+        const index = watchlist.indexOf(planetName);
+        if (index > -1) {
+            watchlist.splice(index, 1);
+        } else {
+            watchlist.push(planetName);
+        }
+        localStorage.setItem(key, JSON.stringify(watchlist));
+        const node = MapViewer.selectedNodeId ? MapViewer.nodeIndex[MapViewer.selectedNodeId] : null;
+        if (node && node.name === planetName) {
+            MapViewer.renderWorldIntel(node);
+        }
+    },
+
+    renderWorldIntel: (node) => {
+        const body = document.getElementById('world-intel-body');
+        if (!body) return;
+
+        const specs = MapViewer.getNodeSpecs(node);
+        const description = MapViewer.getNodeDescription(node, specs);
+        const inWatchlist = MapViewer.isInWatchlist(node.name);
+        
+        const neighborCount = MapViewer.graph?.[node.id]?.edges?.length || 0;
+        const linksBadge = `<span class="routing-meta-pill" style="margin-left: 8px; font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 999px;">${neighborCount} Link${neighborCount === 1 ? '' : 's'}</span>`;
+
+        const orbGradient = MapViewer.getPlanetOrbGradient(specs.class);
+
+        body.innerHTML = `
+            <div class="world-inspector-header" style="margin-bottom:1rem; position:relative;">
+                <div style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.4); margin-bottom: 0.25rem;">World Inspector</div>
+                <h3 style="margin: 0; font-size: 1.4rem; font-family: var(--font-header); font-weight: bold; color: #fff; display: flex; align-items: center;">
+                    ${Utils.escapeHtml(node.name)}
+                    ${linksBadge}
+                </h3>
+                <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.35rem;">
+                    ${Utils.escapeHtml(node.region || 'Unknown Region')} &bull; ${Utils.escapeHtml(node.sector || 'Unknown Sector')}
+                </div>
+            </div>
+
+            <!-- Planet Orb Row -->
+            <div class="planet-orb-row">
+                <div class="planet-orb-container" style="background: ${orbGradient};">
+                    <div class="planet-orb-texture"></div>
+                </div>
+                <p class="planet-orb-desc">${Utils.escapeHtml(description)}</p>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <div class="inspector-tabs">
+                <button class="inspector-tab ${MapViewer.activeIntelTab === 'overview' ? 'active' : ''}" id="tab-btn-overview" type="button">Overview</button>
+                <button class="inspector-tab ${MapViewer.activeIntelTab === 'history' ? 'active' : ''}" id="tab-btn-history" type="button">History</button>
+                <button class="inspector-tab ${MapViewer.activeIntelTab === 'routes' ? 'active' : ''}" id="tab-btn-routes" type="button">Routes</button>
+                <button class="inspector-tab ${MapViewer.activeIntelTab === 'political' ? 'active' : ''}" id="tab-btn-political" type="button">Political</button>
+                <button class="inspector-tab ${MapViewer.activeIntelTab === 'nearby' ? 'active' : ''}" id="tab-btn-nearby" type="button">Nearby</button>
+            </div>
+
+            <!-- Active Tab Content -->
+            <div id="world-intel-tab-content" style="flex: 1; overflow-y: auto; margin-bottom: 1rem; min-height: 120px;"></div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions-section">
+                <div class="quick-actions-kicker">Quick Actions</div>
+                <div class="quick-actions-row">
+                    <button class="quick-action-btn" id="action-set-origin" type="button">
+                        <i class="fas fa-plane-departure"></i> Set Origin
+                    </button>
+                    <button class="quick-action-btn" id="action-set-destination" type="button">
+                        <i class="fas fa-plane-arrival"></i> Set Destination
+                    </button>
+                </div>
+                <button class="quick-action-btn wide ${inWatchlist ? 'active' : ''}" id="action-toggle-watchlist" type="button">
+                    <i class="${inWatchlist ? 'fas' : 'far'} fa-star"></i> ${inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                </button>
+            </div>
+        `;
+
+        // Bind quick actions buttons
+        document.getElementById('action-set-origin').addEventListener('click', () => {
+            MapViewer.setRouteEndpoint('origin', node.id);
+        });
+        document.getElementById('action-set-destination').addEventListener('click', () => {
+            MapViewer.setRouteEndpoint('destination', node.id);
+        });
+        document.getElementById('action-toggle-watchlist').addEventListener('click', () => {
+            MapViewer.toggleWatchlist(node.name);
+        });
+
+        // Bind tab buttons
+        const tabs = ['overview', 'history', 'routes', 'political', 'nearby'];
+        tabs.forEach(tab => {
+            const btn = document.getElementById(`tab-btn-${tab}`);
+            if (btn) {
+                btn.addEventListener('click', () => MapViewer.switchIntelTab(tab, node));
+            }
+        });
+
+        // Initial tab render
+        MapViewer.renderIntelTabContent(MapViewer.activeIntelTab, node);
+    },
+
+    switchIntelTab: (tabName, node) => {
+        MapViewer.activeIntelTab = tabName;
+        const tabs = ['overview', 'history', 'routes', 'political', 'nearby'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`tab-btn-${t}`);
+            if (btn) btn.classList.toggle('active', t === tabName);
+        });
+        MapViewer.renderIntelTabContent(tabName, node);
+    },
+
+    renderIntelTabContent: (tabName, node) => {
+        const contentArea = document.getElementById('world-intel-tab-content');
+        if (!contentArea) return;
+
+        const specs = MapViewer.getNodeSpecs(node);
+
+        if (tabName === 'overview') {
+            contentArea.innerHTML = `
+                <table class="telemetry-table">
+                    <tr class="telemetry-row">
+                        <td class="telemetry-key">Affiliation</td>
+                        <td class="telemetry-val">${Utils.escapeHtml(specs.affiliation)}</td>
+                    </tr>
+                    <tr class="telemetry-row">
+                        <td class="telemetry-key">Governance</td>
+                        <td class="telemetry-val">${Utils.escapeHtml(specs.governance)}</td>
+                    </tr>
+                    <tr class="telemetry-row">
+                        <td class="telemetry-key">Population</td>
+                        <td class="telemetry-val">${Utils.escapeHtml(specs.population)}</td>
+                    </tr>
+                    <tr class="telemetry-row">
+                        <td class="telemetry-key">Class</td>
+                        <td class="telemetry-val">${Utils.escapeHtml(specs.class)}</td>
+                    </tr>
+                    <tr class="telemetry-row">
+                        <td class="telemetry-key">Resources</td>
+                        <td class="telemetry-val">${Utils.escapeHtml(specs.resources)}</td>
+                    </tr>
+                    <tr class="telemetry-row">
+                        <td class="telemetry-key">Threat Level</td>
+                        <td class="telemetry-val" style="color: ${specs.threatColor}; font-weight: bold;">${Utils.escapeHtml(specs.threatLevel)}</td>
+                    </tr>
+                </table>
+            `;
+        } else if (tabName === 'history') {
+            MapViewer.renderLocationHistoryOverlay(node);
+        } else if (tabName === 'routes') {
+            const graphNode = MapViewer.graph?.[node.id];
+            const edges = graphNode ? graphNode.edges : [];
+            let routesHtml = '<div class="world-routes-list" style="display:flex; flex-direction:column; gap:0.25rem;">';
+            if (edges.length === 0) {
+                routesHtml += '<p class="map-location-history-empty" style="font-size:0.75rem; color:rgba(255,255,255,0.45); padding:0.5rem;">No active hyperlane connections registered for this world.</p>';
+            } else {
+                edges.forEach(edge => {
+                    const targetNode = MapViewer.nodeIndex[edge.target];
+                    if (targetNode) {
+                        routesHtml += `
+                            <div class="telemetry-row" style="display:flex; justify-content:space-between; align-items:center; padding: 0.5rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                                <a href="javascript:void(0)" onclick="MapViewer.selectNode('${targetNode.id}'); MapViewer.zoomToRoute(['${targetNode.id}'])" style="color:#00f2fe; text-decoration:none; font-weight:600; font-size:0.75rem;">
+                                    <i class="fas fa-link" style="font-size:0.65rem; margin-right:4px;"></i> ${Utils.escapeHtml(targetNode.name)}
+                                </a>
+                                <span style="font-size:0.7rem; color:#cbd5e1;">${MapViewer.formatDistance(edge.weight)}</span>
+                            </div>
+                        `;
+                    }
+                });
+            }
+            routesHtml += '</div>';
+            contentArea.innerHTML = routesHtml;
+        } else if (tabName === 'political') {
+            const hash = MapViewer.getStringHash(node.name);
+            const politicalStatuses = [
+                'Sovereign Territory. Subject to regional tax codes and security laws.',
+                'Under administrative governance. Security patrol fleet active.',
+                'Disputed border zone. High risk of local skirmishes. Astrogation caution advised.',
+                'Independent treaty zone. Open trade rules apply. Minimal security presence.',
+                'Demilitarized buffer sector. Heavy astrogation monitoring in effect.',
+                'Unregulated wild space. No political jurisdiction. Travel at own risk.'
+            ];
+            const statusNote = politicalStatuses[hash % politicalStatuses.length];
+            contentArea.innerHTML = `
+                <div style="font-size:0.75rem; color:#cbd5e1; line-height:1.55;">
+                    <div class="telemetry-row" style="display:flex; justify-content:space-between; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span style="color:rgba(255,255,255,0.4); text-transform:uppercase; font-size:0.65rem;">Affiliation</span>
+                        <strong>${Utils.escapeHtml(specs.affiliation)}</strong>
+                    </div>
+                    <div class="telemetry-row" style="display:flex; justify-content:space-between; padding:0.6rem 0.5rem; border-bottom:1px solid rgba(255,255,255,0.05);">
+                        <span style="color:rgba(255,255,255,0.4); text-transform:uppercase; font-size:0.65rem;">Security Rating</span>
+                        <strong style="color:${specs.threatColor === '#4ade80' ? '#4ade80' : specs.threatColor === '#fbbf24' ? '#fbbf24' : '#f87171'}">${specs.threatLevel === 'Low' ? 'Secure' : specs.threatLevel === 'Medium' ? 'Moderate' : 'Hazardous'}</strong>
+                    </div>
+                    <div style="padding:0.8rem 0.5rem;">
+                        <span style="color:rgba(255,255,255,0.4); text-transform:uppercase; font-size:0.65rem; display:block; margin-bottom:0.35rem;">Territorial Notes</span>
+                        <p style="margin:0; font-size:0.72rem; color:#94a3b8;">${statusNote}</p>
+                    </div>
+                </div>
+            `;
+        } else if (tabName === 'nearby') {
+            const currentX = node.x;
+            const currentY = node.y;
+            const nearbyNodes = MapViewer.mapData.nodes
+                .filter(n => n.id !== node.id)
+                .map(n => {
+                    const dist = Math.hypot(n.x - currentX, n.y - currentY);
+                    return { node: n, dist };
+                })
+                .sort((a, b) => a.dist - b.dist)
+                .slice(0, 3);
+
+            let nearbyHtml = '<div class="nearby-worlds-list" style="display:flex; flex-direction:column; gap:0.25rem;">';
+            if (nearbyNodes.length === 0) {
+                nearbyHtml += '<p class="map-location-history-empty" style="font-size:0.75rem; color:rgba(255,255,255,0.45); padding:0.5rem;">No other charted worlds in proximity.</p>';
+            } else {
+                nearbyNodes.forEach(item => {
+                    nearbyHtml += `
+                        <div class="telemetry-row" style="display:flex; justify-content:space-between; align-items:center; padding: 0.5rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                            <a href="javascript:void(0)" onclick="MapViewer.selectNode('${item.node.id}'); MapViewer.zoomToRoute(['${item.node.id}'])" style="color:#00f2fe; text-decoration:none; font-weight:600; font-size:0.75rem;">
+                                <i class="fas fa-street-view" style="font-size:0.65rem; margin-right:4px;"></i> ${Utils.escapeHtml(item.node.name)}
+                            </a>
+                            <span style="font-size:0.7rem; color:#cbd5e1;">${MapViewer.formatDistance(item.dist)}</span>
+                        </div>
+                    `;
+                });
+            }
+            nearbyHtml += '</div>';
+            contentArea.innerHTML = nearbyHtml;
+        }
     },
 
     renderNodeCard: () => {
@@ -1620,6 +1985,7 @@ export const MapViewer = {
     },
 
     destroy: () => {
+        document.body.classList.remove('fullscreen-map-active');
         if (MapViewer._abortController) {
             MapViewer._abortController.abort();
             MapViewer._abortController = null;

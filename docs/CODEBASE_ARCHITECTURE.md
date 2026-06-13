@@ -86,6 +86,7 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
 
 - `MapViewer.storyTimeline` - Stores the current story's timeline events while the reader map route is active so selected planets can search local Story History without another Supabase fetch.
 - `MapViewer._historyRequestId` - Monotonic token that ignores stale compact planet-history overlay searches when readers click between map nodes quickly.
+- `MapViewer.activeIntelTab` — Holds the active tab ID (e.g. `'overview'`) for the World Inspector left dock panel.
 
 #### `index.html` TimelineHub state additions
 - `TimelineHub._galacticTree` - Cached parsed copy of `data/timeline/timeline_tree.json`, loaded only when the reader opens Galactic History.
