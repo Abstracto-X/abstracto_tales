@@ -40,10 +40,12 @@ export const Render = {
             `;
         } else {
             stories.forEach((s, idx) => {
-                const loadAttr = idx < 4 ? '' : 'loading="lazy"';
+                const loadAttr = idx === 0
+                    ? 'fetchpriority="high"'
+                    : (idx < 4 ? '' : 'loading="lazy" fetchpriority="low"');
                 html += `
                     <div class="story-card" onclick="window.Router.navigate('story/${s.slug}')">
-                        <img src="${s.cover_image_url || ''}" ${loadAttr}>
+                        <img src="${s.cover_image_url || ''}" ${loadAttr} decoding="async">
                         <div class="card-info">
                             <div class="card-title">${s.title}</div>
                             <div class="card-desc">${s.short_description || ''}</div>
@@ -56,7 +58,7 @@ export const Render = {
         if (author) {
             const linksHtml = (author.links || []).map(link => `
                 <a href="${link.url}" target="_blank" class="link-row">
-                    <img src="${link.icon_url || ''}" class="social-icon" alt="${link.platform_name}" onerror="this.style.display='none'">
+                    <img src="${link.icon_url || ''}" class="social-icon" alt="${link.platform_name}" loading="lazy" decoding="async" fetchpriority="low" onerror="this.style.display='none'">
                     <div class="link-details">
                         <span class="link-name">${link.platform_name}</span>
                         ${link.note ? `<span class="link-note">${link.note}</span>` : ''}
@@ -68,7 +70,7 @@ export const Render = {
             <div class="fade-in">
                 <div class="author-section glass-box">
                     <div class="author-img-wrapper">
-                        <img src="${author.avatar_url || ''}" class="author-img" onerror="this.style.display='none'"> 
+                        <img src="${author.avatar_url || ''}" class="author-img" loading="lazy" decoding="async" onerror="this.style.display='none'">
                     </div>
                     <div class="author-info">
                         <h2>${author.display_name || 'Author'}</h2>
@@ -116,7 +118,7 @@ export const Render = {
         Render.stage.innerHTML = `
             <div class="story-hub-wrapper">
                 <div class="story-hub-layout glass-box">
-                    <img class="hub-cover" src="${story.cover_image_url || ''}">
+                    <img class="hub-cover" src="${story.cover_image_url || ''}" fetchpriority="high" decoding="async">
                     <div class="hub-details">
                         <h1>${story.title}</h1>
                         <div class="hub-meta">${story.status || ''} • ${story.genre || ''}</div>
@@ -144,58 +146,106 @@ export const Render = {
 
         const characters = hubData.characters;
         State.currentChars = characters;
-        const galleryHeaderHtml = (title, subtitle) => `
-            <div class="glass-box" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; padding:1rem 1.25rem;">
+        const galleryHeaderHtml = (title, subtitle, eyebrow = 'The Visual Archive') => `
+            <header class="gallery-archive-header glass-box">
                 <div>
-                    <div style="font-family:var(--font-header); font-size:1.25rem; color:var(--accent-color); letter-spacing:1px;">${title}</div>
-                    <div style="font-size:0.85rem; color:#aaa; margin-top:0.25rem;">${subtitle}</div>
+                    <div class="gallery-eyebrow">${Utils.escapeHtml(eyebrow)}</div>
+                    <h1>${Utils.escapeHtml(title)}</h1>
+                    <p>${Utils.escapeHtml(subtitle)}</p>
                 </div>
-                <div class="btn-large" data-gallery-r18-toggle style="padding: 0.45rem 1rem; font-size: 0.75rem; border-radius: 999px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="window.Actions.toggleR18()"></div>
-            </div>
-        `;
+                <button class="btn-large gallery-r18-toggle" data-gallery-r18-toggle type="button" onclick="window.Actions.toggleR18()"></button>
+            </header>`;
         
         if (!charId) {
-            // Character grid view
+            // Main visual archive
             UI.setBackButton(`window.Router.navigate('story/${slug}')`, "Story Hub");
-            
-            let html = galleryHeaderHtml('Gallery', 'Toggle R18 to reveal mature artwork and float it to the front of the gallery.');
-            html += '<h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Characters</h2>';
-            html += '<div class="char-grid" style="margin-bottom: 3rem;">';
-            characters.forEach((c, idx) => { 
-                const loadAttr = idx < 6 ? '' : 'loading="lazy"';
-                html += `
-                    <div class="char-card" onclick="window.Router.navigate('gallery/${slug}/${c.id}')">
-                        <div class="char-card-inner">
-                            <img src="${c.profile_image_url || ''}" ${loadAttr}>
-                            <div class="char-info-overlay">
-                                <div class="char-role">${c.role_title || ''}</div>
-                                <div class="char-name">${c.name}</div>
-                                <div class="char-bio-preview">${c.biography || ''}</div>
-                            </div>
+            const [latestImages, collectionImages] = await Promise.all([
+                DB.getLatestGalleryImages(story.id, 10, 0),
+                DB.getGalleryCollectionPreviews(story.id)
+            ]);
+            const visibleCollectionImages = Actions.processGalleryImages(collectionImages);
+            const featured = characters.find(character => character.profile_image_url) || characters[0] || {};
+            const collectionMap = visibleCollectionImages.reduce((map, image) => {
+                if (!map[image.character_id]) map[image.character_id] = [];
+                map[image.character_id].push(image);
+                return map;
+            }, {});
+            const uniqueTags = new Set(visibleCollectionImages.flatMap(image => (image.image_tags || []).filter(tag => !Actions.isMatureTag(tag))));
+            const featuredImages = collectionMap[featured.id] || [];
+            const featuredImage = featured.profile_image_url || story.cover_image_url || '';
+            const collectionDecks = characters.map(character => {
+                return `
+                    <button class="archive-collection-deck ${character.id === featured.id ? 'is-active' : ''}" type="button"
+                        data-character-id="${Utils.escapeAttr(character.id)}"
+                        data-character-name="${Utils.escapeAttr(character.name)}"
+                        data-character-role="${Utils.escapeAttr(character.role_title || 'Archive subject')}"
+                        data-character-bio="${Utils.escapeAttr(character.biography || '')}"
+                        data-character-profile="${Utils.escapeAttr(character.profile_image_url || '')}"
+                        data-character-art-count="${(collectionMap[character.id] || []).length}"
+                        data-character-tag-count="${new Set((collectionMap[character.id] || []).flatMap(image => image.image_tags || [])).size}"
+                        onclick="window.Router.navigate('gallery/${slug}/${character.id}')" aria-label="Open ${Utils.escapeAttr(character.name)} gallery">
+                        <span class="archive-deck-stack">${character.profile_image_url
+                            ? `<span class="archive-profile-card"><img src="${Utils.escapeAttr(character.profile_image_url)}" alt="${Utils.escapeAttr(character.name)} profile" loading="lazy" decoding="async" fetchpriority="low"></span>`
+                            : '<span class="archive-deck-placeholder"><i class="fas fa-user-astronaut"></i></span>'}</span>
+                        <span class="archive-deck-copy">
+                            <strong>${Utils.escapeHtml(character.name)}</strong>
+                            <small>${Utils.escapeHtml(character.role_title || 'Archive subject')}</small>
+                            <em>${(collectionMap[character.id] || []).length} artworks</em>
+                        </span>
+                    </button>`;
+            }).join('');
+
+            let html = `
+                <div class="archive-landing">
+                    <header class="archive-titlebar">
+                        <div><div class="gallery-eyebrow">${Utils.escapeHtml(story.title)}</div><h1>Gallery</h1></div>
+                        <button class="btn-large gallery-r18-toggle" data-gallery-r18-toggle type="button" onclick="window.Actions.toggleR18()"></button>
+                    </header>
+                    <section class="archive-feature">
+                        <div class="archive-feature-portrait">
+                            <img id="archive-feature-image" src="${Utils.escapeAttr(featuredImage)}" alt="${Utils.escapeAttr(featured.name || 'Featured character')}" fetchpriority="high" decoding="async">
                         </div>
-                    </div>`; 
-            });
-            html += '</div>';
-            // Fetch and append Latest Images below Characters
-            const latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
+                        <div class="archive-feature-copy">
+                            <div class="gallery-eyebrow"><i class="fas fa-star"></i> Featured character</div>
+                            <h2 id="archive-feature-name">${Utils.escapeHtml(featured.name || 'The Archive')}</h2>
+                            <div class="archive-feature-role" id="archive-feature-role">${Utils.escapeHtml(featured.role_title || 'Character collection')}</div>
+                            <p id="archive-feature-bio">${Utils.escapeHtml(featured.biography || story.synopsis || 'Explore the visual records preserved in this story archive.')}</p>
+                            <div class="archive-feature-facts">
+                                <span><i class="fas fa-images"></i><b id="archive-feature-art-count">${featuredImages.length}</b> artworks</span>
+                                <span><i class="fas fa-tags"></i><b id="archive-feature-tag-count">${new Set(featuredImages.flatMap(image => image.image_tags || [])).size}</b> collections</span>
+                            </div>
+                            ${featured.id ? `<button class="archive-open-button" id="archive-feature-open" type="button" data-story-slug="${Utils.escapeAttr(slug)}" data-character-id="${Utils.escapeAttr(featured.id)}">Open archive <i class="fas fa-arrow-right"></i></button>` : ''}
+                        </div>
+                        <aside class="archive-browser-panel">
+                            <div class="archive-stats">
+                                <span><b>${characters.length}</b> Characters</span>
+                                <span><b>${visibleCollectionImages.length}</b> Artworks</span>
+                                <span><b>${uniqueTags.size}</b> Collections</span>
+                            </div>
+                            <div class="archive-browser-heading"><span>Archive roster</span><strong>Characters</strong></div>
+                            <div class="archive-deck-grid">${collectionDecks || '<div class="gallery-empty-state">No character collections are available yet.</div>'}</div>
+                        </aside>
+                    </section>
+                </div>`;
+
             Actions.latestGalleryImages = latestImages;
             Actions.currentGalleryImages = latestImages;
             await Actions.fetchVotes();
 
             if (latestImages && latestImages.length > 0) {
                 html += `
-                    <div style="margin-bottom: 2rem;">
-                        <h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Recently Added</h2>
+                    <section class="gallery-recent-section">
+                        <div class="gallery-section-heading"><div><span>Fresh transmissions</span><h2>Recently Added</h2></div><p>Newly published artwork from across the roster.</p></div>
                         <div class="flex-masonry" id="latest-gallery-grid"></div>
-                        ${latestImages.length === 10 ? `<div style="text-align: center; margin-top: 1rem;"><button id="load-more-latest-btn" class="btn-large" onclick="window.Actions.loadMoreLatestImages('${story.id}')">Load More</button></div>` : ''}
-                    </div>
+                        ${latestImages.length === 10 ? `<div class="gallery-load-more"><button id="load-more-latest-btn" class="btn-large" onclick="window.Actions.loadMoreLatestImages('${story.id}')">Load More</button></div>` : ''}
+                    </section>
                 `;
             }
 
             Render.stage.innerHTML = html; 
             Actions.updateR18ToggleButtons();
             Actions.renderLatestGalleryGrid();
-            Visuals.initCardTilt();
+            Actions.initArchiveCollectionDecks();
         } else {
             // Individual character profile
             UI.setBackButton(`window.Router.navigate('gallery/${slug}')`, "Roster");
@@ -207,6 +257,8 @@ export const Render = {
             Actions.currentGalleryImages = galleryImages;
             await Actions.fetchVotes();
             State.filterTag = 'All';
+            State.gallerySearch = '';
+            State.gallerySort = 'curated';
 
             // Global floating comment hook
             const globalBtn = document.getElementById('global-comment-btn');
@@ -225,33 +277,39 @@ export const Render = {
                 }
             });
             
-            let tHtml = `<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:1.5rem">`;
+            let tHtml = `<div class="gallery-tag-row" id="gallery-tag-row">`;
             tags.forEach(t => {
                 const isActive = t === State.filterTag;
-                tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; text-transform:none; letter-spacing:0; min-height:0; ${isActive ? 'background:var(--accent-color); color:#000':''}" onclick="window.Actions.setFilter('${t}')">${t}</div>`;
+                tHtml += `<button class="gallery-tag ${isActive ? 'active' : ''}" type="button" data-gallery-tag="${Utils.escapeAttr(t)}">${Utils.escapeHtml(t)}</button>`;
             });
-            tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; min-height:0;" onclick="window.Actions.shuffleGallery()"><i class="fas fa-random"></i></div></div>`;
-            
-            let prefHtml = `
-                <div class="glass-box" style="display: flex; gap: 15px; justify-content: center; align-items: center; max-width: 420px; margin: 0 auto 1.5rem; padding: 0.8rem 1.25rem; border-radius: 30px; border-color: rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #aaa; font-weight: 500;">
-                        <i class="fas fa-sliders-h" style="color: var(--accent-color);"></i> Layout:
-                    </div>
-                    <div class="btn-large" id="pref-view-mode-toggle" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 20px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="window.Actions.toggleViewMode()">
+            tHtml += `<button class="gallery-tag" type="button" onclick="window.Actions.shuffleGallery()" aria-label="Shuffle artwork"><i class="fas fa-random"></i></button></div>`;
+
+            const prefHtml = `
+                <section class="gallery-controls glass-box">
+                    <label class="gallery-search"><i class="fas fa-search"></i><input id="gallery-search-input" type="search" placeholder="Search captions or tags" aria-label="Search gallery"></label>
+                    <label class="gallery-sort">Sort
+                        <select id="gallery-sort-select" aria-label="Sort gallery">
+                            <option value="curated">Curated</option>
+                            <option value="newest">Newest</option>
+                            <option value="top">Top Rated</option>
+                        </select>
+                    </label>
+                    <button class="btn-large" id="pref-view-mode-toggle" type="button" onclick="window.Actions.toggleViewMode()">
                         <i class="${State.galleryViewMode === 'deck' ? 'fas fa-layer-group' : 'fas fa-th'}"></i> 
                         <span>${State.galleryViewMode === 'deck' ? 'Deck View' : 'Grid View'}</span>
-                    </div>
-                </div>
-            `;
+                    </button>
+                    <div class="gallery-result-count" id="gallery-result-count">${galleryImages.length} artworks</div>
+                </section>`;
             
             Render.stage.innerHTML = `
-                ${galleryHeaderHtml(character.name + ' Gallery', 'Use the header toggle to reveal R18 artwork first across this gallery and the recent feed.')}
-                <div class="char-profile-hero glass-box">
-                    <div class="hero-img-container"><img src="${character.profile_image_url || ''}" class="hero-img"></div>
+                ${galleryHeaderHtml(character.name + ' Gallery', 'Search, filter, vote, discuss, or explore the original scrolling deck.', story.title)}
+                <div class="char-profile-hero gallery-character-masthead glass-box">
+                    <div class="hero-img-container"><img src="${Utils.escapeAttr(character.profile_image_url || '')}" alt="${Utils.escapeAttr(character.name)} portrait" class="hero-img" fetchpriority="high" decoding="async"></div>
                     <div class="hero-info">
-                        <div class="hero-name">${character.name}</div>
-                        <div class="hero-role">${character.role_title || ''}</div>
-                        <div class="hero-bio">${character.biography || ''}</div>
+                        <div class="gallery-art-count">${galleryImages.length} published artworks</div>
+                        <div class="hero-name">${Utils.escapeHtml(character.name)}</div>
+                        <div class="hero-role">${Utils.escapeHtml(character.role_title || '')}</div>
+                        <div class="hero-bio">${Utils.escapeHtml(character.biography || '')}</div>
                     </div>
                 </div>
                 ${prefHtml}
@@ -259,6 +317,7 @@ export const Render = {
                 <div class="${State.galleryViewMode === 'deck' ? 'decks-grid' : 'sub-gallery-grid'}" id="gallery-grid"></div>`;
             
             Actions.updateR18ToggleButtons();
+            Actions.bindGalleryControls();
             Actions.renderGalleryGrid();
         }
     },
@@ -365,12 +424,14 @@ export const Render = {
 
         loreEntries.forEach((item, idx) => {
             const categoryName = item.lore_categories ? item.lore_categories.name : 'Uncategorized';
-            const loadAttr = idx < 6 ? '' : 'loading="lazy"';
+            const loadAttr = idx === 0
+                ? 'fetchpriority="high"'
+                : (idx < 6 ? '' : 'loading="lazy" fetchpriority="low"');
             const card = document.createElement('div');
             card.className = 'lore-card glass-box';
             card.onclick = () => window.Router.navigate(`lore/${slug}/${item.slug}`);
             card.innerHTML = `
-                <img src="${item.image_url || ''}" class="lore-card-img" ${loadAttr}>
+                <img src="${item.image_url || ''}" class="lore-card-img" ${loadAttr} decoding="async">
                 <div class="lore-card-content">
                     <div class="title">${item.title}</div>
                     <div class="type">${categoryName}</div>
@@ -412,7 +473,7 @@ export const Render = {
 
         Render.stage.innerHTML = `
             <div class="lore-wiki-layout">
-                <div class="lore-wiki-header"><img src="${item.image_url || ''}"></div>
+                <div class="lore-wiki-header"><img src="${item.image_url || ''}" fetchpriority="high" decoding="async"></div>
                 <div class="glass-box lore-wiki-body">
                     <div class="lore-wiki-title">${item.title}</div>
                     <div class="lore-wiki-type">${categoryName}</div>
@@ -553,7 +614,7 @@ export const Render = {
                         <button class="map-hud-icon-btn" id="hud-settings-toggle" title="Astrogation Options" type="button">
                             <i class="fas fa-cog"></i>
                         </button>
-                        <img src="${UserAuth.profile?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="map-hud-avatar" id="hud-avatar-trigger" title="User Profile">
+                        <img src="${UserAuth.profile?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="map-hud-avatar" id="hud-avatar-trigger" title="User Profile" decoding="async">
                         <span id="active-map-chip" style="display: none;">${Utils.escapeHtml(activeMap.map_name)}</span>
                     </div>
                 </div>
@@ -572,7 +633,7 @@ export const Render = {
                     <!-- Map Viewer -->
                     <div class="map-viewer" id="map-viewer">
                         <div class="map-canvas" id="map-canvas">
-                            <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous">
+                            <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous" fetchpriority="high" decoding="async">
                             <svg id="map-svg-layer"></svg>
                             <div id="map-nodes-layer"></div>
                         </div>

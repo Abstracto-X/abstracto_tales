@@ -52,6 +52,7 @@ Global state is encapsulated within the `State` object of `js/config.js` and spe
 - `State.isInitialAppLoad` *(Boolean)* — Tracks whether the application is performing its initial cold load, letting the primary cinematic loader coordinate the intro overlay instead of the default lightsaber loading states.
 - `State.galleryConfirmed` *(Boolean)* — Tracks whether the user has viewed and accepted the Mature Content and AI advisory warning overlay for the gallery, preserving the choice for the current session.
 - `State.galleryViewMode` *(String)* — Tracks whether the active character gallery is displayed in standard column `'grid'` or premium fanning `'deck'` view modes, persisted to `localStorage`.
+- `State.gallerySearch` / `State.gallerySort` *(String)* — Hold the active character-gallery text query and client-side order (`curated`, `newest`, or `top`) while the route is open.
 - `State.showR18` *(Boolean)* — Tracks whether the gallery header toggle is revealing mature/R18/NSFW tagged artwork. When enabled, mature-tagged images surface first across recently added items and individual character galleries; when disabled, those images stay hidden. Persisted to `localStorage`.
 - `Cache` *(Object)* — TTL + LRU cache for Supabase query results.
     - `stories` *(Array | null)* — Cached stories list with `storiesTTL` timestamp.
@@ -249,7 +250,17 @@ In all files, Supabase data access is encapsulated in module objects (`DB` objec
 
 ### Storage Conventions
 Media assets are managed using Supabase Storage buckets.
-- **`Utils.uploadImage(file, bucket, folderPath)`**: A standard utility function handles uploading. It typically uses unique IDs (like `Date.now()`) for naming, performs `supabase.storage.from(bucket).upload()`, and immediately fetches the public URL via `.getPublicUrl()` to save back into database rows (covers, avatars, wallpapers, maps).
+- **Immutable upload paths:** New application-managed image uploads use unique timestamp/randomized names and `cacheControl: '31536000'`. Upload helpers retain a short-cache branch for any future intentional `upsert`/stable-path replacement so immutable caching is not applied to mutable objects.
+- **Admin image optimization:** `admin.html` converts ordinary PNG/JPG/JPEG cover, background, character, gallery, lore, wallpaper, icon, and avatar uploads to bounded WebP files in the browser when conversion succeeds and is smaller/useful. GIF/WebP/unknown formats pass through untouched, and decode/canvas failures fall back to the original file.
+- **Reader avatar optimization:** `js/auth.js` applies the same fail-safe pattern with a 1024px bound before writing uniquely named files to the `Reader` bucket.
+- **Map fidelity boundary:** Map uploads in `admin.html` and `cartographer.html` preserve the original file bytes and dimensions instead of applying lossy conversion because coordinate alignment, pixel sampling, and OCR depend on the source image. They still receive immutable cache metadata when newly uploaded.
+- **Existing objects:** Cache metadata and file encoding changes apply only to new uploads; existing Supabase Storage objects are not rewritten retroactively.
+
+### Image Delivery Conventions
+- Above-the-fold story covers, featured gallery art, lore-detail art, and active reader maps remain eager and may use high fetch priority.
+- Offscreen reader/admin/cartographer thumbnails use native lazy loading, asynchronous decoding, and low fetch priority where appropriate.
+- `UI.setBg()` and the gallery lightbox avoid reassigning an unchanged URL, preventing needless CSS/image reload or revalidation work.
+- `cartographer.html` reuses the existing Leaflet base-image overlay when reloading the same map with unchanged dimensions, while still rebuilding topology layers.
 ### Reader Map Conventions
 - **Two-Phase Map Discovery & Routing:** The maps view follows a robust two-phase routing structure. A root story map registry (`#maps/slug`) displays the **Star Chart Registry (Map Hub)**, which transitions into the **Interactive Viewer** (`#maps/slug/mapId`) when a specific map is selected. A glassmorphic top navigation bar on the viewer allows seamless return to the Registry.
 - **Star Chart Registry (Map Hub):** A modern, grid-based interface displaying all charted maps associated with a story. Maps are dynamically grouped into **Galactic**, **Regional / Sector**, and **Local** categories, featuring live stats (node and hyperlane counts) on each thumbnail card.
@@ -292,10 +303,9 @@ Media assets are managed using Supabase Storage buckets.
 ### `admin.html` Updates
 
 #### Drag-and-Drop Dropzone & Interactive Tagging Pipeline
-- **Drag-and-Drop Dropzone Component:** Replaced legacy basic image upload fields with a feature-rich, drag-and-drop-enabled Dropzone component (`UI.imageUploadField` & `UI.initDragAndDrop`). It supports dragenter/dragover hover highlights, seamless drag-and-drop file transfers, local client-side preview rendering (`FileReader` integration), and fallback URL text field matching.
+- **Drag-and-Drop Dropzone Component:** Replaced legacy basic image upload fields with a feature-rich, drag-and-drop-enabled Dropzone component (`UI.imageUploadField` & `UI.initDragAndDrop`). It supports dragenter/dragover hover highlights, seamless drag-and-drop file transfers, revocable object-URL previews, and fallback URL text field matching.
 - **Interactive Tag Chip & Autocomplete System:** Integrated a dynamic, HSL-themed visual tag chip input (`UI.initTagComponent` & `UI.initTagAutocomplete`) that converts input strings into deletable tag chips. The autocomplete-powered variant fetches existing distinct tags from the database (filtering out structural flags like `NSFW`), allowing arrow-key selection, click selection, and custom tokenization. 
 - **NSFW / R18 Content Categorization:** Implemented a standardized visual toggle switch inside `Forms.galleryImageForm` that isolates age-gated media assets. Upon saving, it programmatically injects or prunes structural metadata tags (`NSFW`) while maintaining standard user tags.
+- **Reader Visual Archive:** The public gallery uses one unified sub-window: a dominant selected-character profile image, compact biography/action panel, and a right-side browser containing archive totals plus a content-driven profile-image grid that can grow with roster length instead of clipping inside a fixed-height viewport. Hovering or focusing a card updates the hero and marks the active card with an accent glow. The detached scenic quote panel, scattered hero previews, and separate roster section are intentionally absent. A small Gallery banner replaces oversized story typography, Recently Added remains below the unified window, and offscreen profile cards retain lazy/async/low-priority loading.
 - **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
 - **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and presents a single broad-view gallery board with a side toggle between the reader-visible published collection and the unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
-
-

@@ -97,23 +97,28 @@
         <button class="btn-large" style="margin-top:1rem; border:1px solid #555; font-size:0.8rem;" onclick="document.getElementById('wp-modal').style.display='none'">Close</button>
     </div>
 
-    <div id="lightbox" onclick="Visuals.closeLightbox()">
+    <div id="lightbox" role="dialog" aria-modal="true" aria-label="Artwork viewer" onclick="Visuals.closeLightbox()">
         <div id="lightbox-main">
-            <button class="lb-nav lb-prev" onclick="event.stopPropagation(); Visuals.lbPrev()"><i class="fas fa-chevron-left"></i></button>
-            <img id="lightbox-img" src="" onclick="event.stopPropagation()">
-            <button class="lb-nav lb-next" onclick="event.stopPropagation(); Visuals.lbNext()"><i class="fas fa-chevron-right"></i></button>
+            <button class="lb-nav lb-prev" aria-label="Previous artwork" onclick="event.stopPropagation(); Visuals.lbPrev()"><i class="fas fa-chevron-left"></i></button>
+            <img id="lightbox-img" src="" alt="" decoding="async" onclick="event.stopPropagation()">
+            <button class="lb-nav lb-next" aria-label="Next artwork" onclick="event.stopPropagation(); Visuals.lbNext()"><i class="fas fa-chevron-right"></i></button>
+            <div id="lightbox-counter"></div>
             <div id="lightbox-vote-container" class="image-vote-container" style="bottom: 30px; left: 50%; transform: translateX(-50%); display:none;" onclick="event.stopPropagation()"></div>
         </div>
-        <div id="lightbox-comments" class="lightbox-sidepanel glass-box" onclick="event.stopPropagation()">
-            <div class="drawer-header" style="border-bottom: 1px solid rgba(255,215,0,0.3);">
-                <h3 id="lightbox-title" style="color: var(--accent-color); font-family: var(--font-header); margin:0;">Image Discussion</h3>
+        <aside id="lightbox-details" class="lightbox-sidepanel glass-box" onclick="event.stopPropagation()">
+            <div class="lightbox-meta">
+                <div id="lightbox-character"></div>
+                <h3 id="lightbox-title">Artwork</h3>
+                <p id="lightbox-caption"></p>
+                <div id="lightbox-tags"></div>
+                <button id="lightbox-discussion-toggle" class="btn-large" type="button" onclick="Visuals.toggleLightboxDiscussion()">Open Discussion</button>
             </div>
-            <div class="drawer-content" style="flex:1;">
+            <div id="lightbox-comments" class="drawer-content lightbox-comments-panel">
                 <div id="lightbox-input-area"></div>
                 <div id="lightbox-thread-area" class="comment-thread"></div>
             </div>
-        </div>
-        <div style="position:absolute; top:20px; right:30px; color:#fff; font-size:2rem; cursor:pointer; z-index: 9999;" onclick="event.stopPropagation(); Visuals.closeLightbox()">&times;</div>
+        </aside>
+        <button class="lightbox-close" aria-label="Close artwork viewer" onclick="event.stopPropagation(); Visuals.closeLightbox()">&times;</button>
     </div>
 
     <div id="auth-modal" class="modal-overlay">
@@ -143,7 +148,7 @@
             <div id="profile-msg"></div>
 
             <div style="text-align: center; margin-bottom: 1.5rem;">
-                <img id="profile-avatar-preview" src="https://via.placeholder.com/100" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); margin-bottom: 0.5rem;">
+                <img id="profile-avatar-preview" src="https://via.placeholder.com/100" alt="Profile avatar preview" decoding="async" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color); margin-bottom: 0.5rem;">
                 <br>
                 <div id="avatar-upload-status" style="font-size: 0.8rem; height: 1.2em; margin-bottom: 0.5rem;"></div>
                 <input type="hidden" id="profile-avatar">

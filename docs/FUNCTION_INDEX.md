@@ -29,11 +29,13 @@ The functions and components of the public reader SPA are now fully modularized 
 - `getChapters(storyId)` — Fetches all published chapters for a specific story.
 - `getCharacterGallery(characterId)` — Fetches only published gallery images for a character.
 - `getLatestGalleryImages(storyId, limit, offset)` — Fetches only published recently added gallery images across all characters in a story with pagination/offset support.
+- `getGalleryCollectionPreviews(storyId)` — Fetches published story-wide artwork plus joined character metadata for the main gallery's layered collection previews.
 - `getLoreEntry(storyId, loreSlug)` — Fetches a single lore entry by slug.
 - `getMapCounts(mapIds)` — Fetches node and edge counts for specified maps to display in the hub.
 - `getAllMapNodeNames(storyId)` — Fetches all mapped planet names across all maps in a given story.
 
 ### `UserAuth` (Authentication - `js/auth.js`)
+- `prepareAvatarUpload(file)` — Internal fail-safe optimizer that bounds ordinary PNG/JPG/JPEG avatars to 1024px and emits WebP when beneficial, while preserving GIF/other formats and falling back to the original on decode/canvas failure.
 - `init()` — Checks for an existing session and sets up the `onAuthStateChange` listener.
 - `fetchProfile(user)` — Asynchronously fetches the user's profile row from the DB. Implements exponential backoff (up to 5 retries starting at 300ms) to bypass database replication or trigger delays upon new user registration.
 - `logout()` — Signs the current user out of Supabase and reloads the page.
@@ -49,6 +51,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `toggleCommentDrawer()` — Opens or closes the sliding comments side panel.
 
 ### `UI` (Interface Helpers - `js/ui.js`)
+- `setBg(url)` — Applies a reader background only when its URL changed, avoiding redundant CSS image reload/revalidation work.
 - `showLoading() / hideLoading()` — Proxies to `LoaderManager` to control the global full-screen transition overlay.
 - `openSaberModal() / closeSaberModal()` — Controls the lightsaber preferences modal.
 - `toast(message, type, duration)` — Displays a temporary notification popup (success, error, info).
@@ -200,6 +203,9 @@ The functions and components of the public reader SPA are now fully modularized 
 - `isMatureTag(tag)` — Normalizes gallery structural tags and detects whether a tag should be treated as mature content (`R18`, `NSFW`, `mature`, `suggestive`).
 - `isMatureImage(image)` — Returns whether a gallery image carries any mature structural tags.
 - `processGalleryImages(images)` — Applies the shared public-gallery mature-content rule set, hiding mature images while R18 is off and floating them to the front when R18 is on.
+- `applyGalleryControls(images)` — Applies mature visibility, active tag, text search, and curated/newest/top-rated ordering to the current character artwork set.
+- `bindGalleryControls()` — Binds the Visual Archive search, sort, and delegated tag controls after the character gallery route renders.
+- `initArchiveCollectionDecks()` — Binds hover/focus selection for the integrated right-side character browser, updating the dominant profile hero, biography, counts, open action, and active-card glow without requesting gallery-preview imagery.
 - `updateR18ToggleButtons()` — Refreshes every gallery-header R18 toggle instance so the button label and danger styling stay synchronized across gallery surfaces.
 - `renderGalleryGrid(shuffle)` — Renders character gallery images under either standard grid or premium fanning Card Deck View modes, hiding mature-tagged artwork while R18 is off and prioritizing those images first when R18 is on.
 - `renderLatestGalleryGrid()` — Rebuilds the public "Recently Added" gallery masonry using the shared mature-content visibility/order rules so the header toggle and load-more flow stay in sync.
@@ -208,6 +214,11 @@ The functions and components of the public reader SPA are now fully modularized 
 - `setFilter(tag)` — Filters the current character gallery by tag name (e.g. Portrait, Sketch, Action).
 - `shuffleGallery()` — Shuffles the order of images in the active character gallery dynamically.
 - `voteImage(imageId, value)` — Handles casting and updating image upvotes/downvotes against Supabase with real-time score synchronization.
+
+### `Visuals` Gallery Viewer (`js/ui.js`)
+- `openGalleryLightbox(index, images)` / `updateLightboxView()` — Opens the accessible artwork viewer and synchronizes image, metadata, counter, tags, and voting state without reassigning an unchanged image URL.
+- `toggleLightboxDiscussion()` — Lazily opens or closes the current image discussion instead of loading comments on every image transition.
+- `handleLightboxKeydown(event)` — Provides Escape, arrow navigation, and focus trapping while the artwork dialog is active.
 
 ---
 
@@ -231,7 +242,8 @@ The functions and components of the public reader SPA are now fully modularized 
 - **Settings**: `getSettings()`, `saveSettings(data)`.
 
 ### `Utils` (Shared Utilities)
-- `uploadImage(file, bucket, folderPath)` — Uploads a blob/file to a Supabase Storage bucket and returns the public URL.
+- `getImageUploadPayload(file, options)` — Converts eligible PNG/JPG/JPEG uploads to bounded WebP when useful, preserving unsupported/animated formats and returning the original on failure.
+- `uploadImage(file, bucket, folderPath, options)` — Uploads a uniquely named image with one-year cache metadata by default; map callers opt out of conversion and any intentional upsert receives short-cache behavior.
 - `formatDate(dateString)` — Standardizes timestamp formatting for the UI.
 - `generateSlug(text)` — Converts strings to URL-friendly slugs for routing.
 - `sanitizeHTML(html)` — Basic wrapper to prevent XSS in visual editors.
@@ -258,9 +270,9 @@ The functions and components of the public reader SPA are now fully modularized 
 
 ### `UI` (Interactive Dashboard Components)
 - `imageUploadField(id, label, currentValue, bucketName, multiple)` — Renders a modern drag-and-drop dropzone dashboard UI element with a file picker input, text URL input, and dynamic client-side image preview area.
-- `handleFileSelection(input, listId, urlInputId)` — Fired on standard browser file changes. Cleans out stale assets and leverages `FileReader` to render visual local image previews instantly.
+- `handleFileSelection(input, listId, urlInputId)` — Fired on standard browser file changes. Cleans out stale assets and uses revocable object URLs for local image previews.
 - `handleUrlInput(input, listId)` — Handles pasting a direct image URL, showing an instant live rendering or placeholder fallback.
-- `clearPreviews(listId, urlInputId)` — Helper to purge cached local previews and clear bound text values.
+- `clearPreviews(listId, urlInputId)` — Revokes temporary preview object URLs, purges previews, and clears bound text/file values.
 - `initDragAndDrop(id)` — Binds `dragenter`, `dragover`, `dragleave`, and `drop` event listeners to a target upload area, enabling high-performance visual state transitions and multi-file processing.
 - `initTagComponent(elementId, initialTags)` — Replaces static tag strings with a dynamic, HSL-colored interactive tag-chip wrapper. Handles Backspace, Enter, and Comma key triggers alongside individual chip deletion buttons, automatically syncing the parsed array back to hidden elements.
 - `initTagAutocomplete(containerId, initialTags)` — Advanced interactive tag input with live database autocompletion. Immediately renders existing chips, then asynchronously hydrates suggestion options from the database so save flows are not blocked by the autocomplete fetch.
@@ -365,7 +377,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `renderEdge(edge)` — Creates a `L.polyline` (or Catmull-Rom spline) with a thick, glowing `'pulse-spline'` class (weight: 6) to ensure consistent visual quality between draft and saved states. Includes tooltips and interaction handlers.
 - `catmullRom(pts, segments)` — Interpolates a smooth curve through control points using Catmull-Rom spline math.
 - `findMarkerForNode(nodeId)` — Searches the nodes layer for a marker matching the given node ID.
-- `clear()` — Removes image overlay and clears all layer groups.
+- `clear({ preserveImage })` — Clears topology/selection layers and optionally preserves the current base-image overlay so same-map reloads do not request it again.
 
 ### `ModeManager` (Interaction Modes)
 - `set(mode)` — Switches between `'select'`, `'place'`, `'trace'` modes. Updates toolbar, status bar, cursor, and clears selection layer.
@@ -455,7 +467,7 @@ const SaveManager = {
 ### `Utils` (Shared Helpers)
 - `escapeHtml(s)` — HTML entity escaping.
 - `slugify(s)` — URL-safe slug generation.
-- `uploadImage(file, bucket, folder)` — Uploads to Supabase Storage, returns public URL.
+- `uploadImage(file, bucket, folder)` — Uploads the original map image bytes under a unique path with one-year cache metadata and returns the public URL.
 - `timeAgo(d)` — Relative time formatting (e.g. "3m ago").
 - `uuid()` — Generates a v4 UUID.
 - `getContributorColor(userId)` — Deterministic hash-based color from a 12-color palette.
