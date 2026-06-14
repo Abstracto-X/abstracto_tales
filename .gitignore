@@ -30,3 +30,5 @@ concat_docs.py
 data/timeline/extract.py
 data/timeline/extract_links.py
 data/timeline/scrap_fandom.py
+/.codegraph
+/.codegraph
