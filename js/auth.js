@@ -44,6 +44,16 @@ const prepareAvatarUpload = async (file) => {
     }
 };
 
+const getAuthRedirectUrl = () => {
+    const url = new URL(window.location.href);
+    url.hash = '';
+    url.search = '';
+    url.pathname = url.pathname.endsWith('/')
+        ? url.pathname
+        : url.pathname.replace(/\/[^/]*$/, '/');
+    return url.toString();
+};
+
 export const UserAuth = {
     user: null,
     profile: null,
@@ -139,7 +149,13 @@ export const UserAuth = {
         try {
             let result;
             if (UserAuth.mode === 'signup') {
-                result = await supabaseClient.auth.signUp({ email, password });
+                result = await supabaseClient.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        emailRedirectTo: getAuthRedirectUrl()
+                    }
+                });
                 if (result.data?.user && result.data?.user?.identities?.length === 0) {
                     throw new Error('This email is already registered. Please sign in.');
                 }

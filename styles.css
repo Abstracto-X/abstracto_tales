@@ -6524,11 +6524,11 @@ body.fullscreen-map-active #global-comment-btn {
     gap: 22px;
     border: 1px solid rgba(146, 221, 255, 0.12);
     border-radius: 24px;
-    overflow: hidden;
+    overflow: visible;
     background:
         radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--map-hub-accent) 18%, transparent), transparent 30%),
         radial-gradient(circle at 88% 40%, rgba(139, 63, 190, 0.16), transparent 34%),
-        linear-gradient(145deg, rgba(4, 10, 20, 0.9), rgba(9, 13, 25, 0.74));
+        linear-gradient(145deg, rgba(4, 10, 20, 0.5), rgba(9, 13, 25, 0.35));
     box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
     backdrop-filter: blur(20px);
 }
@@ -6538,6 +6538,7 @@ body.fullscreen-map-active #global-comment-btn {
     position: absolute;
     inset: 0;
     pointer-events: none;
+    border-radius: inherit;
     background:
         linear-gradient(rgba(127, 216, 255, 0.025) 1px, transparent 1px),
         linear-gradient(90deg, rgba(127, 216, 255, 0.025) 1px, transparent 1px);

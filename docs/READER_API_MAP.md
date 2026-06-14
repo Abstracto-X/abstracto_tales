@@ -267,7 +267,8 @@ State fields:
   - Reads email/password from the auth form.
   - Validates required fields.
   - On sign-up:
-    - calls `supabaseClient.auth.signUp(...)`
+    - calls `supabaseClient.auth.signUp(...)` with `options.emailRedirectTo`
+    - derives the redirect from the current reader URL, preserving the GitHub Pages `/abstracto_tales/` subpath while removing query, hash, and filename state
     - detects already-registered emails via empty `identities`
   - On sign-in:
     - calls `supabaseClient.auth.signInWithPassword(...)`

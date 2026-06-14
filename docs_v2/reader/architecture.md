@@ -41,7 +41,7 @@ The application logic is broken down into specialized singleton modules.
 
 ### User Authentication
 - **`js/auth.js`**
-  - **`UserAuth`**: Handles Supabase session retrieval, sign-in, registration, sign-out, and profile synchronization. Exposes active user and profile details.
+  - **`UserAuth`**: Handles Supabase session retrieval, sign-in, registration, sign-out, and profile synchronization. Registration explicitly sends an `emailRedirectTo` derived from the current reader root so confirmation links preserve the deployed GitHub Pages subpath instead of relying on Supabase's Site URL fallback. Exposes active user and profile details.
 
 ### Routing & Navigation
 - **`js/router.js`**
@@ -115,6 +115,7 @@ When a loader is requested, `LoaderManager` dynamically imports the module (`awa
 ---
 
 ### Reader Map Conventions
+- Implementation status, placeholder disclosures, exact code locations, and pending work are tracked in [`MAP_HANDOVER.md`](MAP_HANDOVER.md).
 - **Two-Phase Map Discovery & Routing:** The maps view follows a robust two-phase routing structure. A root story map registry (`#maps/slug`) displays the **Star Chart Registry (Map Hub)**, which transitions into the **Interactive Viewer** (`#maps/slug/mapId`) when a specific map is selected. A glassmorphic top navigation bar on the viewer allows seamless return to the Registry.
 - **Star Chart Registry (Map Hub):** A modern, grid-based interface displaying all charted maps associated with a story. Maps are dynamically grouped into **Galactic**, **Regional / Sector**, and **Local** categories, featuring live stats (node and hyperlane counts) on each thumbnail card.
 - **Dynamic Search & Filtering:** The Map Hub includes a real-time responsive search bar to filter charts instantly by name or type category, dynamically hiding empty sections.

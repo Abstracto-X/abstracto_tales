@@ -3,6 +3,11 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-15]
+### Fixed
+- 04:20 +05:30: Made the Star Chart Registry scrollable by changing `.map-hub-screen` overflow from `hidden` to `visible` and adding border-radius inheritance to its grid overlay pseudo-element. Increased the translucency of the registry background box by lowering the linear-gradient opacity.
+- 03:35 +05:30: Fixed reader registration confirmation redirects by passing a current-site `emailRedirectTo` to Supabase signup. The derived URL preserves the deployed `/abstracto_tales/` GitHub Pages base path while stripping page filenames, query parameters, and hashes. Updated reader architecture, function, and API documentation.
+
 ## [2026-06-14]
 ### Added
 - 07:35 +05:30: Created `scripts/download_timeline_images.py`, a standard-library multi-threaded python utility to download all external wiki-scraped timeline images in parallel. The script extracts unique URLs, sanitizes filenames/directories, and saves them organized in `data/timeline/downloaded_images/Era/Sub-Era/` folders while showing a live CLI progress bar. Updated shared conventions documentation.
@@ -10,6 +15,10 @@ Agents MUST update this file whenever they complete a task or make significant u
 ### Changed
 - 12:06 +05:30: Rebuilt and repaired the reader Map Hub and interactive map viewer around the `PLANS/` Galactic Operations Deck concepts. Added a collision-aware fullscreen glass HUD, semantic Star Chart Registry cards, default desktop Navicomputer, responsive World Inspector and routing bottom sheets, route-analysis accordions, live route/radar status, layer/filter/search control stack, legend, contribution ticker, Galactic clock, panel minimizer, reduced-motion handling, backdrop-filter fallbacks, and synchronized accessible dock states. Hardened missing/null DOM bindings and interval cleanup while preserving existing Supabase map loading, Dijkstra/hybrid routing, history, watchlist, cross-map search, and natural node coloring.
 - 07:41 +05:30: Configured `js/timelines/TimelineHub.js` event image resolution to point to local sanitized paths under `data/timeline/downloaded_images/` instead of fetching directly from the external Wikia/Fandom CDN.
+
+## [2026-06-15]
+### Added
+- 03:44 +05:30: Added `docs_v2/reader/MAP_HANDOVER.md` with exact reader-map code locations, working feature inventory, synthetic telemetry disclosures, half-finished HUD behavior, accessibility and CSS cleanup risks, manual verification steps, and a highest-priority requirement to restore the currently unreachable “Help Map the Galaxy” cartography contribution banner/action.
 
 
 ## [2026-06-05]

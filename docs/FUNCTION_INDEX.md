@@ -35,6 +35,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `getAllMapNodeNames(storyId)` — Fetches all mapped planet names across all maps in a given story.
 
 ### `UserAuth` (Authentication - `js/auth.js`)
+- `getAuthRedirectUrl()` — Internal helper that derives the reader root URL from the current page, removing query/hash state and filenames so confirmation emails return to the correct GitHub Pages subdirectory or local development root.
 - `prepareAvatarUpload(file)` — Internal fail-safe optimizer that bounds ordinary PNG/JPG/JPEG avatars to 1024px and emits WebP when beneficial, while preserving GIF/other formats and falling back to the original on decode/canvas failure.
 - `init()` — Checks for an existing session and sets up the `onAuthStateChange` listener.
 - `fetchProfile(user)` — Asynchronously fetches the user's profile row from the DB. Implements exponential backoff (up to 5 retries starting at 300ms) to bypass database replication or trigger delays upon new user registration.
