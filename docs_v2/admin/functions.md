@@ -1,124 +1,57 @@
-# ADMIN PANEL — Function Index
+# Admin Panel Functions
 
-This document provides a comprehensive index of the administrative functions, database operations, views, and UI helpers operating within the CMS Admin Panel (`admin.html`).
+### `Auth` (Administrative Access)
+- `init()` - Restores any existing Supabase session before revealing the login screen, then subscribes to auth state changes for seamless cross-tab login/logout handling.
+- `loadProfile()` - Fetches the user's profile, verifies their role is exactly `'admin'`, updates the shell chrome, and returns a success boolean so `init()` can decide whether to reveal the login view.
+- `signIn(email, password)` — Authenticates against Supabase and awaits profile validation.
+- `signOut()` — Ends the Supabase session and locks the system.
+- `showLoginView() / showAdminView()` — Toggles between the lock screen and the main CMS dashboard.
 
----
+### `DB` (Supabase Data Access & Abstraction)
+- **Stories**: `getStories()`, `saveStory(data)`, `deleteStory(id)` (Checks foreign key constraints before deletion).
+- **Chapters**: `getChapters(storyId)`, `saveChapter(data)`, `deleteChapter(id)`.
+- **Characters**: `getCharacters(storyId)`, `saveCharacter(data)`, `deleteCharacter(id)`.
+- **Lore**: `getLoreCategories(storyId)`, `saveLoreCategory(data)`, `getLoreEntries(categoryId)`, `saveLoreEntry(data)`.
+- **Timeline**: `getTimelineEvents()`, `saveTimelineEvent(data)`, `deleteTimelineEvent(id)`.
+- **Media**: `getMaps()`, `saveMap()`, `getWallpapers()`, `saveWallpaper()`, `getGallery()`, `getStoryGalleryImages()`, `saveGalleryImage()`.
+- **Map Requests**: `getMapRequests()`, `getRequestItems(reqId)`, `updateRequestStatus(reqId, status, feedback)`, `deleteMapRequest(reqId)`, `approveMapRequest(reqId)` (Applies changes to live tables and logs activity to `map_changelog`).
+- **Settings**: `getSettings()`, `saveSettings(data)`.
 
-## 1. `Auth` (Administrative Access Control)
-Manages admin sessions, lock screens, and roles validation.
+### `Utils` (Shared Utilities)
+- `getImageUploadPayload(file, options)` — Converts eligible PNG/JPG/JPEG uploads to bounded WebP when useful, preserving unsupported/animated formats and returning the original on failure.
+- `uploadImage(file, bucket, folderPath, options)` — Uploads a uniquely named image with one-year cache metadata by default; map callers opt out of conversion and any intentional upsert receives short-cache behavior.
+- `formatDate(dateString)` — Standardizes timestamp formatting for the UI.
+- `generateSlug(text)` — Converts strings to URL-friendly slugs for routing.
+- `sanitizeHTML(html)` — Basic wrapper to prevent XSS in visual editors.
 
-- `init()`
-  - **Description:** Entry point for admin auth. Checks for a restoring Supabase session, validates the user profile, and subscribes to auth state changes to synchronize views.
-- `loadProfile()`
-  - **Description:** Fetches the active user's profile and validates that `role === 'admin'`. If true, it returns `true` to display the admin dashboard; otherwise, it displays the login screen.
-- `signIn(email, password)`
-  - **Description:** Authenticates user credentials via Supabase `signInWithPassword`.
-- `signOut()`
-  - **Description:** Ends the active Supabase session and locks the admin dashboard.
-- `showLoginView() / showAdminView()`
-  - **Description:** Toggles between the glassmorphic login lock screen and the CMS admin dashboard.
-
----
-
-## 2. `DB` (Supabase Data Access & CMS Mutators)
-Operational database calls, storage file uploads, and modification ticket moderations.
-
-- **Stories:**
-  - `getStories()` — Queries all story entries regardless of publication status.
-  - `saveStory(data)` — Upserts story rows (adds details, cover images, background banners, and theme colors).
-  - `deleteStory(id)` — Deletes a story. Checks foreign key references first to prevent DB errors.
-- **Chapters:**
-  - `getChapters(storyId)` — Queries all chapter records for a story.
-  - `saveChapter(data)` — Upserts chapter titles, orders, and body content.
-  - `deleteChapter(id)` — Deletes a chapter.
-- **Characters:**
-  - `getCharacters(storyId)` — Queries characters mapped to a story.
-  - `saveCharacter(data)` — Upserts character names, bio cards, and profile avatars.
-  - `deleteCharacter(id)` — Deletes a character.
-- **Lore:**
-  - `getLoreCategories(storyId)` — Queries lore category items.
-  - `saveLoreCategory(data)` — Upserts category details.
-  - `getLoreEntries(categoryId)` — Queries lore entries under a category.
-  - `saveLoreEntry(data)` — Upserts lore titles, summaries, and cover banners.
-- **Timeline:**
-  - `getTimelineEvents()` — Queries in-universe chronological events.
-  - `saveTimelineEvent(data)` — Upserts event details and associates related characters.
-  - `deleteTimelineEvent(id)` — Deletes a timeline event.
-- **Media Assets:**
-  - `getMaps()` — Queries map records.
-  - `saveMap()` — Upserts map slugs, name labels, dimensions, and backgrounds.
-  - `getWallpapers()` — Queries story wallpaper backgrounds.
-  - `saveWallpaper()` — Upserts wallpaper assets.
-  - `getGallery()` — Queries character art assets.
-  - `saveGalleryImage()` — Upserts character illustrations and structural tags.
-- **Map Revision Tickets:**
-  - `getMapRequests()` — Queries submitted contributor map revision tickets.
-  - `getRequestItems(reqId)` — Queries proposed coordinate additions, updates, or deletions inside a ticket.
-  - `updateRequestStatus(reqId, status, feedback)` — Updates ticket statuses.
-  - `deleteMapRequest(reqId)` — Deletes a request ticket.
-  - `approveMapRequest(reqId)` — Approves proposed coordinate edits. Merges changes into the live nodes/edges tables and logs the actions to `map_changelog`.
-- **System Configurations:**
-  - `getSettings()` — Queries key-value settings.
-  - `saveSettings(data)` — Upserts site settings.
-
----
-
-## 3. `Utils` (Shared Utilities)
-Operational file parsers, slug generators, and visual helpers.
-
-- `uploadImage(file, bucket, folderPath)`
-  - **Description:** Uploads files to a target public Supabase Storage bucket and returns the public file URL.
-- `formatDate(dateString)`
-  - **Description:** Formats raw Postgres timestamp strings into readable dates.
-- `generateSlug(text)`
-  - **Description:** Converts strings into URL-safe slugs for routing.
-- `sanitizeHTML(html)`
-  - **Description:** Sanitizes HTML input to prevent XSS vulnerability vectors.
-
----
-
-## 4. `Forms` & `Modal` (CRUD Editors)
-Builds dynamic modal forms, binds input fields, and triggers database saves.
-
-- `Modal.open(title, htmlContent) / Modal.close()`
-  - **Description:** Launches or hides the floating form editor modal.
-- Form builders instantiate forms, pre-fill existing properties, and route submits:
+### `Forms` & `Modal` (CRUD Interfaces)
+- `Modal.open(title, htmlContent)` / `Modal.close()` — Manages the generic popup overlay.
+- Forms automatically generate the DOM, populate existing data, handle field binding, and dispatch to `DB.saveX()`:
   - `storyForm(storyObj)`
   - `chapterForm(chapterObj)`
   - `characterForm(characterObj)`
   - `loreCategoryForm(categoryObj)` / `loreEntryForm(entryObj)`
   - `timelineEventForm(eventObj)`
   - `mapForm(mapObj)` / `wallpaperForm(wallpaperObj)`
-  - `viewMapRequest(reqId)` / `approveMapRequest(reqId)` / `rejectMapRequest(reqId)`
+  - `setGalleryImagePublished(id, isPublished)`
+  - `viewMapRequest(reqId)` / `approveMapRequest(reqId)` / `rejectMapRequest(reqId)` / `deleteMapRequest(reqId)`
   - `settingsForm(settingsObj)`
   - `deleteConfirmForm(entityType, entityId, fallbackAction)`
 
----
-
-## 5. `Views` (View Routing Controllers)
-Swaps dashboard views, populates list tables, and manages operational counts.
-
-- `render(viewName)`
-  - **Description:** Handles sidebar navigation clicks, fetches the required view data, and loads the respective views.
-- View renderers fetch data, check local states, and build database tables:
+### `Views` (Admin Rendering)
+- `render(viewName)` — The primary internal router mapping sidebar clicks to view functions.
+- View rendering functions that fetch data, populate caches, and build tables/grids:
   - `dashboard()`, `stories()`, `chapters()`, `characters()`, `lore()`, `timeline()`, `maps()`, `mapRequests()`, `gallery()`, `wallpapers()`, `settings()`.
+  - `gallery()` now renders a story-wide media workspace with search/filter controls, a single broad-view gallery board, and a side toggle between published and unpublished image collections.
+
+### `UI` (Interactive Dashboard Components)
+- `imageUploadField(id, label, currentValue, bucketName, multiple)` — Renders a modern drag-and-drop dropzone dashboard UI element with a file picker input, text URL input, and dynamic client-side image preview area.
+- `handleFileSelection(input, listId, urlInputId)` — Fired on standard browser file changes. Cleans out stale assets and uses revocable object URLs for local image previews.
+- `handleUrlInput(input, listId)` — Handles pasting a direct image URL, showing an instant live rendering or placeholder fallback.
+- `clearPreviews(listId, urlInputId)` — Revokes temporary preview object URLs, purges previews, and clears bound text/file values.
+- `initDragAndDrop(id)` — Binds `dragenter`, `dragover`, `dragleave`, and `drop` event listeners to a target upload area, enabling high-performance visual state transitions and multi-file processing.
+- `initTagComponent(elementId, initialTags)` — Replaces static tag strings with a dynamic, HSL-colored interactive tag-chip wrapper. Handles Backspace, Enter, and Comma key triggers alongside individual chip deletion buttons, automatically syncing the parsed array back to hidden elements.
+- `initTagAutocomplete(containerId, initialTags)` — Advanced interactive tag input with live database autocompletion. Immediately renders existing chips, then asynchronously hydrates suggestion options from the database so save flows are not blocked by the autocomplete fetch.
+- `getTagValues(containerId)` — Reads the current gallery tag selection from the autocomplete widget, using the hidden input when present and a container dataset fallback when the widget is still hydrating.
 
 ---
-
-## 6. `UI` (Dashboard Interactive Elements)
-Dropzone helpers, autocomplete tags, and previews.
-
-- `imageUploadField(id, label, currentValue, bucketName, multiple)`
-  - **Description:** Renders a modern dropzone form element supporting drag-and-drop file inputs, pasted URL links, and image previews.
-- `handleFileSelection(input, listId, urlInputId)`
-  - **Description:** Triggered on file selection. Uses `FileReader` to show image previews.
-- `handleUrlInput(input, listId)`
-  - **Description:** Handles pasted image URLs, showing an instant live preview or placeholder fallback.
-- `clearPreviews(listId, urlInputId)`
-  - **Description:** Clears image previews and resets their inputs.
-- `initDragAndDrop(id)`
-  - **Description:** Hooks drag-and-drop events onto a target dropzone.
-- `initTagComponent(elementId, initialTags)`
-  - **Description:** Converts text inputs into interactive visual chips styled with deterministic colors.
-- `initTagAutocomplete(containerId, initialTags)`
-  - **Description:** Advanced tagging input with autocompletion. Queries distinct database tags, offering keyboard selections for tags or custom token tags.

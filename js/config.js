@@ -14,6 +14,8 @@ export const State = {
     currentChars: [], 
     currentWallpapers: [],
     filterTag: 'All',
+    gallerySearch: '',
+    gallerySort: 'curated',
     galleryConfirmed: false,
     galleryViewMode: localStorage.getItem('gallery_view_mode') || 'grid',
     showR18: localStorage.getItem('show_r18') === 'true'
@@ -41,4 +43,3 @@ export const Utils = {
              .replace(/'/g, "&#039;");
     }
 };
-

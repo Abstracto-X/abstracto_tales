@@ -3,11 +3,24 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-14]
+### Added
+- 07:35 +05:30: Created `scripts/download_timeline_images.py`, a standard-library multi-threaded python utility to download all external wiki-scraped timeline images in parallel. The script extracts unique URLs, sanitizes filenames/directories, and saves them organized in `data/timeline/downloaded_images/Era/Sub-Era/` folders while showing a live CLI progress bar. Updated shared conventions documentation.
+
+### Changed
+- 07:41 +05:30: Configured `js/timelines/TimelineHub.js` event image resolution to point to local sanitized paths under `data/timeline/downloaded_images/` instead of fetching directly from the external Wikia/Fandom CDN.
+
+
 ## [2026-06-05]
 ### Added
 - 03:38 +05:30: Linked reader maps with Galactic/Story History through a new `js/timelines/LocationHistoryIndex.js` module. Focused map worlds now expose a History action that opens a reusable overlay, scans current story timeline events plus parsed Galactic History for normalized location mentions, groups results by era/time, and caches Galactic matches in memory for repeat lookups. Updated `MapViewer`, `Render.maps`, `main.js`, `styles.css`, and reader documentation.
 
 ### Changed
+- 03:17 +05:30: Unified the main Gallery hero and character browser into one sub-window. Removed the detached scenic quote panel and scattered hero previews, replaced oversized story typography with a compact Gallery banner, kept the selected profile image dominant, and moved archive totals plus the scrollable profile grid into the right panel while preserving hover/focus hero updates and active glow.
+- 03:17 +05:30: Tightened the Visual Archive hero so a full first row of the character roster is visible by default. Restored profile images as every character card's sole lead image, replaced the horizontal rail with a bounded scrollable grid, and made hover/focus update the hero with an active-card glow. The hero now decorates its left visual area with at most three non-R18 images belonging only to the selected character; other gallery URLs remain inert until selection to respect lazy-loading and cache-egress conventions.
+- 08:00 +05:30: Implemented Part 2 of the map viewer redesign (World Inspector left dock panel). Overhauled `#world-intel-dock` with a structured header, pin/close buttons, and a dynamic `#world-intel-body`. Built the `MapViewer.renderWorldIntel` system to render a 3D rotating planetary orb with dynamic CSS background gradients corresponding to planetary class, a seed-hashing description generator, and a tabbed navigation panel containing Overview (telemetry table of generated specs), History (scans location index), Routes (hyperlane exits), Political (affiliation and security notes), and Nearby (Euclidean spatial proximity calculation). Persisted watchlist state in local storage under `abstracto_watchlist_${story_slug}` and wired quick actions. Updated `js/render.js`, `js/maps/MapViewer.js`, `docs/CODEBASE_ARCHITECTURE.md`, and `docs/FUNCTION_INDEX.md`.
+- 07:40 +05:30: Implemented Part 1 of the map viewer redesign. Broke out the map console shell container into a fullscreen fixed viewport layout overlay with deep space radial gradients, vignette darkening, and CRT scanlines. Floating top header bar now houses Aether title, registry backlink, and right utility buttons (theme, volume, settings, user avatar). Added a minimize panels trigger placeholder. Modified `styles.css`, `js/render.js`, and `js/maps/MapViewer.js`.
+- 06:40 +05:30: Overhauled the reader map viewer into a full-viewport sci-fi console layout. Replaced grid-split layout with edge-docked glassmorphic panels for the Navicomputer, World Intel, Itinerary, and Charts selector. Added an animated Astrogation Dial trigger, a scanline CRT terminal overlay, a cinematic vignette darkening overlay, and a permanent Contribute beacon button at bottom center. Modified `js/maps/MapViewer.js`, `js/render.js`, and `styles.css`.
 - 03:58 +05:30: Changed the reader map planet-history interaction so clicking a planet opens a compact scrollable in-map history panel first, styled like the route information overlay. The full-screen location-history overlay remains available through the compact panel's Open Full Archive action and the focused-world card's Full History button. Updated `MapViewer`, `styles.css`, and reader documentation.
 
 ## [2026-06-03]
@@ -104,3 +117,11 @@ Agents MUST update this file whenever they complete a task or make significant u
 
 ### Changed
 - 22:22 +05:30: Updated `AGENTS.md` with a ChatGPT/Codex-specific `apply_patch` note explaining why literal patch matching can fail on changed or mis-encoded lines and documenting the safer workflow for creating small, exact hunks.
+## [2026-06-14]
+### Changed
+- 06:51 +05:30: Fixed the reader Gallery landing layout so the unified Visual Archive panel no longer clips the hero/browser block at a fixed 500px height. `styles.css` now lets the feature shell grow with roster content and removes the desktop-only internal scroll lock from the right-side character browser grid. Updated `docs/CODEBASE_ARCHITECTURE.md` to match the new content-driven archive behavior.
+- 03:17 +05:30: Reworked the main Visual Archive landing into an archive-console layout inspired by the supplied reference: featured character presentation, story-backed scenic panel, gallery metrics, and a horizontal collection roster rendered as compact interactive Deck View previews. Preserved the existing reader background behavior and kept Recently Added below the collection area.
+- 03:17 +05:30: Upgraded the public reader gallery into the Visual Archive with a cinematic landing page, improved roster/recent cards, character-gallery search, tag filters, curated/newest/top-rated sorting, richer metadata, and an accessible on-demand discussion lightbox.
+- 03:17 +05:30: Preserved the original 3D scrolling Deck View and added boundary-aware wheel release, keyboard controls, touch swipes, focus styling, and reduced-motion handling.
+- 05:55 +05:30: Reduced Supabase image egress for new uploads by adding one-year cache metadata to unique Storage paths, fail-safe client-side WebP conversion for ordinary admin/reader PNG/JPG/JPEG uploads, and original-byte preservation for high-fidelity maps.
+- 05:55 +05:30: Added safe image loading hints across reader/admin/cartographer surfaces, prevented unchanged reader background/lightbox URL reassignment, reused same-map Leaflet image overlays, and documented that existing Storage object metadata is not changed retroactively.

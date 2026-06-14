@@ -3,6 +3,47 @@ import { supabaseClient } from './config.js';
 import { UI } from './ui.js';
 import { CommentsManager } from './comments.js';
 
+const prepareAvatarUpload = async (file) => {
+    const originalExtension = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const fallback = {
+        body: file,
+        extension: originalExtension === 'jpeg' ? 'jpg' : originalExtension,
+        contentType: file.type || undefined
+    };
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
+        return fallback;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    try {
+        const image = await new Promise((resolve, reject) => {
+            const candidate = new Image();
+            candidate.onload = () => resolve(candidate);
+            candidate.onerror = () => reject(new Error('The selected avatar could not be decoded.'));
+            candidate.src = objectUrl;
+        });
+        const scale = Math.min(1, 1024 / Math.max(image.naturalWidth, image.naturalHeight));
+        const width = Math.max(1, Math.round(image.naturalWidth * scale));
+        const height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext('2d', { alpha: file.type === 'image/png' });
+        if (!context) return fallback;
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        context.drawImage(image, 0, 0, width, height);
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+        if (!blob || (scale === 1 && blob.size >= file.size)) return fallback;
+        return { body: blob, extension: 'webp', contentType: 'image/webp' };
+    } catch (error) {
+        console.warn('Avatar optimization skipped; uploading the original file.', error);
+        return fallback;
+    } finally {
+        URL.revokeObjectURL(objectUrl);
+    }
+};
+
 export const UserAuth = {
     user: null,
     profile: null,
@@ -125,59 +166,60 @@ export const UserAuth = {
         
         const statusEl = document.getElementById('avatar-upload-status');
         const file = fileInput.files[0];
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${UserAuth.user.id}-${Date.now()}.${fileExt}`;
-        const filePath = `${fileName}`;
         
         statusEl.style.color = '#fff';
-        statusEl.textContent = 'Uploading...';
+        statusEl.textContent = 'Optimizing...';
         
         // Show preview immediately
         const previewUrl = URL.createObjectURL(file);
         const previewImg = document.getElementById('profile-avatar-preview');
-        previewImg.onload = () => URL.revokeObjectURL(previewUrl);
+        const releasePreviewUrl = () => URL.revokeObjectURL(previewUrl);
+        previewImg.onload = releasePreviewUrl;
+        previewImg.onerror = releasePreviewUrl;
+        previewImg.dataset.imageUrl = previewUrl;
         previewImg.src = previewUrl;
-        
-        // Upload to Supabase
-        const { error: uploadError } = await supabaseClient.storage
-            .from('Reader')
-            .upload(filePath, file, { cacheControl: '3600', upsert: true });
-            
-        if (uploadError) {
-            statusEl.style.color = 'var(--danger-color)';
-            statusEl.textContent = 'Failed: ' + uploadError.message;
-            fileInput.value = ''; // Reset
-            return;
-        }
-        
-        const { data: publicUrlData } = supabaseClient.storage
-            .from('Reader')
-            .getPublicUrl(filePath);
-            
-        const avatarUrl = publicUrlData.publicUrl;
-        document.getElementById('profile-avatar').value = avatarUrl;
-        
-        // Immediately save to profile in backend
-        const { error: updateError } = await supabaseClient
-            .from('profiles')
-            .update({
-                avatar_url: avatarUrl,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', UserAuth.user.id);
-            
-        if (updateError) {
-            statusEl.style.color = 'var(--danger-color)';
-            statusEl.textContent = 'Backend error: ' + updateError.message;
-        } else {
+
+        try {
+            const payload = await prepareAvatarUpload(file);
+            const fileName = `${UserAuth.user.id}-${Date.now()}.${payload.extension}`;
+            statusEl.textContent = 'Uploading...';
+
+            const { error: uploadError } = await supabaseClient.storage
+                .from('Reader')
+                .upload(fileName, payload.body, {
+                    cacheControl: '31536000',
+                    contentType: payload.contentType,
+                    upsert: false
+                });
+            if (uploadError) throw uploadError;
+
+            const { data: publicUrlData } = supabaseClient.storage
+                .from('Reader')
+                .getPublicUrl(fileName);
+            const avatarUrl = publicUrlData.publicUrl;
+            document.getElementById('profile-avatar').value = avatarUrl;
+
+            const { error: updateError } = await supabaseClient
+                .from('profiles')
+                .update({
+                    avatar_url: avatarUrl,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', UserAuth.user.id);
+            if (updateError) throw updateError;
+
             statusEl.style.color = 'var(--success-color)';
             statusEl.textContent = 'Avatar updated!';
             UserAuth.profile.avatar_url = avatarUrl;
             UI.initAuthLink(UserAuth.profile);
             CommentsManager.refreshRenderedThreads();
             setTimeout(() => statusEl.textContent = '', 2000);
+        } catch (error) {
+            statusEl.style.color = 'var(--danger-color)';
+            statusEl.textContent = 'Failed: ' + error.message;
+        } finally {
+            fileInput.value = '';
         }
-        fileInput.value = ''; // Reset input
     },
 
     saveProfile: async () => {

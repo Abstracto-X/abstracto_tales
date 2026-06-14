@@ -41,6 +41,8 @@ State fields:
 - `currentChars: array` - In-memory character list for current story views.
 - `currentWallpapers: array` - In-memory wallpaper list for current story.
 - `filterTag: string` - Active gallery filter tag.
+- `gallerySearch: string` - Active character-gallery caption/tag/character search text.
+- `gallerySort: string` - Active client-side gallery order: `curated`, `newest`, or `top`.
 - `galleryConfirmed: boolean` - Mature-content gate confirmation flag.
 - `galleryViewMode: string` - Gallery layout preference restored from `localStorage`.
 - `showR18: boolean` - Gallery R18 visibility preference restored from `localStorage`; when `true`, gallery views reveal artwork tagged `R18`, `NSFW`, `mature`, or `suggestive` and prioritize those images first.
@@ -162,6 +164,11 @@ Cache state:
   - Supports paginated gallery loading via `range(...)`.
   - Returns `[]` on query failure.
 
+- `getGalleryCollectionPreviews(storyId)` -> `Promise<array>`
+  - Reads published gallery metadata and joined character metadata to calculate per-character artwork/tag totals for the main Visual Archive browser.
+  - The integrated browser itself renders only character profile images; gallery image URLs are not assigned to its cards or hero.
+  - Returns `[]` on query failure.
+
 - `getLoreEntry(storyId, loreSlug)` -> `Promise<object | null>`
   - Reads a single `lore_entries` row with joined `lore_categories`.
   - Returns `null` on query failure.
@@ -189,6 +196,7 @@ Cache state:
   - `getChapters`
   - `getCharacterGallery`
   - `getLatestGalleryImages`
+  - `getGalleryCollectionPreviews`
   - `getLoreEntry`
 - Map-specific methods throw instead:
   - `getMapNodes`
@@ -207,6 +215,11 @@ Owns reader authentication state, profile synchronization, sign-in/sign-up actio
 - `CommentsManager` from `js/comments.js`
 
 ### Exports
+
+#### Internal `prepareAvatarUpload(file)` helper
+- Converts ordinary PNG/JPG/JPEG avatars to WebP with a maximum dimension of 1024px and quality `0.82` when the result is useful.
+- Preserves GIF animation and other unsupported formats by returning the original file.
+- Falls back to the original upload on decode, canvas, or encoding failure.
 
 #### `UserAuth`
 - Type: `object`
@@ -266,7 +279,8 @@ State fields:
 - `uploadAvatar(fileInput)` -> `Promise<void>`
   - Requires an authenticated user and a selected file.
   - Generates a temporary preview with `URL.createObjectURL(...)`.
-  - Uploads the file to the `Reader` storage bucket with `upsert: true`.
+  - Optimizes eligible PNG/JPG/JPEG files to bounded WebP before upload, with robust original-file fallback.
+  - Uploads to a new `{user_id}-{timestamp}.{ext}` path in the `Reader` storage bucket with `cacheControl: '31536000'` and `upsert: false`.
   - Resolves a public URL and writes it into the profile form field.
   - Immediately updates the current `profiles` row with the new `avatar_url`.
   - On success:

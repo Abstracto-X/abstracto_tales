@@ -137,13 +137,20 @@ export const Visuals = {
     },
     currentGalleryImages: [],
     currentLightboxIdx: -1,
+    lightboxReturnFocus: null,
+    lightboxDiscussionOpen: false,
     openLightbox: (src) => {
         const lb = document.getElementById('lightbox'); 
         if (!lb) return;
         const img = document.getElementById('lightbox-img');
-        if (img) img.src = src;
+        if (img && img.dataset.imageUrl !== src) {
+            img.dataset.imageUrl = src;
+            img.src = src;
+        }
         const comments = document.getElementById('lightbox-comments');
         if (comments) comments.style.display = 'none';
+        const details = document.getElementById('lightbox-details');
+        if (details) details.style.display = 'none';
         document.querySelectorAll('.lb-nav').forEach(n => n.style.display = 'none');
         const voteC = document.getElementById('lightbox-vote-container');
         if (voteC) voteC.style.display = 'none';
@@ -154,22 +161,32 @@ export const Visuals = {
         const lb = document.getElementById('lightbox');
         if (!lb) return;
         lb.classList.remove('active');
-        setTimeout(() => lb.style.display = 'none', 300);
+        document.body.classList.remove('lightbox-open');
+        setTimeout(() => {
+            lb.style.display = 'none';
+            Visuals.lightboxReturnFocus?.focus?.();
+        }, 300);
     },
     openGalleryLightbox: (idx, images) => {
         Visuals.currentGalleryImages = images;
         Visuals.currentLightboxIdx = idx;
+        Visuals.lightboxReturnFocus = document.activeElement;
+        Visuals.lightboxDiscussionOpen = false;
         
         const lb = document.getElementById('lightbox');
         if (!lb) return;
         const comments = document.getElementById('lightbox-comments');
-        if (comments) comments.style.display = 'flex';
+        if (comments) comments.classList.remove('open');
+        const details = document.getElementById('lightbox-details');
+        if (details) details.style.display = 'flex';
         document.querySelectorAll('.lb-nav').forEach(n => n.style.display = 'flex');
         
         lb.style.display = 'flex'; 
+        document.body.classList.add('lightbox-open');
         setTimeout(() => lb.classList.add('active'), 10);
         
         Visuals.updateLightboxView();
+        lb.querySelector('.lightbox-close')?.focus();
     },
     lbNext: () => {
         if(Visuals.currentGalleryImages.length === 0) return;
@@ -186,7 +203,27 @@ export const Visuals = {
         if (!imgObj) return;
         
         const img = document.getElementById('lightbox-img');
-        if (img) img.src = imgObj.image_url;
+        if (img) {
+            if (img.dataset.imageUrl !== imgObj.image_url) {
+                img.dataset.imageUrl = imgObj.image_url;
+                img.src = imgObj.image_url;
+            }
+            img.alt = imgObj.caption || `${imgObj.characters?.name || 'Character'} artwork`;
+        }
+        const character = document.getElementById('lightbox-character');
+        const title = document.getElementById('lightbox-title');
+        const caption = document.getElementById('lightbox-caption');
+        const tags = document.getElementById('lightbox-tags');
+        const counter = document.getElementById('lightbox-counter');
+        const discussionToggle = document.getElementById('lightbox-discussion-toggle');
+        if (character) character.textContent = imgObj.characters?.name || 'Character Archive';
+        if (title) title.textContent = imgObj.caption || 'Untitled Artwork';
+        if (caption) caption.textContent = imgObj.caption || 'No archive caption has been added.';
+        if (tags) tags.innerHTML = (imgObj.image_tags || [])
+            .filter(tag => !Actions.isMatureTag(tag))
+            .map(tag => `<span>${Utils.escapeHtml(tag)}</span>`).join('');
+        if (counter) counter.textContent = `${Visuals.currentLightboxIdx + 1} / ${Visuals.currentGalleryImages.length}`;
+        if (discussionToggle) discussionToggle.textContent = Visuals.lightboxDiscussionOpen ? 'Close Discussion' : 'Open Discussion';
         
         const voteC = document.getElementById('lightbox-vote-container');
         if (voteC) {
@@ -199,9 +236,34 @@ export const Visuals = {
             `;
         }
 
-        CommentsManager.openDrawer(imgObj.character_id, 'gallery', 'Image Discussion', { imageUrl: imgObj.image_url }, 'lightbox');
+        if (Visuals.lightboxDiscussionOpen) {
+            CommentsManager.openDrawer(imgObj.character_id, 'gallery', 'Image Discussion', { imageUrl: imgObj.image_url }, 'lightbox');
+        }
+    },
+    toggleLightboxDiscussion: () => {
+        Visuals.lightboxDiscussionOpen = !Visuals.lightboxDiscussionOpen;
+        const panel = document.getElementById('lightbox-comments');
+        panel?.classList.toggle('open', Visuals.lightboxDiscussionOpen);
+        Visuals.updateLightboxView();
+    },
+    handleLightboxKeydown: (event) => {
+        const lb = document.getElementById('lightbox');
+        if (!lb?.classList.contains('active')) return;
+        if (event.key === 'Escape') Visuals.closeLightbox();
+        if (event.key === 'ArrowRight') Visuals.lbNext();
+        if (event.key === 'ArrowLeft') Visuals.lbPrev();
+        if (event.key === 'Tab') {
+            const focusable = [...lb.querySelectorAll('button:not([disabled]), [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+                .filter(el => el.offsetParent !== null);
+            if (!focusable.length) return;
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        }
     }
 };
+document.addEventListener('keydown', Visuals.handleLightboxKeydown);
 
 // LORE PRE-FETCHER
 export const LorePrefetcher = {
@@ -476,7 +538,8 @@ export const UI = {
     loadingScreen: document.getElementById('lore-loading-screen'),
     
     setBg: (url) => { 
-        if(url && UI.bg) {
+        if(url && UI.bg && UI.bg.dataset.imageUrl !== url) {
+            UI.bg.dataset.imageUrl = url;
             UI.bg.style.backgroundImage = `url('${url}')`;
             SaberController.syncWidgetBackdrop();
         }
@@ -507,7 +570,7 @@ export const UI = {
         if (grid) {
             grid.innerHTML = State.currentWallpapers.map(wp => 
                 `<div style="cursor:pointer" onclick="UI.setBg('${wp.image_url}'); document.getElementById('wp-modal').style.display='none'">
-                    <img src="${wp.image_url}" style="width:100%; border-radius:4px;">
+                    <img src="${wp.image_url}" loading="lazy" decoding="async" fetchpriority="low" style="width:100%; border-radius:4px;">
                 </div>`
             ).join('');
         }
@@ -545,7 +608,7 @@ export const UI = {
         if (userProfile) {
             container.innerHTML = `
                 <div class="back-btn-wrapper" onclick="UI.openProfileModal()" title="Profile">
-                    <img src="${userProfile.avatar_url || 'https://via.placeholder.com/32'}" style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid var(--accent-color);">
+                    <img src="${userProfile.avatar_url || 'https://via.placeholder.com/32'}" decoding="async" style="width:28px; height:28px; border-radius:50%; object-fit:cover; border:1px solid var(--accent-color);">
                 </div>`;
         } else {
             container.innerHTML = `
@@ -592,7 +655,11 @@ export const UI = {
         const bio = document.getElementById('profile-bio');
         if (bio) bio.value = UserAuth.profile.bio || '';
         const preview = document.getElementById('profile-avatar-preview');
-        if (preview) preview.src = UserAuth.profile.avatar_url || 'https://via.placeholder.com/100';
+        const previewUrl = UserAuth.profile.avatar_url || 'https://via.placeholder.com/100';
+        if (preview && preview.dataset.imageUrl !== previewUrl) {
+            preview.dataset.imageUrl = previewUrl;
+            preview.src = previewUrl;
+        }
 
         const modal = document.getElementById('profile-modal');
         if (modal) {
@@ -838,6 +905,42 @@ export const Actions = {
         processed.sort((a, b) => Number(Actions.isMatureImage(b)) - Number(Actions.isMatureImage(a)));
         return processed;
     },
+    applyGalleryControls: (images) => {
+        let processed = Actions.processGalleryImages(images);
+        const query = State.gallerySearch.trim().toLowerCase();
+        if (State.filterTag !== 'All') {
+            processed = processed.filter(image => image.image_tags?.includes(State.filterTag));
+        }
+        if (query) {
+            processed = processed.filter(image => {
+                const searchable = [image.caption, image.characters?.name, ...(image.image_tags || [])].join(' ').toLowerCase();
+                return searchable.includes(query);
+            });
+        }
+        if (State.gallerySort === 'newest') {
+            processed.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+        } else if (State.gallerySort === 'top') {
+            processed.sort((a, b) => (Actions.votesCache[b.id]?.score || 0) - (Actions.votesCache[a.id]?.score || 0));
+        }
+        return processed;
+    },
+    bindGalleryControls: () => {
+        const search = document.getElementById('gallery-search-input');
+        const sort = document.getElementById('gallery-sort-select');
+        const tags = document.getElementById('gallery-tag-row');
+        if (search) search.addEventListener('input', () => {
+            State.gallerySearch = search.value;
+            Actions.renderGalleryGrid();
+        });
+        if (sort) sort.addEventListener('change', () => {
+            State.gallerySort = sort.value;
+            Actions.renderGalleryGrid();
+        });
+        if (tags) tags.addEventListener('click', (event) => {
+            const button = event.target.closest('[data-gallery-tag]');
+            if (button) Actions.setFilter(button.dataset.galleryTag);
+        });
+    },
     updateR18ToggleButtons: () => {
         const toggleButtons = document.querySelectorAll('[data-gallery-r18-toggle]');
         toggleButtons.forEach((btn) => {
@@ -877,6 +980,35 @@ export const Actions = {
         } catch(err) {
             console.error('Error fetching votes:', err);
         }
+    },
+    initArchiveCollectionDecks: () => {
+        document.querySelectorAll('.archive-collection-deck').forEach(deck => {
+            const selectCharacter = () => {
+                document.querySelectorAll('.archive-collection-deck').forEach(card => card.classList.toggle('is-active', card === deck));
+                const profile = document.getElementById('archive-feature-image');
+                const name = document.getElementById('archive-feature-name');
+                const role = document.getElementById('archive-feature-role');
+                const bio = document.getElementById('archive-feature-bio');
+                const artCount = document.getElementById('archive-feature-art-count');
+                const tagCount = document.getElementById('archive-feature-tag-count');
+                const open = document.getElementById('archive-feature-open');
+                if (profile && deck.dataset.characterProfile && profile.src !== deck.dataset.characterProfile) {
+                    profile.src = deck.dataset.characterProfile;
+                    profile.alt = `${deck.dataset.characterName} profile`;
+                }
+                if (name) name.textContent = deck.dataset.characterName;
+                if (role) role.textContent = deck.dataset.characterRole;
+                if (bio) bio.textContent = deck.dataset.characterBio || 'No archive biography has been added.';
+                if (artCount) artCount.textContent = deck.dataset.characterArtCount;
+                if (tagCount) tagCount.textContent = deck.dataset.characterTagCount;
+                if (open) open.dataset.characterId = deck.dataset.characterId;
+
+            };
+            deck.addEventListener('mouseenter', selectCharacter);
+            deck.addEventListener('focus', selectCharacter);
+        });
+        const open = document.getElementById('archive-feature-open');
+        if (open) open.addEventListener('click', () => window.Router.navigate(`gallery/${open.dataset.storySlug}/${open.dataset.characterId}`));
     },
 
     voteImage: async (imageId, value) => {
@@ -974,11 +1106,14 @@ export const Actions = {
         displayedImages.forEach((image, idx) => {
             const cache = Actions.votesCache[image.id] || { score: 0, userVote: 0 };
             const card = document.createElement('div');
-            card.className = 'gallery-item';
+            card.className = `gallery-item gallery-art-card${Actions.isMatureImage(image) ? ' is-mature' : ''}`;
             card.style.position = 'relative';
             card.innerHTML = `
-                <div style="position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; z-index: 5; pointer-events: none;">${image.characters?.name || 'Unknown'}</div>
-                <img src="${image.image_url}" loading="lazy" onclick="window.Visuals.openGalleryLightbox(${idx}, window.Actions.currentGalleryImages)">
+                <button class="gallery-image-button" type="button" onclick="window.Visuals.openGalleryLightbox(${idx}, window.Actions.currentGalleryImages)">
+                    <img src="${Utils.escapeAttr(image.image_url)}" alt="${Utils.escapeAttr(image.caption || `${image.characters?.name || 'Character'} artwork`)}" loading="lazy" decoding="async" fetchpriority="low">
+                </button>
+                <div class="gallery-card-topline"><span>${Utils.escapeHtml(image.characters?.name || 'Unknown')}</span>${Actions.isMatureImage(image) ? '<span class="gallery-mature-badge">R18</span>' : ''}</div>
+                <div class="gallery-card-caption">${Utils.escapeHtml(image.caption || 'Untitled artwork')}</div>
                 <div class="image-vote-container" onclick="event.stopPropagation()">
                     <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="window.Actions.voteImage('${image.id}', 1)"><i class="fas fa-arrow-up"></i></button>
                     <span class="vote-score" id="vote-score-${image.id}">${cache.score}</span>
@@ -993,11 +1128,7 @@ export const Actions = {
 
     // Chunked gallery rendering via requestIdleCallback to avoid long tasks
     renderGalleryGrid: (shuffle = false) => {
-        let imgs = Actions.processGalleryImages(Actions.currentGalleryImages);
-
-        if (State.filterTag !== 'All') {
-            imgs = imgs.filter(i => i.image_tags && i.image_tags.includes(State.filterTag));
-        }
+        let imgs = Actions.applyGalleryControls(Actions.currentGalleryImages);
         if (shuffle) imgs.sort(() => Math.random() - 0.5);
         
         Actions.filteredImages = imgs;
@@ -1005,6 +1136,14 @@ export const Actions = {
         const container = document.getElementById('gallery-grid');
         if (!container) return;
         container.innerHTML = ''; // Clear existing
+        const count = document.getElementById('gallery-result-count');
+        if (count) count.textContent = `${imgs.length} artwork${imgs.length === 1 ? '' : 's'}`;
+        document.querySelectorAll('[data-gallery-tag]').forEach(button => button.classList.toggle('active', button.dataset.galleryTag === State.filterTag));
+        if (imgs.length === 0) {
+            container.className = 'gallery-empty-state glass-box';
+            container.innerHTML = '<i class="fas fa-images"></i><h3>No artwork found</h3><p>Try another tag, search phrase, or R18 setting.</p>';
+            return;
+        }
 
         if (State.galleryViewMode === 'deck') {
             container.className = 'decks-grid';
@@ -1047,6 +1186,9 @@ export const Actions = {
                 const deckItem = document.createElement('div');
                 
                 deckItem.className = 'card-deck';
+                deckItem.tabIndex = 0;
+                deckItem.setAttribute('role', 'button');
+                deckItem.setAttribute('aria-label', `${tag} artwork deck. Use mouse wheel or arrow keys to browse.`);
                 
                 // Scoped tracking state for this specific deck instance
                 let currentIndex = 0;
@@ -1106,17 +1248,36 @@ export const Actions = {
 
                 // Capture scrolling wheel ticks
                 deckItem.addEventListener('wheel', (e) => {
-                    // Intercept standard global viewport page scroll
-                    e.preventDefault(); 
-                    
-                    if (e.deltaY > 0 && currentIndex < scrubImages.length - 1) {
+                    const movingForward = e.deltaY > 0;
+                    const canMove = movingForward ? currentIndex < scrubImages.length - 1 : currentIndex > 0;
+                    if (!canMove) return;
+                    e.preventDefault();
+                    if (movingForward) {
                         currentIndex++;
                         updateDeckLayout();
-                    } else if (e.deltaY < 0 && currentIndex > 0) {
+                    } else {
                         currentIndex--;
                         updateDeckLayout();
                     }
                 }, { passive: false });
+                deckItem.addEventListener('keydown', (event) => {
+                    if ((event.key === 'ArrowRight' || event.key === 'ArrowDown') && currentIndex < scrubImages.length - 1) {
+                        event.preventDefault(); currentIndex++; updateDeckLayout();
+                    } else if ((event.key === 'ArrowLeft' || event.key === 'ArrowUp') && currentIndex > 0) {
+                        event.preventDefault(); currentIndex--; updateDeckLayout();
+                    } else if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault(); deckItem.click();
+                    }
+                });
+                let touchStartX = 0;
+                deckItem.addEventListener('touchstart', event => { touchStartX = event.changedTouches[0].clientX; }, { passive: true });
+                deckItem.addEventListener('touchend', event => {
+                    const delta = event.changedTouches[0].clientX - touchStartX;
+                    if (Math.abs(delta) < 35) return;
+                    if (delta < 0 && currentIndex < scrubImages.length - 1) currentIndex++;
+                    if (delta > 0 && currentIndex > 0) currentIndex--;
+                    updateDeckLayout();
+                }, { passive: true });
 
                 // Handle hover ignition states
                 deckItem.onmouseenter = () => {
@@ -1146,7 +1307,7 @@ export const Actions = {
                 scrubImages.forEach((img) => {
                     cardsHtml += `
                         <div class="deck-card">
-                            <img src="${img.image_url}" loading="lazy" alt="${tag} illustration">
+                            <img src="${Utils.escapeAttr(img.image_url)}" loading="lazy" decoding="async" fetchpriority="low" alt="${Utils.escapeAttr(img.caption || `${tag} illustration`)}">
                         </div>
                     `;
                 });
@@ -1155,7 +1316,7 @@ export const Actions = {
                     ${cardsHtml}
                     <div class="deck-scroll-indicator"></div>
                     <div class="card-deck-title">
-                        ${tag} <span style="opacity: 0.5; font-size: 0.8em;">(${deckImages.length})</span>
+                        ${Utils.escapeHtml(tag)} <span style="opacity: 0.5; font-size: 0.8em;">(${deckImages.length})</span>
                     </div>
                 `;
                 
@@ -1184,16 +1345,20 @@ export const Actions = {
                 const cache = Actions.votesCache[i.id] || { score: 0, userVote: 0 };
                 
                 const item = document.createElement('div');
-                item.className = 'gallery-item';
+                item.className = `gallery-item gallery-art-card${Actions.isMatureImage(i) ? ' is-mature' : ''}`;
                 item.style.position = 'relative';
                 item.innerHTML = `
-                    <img src="${i.image_url}" loading="lazy" onclick="Visuals.openGalleryLightbox(${currentIdx}, Actions.filteredImages)">
+                    <button class="gallery-image-button" type="button" onclick="Visuals.openGalleryLightbox(${currentIdx}, Actions.filteredImages)">
+                        <img src="${Utils.escapeAttr(i.image_url)}" alt="${Utils.escapeAttr(i.caption || 'Character artwork')}" loading="lazy" decoding="async" fetchpriority="low">
+                    </button>
+                    <div class="gallery-card-topline">${Actions.isMatureImage(i) ? '<span class="gallery-mature-badge">R18</span>' : ''}</div>
+                    <div class="gallery-card-caption">${Utils.escapeHtml(i.caption || 'Untitled artwork')}</div>
                     <div class="image-vote-container" onclick="event.stopPropagation()">
                         <button class="vote-btn upvote ${cache.userVote === 1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', 1)"><i class="fas fa-arrow-up"></i></button>
                         <div class="vote-score">${cache.score}</div>
                         <button class="vote-btn downvote ${cache.userVote === -1 ? 'active' : ''}" onclick="Actions.voteImage('${i.id}', -1)"><i class="fas fa-arrow-down"></i></button>
                     </div>
-                    <button style="position:absolute; bottom:15px; right:15px; background:rgba(0,0,0,0.5); backdrop-filter:blur(5px); border:1px solid rgba(255,215,0,0.2); color:var(--accent-color); border-radius:50%; width:35px; height:35px; cursor:pointer; z-index:10; transition:all 0.3s;" onmouseover="this.style.background='var(--accent-color)'; this.style.color='#000'; this.style.transform='scale(1.1)';" onmouseout="this.style.background='rgba(0,0,0,0.5)'; this.style.color='var(--accent-color)'; this.style.transform='scale(1)';" onclick="event.stopPropagation(); CommentsManager.openDrawer('${i.character_id}', 'gallery', 'Image Discussion', { imageUrl: '${i.image_url}' })" title="Comment on this image">
+                    <button class="gallery-comment-button" onclick="event.stopPropagation(); CommentsManager.openDrawer('${i.character_id}', 'gallery', 'Image Discussion', { imageUrl: '${Utils.escapeAttr(i.image_url)}' })" title="Comment on this image" aria-label="Comment on this image">
                         <i class="fas fa-comment"></i>
                     </button>`;
                 frag.appendChild(item);
@@ -1231,6 +1396,11 @@ export const Actions = {
         localStorage.setItem('show_r18', newValue ? 'true' : 'false');
 
         Actions.updateR18ToggleButtons();
+
+        if (document.querySelector('.archive-landing')) {
+            window.Router.handle();
+            return;
+        }
 
         if (document.getElementById('latest-gallery-grid')) {
             Actions.renderLatestGalleryGrid();

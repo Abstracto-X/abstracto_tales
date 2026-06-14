@@ -80,3 +80,17 @@ Upon loading the Cartographer SPA, the application executes the following bootst
      - `PlanetDB.load()` (Loads the CSV database into memory).
      - `LocalDraftManager.load()` (Restores unsaved changes from `localStorage` if found).
      - `ProjectPicker.refresh()` (Selects the target map context).
+
+---
+
+### `cartographer.html` Updates
+
+#### Sandbox/Hub Wiring
+- **Sandbox Editor:** Introduced a staging system for contributors to propose changes to maps. Changes are saved locally and submitted as "Submission Tickets" for admin review. The `SaveManager.submitRequest` method includes a `clean()` helper to strip local UI tracking states before submission.
+- **Hub Dashboard:** Added a "My Contributions" tab for contributors to view their pending, approved, and rejected requests.
+- **Coordinate Fixes:** Y-axis coordinates now align with a true Cartesian plane.
+
+#### Security Enhancements & Activity Logging
+- **Database Lockdown:** Non-admins can no longer directly modify `map_nodes` and `map_edges`. All changes must go through the new moderation queue.
+- **Request Tables:** Added `map_requests` and `map_request_items` tables to handle proposed changes.
+- **Activity Log:** Admin approvals in `admin.html` and direct admin edits in `cartographer.html` now automatically log activity to the `map_changelog` table via `DB.logChange`, ensuring a visible history in the map's Activity Log.

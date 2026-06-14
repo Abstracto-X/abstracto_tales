@@ -117,9 +117,22 @@ export const TimelineHub = {
                     continue;
                 }
 
+                // Resolve local path matching Python script organization
+                const sanitizeName = (str) => str.replace(/[\\/*?:"<>|]/g, '_').trim();
+                const eraDir = imageData.eras && imageData.eras.length ? sanitizeName(imageData.eras[0]) : "Uncategorized";
+                const subEraDir = imageData.sub_eras && imageData.sub_eras.length ? sanitizeName(imageData.sub_eras[0]) : "";
+                
+                let filename = imageData.image_key || imageData.image_name;
+                if (!filename) {
+                    filename = imgUrl.split('/').pop().split('?')[0];
+                }
+                filename = sanitizeName(filename);
+                
+                const localImgUrl = `data/timeline/downloaded_images/${eraDir}/${subEraDir ? subEraDir + '/' : ''}${filename}`;
+
                 images.push({
                     name: imageData.image_name || match,
-                    url: imgUrl
+                    url: localImgUrl
                 });
 
                 if (TimelineHub._renderedImagesThisPage) {
@@ -138,7 +151,7 @@ export const TimelineHub = {
             const cleanName = img.name.replace(/\.[^/.]+$/, "");
             return `
                 <div class="timeline-event-img-tile" title="${Utils.escapeHtml(cleanName)}" onclick="window.open('${Utils.escapeAttr(img.url)}', '_blank')">
-                    <img src="${Utils.escapeHtml(img.url)}" alt="${Utils.escapeHtml(cleanName)}" referrerpolicy="no-referrer" loading="lazy">
+                    <img src="${Utils.escapeHtml(img.url)}" alt="${Utils.escapeHtml(cleanName)}" referrerpolicy="no-referrer" loading="lazy" decoding="async" fetchpriority="low">
                 </div>
             `;
         }).join('');
@@ -556,7 +569,7 @@ export const TimelineHub = {
         const charNames = chars.map(char => char.name).join(' ');
         const charHtml = chars.slice(0, 3).map(char => `
             <button class="story-event-character" type="button" onclick="event.stopPropagation(); window.Router.navigate('gallery/${slug}/${char.id}')">
-                ${char.profile_image_url ? `<img src="${Utils.escapeHtml(char.profile_image_url)}" alt="${Utils.escapeHtml(char.name)}" loading="lazy">` : '<span class="story-event-avatar-fallback"><i class="fas fa-user"></i></span>'}
+                ${char.profile_image_url ? `<img src="${Utils.escapeHtml(char.profile_image_url)}" alt="${Utils.escapeHtml(char.name)}" loading="lazy" decoding="async" fetchpriority="low">` : '<span class="story-event-avatar-fallback"><i class="fas fa-user"></i></span>'}
                 <span>${Utils.escapeHtml(char.name)}</span>
             </button>
         `).join('');

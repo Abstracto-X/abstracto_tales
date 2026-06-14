@@ -40,10 +40,12 @@ export const Render = {
             `;
         } else {
             stories.forEach((s, idx) => {
-                const loadAttr = idx < 4 ? '' : 'loading="lazy"';
+                const loadAttr = idx === 0
+                    ? 'fetchpriority="high"'
+                    : (idx < 4 ? '' : 'loading="lazy" fetchpriority="low"');
                 html += `
                     <div class="story-card" onclick="window.Router.navigate('story/${s.slug}')">
-                        <img src="${s.cover_image_url || ''}" ${loadAttr}>
+                        <img src="${s.cover_image_url || ''}" ${loadAttr} decoding="async">
                         <div class="card-info">
                             <div class="card-title">${s.title}</div>
                             <div class="card-desc">${s.short_description || ''}</div>
@@ -56,7 +58,7 @@ export const Render = {
         if (author) {
             const linksHtml = (author.links || []).map(link => `
                 <a href="${link.url}" target="_blank" class="link-row">
-                    <img src="${link.icon_url || ''}" class="social-icon" alt="${link.platform_name}" onerror="this.style.display='none'">
+                    <img src="${link.icon_url || ''}" class="social-icon" alt="${link.platform_name}" loading="lazy" decoding="async" fetchpriority="low" onerror="this.style.display='none'">
                     <div class="link-details">
                         <span class="link-name">${link.platform_name}</span>
                         ${link.note ? `<span class="link-note">${link.note}</span>` : ''}
@@ -68,7 +70,7 @@ export const Render = {
             <div class="fade-in">
                 <div class="author-section glass-box">
                     <div class="author-img-wrapper">
-                        <img src="${author.avatar_url || ''}" class="author-img" onerror="this.style.display='none'"> 
+                        <img src="${author.avatar_url || ''}" class="author-img" loading="lazy" decoding="async" onerror="this.style.display='none'">
                     </div>
                     <div class="author-info">
                         <h2>${author.display_name || 'Author'}</h2>
@@ -116,7 +118,7 @@ export const Render = {
         Render.stage.innerHTML = `
             <div class="story-hub-wrapper">
                 <div class="story-hub-layout glass-box">
-                    <img class="hub-cover" src="${story.cover_image_url || ''}">
+                    <img class="hub-cover" src="${story.cover_image_url || ''}" fetchpriority="high" decoding="async">
                     <div class="hub-details">
                         <h1>${story.title}</h1>
                         <div class="hub-meta">${story.status || ''} • ${story.genre || ''}</div>
@@ -144,58 +146,106 @@ export const Render = {
 
         const characters = hubData.characters;
         State.currentChars = characters;
-        const galleryHeaderHtml = (title, subtitle) => `
-            <div class="glass-box" style="display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; margin-bottom:1.5rem; padding:1rem 1.25rem;">
+        const galleryHeaderHtml = (title, subtitle, eyebrow = 'The Visual Archive') => `
+            <header class="gallery-archive-header glass-box">
                 <div>
-                    <div style="font-family:var(--font-header); font-size:1.25rem; color:var(--accent-color); letter-spacing:1px;">${title}</div>
-                    <div style="font-size:0.85rem; color:#aaa; margin-top:0.25rem;">${subtitle}</div>
+                    <div class="gallery-eyebrow">${Utils.escapeHtml(eyebrow)}</div>
+                    <h1>${Utils.escapeHtml(title)}</h1>
+                    <p>${Utils.escapeHtml(subtitle)}</p>
                 </div>
-                <div class="btn-large" data-gallery-r18-toggle style="padding: 0.45rem 1rem; font-size: 0.75rem; border-radius: 999px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="window.Actions.toggleR18()"></div>
-            </div>
-        `;
+                <button class="btn-large gallery-r18-toggle" data-gallery-r18-toggle type="button" onclick="window.Actions.toggleR18()"></button>
+            </header>`;
         
         if (!charId) {
-            // Character grid view
+            // Main visual archive
             UI.setBackButton(`window.Router.navigate('story/${slug}')`, "Story Hub");
-            
-            let html = galleryHeaderHtml('Gallery', 'Toggle R18 to reveal mature artwork and float it to the front of the gallery.');
-            html += '<h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Characters</h2>';
-            html += '<div class="char-grid" style="margin-bottom: 3rem;">';
-            characters.forEach((c, idx) => { 
-                const loadAttr = idx < 6 ? '' : 'loading="lazy"';
-                html += `
-                    <div class="char-card" onclick="window.Router.navigate('gallery/${slug}/${c.id}')">
-                        <div class="char-card-inner">
-                            <img src="${c.profile_image_url || ''}" ${loadAttr}>
-                            <div class="char-info-overlay">
-                                <div class="char-role">${c.role_title || ''}</div>
-                                <div class="char-name">${c.name}</div>
-                                <div class="char-bio-preview">${c.biography || ''}</div>
-                            </div>
+            const [latestImages, collectionImages] = await Promise.all([
+                DB.getLatestGalleryImages(story.id, 10, 0),
+                DB.getGalleryCollectionPreviews(story.id)
+            ]);
+            const visibleCollectionImages = Actions.processGalleryImages(collectionImages);
+            const featured = characters.find(character => character.profile_image_url) || characters[0] || {};
+            const collectionMap = visibleCollectionImages.reduce((map, image) => {
+                if (!map[image.character_id]) map[image.character_id] = [];
+                map[image.character_id].push(image);
+                return map;
+            }, {});
+            const uniqueTags = new Set(visibleCollectionImages.flatMap(image => (image.image_tags || []).filter(tag => !Actions.isMatureTag(tag))));
+            const featuredImages = collectionMap[featured.id] || [];
+            const featuredImage = featured.profile_image_url || story.cover_image_url || '';
+            const collectionDecks = characters.map(character => {
+                return `
+                    <button class="archive-collection-deck ${character.id === featured.id ? 'is-active' : ''}" type="button"
+                        data-character-id="${Utils.escapeAttr(character.id)}"
+                        data-character-name="${Utils.escapeAttr(character.name)}"
+                        data-character-role="${Utils.escapeAttr(character.role_title || 'Archive subject')}"
+                        data-character-bio="${Utils.escapeAttr(character.biography || '')}"
+                        data-character-profile="${Utils.escapeAttr(character.profile_image_url || '')}"
+                        data-character-art-count="${(collectionMap[character.id] || []).length}"
+                        data-character-tag-count="${new Set((collectionMap[character.id] || []).flatMap(image => image.image_tags || [])).size}"
+                        onclick="window.Router.navigate('gallery/${slug}/${character.id}')" aria-label="Open ${Utils.escapeAttr(character.name)} gallery">
+                        <span class="archive-deck-stack">${character.profile_image_url
+                            ? `<span class="archive-profile-card"><img src="${Utils.escapeAttr(character.profile_image_url)}" alt="${Utils.escapeAttr(character.name)} profile" loading="lazy" decoding="async" fetchpriority="low"></span>`
+                            : '<span class="archive-deck-placeholder"><i class="fas fa-user-astronaut"></i></span>'}</span>
+                        <span class="archive-deck-copy">
+                            <strong>${Utils.escapeHtml(character.name)}</strong>
+                            <small>${Utils.escapeHtml(character.role_title || 'Archive subject')}</small>
+                            <em>${(collectionMap[character.id] || []).length} artworks</em>
+                        </span>
+                    </button>`;
+            }).join('');
+
+            let html = `
+                <div class="archive-landing">
+                    <header class="archive-titlebar">
+                        <div><div class="gallery-eyebrow">${Utils.escapeHtml(story.title)}</div><h1>Gallery</h1></div>
+                        <button class="btn-large gallery-r18-toggle" data-gallery-r18-toggle type="button" onclick="window.Actions.toggleR18()"></button>
+                    </header>
+                    <section class="archive-feature">
+                        <div class="archive-feature-portrait">
+                            <img id="archive-feature-image" src="${Utils.escapeAttr(featuredImage)}" alt="${Utils.escapeAttr(featured.name || 'Featured character')}" fetchpriority="high" decoding="async">
                         </div>
-                    </div>`; 
-            });
-            html += '</div>';
-            // Fetch and append Latest Images below Characters
-            const latestImages = await DB.getLatestGalleryImages(story.id, 10, 0);
+                        <div class="archive-feature-copy">
+                            <div class="gallery-eyebrow"><i class="fas fa-star"></i> Featured character</div>
+                            <h2 id="archive-feature-name">${Utils.escapeHtml(featured.name || 'The Archive')}</h2>
+                            <div class="archive-feature-role" id="archive-feature-role">${Utils.escapeHtml(featured.role_title || 'Character collection')}</div>
+                            <p id="archive-feature-bio">${Utils.escapeHtml(featured.biography || story.synopsis || 'Explore the visual records preserved in this story archive.')}</p>
+                            <div class="archive-feature-facts">
+                                <span><i class="fas fa-images"></i><b id="archive-feature-art-count">${featuredImages.length}</b> artworks</span>
+                                <span><i class="fas fa-tags"></i><b id="archive-feature-tag-count">${new Set(featuredImages.flatMap(image => image.image_tags || [])).size}</b> collections</span>
+                            </div>
+                            ${featured.id ? `<button class="archive-open-button" id="archive-feature-open" type="button" data-story-slug="${Utils.escapeAttr(slug)}" data-character-id="${Utils.escapeAttr(featured.id)}">Open archive <i class="fas fa-arrow-right"></i></button>` : ''}
+                        </div>
+                        <aside class="archive-browser-panel">
+                            <div class="archive-stats">
+                                <span><b>${characters.length}</b> Characters</span>
+                                <span><b>${visibleCollectionImages.length}</b> Artworks</span>
+                                <span><b>${uniqueTags.size}</b> Collections</span>
+                            </div>
+                            <div class="archive-browser-heading"><span>Archive roster</span><strong>Characters</strong></div>
+                            <div class="archive-deck-grid">${collectionDecks || '<div class="gallery-empty-state">No character collections are available yet.</div>'}</div>
+                        </aside>
+                    </section>
+                </div>`;
+
             Actions.latestGalleryImages = latestImages;
             Actions.currentGalleryImages = latestImages;
             await Actions.fetchVotes();
 
             if (latestImages && latestImages.length > 0) {
                 html += `
-                    <div style="margin-bottom: 2rem;">
-                        <h2 style="margin-bottom: 1rem; border-bottom: 2px solid var(--accent-color); padding-bottom: 0.5rem; display: inline-block;">Recently Added</h2>
+                    <section class="gallery-recent-section">
+                        <div class="gallery-section-heading"><div><span>Fresh transmissions</span><h2>Recently Added</h2></div><p>Newly published artwork from across the roster.</p></div>
                         <div class="flex-masonry" id="latest-gallery-grid"></div>
-                        ${latestImages.length === 10 ? `<div style="text-align: center; margin-top: 1rem;"><button id="load-more-latest-btn" class="btn-large" onclick="window.Actions.loadMoreLatestImages('${story.id}')">Load More</button></div>` : ''}
-                    </div>
+                        ${latestImages.length === 10 ? `<div class="gallery-load-more"><button id="load-more-latest-btn" class="btn-large" onclick="window.Actions.loadMoreLatestImages('${story.id}')">Load More</button></div>` : ''}
+                    </section>
                 `;
             }
 
             Render.stage.innerHTML = html; 
             Actions.updateR18ToggleButtons();
             Actions.renderLatestGalleryGrid();
-            Visuals.initCardTilt();
+            Actions.initArchiveCollectionDecks();
         } else {
             // Individual character profile
             UI.setBackButton(`window.Router.navigate('gallery/${slug}')`, "Roster");
@@ -207,6 +257,8 @@ export const Render = {
             Actions.currentGalleryImages = galleryImages;
             await Actions.fetchVotes();
             State.filterTag = 'All';
+            State.gallerySearch = '';
+            State.gallerySort = 'curated';
 
             // Global floating comment hook
             const globalBtn = document.getElementById('global-comment-btn');
@@ -225,33 +277,39 @@ export const Render = {
                 }
             });
             
-            let tHtml = `<div style="display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:1.5rem">`;
+            let tHtml = `<div class="gallery-tag-row" id="gallery-tag-row">`;
             tags.forEach(t => {
                 const isActive = t === State.filterTag;
-                tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; text-transform:none; letter-spacing:0; min-height:0; ${isActive ? 'background:var(--accent-color); color:#000':''}" onclick="window.Actions.setFilter('${t}')">${t}</div>`;
+                tHtml += `<button class="gallery-tag ${isActive ? 'active' : ''}" type="button" data-gallery-tag="${Utils.escapeAttr(t)}">${Utils.escapeHtml(t)}</button>`;
             });
-            tHtml += `<div class="btn-large" style="padding:4px 12px; font-size:0.75rem; border-radius:20px; min-height:0;" onclick="window.Actions.shuffleGallery()"><i class="fas fa-random"></i></div></div>`;
-            
-            let prefHtml = `
-                <div class="glass-box" style="display: flex; gap: 15px; justify-content: center; align-items: center; max-width: 420px; margin: 0 auto 1.5rem; padding: 0.8rem 1.25rem; border-radius: 30px; border-color: rgba(255,255,255,0.05); background: rgba(0,0,0,0.3); backdrop-filter: blur(10px);">
-                    <div style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: #aaa; font-weight: 500;">
-                        <i class="fas fa-sliders-h" style="color: var(--accent-color);"></i> Layout:
-                    </div>
-                    <div class="btn-large" id="pref-view-mode-toggle" style="padding: 4px 12px; font-size: 0.75rem; border-radius: 20px; min-height: 0; cursor: pointer; transition: all 0.3s;" onclick="window.Actions.toggleViewMode()">
+            tHtml += `<button class="gallery-tag" type="button" onclick="window.Actions.shuffleGallery()" aria-label="Shuffle artwork"><i class="fas fa-random"></i></button></div>`;
+
+            const prefHtml = `
+                <section class="gallery-controls glass-box">
+                    <label class="gallery-search"><i class="fas fa-search"></i><input id="gallery-search-input" type="search" placeholder="Search captions or tags" aria-label="Search gallery"></label>
+                    <label class="gallery-sort">Sort
+                        <select id="gallery-sort-select" aria-label="Sort gallery">
+                            <option value="curated">Curated</option>
+                            <option value="newest">Newest</option>
+                            <option value="top">Top Rated</option>
+                        </select>
+                    </label>
+                    <button class="btn-large" id="pref-view-mode-toggle" type="button" onclick="window.Actions.toggleViewMode()">
                         <i class="${State.galleryViewMode === 'deck' ? 'fas fa-layer-group' : 'fas fa-th'}"></i> 
                         <span>${State.galleryViewMode === 'deck' ? 'Deck View' : 'Grid View'}</span>
-                    </div>
-                </div>
-            `;
+                    </button>
+                    <div class="gallery-result-count" id="gallery-result-count">${galleryImages.length} artworks</div>
+                </section>`;
             
             Render.stage.innerHTML = `
-                ${galleryHeaderHtml(character.name + ' Gallery', 'Use the header toggle to reveal R18 artwork first across this gallery and the recent feed.')}
-                <div class="char-profile-hero glass-box">
-                    <div class="hero-img-container"><img src="${character.profile_image_url || ''}" class="hero-img"></div>
+                ${galleryHeaderHtml(character.name + ' Gallery', 'Search, filter, vote, discuss, or explore the original scrolling deck.', story.title)}
+                <div class="char-profile-hero gallery-character-masthead glass-box">
+                    <div class="hero-img-container"><img src="${Utils.escapeAttr(character.profile_image_url || '')}" alt="${Utils.escapeAttr(character.name)} portrait" class="hero-img" fetchpriority="high" decoding="async"></div>
                     <div class="hero-info">
-                        <div class="hero-name">${character.name}</div>
-                        <div class="hero-role">${character.role_title || ''}</div>
-                        <div class="hero-bio">${character.biography || ''}</div>
+                        <div class="gallery-art-count">${galleryImages.length} published artworks</div>
+                        <div class="hero-name">${Utils.escapeHtml(character.name)}</div>
+                        <div class="hero-role">${Utils.escapeHtml(character.role_title || '')}</div>
+                        <div class="hero-bio">${Utils.escapeHtml(character.biography || '')}</div>
                     </div>
                 </div>
                 ${prefHtml}
@@ -259,6 +317,7 @@ export const Render = {
                 <div class="${State.galleryViewMode === 'deck' ? 'decks-grid' : 'sub-gallery-grid'}" id="gallery-grid"></div>`;
             
             Actions.updateR18ToggleButtons();
+            Actions.bindGalleryControls();
             Actions.renderGalleryGrid();
         }
     },
@@ -365,12 +424,14 @@ export const Render = {
 
         loreEntries.forEach((item, idx) => {
             const categoryName = item.lore_categories ? item.lore_categories.name : 'Uncategorized';
-            const loadAttr = idx < 6 ? '' : 'loading="lazy"';
+            const loadAttr = idx === 0
+                ? 'fetchpriority="high"'
+                : (idx < 6 ? '' : 'loading="lazy" fetchpriority="low"');
             const card = document.createElement('div');
             card.className = 'lore-card glass-box';
             card.onclick = () => window.Router.navigate(`lore/${slug}/${item.slug}`);
             card.innerHTML = `
-                <img src="${item.image_url || ''}" class="lore-card-img" ${loadAttr}>
+                <img src="${item.image_url || ''}" class="lore-card-img" ${loadAttr} decoding="async">
                 <div class="lore-card-content">
                     <div class="title">${item.title}</div>
                     <div class="type">${categoryName}</div>
@@ -412,7 +473,7 @@ export const Render = {
 
         Render.stage.innerHTML = `
             <div class="lore-wiki-layout">
-                <div class="lore-wiki-header"><img src="${item.image_url || ''}"></div>
+                <div class="lore-wiki-header"><img src="${item.image_url || ''}" fetchpriority="high" decoding="async"></div>
                 <div class="glass-box lore-wiki-body">
                     <div class="lore-wiki-title">${item.title}</div>
                     <div class="lore-wiki-type">${categoryName}</div>
@@ -536,103 +597,166 @@ export const Render = {
         });
         
         Render.stage.innerHTML = `
-            <div class="map-layout">
-                <div class="map-hub-backbar">
-                    <button class="map-hub-back-btn" onclick="window.Router.navigate('maps/${slug}')">
+            <div class="map-console-shell">
+                <!-- HUD Command Bar -->
+                <div class="map-hud-bar">
+                    <button class="map-hud-back" onclick="window.Router.navigate('maps/${slug}')">
                         <i class="fas fa-arrow-left"></i> Registry
                     </button>
-                    <div class="map-selector glass-box" style="margin:0; flex:1; justify-content:flex-start;">${btns}</div>
+                    <div class="map-hud-title">Aether</div>
+                    <div class="map-hud-actions">
+                        <button class="map-hud-icon-btn" id="hud-theme-toggle" title="Toggle UI Theme" type="button">
+                            <i class="fas fa-magic"></i>
+                        </button>
+                        <button class="map-hud-icon-btn" id="hud-volume-toggle" title="Toggle Ambient Audio" type="button">
+                            <i class="fas fa-volume-up"></i>
+                        </button>
+                        <button class="map-hud-icon-btn" id="hud-settings-toggle" title="Astrogation Options" type="button">
+                            <i class="fas fa-cog"></i>
+                        </button>
+                        <img src="${UserAuth.profile?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="map-hud-avatar" id="hud-avatar-trigger" title="User Profile" decoding="async">
+                        <span id="active-map-chip" style="display: none;">${Utils.escapeHtml(activeMap.map_name)}</span>
+                    </div>
                 </div>
-                <div class="map-workspace">
-                    <div class="map-column-left" style="display: flex; flex-direction: column; gap: 0.85rem; min-width: 0;">
-                        <div class="map-stage">
-                            <div class="map-topbar">
-                                <div class="map-topbar-group">
-                                    <button class="map-chip active" id="toggle-map-labels" type="button">Labels</button>
-                                    <button class="map-chip active" id="toggle-map-hyperlanes" type="button">Hyperlanes</button>
-                                </div>
-                                <div class="map-topbar-group">
-                                    <div class="map-chip" id="active-map-chip">${Utils.escapeHtml(activeMap.map_name)}</div>
-                                </div>
-                            </div>
-                            <div class="map-viewer" id="map-viewer">
-                                <div class="map-canvas" id="map-canvas">
-                                    <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous">
-                                    <svg id="map-svg-layer"></svg>
-                                    <div id="map-nodes-layer"></div>
-                                </div>
-                            </div>
-                            <div class="map-controls">
-                                <button class="map-control-btn cartographer-link" type="button" title="Access Cartographer Terminal" onclick="window.open('cartographer.html', '_blank')" style="color: var(--accent-color); border-color: var(--accent-color); box-shadow: 0 0 10px rgba(255, 215, 0, 0.2); margin-bottom: 12px;"><i class="fab fa-galactic-republic"></i></button>
-                                <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
-                                <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
-                                <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
-                                <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
+
+                <!-- Charts Dock (map selector dropdown) -->
+                <div class="charts-dock" id="charts-dock" style="display: none;">
+                    ${btns}
+                </div>
+
+                <!-- Full-Viewport Map Stage -->
+                <div class="map-stage">
+                    <!-- Minimize Panels Trigger -->
+                    <button class="minimize-panels-btn" id="minimize-panels-btn" type="button">
+                        <i class="fas fa-compress"></i> Minimize Panels
+                    </button>
+                    <!-- Map Viewer -->
+                    <div class="map-viewer" id="map-viewer">
+                        <div class="map-canvas" id="map-canvas">
+                            <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous" fetchpriority="high" decoding="async">
+                            <svg id="map-svg-layer"></svg>
+                            <div id="map-nodes-layer"></div>
+                        </div>
+                    </div>
+
+                    <!-- World Inspector (left) -->
+                    <div class="map-dock dock-left" id="world-intel-dock">
+                        <div class="dock-header">
+                            <span class="dock-header-title"><i class="fas fa-globe"></i> World Inspector</span>
+                            <div class="dock-controls">
+                                <button class="dock-btn" id="pin-world-intel" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
+                                <button class="dock-btn" id="close-world-intel" title="Close" type="button"><i class="fas fa-times"></i></button>
                             </div>
                         </div>
-                        <div class="map-promo-block shadow-box" style="padding: 20px; text-align: center; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 8px;">
-                            <h3 style="font-family: var(--font-header); color: var(--accent-color); margin-bottom: 10px;">Help Chart the Galaxy</h3>
-                            <p style="font-family: var(--font-body); line-height: 1.6; max-width: 800px; margin: 0 auto 15px auto;">
-                                Want to contribute to the first navigable map database in Star Wars? You can propose new maps, add undocumented planets, and chart hyperlanes easily through the Cartographer Terminal. Collaborate with millions of Star Wars fans around the globe to map a galaxy far, far away!
-                            </p>
-                            <button class="form-btn primary" onclick="window.open('cartographer.html', '_blank')" style="font-size: 1.1em; padding: 10px 24px;">
-                                <i class="fab fa-galactic-republic" style="margin-right: 8px;"></i> Access Cartographer Terminal
+                        <div class="dock-body" id="world-intel-body"></div>
+                    </div>
+
+                    <!-- Navicomputer Dock (right) -->
+                    <div class="map-dock dock-right" id="navicomputer-dock">
+                        <div class="dock-header">
+                            <span class="dock-header-title"><i class="fas fa-satellite-dish"></i> Navicomputer</span>
+                            <div class="dock-controls">
+                                <button class="dock-btn" id="pin-navicomputer" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
+                                <button class="dock-btn" id="close-navicomputer" title="Close" type="button"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+                        <div class="dock-body">
+                            <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
+                            <div class="routing-status" id="routing-status">Loading navicomputer...</div>
+                            
+                            <!-- Focus section -->
+                            <div class="routing-section">
+                                <div class="routing-field-row">
+                                    <label for="planet-search">Focus</label>
+                                    <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist">
+                                </div>
+                                <div id="cross-map-hint-search" class="routing-cross-map-hint"></div>
+                                <div class="routing-inline-actions">
+                                    <button class="routing-btn" id="focus-route-btn" type="button">Focus World</button>
+                                    <button class="routing-btn" id="set-origin-btn" type="button">Set Selected as Origin</button>
+                                    <button class="routing-btn" id="set-destination-btn" type="button">Set Selected as Destination</button>
+                                </div>
+                            </div>
+
+                            <!-- Node card -->
+                            <div class="routing-node-card empty" id="routing-node-card">
+                                <h4>Node Focus</h4>
+                                <p class="routing-kicker">Click a world on the chart to inspect it.</p>
+                            </div>
+
+                            <!-- Route section -->
+                            <div class="routing-section">
+                                <div class="routing-field-row">
+                                    <label for="route-origin">Origin</label>
+                                    <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist">
+                                </div>
+                                <div id="cross-map-hint-origin" class="routing-cross-map-hint"></div>
+                                <div class="routing-field-row">
+                                    <label for="route-dest">Destination</label>
+                                    <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist">
+                                </div>
+                                <div id="cross-map-hint-dest" class="routing-cross-map-hint"></div>
+                                <datalist id="planet-datalist"></datalist>
+                                <div class="routing-main-actions">
+                                    <button class="routing-btn primary" id="plot-course-btn" type="button">Plot Course</button>
+                                    <button class="routing-btn" id="swap-route-btn" type="button">Swap</button>
+                                    <button class="routing-btn" id="clear-route-btn" type="button">Clear</button>
+                                </div>
+                            </div>
+
+                            <!-- Summary -->
+                            <div class="routing-summary empty" id="routing-summary">
+                                <h4>Route Summary</h4>
+                                <p class="routing-kicker">No active course.</p>
+                            </div>
+
+                            <!-- Itinerary (scrolls within dock body) -->
+                            <div id="routing-itinerary" class="routing-itinerary"></div>
+                        </div>
+                    </div>
+
+                    <!-- Itinerary Bottom Dock -->
+                    <div class="map-dock dock-bottom" id="itinerary-dock">
+                        <div class="dock-header">
+                            <span class="dock-header-title"><i class="fas fa-route"></i> Route Itinerary</span>
+                            <button class="dock-btn" id="close-itinerary" type="button"><i class="fas fa-times"></i></button>
+                        </div>
+                        <div class="dock-body" id="itinerary-dock-body">
+                            <!-- route itinerary steps rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Cartographer Beacon (center-bottom, permanent) -->
+                    <div class="cartographer-beacon">
+                        <div class="cartographer-beacon-card" id="cartographer-beacon-card">
+                            <h4>Help Chart the Galaxy</h4>
+                            <p>Propose new maps, add undocumented planets, and chart hyperlanes through the Cartographer Terminal.</p>
+                            <button class="routing-btn primary" onclick="window.open('cartographer.html', '_blank')" type="button">
+                                <i class="fab fa-galactic-republic"></i> Access Cartographer Terminal
                             </button>
-                            ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.85em; margin-top: 15px; font-style: italic;">Note: You need to be registered in order to contribute. Please create a profile or sign in.</p>'}
+                            ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.72rem; margin-top: 5px; font-style: italic;">Note: You need to be registered in order to contribute.</p>'}
                         </div>
+                        <button class="cartographer-beacon-pill" id="cartographer-beacon-trigger" type="button">
+                            <i class="fab fa-galactic-republic"></i> Contribute
+                        </button>
                     </div>
-                    <div class="routing-panel shadow-box">
-                        <h3>Navicomputer</h3>
-                        <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
 
-                        <div class="routing-status" id="routing-status">Loading navicomputer...</div>
-
-                        <div class="routing-section">
-                            <div class="routing-field-row">
-                                <label for="planet-search">Focus</label>
-                                <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist">
-                            </div>
-                            <div id="cross-map-hint-search" class="routing-cross-map-hint"></div>
-                            <div class="routing-inline-actions">
-                                <button class="routing-btn" id="focus-route-btn" type="button">Focus World</button>
-                                <button class="routing-btn" id="set-origin-btn" type="button">Set Selected as Origin</button>
-                                <button class="routing-btn" id="set-destination-btn" type="button">Set Selected as Destination</button>
-                            </div>
-                        </div>
-
-                        <div class="routing-node-card empty" id="routing-node-card">
-                            <h4>Node Focus</h4>
-                            <p class="routing-kicker">Click a world on the chart to inspect it and assign route endpoints.</p>
-                        </div>
-
-                        <div class="routing-section">
-                            <div class="routing-field-row">
-                                <label for="route-origin">Origin</label>
-                                <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist">
-                            </div>
-                            <div id="cross-map-hint-origin" class="routing-cross-map-hint"></div>
-                            <div class="routing-field-row">
-                                <label for="route-dest">Destination</label>
-                                <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist">
-                            </div>
-                            <div id="cross-map-hint-dest" class="routing-cross-map-hint"></div>
-                            <datalist id="planet-datalist"></datalist>
-                            <div class="routing-main-actions">
-                                <button class="routing-btn primary" id="plot-course-btn" type="button">Plot Course</button>
-                                <button class="routing-btn" id="swap-route-btn" type="button">Swap</button>
-                                <button class="routing-btn" id="clear-route-btn" type="button">Clear</button>
-                            </div>
-                        </div>
-
-                        <div class="routing-summary empty" id="routing-summary">
-                            <h4>Route Summary</h4>
-                            <p class="routing-kicker">No active course. Choose an origin and destination to generate an itinerary.</p>
-                        </div>
-
-                        <div id="routing-itinerary" class="routing-itinerary"></div>
+                    <!-- Map Controls Cluster (bottom-right) -->
+                    <div class="map-controls">
+                        <!-- Astrogation Dial is the topmost -->
+                        <button class="astrogation-dial" id="navicomputer-trigger" aria-label="Open Navicomputer" type="button">
+                            <span class="dial-ring outer"></span>
+                            <span class="dial-ring inner"></span>
+                            <i class="fas fa-satellite-dish dial-icon"></i>
+                        </button>
+                        <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
+                        <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
+                        <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
+                        <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
                     </div>
-                </div>
-            </div>`;
+
+                </div><!-- /.map-stage -->
+            </div><!-- /.map-console-shell -->`;
         
         setTimeout(() => MapViewer.init({ 
             id: activeMap.id, 

@@ -530,6 +530,14 @@ All buckets are **public** (publicly readable URLs). Writes are restricted to au
 
 > ⚠️ Storage policies check `auth.role() = 'authenticated'` only — they do NOT check `is_admin()`. Any logged-in user (reader or admin) can technically upload. Enforce admin-only uploads at the application layer.
 
+### Application Upload Metadata
+
+- New uniquely named image objects uploaded by `admin.html`, `cartographer.html`, and `js/auth.js` use `cacheControl: '31536000'` so Supabase's public object response can remain cached for one year.
+- Admin and reader avatar upload paths convert eligible PNG/JPG/JPEG files to bounded WebP client-side when beneficial. GIF animation and unsupported formats are preserved by uploading the original bytes.
+- Map files deliberately skip conversion/resizing to preserve exact pixels, image dimensions, coordinate alignment, canvas sampling, and OCR quality.
+- Long-lived metadata is safe only for immutable unique paths. The admin helper's explicit upsert branch defaults to short cache metadata for any future stable-path replacement.
+- These rules affect new uploads only. Existing Storage objects retain their current content type and cache metadata unless separately migrated or re-uploaded.
+
 ### `Reader` Bucket (special rules)
 
 - **File size limit:** 5MB

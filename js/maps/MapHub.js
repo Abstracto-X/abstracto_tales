@@ -16,7 +16,7 @@ export const MapHub = {
         const cfg = MapHub._types[type] || MapHub._types.galactic;
         const c = counts[map.id] || { nodes: 0, edges: 0 };
         const thumbHtml = map.image_url
-            ? `<img class="map-hub-thumb" src="${Utils.escapeHtml(map.image_url)}" loading="lazy" alt="${Utils.escapeHtml(map.map_name)}">`
+            ? `<img class="map-hub-thumb" src="${Utils.escapeHtml(map.image_url)}" loading="lazy" decoding="async" fetchpriority="low" alt="${Utils.escapeHtml(map.map_name)}">`
             : `<div class="map-hub-thumb-placeholder"><i class="fas fa-map-marked-alt"></i></div>`;
         return `
             <div class="map-hub-card" data-name="${Utils.escapeHtml(map.map_name.toLowerCase())}" data-type="${type}" onclick="window.Router.navigate('maps/${slug}/${map.id}')">

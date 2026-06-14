@@ -662,10 +662,14 @@ const Utils = {
     slugify: (s) => s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''),
     uploadImage: async (file, bucket, folder = '') => {
         if (!file) return null;
-        const ext = file.name.split('.').pop();
+        const ext = (file.name.split('.').pop() || 'png').toLowerCase();
         const name = `${Math.random().toString(36).slice(2,12)}_${Date.now()}.${ext}`;
         const path = folder ? `${folder}/${name}` : name;
-        const { error } = await supabaseClient.storage.from(bucket).upload(path, file);
+        const { error } = await supabaseClient.storage.from(bucket).upload(path, file, {
+            cacheControl: '31536000',
+            contentType: file.type || undefined,
+            upsert: false
+        });
         if (error) throw new Error(`Upload failed: ${error.message}`);
         const { data: pub } = supabaseClient.storage.from(bucket).getPublicUrl(path);
         return pub.publicUrl;
@@ -822,11 +826,11 @@ const Hub = {
         }
 
         let html = '';
-        State.projects.forEach((project) => {
+        State.projects.forEach((project, index) => {
             const mapName = project.map_name || project.title || 'Untitled Map';
             html += `
                 <div class="map-card" onclick="Hub.openMap('${project.id}')">
-                    <img src="${project.image_url || 'https://via.placeholder.com/400x200?text=Map'}" class="map-card-img" alt="Map Cover">
+                    <img src="${project.image_url || 'https://via.placeholder.com/400x200?text=Map'}" class="map-card-img" alt="Map Cover" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy" fetchpriority="low"'} decoding="async">
                     <div class="map-card-body">
                         <div class="map-card-title">${Utils.escapeHtml(mapName)}</div>
                         <div class="map-card-meta"><span>${Number(project.width)||4000}×${Number(project.height)||4000}</span></div>
@@ -1183,9 +1187,16 @@ const ProjectPicker = {
                 // Read image dimensions
                 const dims = await new Promise((resolve) => {
                     const img = new Image();
-                    img.onload = () => resolve({ width: img.naturalWidth, height: img.naturalHeight });
-                    img.onerror = () => resolve({ width: 4000, height: 4000 });
-                    img.src = URL.createObjectURL(file);
+                    const objectUrl = URL.createObjectURL(file);
+                    img.onload = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve({ width: img.naturalWidth, height: img.naturalHeight });
+                    };
+                    img.onerror = () => {
+                        URL.revokeObjectURL(objectUrl);
+                        resolve({ width: 4000, height: 4000 });
+                    };
+                    img.src = objectUrl;
                 });
                 w = dims.width; h = dims.height;
             }
@@ -1418,7 +1429,7 @@ const Particles = {
 // MAP ENGINE (Y-Axis Fixed)
 // ==============================================
 const MapEngine = {
-    map: null, imageOverlay: null, nodesLayer: null, edgesLayer: null, selectionLayer: null,
+    map: null, imageOverlay: null, imageSource: null, imageWidth: 0, imageHeight: 0, nodesLayer: null, edgesLayer: null, selectionLayer: null,
     init: () => {
         const map = L.map('map-container', { crs: L.CRS.Simple, minZoom: -3, maxZoom: 4, zoomControl: true, attributionControl: false, zoomSnap: 0.25, wheelPxPerZoomLevel: 120 });
         MapEngine.map = map;
@@ -1432,21 +1443,43 @@ const MapEngine = {
     },
     getZoomFraction: () => Math.pow(2, MapEngine.map.getZoom()),
     loadProject: (proj) => {
-        MapEngine.clear();
         const width = Number(proj.width) || 4000;
         const height = Number(proj.height) || 4000;
+        const reuseImageOverlay = Boolean(
+            MapEngine.imageOverlay
+            && MapEngine.imageSource === proj.image_url
+            && MapEngine.imageWidth === width
+            && MapEngine.imageHeight === height
+        );
+        MapEngine.clear({ preserveImage: reuseImageOverlay });
         if (proj.image_url) {
             // FIX: Positive bounds
             const bounds = [[0, 0], [height, width]];
-            // ADDED: { crossOrigin: true } to prevent Tainted Canvas CORS error
-            MapEngine.imageOverlay = L.imageOverlay(proj.image_url, bounds, { crossOrigin: true }).addTo(MapEngine.map);
+            if (!reuseImageOverlay) {
+                // Preserve original map pixels for coordinate accuracy and OCR; only cache metadata is changed.
+                MapEngine.imageOverlay = L.imageOverlay(proj.image_url, bounds, { crossOrigin: true }).addTo(MapEngine.map);
+                MapEngine.imageSource = proj.image_url;
+                MapEngine.imageWidth = width;
+                MapEngine.imageHeight = height;
+            }
             MapEngine.map.fitBounds(bounds);
         } else {
             MapEngine.map.setView([2000, 2000], -1);
         }
         MapEngine.renderAll();
     },
-    clear: () => { if (MapEngine.imageOverlay) { MapEngine.map.removeLayer(MapEngine.imageOverlay); MapEngine.imageOverlay = null; } MapEngine.nodesLayer.clearLayers(); MapEngine.edgesLayer.clearLayers(); MapEngine.selectionLayer.clearLayers(); },
+    clear: ({ preserveImage = false } = {}) => {
+        if (MapEngine.imageOverlay && !preserveImage) {
+            MapEngine.map.removeLayer(MapEngine.imageOverlay);
+            MapEngine.imageOverlay = null;
+            MapEngine.imageSource = null;
+            MapEngine.imageWidth = 0;
+            MapEngine.imageHeight = 0;
+        }
+        MapEngine.nodesLayer.clearLayers();
+        MapEngine.edgesLayer.clearLayers();
+        MapEngine.selectionLayer.clearLayers();
+    },
     renderAll: () => {
         MapEngine.nodesLayer.clearLayers(); MapEngine.edgesLayer.clearLayers();
         for (const edge of State.edges) MapEngine.renderEdge(edge);

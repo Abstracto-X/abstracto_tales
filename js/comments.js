@@ -53,7 +53,7 @@ export const CommentsManager = {
         if (UserAuth.user && UserAuth.profile) {
             let imageHtml = '';
             if (CommentsManager.activeContext.imageUrl) {
-                imageHtml = `<img src="${CommentsManager.activeContext.imageUrl}" class="comment-image-preview" alt="Referenced Image">`;
+                imageHtml = `<img src="${CommentsManager.activeContext.imageUrl}" class="comment-image-preview" alt="Referenced Image" loading="lazy" decoding="async" fetchpriority="low">`;
             }
 
             let contextLabel = '';
@@ -66,7 +66,7 @@ export const CommentsManager = {
                     ${contextLabel}
                     ${imageHtml}
                     <div style="display: flex; gap: 1rem; width: 100%;">
-                        <img src="${UserAuth.profile.avatar_url || 'https://via.placeholder.com/40'}" class="comment-avatar">
+                        <img src="${UserAuth.profile.avatar_url || 'https://via.placeholder.com/40'}" class="comment-avatar" loading="lazy" decoding="async" fetchpriority="low">
                         <div style="flex: 1;">
                             <textarea id="${CommentsManager.containerPrefix}-comment-text" class="comment-textarea" placeholder="Share your thoughts..."></textarea>
                             <div class="comment-submit-container" style="margin-top: 0.8rem;">
@@ -126,7 +126,7 @@ export const CommentsManager = {
                 
                 let attachmentHtml = '';
                 if (c.metadata && c.metadata.imageUrl && CommentsManager.containerPrefix !== 'lightbox') {
-                    attachmentHtml = `<img src="${c.metadata.imageUrl}" class="comment-attachment">`;
+                    attachmentHtml = `<img src="${c.metadata.imageUrl}" class="comment-attachment" loading="lazy" decoding="async" fetchpriority="low">`;
                 }
 
                 const isOwnComment = UserAuth.user && c.user_id === UserAuth.user.id;
@@ -142,7 +142,7 @@ export const CommentsManager = {
 
                 html += `
                     <div class="comment-item" id="comment-${c.id}">
-                        <img src="${author.avatar_url || 'https://via.placeholder.com/40'}" class="comment-avatar">
+                        <img src="${author.avatar_url || 'https://via.placeholder.com/40'}" class="comment-avatar" loading="lazy" decoding="async" fetchpriority="low">
                         <div class="comment-body" style="flex:1;">
                             <div class="comment-meta">
                                 <div class="comment-author ${isAdmin ? 'admin-badge' : ''}">

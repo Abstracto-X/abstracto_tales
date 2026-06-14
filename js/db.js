@@ -225,6 +225,17 @@ export const DB = {
         return data || [];
     },
 
+    getGalleryCollectionPreviews: async (storyId) => {
+        const { data, error } = await supabaseClient
+            .from('character_gallery_images')
+            .select('id, character_id, image_url, caption, image_tags, sort_order, characters!inner(story_id, name, role_title, profile_image_url)')
+            .eq('characters.story_id', storyId)
+            .eq('is_published', true)
+            .order('sort_order');
+        if (error) { console.error('Error fetching gallery collection previews:', error); return []; }
+        return data || [];
+    },
+
     getLoreEntry: async (storyId, loreSlug) => {
         const { data, error } = await supabaseClient
             .from('lore_entries')
