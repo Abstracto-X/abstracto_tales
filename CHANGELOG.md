@@ -8,6 +8,7 @@ Agents MUST update this file whenever they complete a task or make significant u
 - 07:35 +05:30: Created `scripts/download_timeline_images.py`, a standard-library multi-threaded python utility to download all external wiki-scraped timeline images in parallel. The script extracts unique URLs, sanitizes filenames/directories, and saves them organized in `data/timeline/downloaded_images/Era/Sub-Era/` folders while showing a live CLI progress bar. Updated shared conventions documentation.
 
 ### Changed
+- 12:06 +05:30: Rebuilt and repaired the reader Map Hub and interactive map viewer around the `PLANS/` Galactic Operations Deck concepts. Added a collision-aware fullscreen glass HUD, semantic Star Chart Registry cards, default desktop Navicomputer, responsive World Inspector and routing bottom sheets, route-analysis accordions, live route/radar status, layer/filter/search control stack, legend, contribution ticker, Galactic clock, panel minimizer, reduced-motion handling, backdrop-filter fallbacks, and synchronized accessible dock states. Hardened missing/null DOM bindings and interval cleanup while preserving existing Supabase map loading, Dijkstra/hybrid routing, history, watchlist, cross-map search, and natural node coloring.
 - 07:41 +05:30: Configured `js/timelines/TimelineHub.js` event image resolution to point to local sanitized paths under `data/timeline/downloaded_images/` instead of fetching directly from the external Wikia/Fandom CDN.
 
 

@@ -590,180 +590,296 @@ export const Render = {
         UI.setBackButton(`window.Router.navigate('maps/${slug}')`, "Registry");
 
         const activeMap = maps.find(m => m.id === mapId) || maps.find(m => m.is_primary) || maps[0];
+        const activeMapType = activeMap.map_type || 'galactic';
+        const mapCards = maps.map(m => {
+            const type = m.map_type || 'galactic';
+            const typeLabel = type === 'regional' ? 'Regional / Sector' : type === 'local' ? 'Local' : 'Galactic';
+            return `
+                <button class="map-selector-btn ${m.id === activeMap.id ? 'active' : ''}"
+                    data-id="${m.id}"
+                    data-src="${m.image_url}"
+                    data-map-name="${Utils.escapeAttr(m.map_name)}"
+                    data-map-type="${Utils.escapeAttr(type)}"
+                    data-width="${m.width || 4000}"
+                    data-height="${m.height || 4000}"
+                    type="button">
+                    <span class="map-selector-btn-eyebrow">${Utils.escapeHtml(typeLabel)}</span>
+                    <strong>${Utils.escapeHtml(m.map_name)}</strong>
+                    <span class="map-selector-btn-meta">${m.is_primary ? 'Primary chart' : 'Mapped registry entry'}</span>
+                </button>`;
+        }).join('');
 
-        let btns = '';
-        maps.forEach(m => {
-            btns += `<button class="map-selector-btn ${m.id === activeMap.id ? 'active' : ''}" data-id="${m.id}" data-src="${m.image_url}" data-map-name="${Utils.escapeHtml(m.map_name)}" data-width="${m.width || 4000}" data-height="${m.height || 4000}">${Utils.escapeHtml(m.map_name)}</button>`;
-        });
-        
+        const avatarUrl = UserAuth.profile?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y';
         Render.stage.innerHTML = `
-            <div class="map-console-shell">
-                <!-- HUD Command Bar -->
-                <div class="map-hud-bar">
-                    <button class="map-hud-back" onclick="window.Router.navigate('maps/${slug}')">
-                        <i class="fas fa-arrow-left"></i> Registry
+            <div class="map-console-shell map-console-shell--viewer" data-map-type="${Utils.escapeAttr(activeMapType)}">
+                <div class="map-console-ambience" aria-hidden="true"></div>
+                <header class="map-hud-bar" role="banner">
+                    <button class="map-hud-back" onclick="window.Router.navigate('maps/${slug}')" type="button" aria-label="Return to the star chart registry">
+                        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+                        <span>Registry</span>
                     </button>
-                    <div class="map-hud-title">Aether</div>
-                    <div class="map-hud-actions">
-                        <button class="map-hud-icon-btn" id="hud-theme-toggle" title="Toggle UI Theme" type="button">
-                            <i class="fas fa-magic"></i>
-                        </button>
-                        <button class="map-hud-icon-btn" id="hud-volume-toggle" title="Toggle Ambient Audio" type="button">
-                            <i class="fas fa-volume-up"></i>
-                        </button>
-                        <button class="map-hud-icon-btn" id="hud-settings-toggle" title="Astrogation Options" type="button">
-                            <i class="fas fa-cog"></i>
-                        </button>
-                        <img src="${UserAuth.profile?.avatar_url || 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y'}" class="map-hud-avatar" id="hud-avatar-trigger" title="User Profile" decoding="async">
-                        <span id="active-map-chip" style="display: none;">${Utils.escapeHtml(activeMap.map_name)}</span>
+                    <div class="map-hud-title-group">
+                        <div class="map-hud-title">AETHER</div>
+                        <div class="map-hud-subtitle" id="map-hud-subtitle">${Utils.escapeHtml(story.title)} &bull; ${Utils.escapeHtml(activeMap.map_name)}</div>
                     </div>
-                </div>
+                    <div class="map-hud-actions">
+                        <button class="map-hud-icon-btn" id="hud-theme-toggle" type="button" aria-label="Toggle console accent theme" aria-pressed="false">
+                            <i class="fas fa-magic" aria-hidden="true"></i>
+                        </button>
+                        <button class="map-hud-icon-btn" id="hud-volume-toggle" type="button" aria-label="Toggle ambient audio indicator" aria-pressed="false">
+                            <i class="fas fa-volume-up" aria-hidden="true"></i>
+                        </button>
+                        <button class="map-hud-icon-btn" id="hud-settings-toggle" type="button" aria-label="Open chart filters and options" aria-expanded="false">
+                            <i class="fas fa-cog" aria-hidden="true"></i>
+                        </button>
+                        <button class="map-hud-avatar-btn" id="hud-avatar-trigger" type="button" aria-label="Reader profile">
+                            <img src="${Utils.escapeAttr(avatarUrl)}" class="map-hud-avatar" alt="Reader avatar" decoding="async">
+                        </button>
+                        <span id="active-map-chip" class="active-map-chip">${Utils.escapeHtml(activeMap.map_name)}</span>
+                    </div>
+                </header>
 
-                <!-- Charts Dock (map selector dropdown) -->
-                <div class="charts-dock" id="charts-dock" style="display: none;">
-                    ${btns}
-                </div>
+                <section class="charts-dock map-floating-panel" id="charts-dock" aria-label="Map registry controls" aria-hidden="true">
+                    <div class="map-floating-panel-header">
+                        <div>
+                            <div class="map-floating-kicker">Filters & Charts</div>
+                            <h3>Star Chart Registry</h3>
+                        </div>
+                        <button class="dock-btn" id="close-charts" type="button" aria-label="Close chart selector"><i class="fas fa-times" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="map-floating-panel-copy">Switch between mapped regions without leaving the operations deck.</div>
+                    <div class="charts-dock-grid">${mapCards}</div>
+                </section>
 
-                <!-- Full-Viewport Map Stage -->
+                <section class="layers-dock map-floating-panel" id="layers-dock" aria-label="Layer visibility controls" aria-hidden="true">
+                    <div class="map-floating-panel-header">
+                        <div>
+                            <div class="map-floating-kicker">Sensor Layers</div>
+                            <h3>Display Controls</h3>
+                        </div>
+                        <button class="dock-btn" id="close-layers" type="button" aria-label="Close layer controls"><i class="fas fa-times" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="layers-dock-actions">
+                        <button class="routing-btn active" id="toggle-map-labels" type="button" aria-pressed="true">Planet Labels</button>
+                        <button class="routing-btn active" id="toggle-map-hyperlanes" type="button" aria-pressed="true">Hyperlanes</button>
+                    </div>
+                </section>
+
                 <div class="map-stage">
-                    <!-- Minimize Panels Trigger -->
-                    <button class="minimize-panels-btn" id="minimize-panels-btn" type="button">
-                        <i class="fas fa-compress"></i> Minimize Panels
+                    <button class="minimize-panels-btn" id="minimize-panels-btn" type="button" aria-pressed="false">
+                        <i class="fas fa-compress-alt" aria-hidden="true"></i>
+                        <span class="minimize-panels-label">Minimize Panels</span>
                     </button>
-                    <!-- Map Viewer -->
+
                     <div class="map-viewer" id="map-viewer">
                         <div class="map-canvas" id="map-canvas">
-                            <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous" fetchpriority="high" decoding="async">
-                            <svg id="map-svg-layer"></svg>
+                            <img src="${activeMap.image_url}" id="map-image" draggable="false" crossorigin="anonymous" fetchpriority="high" decoding="async" alt="${Utils.escapeAttr(activeMap.map_name)} map">
+                            <svg id="map-svg-layer" aria-hidden="true"></svg>
                             <div id="map-nodes-layer"></div>
                         </div>
                     </div>
 
-                    <!-- World Inspector (left) -->
-                    <div class="map-dock dock-left" id="world-intel-dock">
+                    <aside class="map-dock dock-left" id="worldIntel-dock" aria-label="World inspector" aria-hidden="true">
                         <div class="dock-header">
-                            <span class="dock-header-title"><i class="fas fa-globe"></i> World Inspector</span>
+                            <span class="dock-header-title"><i class="fas fa-globe" aria-hidden="true"></i> World Inspector</span>
                             <div class="dock-controls">
-                                <button class="dock-btn" id="pin-world-intel" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
-                                <button class="dock-btn" id="close-world-intel" title="Close" type="button"><i class="fas fa-times"></i></button>
+                                <button class="dock-btn" id="pin-worldIntel" title="Pin panel" type="button" aria-pressed="false"><i class="fas fa-thumbtack" aria-hidden="true"></i></button>
+                                <button class="dock-btn" id="close-worldIntel" title="Close" type="button" aria-label="Close world inspector"><i class="fas fa-times" aria-hidden="true"></i></button>
                             </div>
                         </div>
-                        <div class="dock-body" id="world-intel-body"></div>
-                    </div>
+                        <div class="dock-body" id="world-intel-body">
+                            <div class="map-empty-panel">
+                                <div class="map-empty-panel-icon"><i class="fas fa-globe-americas" aria-hidden="true"></i></div>
+                                <h3>Select a world</h3>
+                                <p>Click a world node to open the inspector, review local telemetry, and add the world to your plotted course.</p>
+                            </div>
+                        </div>
+                    </aside>
 
-                    <!-- Navicomputer Dock (right) -->
-                    <div class="map-dock dock-right" id="navicomputer-dock">
+                    <aside class="map-dock dock-right" id="navicomputer-dock" aria-label="Navicomputer" aria-hidden="true">
                         <div class="dock-header">
-                            <span class="dock-header-title"><i class="fas fa-satellite-dish"></i> Navicomputer</span>
+                            <span class="dock-header-title"><i class="fas fa-satellite-dish" aria-hidden="true"></i> Navicomputer</span>
                             <div class="dock-controls">
-                                <button class="dock-btn" id="pin-navicomputer" title="Pin panel" type="button"><i class="fas fa-thumbtack"></i></button>
-                                <button class="dock-btn" id="close-navicomputer" title="Close" type="button"><i class="fas fa-times"></i></button>
+                                <button class="dock-btn" id="pin-navicomputer" title="Pin panel" type="button" aria-pressed="false"><i class="fas fa-thumbtack" aria-hidden="true"></i></button>
+                                <button class="dock-btn" id="close-navicomputer" title="Close" type="button" aria-label="Close navicomputer"><i class="fas fa-times" aria-hidden="true"></i></button>
                             </div>
                         </div>
-                        <div class="dock-body">
-                            <p class="routing-kicker">Select worlds directly on the chart, then build and inspect routes without leaving the map.</p>
-                            <div class="routing-status" id="routing-status">Loading navicomputer...</div>
-                            
-                            <!-- Focus section -->
-                            <div class="routing-section">
+                        <div class="dock-body dock-body-nav">
+                            <p class="routing-kicker">Plot routes, compare sectors, and track every plotted jump without leaving the chart.</p>
+                            <div class="routing-status" id="routing-status" role="status" aria-live="polite">Loading navicomputer...</div>
+
+                            <section class="routing-section">
                                 <div class="routing-field-row">
-                                    <label for="planet-search">Focus</label>
-                                    <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist">
+                                    <label for="planet-search">Search / Focus</label>
+                                    <input type="text" id="planet-search" placeholder="Center a world" list="planet-datalist" autocomplete="off">
                                 </div>
-                                <div id="cross-map-hint-search" class="routing-cross-map-hint"></div>
+                                <div id="cross-map-hint-search" class="routing-cross-map-hint" aria-live="polite"></div>
                                 <div class="routing-inline-actions">
                                     <button class="routing-btn" id="focus-route-btn" type="button">Focus World</button>
                                     <button class="routing-btn" id="set-origin-btn" type="button">Set Selected as Origin</button>
                                     <button class="routing-btn" id="set-destination-btn" type="button">Set Selected as Destination</button>
                                 </div>
-                            </div>
+                            </section>
 
-                            <!-- Node card -->
                             <div class="routing-node-card empty" id="routing-node-card">
-                                <h4>Node Focus</h4>
-                                <p class="routing-kicker">Click a world on the chart to inspect it.</p>
+                                <h4>World Focus</h4>
+                                <p class="routing-kicker">Click a world on the chart to inspect it, review links, and assign route endpoints.</p>
                             </div>
 
-                            <!-- Route section -->
-                            <div class="routing-section">
+                            <section class="routing-section">
                                 <div class="routing-field-row">
                                     <label for="route-origin">Origin</label>
-                                    <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist">
+                                    <input type="text" id="route-origin" placeholder="Choose departure world" list="planet-datalist" autocomplete="off">
                                 </div>
-                                <div id="cross-map-hint-origin" class="routing-cross-map-hint"></div>
+                                <div id="cross-map-hint-origin" class="routing-cross-map-hint" aria-live="polite"></div>
                                 <div class="routing-field-row">
                                     <label for="route-dest">Destination</label>
-                                    <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist">
+                                    <input type="text" id="route-dest" placeholder="Choose arrival world" list="planet-datalist" autocomplete="off">
                                 </div>
-                                <div id="cross-map-hint-dest" class="routing-cross-map-hint"></div>
+                                <div id="cross-map-hint-dest" class="routing-cross-map-hint" aria-live="polite"></div>
                                 <datalist id="planet-datalist"></datalist>
                                 <div class="routing-main-actions">
                                     <button class="routing-btn primary" id="plot-course-btn" type="button">Plot Course</button>
                                     <button class="routing-btn" id="swap-route-btn" type="button">Swap</button>
                                     <button class="routing-btn" id="clear-route-btn" type="button">Clear</button>
                                 </div>
-                            </div>
+                            </section>
 
-                            <!-- Summary -->
                             <div class="routing-summary empty" id="routing-summary">
-                                <h4>Route Summary</h4>
-                                <p class="routing-kicker">No active course.</p>
+                                <h4>Route Overview</h4>
+                                <p class="routing-kicker">No active course. Choose an origin and destination to generate a route.</p>
                             </div>
 
-                            <!-- Itinerary (scrolls within dock body) -->
+                            <section class="routing-analysis-panel" id="routing-analysis">
+                                <div class="routing-analysis-header">
+                                    <div>
+                                        <div class="map-floating-kicker">Route Analysis</div>
+                                        <h4>Flight Data</h4>
+                                    </div>
+                                </div>
+                                <div class="routing-accordion">
+                                    <button class="routing-accordion-trigger" type="button" data-analysis-trigger="preview" aria-expanded="true" aria-controls="analysis-preview-panel">
+                                        <span><i class="fas fa-route" aria-hidden="true"></i> Hyperlane Preview</span>
+                                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="routing-accordion-panel is-open" id="analysis-preview-panel"></div>
+                                </div>
+                                <div class="routing-accordion">
+                                    <button class="routing-accordion-trigger" type="button" data-analysis-trigger="fuel" aria-expanded="false" aria-controls="analysis-fuel-panel">
+                                        <span><i class="fas fa-gas-pump" aria-hidden="true"></i> Fuel Estimate</span>
+                                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="routing-accordion-panel" id="analysis-fuel-panel"></div>
+                                </div>
+                                <div class="routing-accordion">
+                                    <button class="routing-accordion-trigger" type="button" data-analysis-trigger="borders" aria-expanded="false" aria-controls="analysis-borders-panel">
+                                        <span><i class="fas fa-flag" aria-hidden="true"></i> Political Borders</span>
+                                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="routing-accordion-panel" id="analysis-borders-panel"></div>
+                                </div>
+                                <div class="routing-accordion">
+                                    <button class="routing-accordion-trigger" type="button" data-analysis-trigger="hazard" aria-expanded="false" aria-controls="analysis-hazard-panel">
+                                        <span><i class="fas fa-triangle-exclamation" aria-hidden="true"></i> Hazard Rating</span>
+                                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                                    </button>
+                                    <div class="routing-accordion-panel" id="analysis-hazard-panel"></div>
+                                </div>
+                            </section>
+
                             <div id="routing-itinerary" class="routing-itinerary"></div>
                         </div>
-                    </div>
+                    </aside>
 
-                    <!-- Itinerary Bottom Dock -->
-                    <div class="map-dock dock-bottom" id="itinerary-dock">
+                    <aside class="map-dock dock-bottom" id="itinerary-dock" aria-label="Route itinerary" aria-hidden="true">
                         <div class="dock-header">
-                            <span class="dock-header-title"><i class="fas fa-route"></i> Route Itinerary</span>
-                            <button class="dock-btn" id="close-itinerary" type="button"><i class="fas fa-times"></i></button>
+                            <span class="dock-header-title"><i class="fas fa-route" aria-hidden="true"></i> Route Itinerary</span>
+                            <button class="dock-btn" id="close-itinerary" type="button" aria-label="Close itinerary"><i class="fas fa-times" aria-hidden="true"></i></button>
                         </div>
-                        <div class="dock-body" id="itinerary-dock-body">
-                            <!-- route itinerary steps rendered here -->
+                        <div class="dock-body" id="itinerary-dock-body"></div>
+                    </aside>
+
+                    <section class="map-status-card" id="map-status-card" aria-live="polite">
+                        <div class="map-status-card-copy">
+                            <div class="map-floating-kicker">Navicomputer</div>
+                            <h3 id="hud-route-title">Navicomputer Online</h3>
+                            <p id="hud-route-state">Select two worlds to plot a course.</p>
+                            <div class="map-status-card-meta" id="hud-route-meta">0 Hops &bull; 0 u</div>
+                        </div>
+                        <div class="map-status-radar" aria-hidden="true">
+                            <div class="radar-scope">
+                                <span class="radar-ring radar-ring-a"></span>
+                                <span class="radar-ring radar-ring-b"></span>
+                                <span class="radar-ring radar-ring-c"></span>
+                                <span class="radar-sweep"></span>
+                                <span class="radar-blip radar-blip-a"></span>
+                                <span class="radar-blip radar-blip-b"></span>
+                                <span class="radar-blip radar-blip-c"></span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <div class="map-controls" aria-label="Map controls">
+                        <div class="map-viewport-rail">
+                            <button class="map-control-icon" id="zoom-in-btn" type="button" title="Zoom in" aria-label="Zoom in"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                            <button class="map-control-icon" id="zoom-out-btn" type="button" title="Zoom out" aria-label="Zoom out"><i class="fas fa-minus" aria-hidden="true"></i></button>
+                            <button class="map-control-icon" id="map-reset-btn" type="button" title="Reset view" aria-label="Reset view"><i class="fas fa-house" aria-hidden="true"></i></button>
+                            <button class="map-control-icon" id="map-center-route-btn" type="button" title="Center route" aria-label="Center plotted route"><i class="fas fa-crosshairs" aria-hidden="true"></i></button>
+                        </div>
+                        <div class="map-hud-stack">
+                            <button class="map-pill-btn" id="navicomputer-trigger" type="button" aria-controls="navicomputer-dock" aria-expanded="false"><i class="fas fa-satellite-dish" aria-hidden="true"></i><span>Navicomputer</span></button>
+                            <button class="map-pill-btn" id="charts-trigger" type="button" aria-controls="charts-dock" aria-expanded="false"><i class="fas fa-filter" aria-hidden="true"></i><span>Filters</span></button>
+                            <button class="map-pill-btn" id="layers-trigger" type="button" aria-controls="layers-dock" aria-expanded="false"><i class="fas fa-layer-group" aria-hidden="true"></i><span>Layers</span></button>
+                            <button class="map-pill-btn" id="search-map-btn" type="button"><i class="fas fa-search" aria-hidden="true"></i><span>Search</span></button>
                         </div>
                     </div>
 
-                    <!-- Cartographer Beacon (center-bottom, permanent) -->
+                    <div class="map-console-legend" id="map-console-legend" aria-label="Map legend">
+                        <span class="map-legend-item"><span class="map-legend-swatch galaxy"></span>The Galaxy (Political)</span>
+                        <span class="map-legend-item"><span class="map-legend-swatch botian"></span>Botian Space</span>
+                        <span class="map-legend-item"><span class="map-legend-swatch disputed"></span>Disputed Territory</span>
+                        <span class="map-legend-item"><span class="map-legend-line"></span>Hyperlane</span>
+                    </div>
+
                     <div class="cartographer-beacon">
                         <div class="cartographer-beacon-card" id="cartographer-beacon-card">
                             <h4>Help Chart the Galaxy</h4>
                             <p>Propose new maps, add undocumented planets, and chart hyperlanes through the Cartographer Terminal.</p>
                             <button class="routing-btn primary" onclick="window.open('cartographer.html', '_blank')" type="button">
-                                <i class="fab fa-galactic-republic"></i> Access Cartographer Terminal
+                                <i class="fab fa-galactic-republic" aria-hidden="true"></i> Access Cartographer Terminal
                             </button>
                             ${UserAuth.user ? '' : '<p class="auth-warning" style="color: var(--danger-color); font-size: 0.72rem; margin-top: 5px; font-style: italic;">Note: You need to be registered in order to contribute.</p>'}
                         </div>
                         <button class="cartographer-beacon-pill" id="cartographer-beacon-trigger" type="button">
-                            <i class="fab fa-galactic-republic"></i> Contribute
+                            <i class="fab fa-galactic-republic" aria-hidden="true"></i> Contribute
                         </button>
                     </div>
 
-                    <!-- Map Controls Cluster (bottom-right) -->
-                    <div class="map-controls">
-                        <!-- Astrogation Dial is the topmost -->
-                        <button class="astrogation-dial" id="navicomputer-trigger" aria-label="Open Navicomputer" type="button">
-                            <span class="dial-ring outer"></span>
-                            <span class="dial-ring inner"></span>
-                            <i class="fas fa-satellite-dish dial-icon"></i>
-                        </button>
-                        <button class="map-control-btn" id="zoom-in-btn" type="button" title="Zoom In"><i class="fas fa-plus"></i></button>
-                        <button class="map-control-btn" id="zoom-out-btn" type="button" title="Zoom Out"><i class="fas fa-minus"></i></button>
-                        <button class="map-control-btn" id="map-reset-btn" type="button" title="Reset View"><i class="fas fa-house"></i></button>
-                        <button class="map-control-btn" id="map-center-route-btn" type="button" title="Center Route"><i class="fas fa-crosshairs"></i></button>
-                    </div>
+                    <footer class="map-console-footer" id="map-console-footer">
+                        <div class="map-footer-actions">
+                            <button class="map-footer-btn" id="footer-history-btn" type="button"><i class="fas fa-book-open" aria-hidden="true"></i><span>Historical Index</span></button>
+                            <button class="map-footer-btn" id="footer-active-routes-btn" type="button"><i class="fas fa-route" aria-hidden="true"></i><span><strong id="footer-active-routes-count">0</strong> Active Routes</span></button>
+                        </div>
+                        <div class="map-footer-ticker" id="map-footer-ticker">
+                            <div class="map-footer-ticker-track"><span id="map-footer-ticker-text">Awaiting live astrogation bulletins...</span></div>
+                            <button class="map-footer-close" id="footer-ticker-dismiss" type="button" aria-label="Hide contribution ticker"><i class="fas fa-times" aria-hidden="true"></i></button>
+                        </div>
+                        <div class="map-footer-clock">
+                            <span class="map-footer-clock-label">Galactic Time</span>
+                            <strong id="map-galactic-clock">--:--:--</strong>
+                            <span class="map-footer-clock-spinner" aria-hidden="true"></span>
+                        </div>
+                    </footer>
+                </div>
+            </div>`;
 
-                </div><!-- /.map-stage -->
-            </div><!-- /.map-console-shell -->`;
-        
-        setTimeout(() => MapViewer.init({ 
-            id: activeMap.id, 
-            src: activeMap.image_url, 
-            mapName: activeMap.map_name, 
-            width: parseInt(activeMap.width) || 4000, 
-            height: parseInt(activeMap.height) || 4000 
+        setTimeout(() => MapViewer.init({
+            id: activeMap.id,
+            src: activeMap.image_url,
+            mapName: activeMap.map_name,
+            mapType: activeMapType,
+            width: parseInt(activeMap.width) || 4000,
+            height: parseInt(activeMap.height) || 4000
         }), 50);
     }
 };

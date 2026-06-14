@@ -122,13 +122,17 @@ export const MapViewer = {
     storySlug: '',      // Slug of the current story
     storyTimeline: [],   // Current story timeline events for location history lookup
     _historyRequestId: 0,
+    _clockInterval: null,
+    _tickerInterval: null,
+    _analysisState: { preview: true, fuel: false, borders: false, hazard: false },
+    panelsMinimized: false,
 
-    init: ({ id, src, mapName, width, height }) => {
-        document.body.classList.add('fullscreen-map-active');
+    init: ({ id, src, mapName, mapType, width, height }) => {
         if (MapViewer._abortController) {
             MapViewer.destroy();
         }
-        
+        document.body.classList.add('fullscreen-map-active');
+
         MapViewer._abortController = new AbortController();
         const signal = MapViewer._abortController.signal;
 
@@ -137,6 +141,8 @@ export const MapViewer = {
         MapViewer.img = document.getElementById('map-image');
         if (MapViewer.img) MapViewer.img.crossOrigin = 'anonymous';
         MapViewer.ui = {
+            shell: document.querySelector('.map-console-shell'),
+            stage: document.querySelector('.map-stage'),
             selectorButtons: Array.from(document.querySelectorAll('.map-selector-btn')),
             zoomInBtn: document.getElementById('zoom-in-btn'),
             zoomOutBtn: document.getElementById('zoom-out-btn'),
@@ -158,39 +164,71 @@ export const MapViewer = {
             hyperlanesToggle: document.getElementById('toggle-map-hyperlanes'),
             setOriginBtn: document.getElementById('set-origin-btn'),
             setDestBtn: document.getElementById('set-destination-btn'),
-            activeMapChip: document.getElementById('active-map-chip')
+            activeMapChip: document.getElementById('active-map-chip'),
+            hudSubtitle: document.getElementById('map-hud-subtitle'),
+            hudRouteTitle: document.getElementById('hud-route-title'),
+            hudRouteState: document.getElementById('hud-route-state'),
+            hudRouteMeta: document.getElementById('hud-route-meta'),
+            footerRouteCount: document.getElementById('footer-active-routes-count'),
+            footerHistoryBtn: document.getElementById('footer-history-btn'),
+            footerRoutesBtn: document.getElementById('footer-active-routes-btn'),
+            footerTicker: document.getElementById('map-footer-ticker'),
+            footerTickerText: document.getElementById('map-footer-ticker-text'),
+            footerTickerDismiss: document.getElementById('footer-ticker-dismiss'),
+            galacticClock: document.getElementById('map-galactic-clock'),
+            navTrigger: document.getElementById('navicomputer-trigger'),
+            chartsTrigger: document.getElementById('charts-trigger'),
+            layersTrigger: document.getElementById('layers-trigger'),
+            searchTrigger: document.getElementById('search-map-btn'),
+            minimizeBtn: document.getElementById('minimize-panels-btn'),
+            themeBtn: document.getElementById('hud-theme-toggle'),
+            volumeBtn: document.getElementById('hud-volume-toggle'),
+            settingsBtn: document.getElementById('hud-settings-toggle'),
+            avatarBtn: document.getElementById('hud-avatar-trigger'),
+            closeChartsBtn: document.getElementById('close-charts'),
+            closeLayersBtn: document.getElementById('close-layers')
         };
-        MapViewer.ensureRouteInfoOverlay();
-        MapViewer.ensureLocationHistoryOverlay();
-        
+
         MapViewer.dockState = {
             navicomputer: { open: false, pinned: false },
-            worldIntel:   { open: false, pinned: false },
-            itinerary:    { open: false, pinned: false },
-            charts:       { open: false }
+            worldIntel: { open: false, pinned: false },
+            itinerary: { open: false, pinned: false },
+            charts: { open: false, pinned: false },
+            layers: { open: false, pinned: false }
         };
-        MapViewer.initDocks(signal);
-        
+        MapViewer.panelsMinimized = false;
         MapViewer.state = { scale: 1, x: 0, y: 0, isDragging: false, startX: 0, startY: 0, lastDist: 0, pendingX: 0, pendingY: 0, dragTicking: false };
-        MapViewer.currentMap = { id, src, name: mapName || 'Map', width: width || 4000, height: height || 4000 };
+        MapViewer.currentMap = { id, src, name: mapName || 'Map', type: mapType || 'galactic', width: width || 4000, height: height || 4000 };
         MapViewer.mapHeight = height || 4000;
         MapViewer.mapData = null;
         MapViewer.routeState = MapViewer.createEmptyRouteState();
         MapViewer.routeOverlayDismissed = false;
         MapViewer.selectedNodeId = null;
         MapViewer.activeIntelTab = 'overview';
+        MapViewer._analysisState = { preview: true, fuel: false, borders: false, hazard: false };
 
+        MapViewer.ensureRouteInfoOverlay();
+        MapViewer.ensureLocationHistoryOverlay();
+        MapViewer.initDocks(signal);
         MapViewer.bindUI(signal);
         MapViewer.applyDisplayState();
-        MapViewer.img.onload = () => {
-            MapViewer.centerMap();
-            MapViewer.applyNodeNaturalColors();
-        };
+        MapViewer.startHudTimers();
+        MapViewer.updateTickerText();
+        MapViewer.updateHudStatus();
+        if (window.innerWidth > 720) MapViewer.openDock('navicomputer');
+
+        if (MapViewer.img) {
+            MapViewer.img.onload = () => {
+                MapViewer.centerMap();
+                MapViewer.applyNodeNaturalColors();
+            };
+        }
 
         MapViewer.setMapSource(src, mapName || 'Map');
         MapViewer.loadMapData();
 
         const v = MapViewer.viewer;
+        if (!v) return;
         v.addEventListener('pointerdown', MapViewer.onPointerDown, { signal });
         window.addEventListener('pointermove', MapViewer.onPointerMove, { signal });
         window.addEventListener('pointerup', MapViewer.onPointerUp, { signal });
@@ -204,49 +242,70 @@ export const MapViewer = {
 
     bindUI: (signal) => {
         const ui = MapViewer.ui;
-        if (!ui.zoomInBtn) return;
-
-        ui.zoomInBtn.addEventListener('click', () => MapViewer.zoom(1.2), { signal });
-        ui.zoomOutBtn.addEventListener('click', () => MapViewer.zoom(0.8), { signal });
-        ui.resetBtn.addEventListener('click', () => MapViewer.resetView(), { signal });
-        ui.centerRouteBtn.addEventListener('click', () => MapViewer.focusActiveRoute(), { signal });
-        ui.plotBtn.addEventListener('click', () => MapViewer.calculateRoute(), { signal });
-        ui.swapBtn.addEventListener('click', () => MapViewer.swapRoute(), { signal });
-        ui.clearBtn.addEventListener('click', () => MapViewer.clearRoute(), { signal });
-        ui.focusBtn.addEventListener('click', () => MapViewer.handleSearch(), { signal });
+        if (ui.zoomInBtn) ui.zoomInBtn.addEventListener('click', () => MapViewer.zoom(1.2), { signal });
+        if (ui.zoomOutBtn) ui.zoomOutBtn.addEventListener('click', () => MapViewer.zoom(0.8), { signal });
+        if (ui.resetBtn) ui.resetBtn.addEventListener('click', () => MapViewer.resetView(), { signal });
+        if (ui.centerRouteBtn) ui.centerRouteBtn.addEventListener('click', () => MapViewer.focusActiveRoute(), { signal });
+        if (ui.plotBtn) ui.plotBtn.addEventListener('click', () => MapViewer.calculateRoute(), { signal });
+        if (ui.swapBtn) ui.swapBtn.addEventListener('click', () => MapViewer.swapRoute(), { signal });
+        if (ui.clearBtn) ui.clearBtn.addEventListener('click', () => MapViewer.clearRoute(), { signal });
+        if (ui.focusBtn) ui.focusBtn.addEventListener('click', () => MapViewer.handleSearch(), { signal });
         if (ui.labelsToggle) ui.labelsToggle.addEventListener('click', () => MapViewer.toggleLayer('showLabels'), { signal });
         if (ui.hyperlanesToggle) ui.hyperlanesToggle.addEventListener('click', () => MapViewer.toggleLayer('showHyperlanes'), { signal });
-        ui.setOriginBtn.addEventListener('click', () => MapViewer.assignSelectedNode('origin'), { signal });
-        ui.setDestBtn.addEventListener('click', () => MapViewer.assignSelectedNode('destination'), { signal });
+        if (ui.setOriginBtn) ui.setOriginBtn.addEventListener('click', () => MapViewer.assignSelectedNode('origin'), { signal });
+        if (ui.setDestBtn) ui.setDestBtn.addEventListener('click', () => MapViewer.assignSelectedNode('destination'), { signal });
 
-        ui.searchInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                MapViewer.handleSearch();
-            }
-        }, { signal });
-        ui.searchInput.addEventListener('change', () => MapViewer.handleSearch(), { signal });
+        if (ui.searchInput) {
+            ui.searchInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    MapViewer.handleSearch();
+                }
+            }, { signal });
+            ui.searchInput.addEventListener('change', () => MapViewer.handleSearch(), { signal });
+        }
 
-        ui.originInput.addEventListener('change', () => {
-            const ok = MapViewer.setRouteEndpoint('origin', ui.originInput.value, { allowPartial: false });
-            if (!ok) MapViewer.updateCrossMapHint(ui.originInput.value, 'origin');
-            else MapViewer.hideCrossMapHint('origin');
-        }, { signal });
-        ui.destInput.addEventListener('change', () => {
-            const ok = MapViewer.setRouteEndpoint('destination', ui.destInput.value, { allowPartial: false });
-            if (!ok) MapViewer.updateCrossMapHint(ui.destInput.value, 'dest');
-            else MapViewer.hideCrossMapHint('dest');
-        }, { signal });
+        if (ui.originInput) {
+            ui.originInput.addEventListener('change', () => {
+                const ok = MapViewer.setRouteEndpoint('origin', ui.originInput.value, { allowPartial: false });
+                if (!ok) MapViewer.updateCrossMapHint(ui.originInput.value, 'origin');
+                else MapViewer.hideCrossMapHint('origin');
+            }, { signal });
+        }
+        if (ui.destInput) {
+            ui.destInput.addEventListener('change', () => {
+                const ok = MapViewer.setRouteEndpoint('destination', ui.destInput.value, { allowPartial: false });
+                if (!ok) MapViewer.updateCrossMapHint(ui.destInput.value, 'dest');
+                else MapViewer.hideCrossMapHint('dest');
+            }, { signal });
+        }
 
-        // Trigger bindings for docks
-        const chartsTrigger = document.getElementById('charts-trigger');
-        const navTrigger = document.getElementById('navicomputer-trigger');
-        const intelTrigger = document.getElementById('world-intel-trigger');
+        if (ui.chartsTrigger) ui.chartsTrigger.addEventListener('click', () => MapViewer.toggleDock('charts'), { signal });
+        if (ui.navTrigger) ui.navTrigger.addEventListener('click', () => MapViewer.toggleDock('navicomputer'), { signal });
+        if (ui.layersTrigger) ui.layersTrigger.addEventListener('click', () => MapViewer.toggleDock('layers'), { signal });
+        if (ui.searchTrigger) ui.searchTrigger.addEventListener('click', () => {
+            MapViewer.openDock('navicomputer');
+            if (ui.searchInput) ui.searchInput.focus();
+        }, { signal });
+        if (ui.minimizeBtn) ui.minimizeBtn.addEventListener('click', () => MapViewer.togglePanelsMinimized(), { signal });
+        if (ui.themeBtn) ui.themeBtn.addEventListener('click', () => MapViewer.toggleThemeMode(), { signal });
+        if (ui.volumeBtn) ui.volumeBtn.addEventListener('click', () => MapViewer.toggleVolumeIndicator(), { signal });
+        if (ui.settingsBtn) ui.settingsBtn.addEventListener('click', () => MapViewer.toggleDock('layers'), { signal });
+        if (ui.avatarBtn) ui.avatarBtn.addEventListener('click', () => {
+            if (window.UI?.openProfileModal && window.UserAuth?.user) window.UI.openProfileModal();
+            else if (window.UserAuth?.showAuthModal) window.UserAuth.showAuthModal('signin');
+        }, { signal });
+        if (ui.footerHistoryBtn) ui.footerHistoryBtn.addEventListener('click', () => MapViewer.openSelectedNodeHistory(), { signal });
+        if (ui.footerRoutesBtn) ui.footerRoutesBtn.addEventListener('click', () => MapViewer.toggleDock('itinerary'), { signal });
+        if (ui.footerTickerDismiss) ui.footerTickerDismiss.addEventListener('click', () => MapViewer.toggleTicker(), { signal });
+        if (ui.closeChartsBtn) ui.closeChartsBtn.addEventListener('click', () => MapViewer.forceCloseDock('charts'), { signal });
+        if (ui.closeLayersBtn) ui.closeLayersBtn.addEventListener('click', () => MapViewer.forceCloseDock('layers'), { signal });
+
+        document.querySelectorAll('[data-analysis-trigger]').forEach(btn => {
+            btn.addEventListener('click', () => MapViewer.toggleAnalysisPanel(btn.dataset.analysisTrigger), { signal });
+        });
+
         const beaconTrigger = document.getElementById('cartographer-beacon-trigger');
-
-        if (chartsTrigger) chartsTrigger.addEventListener('click', () => MapViewer.toggleDock('charts'), { signal });
-        if (navTrigger) navTrigger.addEventListener('click', () => MapViewer.toggleDock('navicomputer'), { signal });
-        if (intelTrigger) intelTrigger.addEventListener('click', () => MapViewer.toggleDock('worldIntel'), { signal });
         if (beaconTrigger) beaconTrigger.addEventListener('click', () => MapViewer.toggleBeacon(), { signal });
 
         ui.selectorButtons.forEach(btn => {
@@ -259,6 +318,7 @@ export const MapViewer = {
                         id: btn.dataset.id,
                         src: btn.dataset.src,
                         mapName: btn.dataset.mapName || btn.textContent.trim(),
+                        mapType: btn.dataset.mapType || 'galactic',
                         width: parseInt(btn.dataset.width) || 4000,
                         height: parseInt(btn.dataset.height) || 4000
                     });
@@ -706,8 +766,9 @@ export const MapViewer = {
         MapViewer.renderNodeCard();
         MapViewer.activeIntelTab = 'overview';
         MapViewer.renderWorldIntel(node);
-        MapViewer.ui.searchInput.value = node.name;
+        if (MapViewer.ui.searchInput) MapViewer.ui.searchInput.value = node.name;
         MapViewer.setStatus(`${node.name} selected. Set it as origin or destination, or focus it directly.`, 'info');
+        MapViewer.updateTickerText();
         MapViewer.openDock('worldIntel');
     },
 
@@ -1481,6 +1542,7 @@ export const MapViewer = {
     renderSummary: () => {
         const summary = MapViewer.ui.summary;
         const itinerary = MapViewer.ui.itinerary;
+        if (!summary || !itinerary) return;
         const { pathNodes, totalDistance, isHybrid, advisory } = MapViewer.routeState;
         if (!pathNodes.length) {
             summary.className = 'routing-summary empty';
@@ -1488,6 +1550,8 @@ export const MapViewer = {
             itinerary.classList.remove('active');
             itinerary.innerHTML = '';
             MapViewer.renderRouteInfoOverlay();
+            MapViewer.updateHudStatus();
+            MapViewer.renderRouteAnalysis();
             return;
         }
 
@@ -1523,6 +1587,8 @@ export const MapViewer = {
                 <button class="routing-btn" type="button" onclick="MapViewer.swapRoute()">Reverse Route</button>
             </div>
             ${isHybrid ? `<p class="routing-kicker" style="margin-top:0.85rem; color:#d9f7ff;">${Utils.escapeHtml(advisory)}</p>` : ''}`;
+        MapViewer.updateHudStatus();
+        MapViewer.renderRouteAnalysis();
     },
 
     ensureRouteInfoOverlay: () => {
@@ -1787,9 +1853,11 @@ export const MapViewer = {
         MapViewer.viewer.classList.toggle('hide-hyperlanes', !MapViewer.displayState.showHyperlanes);
         if (MapViewer.ui.labelsToggle) {
             MapViewer.ui.labelsToggle.classList.toggle('active', MapViewer.displayState.showLabels);
+            MapViewer.ui.labelsToggle.setAttribute('aria-pressed', String(MapViewer.displayState.showLabels));
         }
         if (MapViewer.ui.hyperlanesToggle) {
             MapViewer.ui.hyperlanesToggle.classList.toggle('active', MapViewer.displayState.showHyperlanes);
+            MapViewer.ui.hyperlanesToggle.setAttribute('aria-pressed', String(MapViewer.displayState.showHyperlanes));
         }
     },
 
@@ -1986,6 +2054,14 @@ export const MapViewer = {
 
     destroy: () => {
         document.body.classList.remove('fullscreen-map-active');
+        if (MapViewer._clockInterval) {
+            clearInterval(MapViewer._clockInterval);
+            MapViewer._clockInterval = null;
+        }
+        if (MapViewer._tickerInterval) {
+            clearInterval(MapViewer._tickerInterval);
+            MapViewer._tickerInterval = null;
+        }
         if (MapViewer._abortController) {
             MapViewer._abortController.abort();
             MapViewer._abortController = null;
@@ -2147,26 +2223,28 @@ export const MapViewer = {
 
     initDocks: (signal) => {
         const closeNav = document.getElementById('close-navicomputer');
-        const closeIntel = document.getElementById('close-world-intel');
+        const closeIntel = document.getElementById('close-worldIntel');
         const closeItin = document.getElementById('close-itinerary');
 
         if (closeNav) closeNav.addEventListener('click', () => MapViewer.forceCloseDock('navicomputer'), { signal });
-        if (closeIntel) closeIntel.addEventListener('click', () => MapViewer.dismissLocationHistoryOverlay(), { signal });
+        if (closeIntel) closeIntel.addEventListener('click', () => MapViewer.forceCloseDock('worldIntel'), { signal });
         if (closeItin) closeItin.addEventListener('click', () => MapViewer.forceCloseDock('itinerary'), { signal });
 
         const pinNav = document.getElementById('pin-navicomputer');
-        const pinIntel = document.getElementById('pin-world-intel');
+        const pinIntel = document.getElementById('pin-worldIntel');
 
         if (pinNav) {
             pinNav.addEventListener('click', () => {
                 MapViewer.dockState.navicomputer.pinned = !MapViewer.dockState.navicomputer.pinned;
                 pinNav.classList.toggle('pinned', MapViewer.dockState.navicomputer.pinned);
+                pinNav.setAttribute('aria-pressed', String(MapViewer.dockState.navicomputer.pinned));
             }, { signal });
         }
         if (pinIntel) {
             pinIntel.addEventListener('click', () => {
                 MapViewer.dockState.worldIntel.pinned = !MapViewer.dockState.worldIntel.pinned;
                 pinIntel.classList.toggle('pinned', MapViewer.dockState.worldIntel.pinned);
+                pinIntel.setAttribute('aria-pressed', String(MapViewer.dockState.worldIntel.pinned));
             }, { signal });
         }
 
@@ -2181,13 +2259,11 @@ export const MapViewer = {
         const el = document.getElementById(`${id}-dock`);
         if (!el) return;
         el.classList.add('open');
+        el.setAttribute('aria-hidden', 'false');
         if (MapViewer.dockState[id]) {
             MapViewer.dockState[id].open = true;
         }
-        if (id === 'navicomputer') {
-            const trigger = document.getElementById('navicomputer-trigger');
-            if (trigger) trigger.classList.add('open');
-        }
+        MapViewer.syncDockTrigger(id, true);
     },
 
     closeDock: (id) => {
@@ -2195,19 +2271,18 @@ export const MapViewer = {
         const el = document.getElementById(`${id}-dock`);
         if (!el) return;
         el.classList.remove('open');
+        el.setAttribute('aria-hidden', 'true');
         if (MapViewer.dockState[id]) {
             MapViewer.dockState[id].open = false;
         }
-        if (id === 'navicomputer') {
-            const trigger = document.getElementById('navicomputer-trigger');
-            if (trigger) trigger.classList.remove('open');
-        }
+        MapViewer.syncDockTrigger(id, false);
     },
 
     forceCloseDock: (id) => {
         const el = document.getElementById(`${id}-dock`);
         if (!el) return;
         el.classList.remove('open');
+        el.setAttribute('aria-hidden', 'true');
         if (MapViewer.dockState[id]) {
             MapViewer.dockState[id].open = false;
             MapViewer.dockState[id].pinned = false;
@@ -2215,10 +2290,7 @@ export const MapViewer = {
         const pinBtn = document.getElementById(`pin-${id}`);
         if (pinBtn) pinBtn.classList.remove('pinned');
         
-        if (id === 'navicomputer') {
-            const trigger = document.getElementById('navicomputer-trigger');
-            if (trigger) trigger.classList.remove('open');
-        }
+        MapViewer.syncDockTrigger(id, false);
     },
 
     toggleDock: (id) => {
@@ -2238,6 +2310,7 @@ export const MapViewer = {
             MapViewer.closeDock('worldIntel');
         }
         MapViewer.closeDock('charts');
+        MapViewer.closeDock('layers');
         MapViewer.closeDock('itinerary');
         
         const beaconCard = document.getElementById('cartographer-beacon-card');
@@ -2249,5 +2322,125 @@ export const MapViewer = {
         if (beaconCard) {
             beaconCard.classList.toggle('open');
         }
+    },
+
+    syncDockTrigger: (id, isOpen) => {
+        const triggerMap = {
+            navicomputer: MapViewer.ui.navTrigger,
+            charts: MapViewer.ui.chartsTrigger,
+            layers: MapViewer.ui.layersTrigger
+        };
+        const trigger = triggerMap[id];
+        if (!trigger) return;
+        trigger.classList.toggle('open', isOpen);
+        trigger.setAttribute('aria-expanded', String(isOpen));
+    },
+
+    startHudTimers: () => {
+        if (MapViewer._clockInterval) clearInterval(MapViewer._clockInterval);
+        const updateClock = () => {
+            if (!MapViewer.ui.galacticClock) return;
+            MapViewer.ui.galacticClock.textContent = new Intl.DateTimeFormat([], {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).format(new Date());
+        };
+        updateClock();
+        MapViewer._clockInterval = setInterval(updateClock, 1000);
+    },
+
+    updateTickerText: () => {
+        const ticker = MapViewer.ui.footerTickerText;
+        if (!ticker) return;
+        const mapName = MapViewer.currentMap?.name || 'the active chart';
+        const selectedNode = MapViewer.selectedNodeId ? MapViewer.nodeIndex[MapViewer.selectedNodeId] : null;
+        ticker.textContent = selectedNode
+            ? `${selectedNode.name} telemetry synchronized. Open the Historical Index for archived events, or contribute missing chart data through the Cartographer Terminal.`
+            : `${mapName} synchronized. Select a world for local telemetry, plot a course in the Navicomputer, or contribute missing systems through the Cartographer Terminal.`;
+    },
+
+    updateHudStatus: () => {
+        const { pathNodes, totalDistance, originId, destinationId, isHybrid } = MapViewer.routeState;
+        const hopCount = Math.max(pathNodes.length - 1, 0);
+        const origin = MapViewer.nodeIndex[originId];
+        const destination = MapViewer.nodeIndex[destinationId];
+        if (MapViewer.ui.hudRouteTitle) {
+            MapViewer.ui.hudRouteTitle.textContent = pathNodes.length
+                ? `${origin?.name || 'Origin'} → ${destination?.name || 'Destination'}`
+                : 'Navicomputer Online';
+        }
+        if (MapViewer.ui.hudRouteState) {
+            MapViewer.ui.hudRouteState.textContent = pathNodes.length
+                ? (isHybrid ? 'Hybrid course with an unregistered approach.' : 'Registered hyperlane course locked.')
+                : 'Select two worlds to plot a course.';
+        }
+        if (MapViewer.ui.hudRouteMeta) {
+            MapViewer.ui.hudRouteMeta.textContent = `${hopCount} Hop${hopCount === 1 ? '' : 's'} • ${MapViewer.formatDistance(totalDistance || 0)}`;
+        }
+        if (MapViewer.ui.footerRouteCount) {
+            MapViewer.ui.footerRouteCount.textContent = pathNodes.length ? '1' : '0';
+        }
+    },
+
+    renderRouteAnalysis: () => {
+        const { pathNodes, totalDistance, isHybrid } = MapViewer.routeState;
+        const namedPath = pathNodes.map(id => MapViewer.nodeIndex[id]?.name).filter(Boolean);
+        const regions = pathNodes.map(id => MapViewer.nodeIndex[id]?.region || MapViewer.nodeIndex[id]?.sector || '').filter(Boolean);
+        let borderCrossings = 0;
+        for (let i = 1; i < regions.length; i += 1) {
+            if (regions[i] !== regions[i - 1]) borderCrossings += 1;
+        }
+        const hopCount = Math.max(pathNodes.length - 1, 0);
+        const hazard = !pathNodes.length ? 'Awaiting route' : isHybrid ? 'High' : (borderCrossings > 0 || hopCount > 7 ? 'Medium' : 'Low');
+        const preview = document.getElementById('analysis-preview-panel');
+        const fuel = document.getElementById('analysis-fuel-panel');
+        const borders = document.getElementById('analysis-borders-panel');
+        const hazardPanel = document.getElementById('analysis-hazard-panel');
+        if (preview) preview.innerHTML = namedPath.length
+            ? `<ol>${namedPath.map((name, index) => `<li><span>${index === 0 ? 'Origin' : index === namedPath.length - 1 ? 'Arrival' : `Hop ${index}`}</span><strong>${Utils.escapeHtml(name)}</strong></li>`).join('')}</ol>`
+            : '<p>No course plotted.</p>';
+        if (fuel) fuel.innerHTML = `<p><strong>${Math.ceil(totalDistance || 0).toLocaleString()} cells</strong> estimated at one standard fuel cell per chart unit.</p>`;
+        if (borders) borders.innerHTML = `<p><strong>${borderCrossings}</strong> political border crossing${borderCrossings === 1 ? '' : 's'} detected.</p>`;
+        if (hazardPanel) hazardPanel.innerHTML = `<p class="hazard-${hazard.toLowerCase().replace(' ', '-')}"><strong>${hazard}</strong>${isHybrid ? ' — includes off-lane travel.' : pathNodes.length ? ' — based on route length and border changes.' : ''}</p>`;
+    },
+
+    toggleAnalysisPanel: (key) => {
+        if (!(key in MapViewer._analysisState)) return;
+        MapViewer._analysisState[key] = !MapViewer._analysisState[key];
+        const button = document.querySelector(`[data-analysis-trigger="${key}"]`);
+        const panel = document.getElementById(`analysis-${key}-panel`);
+        if (button) button.setAttribute('aria-expanded', String(MapViewer._analysisState[key]));
+        if (panel) panel.classList.toggle('is-open', MapViewer._analysisState[key]);
+    },
+
+    togglePanelsMinimized: () => {
+        MapViewer.panelsMinimized = !MapViewer.panelsMinimized;
+        if (MapViewer.ui.shell) MapViewer.ui.shell.classList.toggle('panels-minimized', MapViewer.panelsMinimized);
+        if (MapViewer.ui.minimizeBtn) {
+            MapViewer.ui.minimizeBtn.setAttribute('aria-pressed', String(MapViewer.panelsMinimized));
+            MapViewer.ui.minimizeBtn.innerHTML = MapViewer.panelsMinimized
+                ? '<i class="fas fa-expand-alt" aria-hidden="true"></i><span class="minimize-panels-label">Expand Panels</span>'
+                : '<i class="fas fa-compress-alt" aria-hidden="true"></i><span class="minimize-panels-label">Minimize Panels</span>';
+        }
+    },
+
+    toggleThemeMode: () => {
+        const active = MapViewer.ui.shell?.classList.toggle('map-console-warm');
+        if (MapViewer.ui.themeBtn) MapViewer.ui.themeBtn.setAttribute('aria-pressed', String(Boolean(active)));
+    },
+
+    toggleVolumeIndicator: () => {
+        const button = MapViewer.ui.volumeBtn;
+        if (!button) return;
+        const muted = button.getAttribute('aria-pressed') !== 'true';
+        button.setAttribute('aria-pressed', String(muted));
+        button.innerHTML = `<i class="fas ${muted ? 'fa-volume-mute' : 'fa-volume-up'}" aria-hidden="true"></i>`;
+    },
+
+    toggleTicker: () => {
+        if (!MapViewer.ui.footerTicker) return;
+        MapViewer.ui.footerTicker.classList.toggle('is-dismissed');
     }
 };

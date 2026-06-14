@@ -187,6 +187,14 @@ The functions and components of the public reader SPA are now fully modularized 
 - `openDock(id)` / `closeDock(id)` / `forceCloseDock(id)` / `toggleDock(id)` — Controls the sliding and pinned visibility state of edge panels.
 - `closeAllUnpinnedDocks()` — Iterates and collapses all open docks that are not explicitly pinned.
 - `toggleBeacon()` — Toggles the Contribute beacon overlay card at the center bottom.
+- `syncDockTrigger(id, isOpen)` — Keeps dock trigger classes and `aria-expanded` attributes synchronized with controller state.
+- `startHudTimers()` — Starts the live Galactic Time clock; its interval is cleared during `destroy()`.
+- `updateTickerText()` — Updates the footer bulletin from the active chart and currently selected world.
+- `updateHudStatus()` — Mirrors active route endpoints, hop count, distance, route mode, and active-route count into the compact HUD status surfaces.
+- `renderRouteAnalysis()` / `toggleAnalysisPanel(key)` — Populates and controls the Hyperlane Preview, Fuel Estimate, Political Borders, and Hazard Rating accordion panels.
+- `togglePanelsMinimized()` — Collapses or restores all non-map overlays without removing the command bar.
+- `toggleThemeMode()` / `toggleVolumeIndicator()` — Manage dependency-free visual HUD preferences and their accessible pressed states.
+- `toggleTicker()` — Collapses the footer bulletin while retaining the clock and route shortcuts.
 
 ### `Particles` (Background Engine - `js/ui.js`)
 - `init()` — Sets up the HTML5 Canvas, spawns particles, and registers `visibilitychange` listener for pause/resume.

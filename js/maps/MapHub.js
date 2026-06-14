@@ -19,7 +19,7 @@ export const MapHub = {
             ? `<img class="map-hub-thumb" src="${Utils.escapeHtml(map.image_url)}" loading="lazy" decoding="async" fetchpriority="low" alt="${Utils.escapeHtml(map.map_name)}">`
             : `<div class="map-hub-thumb-placeholder"><i class="fas fa-map-marked-alt"></i></div>`;
         return `
-            <div class="map-hub-card" data-name="${Utils.escapeHtml(map.map_name.toLowerCase())}" data-type="${type}" onclick="window.Router.navigate('maps/${slug}/${map.id}')">
+            <button class="map-hub-card" data-name="${Utils.escapeAttr(map.map_name.toLowerCase())}" data-type="${Utils.escapeAttr(type)}" onclick="window.Router.navigate('maps/${slug}/${map.id}')" type="button" aria-label="Open ${Utils.escapeAttr(map.map_name)} interactive chart">
                 <div class="map-hub-card-overlay"></div>
                 ${thumbHtml}
                 <div class="map-hub-card-body">
@@ -31,7 +31,7 @@ export const MapHub = {
                         <span class="map-hub-badge stat"><i class="fas fa-route"></i> ${c.edges} lane${c.edges !== 1 ? 's' : ''}</span>
                     </div>
                 </div>
-            </div>`;
+            </button>`;
     },
 
     renderSection: (typeKey, maps, slug, counts) => {
@@ -61,14 +61,15 @@ export const MapHub = {
         ].join('');
 
         return `
-            <div class="map-hub-screen" id="map-hub-screen">
+            <div class="map-hub-screen" id="map-hub-screen" style="--map-hub-accent:${Utils.escapeAttr(themeColor || '#00f2fe')}">
                 <div class="map-hub-header">
-                    <div class="map-hub-title"><i class="fas fa-satellite-dish" style="margin-right:0.5rem; opacity:0.7;"></i>Star Chart Registry</div>
-                    <div class="map-hub-subtitle">${maps.length} chart${maps.length !== 1 ? 's' : ''} in the database — select one to open the interactive viewer</div>
+                    <div class="map-hub-eyebrow">Aether Cartographic Archive</div>
+                    <div class="map-hub-title"><i class="fas fa-satellite-dish" aria-hidden="true"></i> Star Chart Registry</div>
+                    <div class="map-hub-subtitle">${maps.length} chart${maps.length !== 1 ? 's' : ''} online. Select a registry card to enter the Galactic Operations Deck.</div>
                 </div>
                 <div class="map-hub-search-wrapper">
-                    <i class="fas fa-search map-hub-search-icon"></i>
-                    <input id="map-hub-search" type="text" class="map-hub-search" placeholder="Search charts…" autocomplete="off">
+                    <i class="fas fa-search map-hub-search-icon" aria-hidden="true"></i>
+                    <input id="map-hub-search" type="search" class="map-hub-search" placeholder="Search charts or map type…" autocomplete="off" aria-label="Search star charts">
                 </div>
                 ${sections}
                 <div class="map-hub-no-results" id="map-hub-no-results">
