@@ -1,127 +1,59 @@
-# WRITER IDE — Function Index
+# Writer IDE Functions
 
-This document provides a comprehensive index of the functions and handlers operating within the Author Writing IDE Single Page Application (`writer.html`).
+### Core IDE & State Management
+- `init()` — Bootstraps Quill, Supabase, listeners, and triggers initial data loads.
+- `initQuill()` — Initializes the Quill.js rich text editor on the canvas.
+- `bindEvents()` — Binds hotkeys (Ctrl+S, F11, etc.), modal overlays, and button clicks.
 
----
+### `DB` (Supabase Data Access)
+- `getStories()` — Populates the header dropdown to switch workspace contexts.
+- `getNodes()` — Retrieves lightweight draft node metadata from the `writer_nodes` tree table without full document bodies.
+- `getPublishedNodes()` — Synthesizes a lightweight virtual tree array from live `chapters`, `characters`, `lore`, and `timeline` tables.
+- `createPublishedChapter()` — Inserts a new draft row into the live `chapters` table from the Published Tree, assigning the next available `chapter_order` for the active story.
+- `getSearchContent()` — Lazily fetches full body fields for the active story/tree mode when global search needs content matching.
+- `getNode(nodeId)` — Fetches the full content/body of a specific node asynchronously.
+- `saveNode(nodeId, payload)` — Updates or inserts a node. Handles polymorphic saving (identifies if it's a draft node or a live table record).
+- `deleteNode(nodeId)` — Purges a node from the DB.
+- `getLinks() / addLink() / removeLink()` — Manages bidirectional hyperlinks between internal workspace nodes.
 
-## 1. Core IDE & State Management
-Initializes systems, configures external assets, and registers operational hotkeys.
+### Tree Rendering & Binder (Left Sidebar)
+- `loadNodes()` — Fetches data via `DB` and triggers tree recreation.
+- `buildNodeMap()` — Converts the flat array of node records into quick-access `state.nodeMap` and `state.childrenByParent` indexes.
+- `getNodeChildren(parentId)` — Reads pre-sorted child arrays from `state.childrenByParent` while traversing the hierarchical tree structure.
+- `renderTree(filterText)` — Recursively generates the HTML `<ul>`/`<li>` structure for the binder.
+- `updateTreeActiveSelection()` — Moves the active binder highlight in place after document switches without rebuilding the entire tree.
+- `renderTreeNode(node)` — Creates an individual tree item, attaching expanding, dragging, and context menu behaviors.
+- `toggleFolder(nodeId)` — Expands/collapses sub-trees in the UI.
 
-- `init()`
-  - **Description:** Entry point for the IDE. Checks dependencies, hooks up Supabase, configures Quill editor nodes, binds events, applies custom theme tokens, fetches stories, and launches session metric timers.
-- `initQuill()`
-  - **Description:** Instantiates the Quill.js editor on `#editor-quill`. Registers custom fonts, sizes, line heights, and toolbar options.
-- `bindEvents()`
-  - **Description:** Binds DOM event listeners. Handles sidebar resizers, custom modal overlays, and essential keyboard hotkeys (such as `Ctrl+S` to save, `F11` for Focus Mode, and search panels).
+### Editor Logic (Center Canvas)
+- `openNode(nodeId)` — The primary function for clicking a document: handles saving the old node, loading the new one, checking edit permissions, refreshing the inspector, and ignoring stale async loads after rapid navigation.
+- `scheduleSave() / saveCurrentNode()` — Debounced auto-save mechanics that serialize Supabase writes and use editor revision checks so in-flight saves cannot mark newer edits as saved.
+- `closeActiveDocument(options)` / `unloadEditorContent()` — Saves when needed, clears the active document, releases Quill's current content, hides editor UI, and yields frames before another large document opens.
+- `loadNodeContentIntoEditor(node)` — Determines if the content is a Quill Delta JSON or raw HTML, and configures the editor gracefully.
+- `isPlainTextDelta(delta)` / `waitForNextFrame()` — Helpers for faster plain-text Delta loading and yielding a browser paint frame before large document injection.
+- `isLikelyMarkdown(text)` / `markdownToHTML(markdown)` / `markdownInlineToHTML(value)` / `renderCurrentMarkdown()` — Native markdown detection and manual rendering helpers for markdown-like current editor text, preserving line-based paragraph breaks and blank markdown lines as empty Quill paragraphs.
+- `renderNodeContentInSplitView(node)` — Renders a read-only secondary view for cross-referencing without creating throwaway Quill instances.
+- `clearActiveSelection()` — Resets the editor canvas to the empty/placeholder state.
 
----
+### Inspector & Properties (Right Sidebar)
+- `loadInspector(node)` — Populates the right panel fields (type, status, target, synopsis, image, notes) based on the active node's context.
+- `saveInspectorField(field, value)` — Immediate auto-save handler for inspector input changes.
+- `getInspectorConfig(node)` — Determines which inspector fields are enabled/disabled depending on whether the node is a draft or a published entity.
+- `renderSnapshots(node) / takeSnapshot(name) / restoreSnapshot(snap)` — Handles the localized version control system array stored in node metadata.
 
-## 2. `DB` (Supabase Data Access & Virtual Trees)
-Fetches draft hierarchies, manages database saves, and virtualizes live published entities.
-
-- `getStories()`
-  - **Description:** Fetches available story rows to populate the top selection dropdown.
-- `getNodes()`
-  - **Description:** Fetches lightweight flat node metadata for the active story from the private `writer_nodes` tree table.
-- `getPublishedNodes()`
-  - **Description:** Asynchronously queries lightweight public database metadata (`chapters`, `characters`, `lore_entries`, and `timeline_events`), virtualizing it into folder/document node objects to show in the Binder tree view.
-- `getSearchContent()`
-  - **Description:** Lazily retrieves full body content for the active story/tree mode when global search needs content matching.
-- `getNode(nodeId)`
-  - **Description:** Fetches the text payload, snapshot histories, and detailed metadata columns for a specific node.
-- `saveNode(nodeId, payload)`
-  - **Description:** Saves content updates. Evaluates if the target node belongs to private drafts or virtualized published files, and writes to the correct table.
-- `deleteNode(nodeId)`
-  - **Description:** Deletes a node and all recursive sub-nodes (folder contents) from the database tree.
-- `getLinks() / addLink() / removeLink()`
-  - **Description:** Manages relational hyperlinks (`writer_node_links`) between world reference files.
-
----
-
-## 3. Tree Rendering & Binder (Left Sidebar)
-Builds recursive folders, updates active lists, and handles node sorting.
-
-- `loadNodes()`
-  - **Description:** Pulls lightweight node data from the database and triggers in-memory tree reconstruction.
-- `buildNodeMap()`
-  - **Description:** Converts flat database arrays into dictionary indexes (`state.nodeMap` and `state.childrenByParent`) for instant lookup by ID and parent.
-- `getNodeChildren(parentId)`
-  - **Description:** Retrieves pre-sorted children nodes belonging to a parent folder ID.
-- `renderTree(filterText)`
-  - **Description:** Traverses the node hierarchy recursively, generating nested list markup (`<ul>` and `<li>`) for the Binder panel.
-- `updateTreeActiveSelection()`
-  - **Description:** Moves the active Binder highlight in place after node switches without rebuilding the full tree.
-- `renderTreeNode(node)`
-  - **Description:** Renders individual tree list elements, attaching event handlers for click selection, folder expansion, dragging, and context menus.
-- `toggleFolder(nodeId)`
-  - **Description:** Expands or collapses a folder node in the Binder, saving the state in `expandedFolders`.
-
----
-
-## 4. Editor Logic (Center Canvas)
-Handles document loading, debounced auto-saves, and split-view reference panels.
-
-- `openNode(nodeId)`
-  - **Description:** Loads a selected node. Auto-saves the active draft first, loads the new content, configures editing locks, populates properties inspectors, and ignores stale async responses after rapid navigation.
-- `scheduleSave() / saveCurrentNode()`
-  - **Description:** Automates draft saves. Serializes writes, checks editor revision state, and schedules debounced Supabase writes without letting older saves clear newer edits.
-- `closeActiveDocument(options) / unloadEditorContent()`
-  - **Description:** Saves when needed, closes the current document, clears Quill's large content DOM, hides editor UI, and yields frames before another document opens.
-- `loadNodeContentIntoEditor(node)`
-  - **Description:** Inspects document contents (Quill JSON Delta vs raw HTML) and populates the canvas.
-- `isPlainTextDelta(delta) / waitForNextFrame()`
-  - **Description:** Speeds up plain-text Delta loading and yields a browser paint frame before large document injection.
-- `isLikelyMarkdown(text) / markdownToHTML(markdown) / renderCurrentMarkdown()`
-  - **Description:** Detects markdown-like current editor text, converts common markdown syntax to safe HTML while preserving line-based paragraph breaks and blank markdown lines, and inserts it through Quill when the user invokes Render Markdown.
-- `renderNodeContentInSplitView(node)`
-  - **Description:** Loads a secondary node as read-only in the split-view panel for reference while writing without creating throwaway Quill instances.
-- `clearActiveSelection()`
-  - **Description:** Clears the editor canvas and displays placeholder illustrations when no document is active.
+### Metrics & Utilities
+- `countWords(text)` — Simple whitespace-delimited word counter.
+- `scheduleEditorMetricsUpdate()` / `applyEditorStats()` / `applyNodeStats()` / `updateCounts()` — Batches Quill text-change metrics, caches counts for long documents, and shows metadata counts immediately while full metrics calculate later.
+- `startSessionTimer() / updateSessionStats()` — Calculates Words-Per-Minute and overall session duration.
+- `setTheme(themeName)` — Injects the selected UI theme class onto the root body.
+- `toggleFocusMode() / toggleTypewriterMode()` — Adjusts CSS bounds to hide sidebars or auto-scroll the editor to the center.
+- `hydrateSearchContent()` / `performSearchAll(query)` — Global `Ctrl+Shift+F` full-text search that lazily hydrates body content for the active story/tree mode before matching.
+### Context Menus & Actions
+- `showContextMenu(e, nodeId) / hideContextMenu()` — Manages the custom right-click floating menu.
+- `handleContextAction(action)` — Dispatches menu clicks to node operations.
+- `createNode(type, parentId)` — Generates a new file/folder placeholder.
+- `createPublishedChapter()` — Creates and opens a live unpublished chapter when the Published Tree is active, enabling direct chapter drafting/publishing from `writer.html`.
+- `duplicateNode(nodeId)` — Clones an existing node and its content.
+- `renameNode(nodeId, newTitle)` — Prompts and saves a title change.
 
 ---
-
-## 5. Inspector & Properties (Right Sidebar)
-Tracks document metadata, saves settings, and manages draft snapshots.
-
-- `loadInspector(node)`
-  - **Description:** Renders fields in the right sidebar (target word goals, summaries, status indicators, and snaps) tailored to the active node type.
-- `saveInspectorField(field, value)`
-  - **Description:** Saves updates made to inspector inputs (e.g. status tags or targets) directly back to the database.
-- `getInspectorConfig(node)`
-  - **Description:** Return disabled or visible states for property fields depending on whether the node is a private draft or a virtualized live record.
-- `renderSnapshots(node) / takeSnapshot(name) / restoreSnapshot(snap)`
-  - **Description:** Custom version control engine. Saves current Quill deltas as named snapshots in the node's JSONB metadata column, and handles rolling back.
-
----
-
-## 6. Metrics & Utilities
-Calculates real-time statistics, session speeds, and manages visual themes.
-
-- `countWords(text)`
-  - **Description:** Performs word counts on raw editor text.
-- `updateCounts()`
-  - **Description:** Fires on Quill text changes to update total word counts, target progress percentages, and footer readouts.
-- `startSessionTimer() / updateSessionStats()`
-  - **Description:** Updates active session times, calculates Words-Per-Minute, and displays active writing session metrics.
-- `setTheme(themeName)`
-  - **Description:** Injects visual variables and updates CSS root variables to apply the selected visual theme.
-- `toggleFocusMode() / toggleTypewriterMode()`
-  - **Description:** Adjusts active editor layout classes, centering views or hiding workspace side panels.
-- `performSearchAll(query)`
-  - **Description:** Launches a global full-text search across all loaded node drafts.
-
----
-
-## 7. Context Menus & Actions
-Manages binder operations, folder additions, and file duplications.
-
-- `showContextMenu(e, nodeId) / hideContextMenu()`
-  - **Description:** Positions and overlays custom right-click menus on binder nodes.
-- `handleContextAction(action)`
-  - **Description:** Routes context menu selections to specific operations (such as Rename, Duplicate, or Move).
-- `createNode(type, parentId)`
-  - **Description:** Spawns a new file/folder node under a parent folder.
-- `duplicateNode(nodeId)`
-  - **Description:** Clones an existing node's content, summaries, and properties under a new title.
-- `renameNode(nodeId, newTitle)`
-  - **Description:** Updates a node's display title in the database.

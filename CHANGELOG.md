@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-14]
+### Added
+- 07:35 +05:30: Created `scripts/download_timeline_images.py`, a standard-library multi-threaded python utility to download all external wiki-scraped timeline images in parallel. The script extracts unique URLs, sanitizes filenames/directories, and saves them organized in `data/timeline/downloaded_images/Era/Sub-Era/` folders while showing a live CLI progress bar. Updated shared conventions documentation.
+
+### Changed
+- 07:41 +05:30: Configured `js/timelines/TimelineHub.js` event image resolution to point to local sanitized paths under `data/timeline/downloaded_images/` instead of fetching directly from the external Wikia/Fandom CDN.
+
+
 ## [2026-06-05]
 ### Added
 - 03:38 +05:30: Linked reader maps with Galactic/Story History through a new `js/timelines/LocationHistoryIndex.js` module. Focused map worlds now expose a History action that opens a reusable overlay, scans current story timeline events plus parsed Galactic History for normalized location mentions, groups results by era/time, and caches Galactic matches in memory for repeat lookups. Updated `MapViewer`, `Render.maps`, `main.js`, `styles.css`, and reader documentation.

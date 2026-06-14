@@ -117,9 +117,22 @@ export const TimelineHub = {
                     continue;
                 }
 
+                // Resolve local path matching Python script organization
+                const sanitizeName = (str) => str.replace(/[\\/*?:"<>|]/g, '_').trim();
+                const eraDir = imageData.eras && imageData.eras.length ? sanitizeName(imageData.eras[0]) : "Uncategorized";
+                const subEraDir = imageData.sub_eras && imageData.sub_eras.length ? sanitizeName(imageData.sub_eras[0]) : "";
+                
+                let filename = imageData.image_key || imageData.image_name;
+                if (!filename) {
+                    filename = imgUrl.split('/').pop().split('?')[0];
+                }
+                filename = sanitizeName(filename);
+                
+                const localImgUrl = `data/timeline/downloaded_images/${eraDir}/${subEraDir ? subEraDir + '/' : ''}${filename}`;
+
                 images.push({
                     name: imageData.image_name || match,
-                    url: imgUrl
+                    url: localImgUrl
                 });
 
                 if (TimelineHub._renderedImagesThisPage) {

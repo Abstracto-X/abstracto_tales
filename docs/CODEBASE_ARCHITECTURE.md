@@ -1,226 +1,417 @@
 This document outlines the architecture of the "Abstracto Tales / The Aether Archives" project. It comprises three single-file Single Page Applications (SPAs) for administrative and editing interfaces, and a highly modular, clean ES6-module-based SPA for the public-facing reader frontend.
 
-## 1. Purpose
+## Reader SPA (`index.html`) — Modular Architecture
 
-### `index.html` (Reader Frontend - Modularized)
-The public-facing frontend designed for readers to browse and read stories. While originally a single-file monolith, it is now refactored into a clean skeleton utilizing a project-wide external stylesheet (`styles.css`) and a modular ES6 codebase:
-- **`index.html`**: Clean skeletal HTML layout and external resource preload tags.
-- **`styles.css`**: Complete layout, theme configurations, animations, and custom typography.
-- **`js/main.js`**: Central bootstrapper and entry point.
-- **`js/config.js`**: Environment keys, central `State` registry, and lightsaber preferences.
-- **`js/db.js`**: Database API operations and LRU/TTL caching layers.
-- **`js/auth.js`**: Profile synchronization and user authentication flow.
-- **`js/comments.js`**: Comment drawers, inline annotations, and discussion managers.
-- **`js/ui.js`**: Interface templates, particle engines, audio controllers, and lightsaber indicators.
-- **`js/render.js`**: Dynamic HTML generator functions for pages and tabs.
-- **`js/router.js`**: Custom client-side hash router and stage transition handling.
-- **`js/timelines/TimelineHub.js`**: Two-phase chronology explorer for Story History and the local Galactic History JSON tree.
-- **`js/timelines/LocationHistoryIndex.js`**: Lazy location-history lookup that scans Story History plus parsed Galactic History events and renders the map planet history overlay.
-- **`js/timelines/galacticTimelineAssets.js`**: Central image registry exporting named Galactic History art variables and grouped asset maps used by `TimelineHub`.
-- **`js/maps/MapViewer.js`**: Star chart SVG rendering and Dijkstra pathfinder.
-- **`js/maps/MapHub.js`**: Star chart selector grids and dynamic catalog filters.
-
-### `admin.html` (CMS / Admin Panel)
-The restricted administrative portal used by the author to manage all content for the application. It provides comprehensive CRUD interfaces to draft stories, manage chapters, upload media (covers, maps, character avatars, wallpapers), and organize lore and timeline events. It enforces session-based authentication to ensure that only authorized users with an `admin` role can modify the database.
-
-### `writer.html` (Writer's IDE)
-A specialized, distraction-free writing environment (IDE) tailored for the author to draft content. It integrates a rich-text editor (Quill.js) with features like word targets, focus mode, typewriter scrolling, document snapshots, and split-view editing. It organizes both draft (Workspace) nodes and published elements into a hierarchical tree, reading and saving directly to the Supabase backend.
-
-### `cartographer.html` (Collaborative Map Editor)
-A collaborative map editing SPA where users with the `cartographer` or `admin` role can create story-linked maps, place planet nodes, and draw hyperlane paths on uploaded map images. Built on Leaflet.js (CRS.Simple) with Supabase-backed persistence. Features per-user color-coded contributions, a planet name autocomplete powered by `sw_planets.csv`, a changelog activity log, and multi-map support with dynamic coordinate spaces derived from uploaded image dimensions stored on the shared `maps` table.
-
-### `scripts/scribblehub_autosync.js` (Background Chapter Import Worker)
-A standalone Node.js worker for operational automation. It polls a configured ScribbleHub series, discovers recently published chapter links via the series RSS feed or series page, fetches unseen chapter bodies, and inserts them into the existing `chapters` table in Supabase using a service-role key. This script is intentionally isolated from the browser apps so `admin.html`, `writer.html`, and the public reader continue consuming the same chapter records with no frontend contract changes.
-
-### `scripts/run_scribblehub_sync.ps1` / `scripts/register_scribblehub_sync_task.ps1` (Windows Runtime Helpers)
-Supporting PowerShell helpers for Windows deployments. `run_scribblehub_sync.ps1` loads repo-local `.env` values into the process and launches the Node worker, while `register_scribblehub_sync_task.ps1` registers a Scheduled Task that starts the sync worker automatically at logon.
+This document outlines the detailed architecture and module structure of the public-facing Reader Single Page Application (`index.html`).
 
 ---
 
-## 2. Global State
+## 1. Overview
 
-### `index.html` (Reader - Modularized)
-Global state is encapsulated within the `State` object of `js/config.js` and specialized manager modules. Key properties and systems include:
-- `window.supabase` *(Object)* — Holds the Supabase JS client instance initialized in `js/config.js`.
-- `State.currentStory` *(Object | null)* — Holds the currently loaded story data.
-- `Router` *(Object)* — Manages navigation state and current active view. Changes on hash change.
-    - `_activeRouteToken` *(Number)* — Monotonic token used to ignore stale route completions so older async renders cannot re-hide/show the stage after a newer navigation starts.
-    - `_pendingNavigationTimer` *(Number | null)* — Timeout handle for the delayed hash transition used by the fade animation, allowing same-route and rapid navigation cleanup.
-- `CommentsManager` *(Object)* — Manages state for the comments drawer/panel.
-- `UI` *(Object)* — Handles global UI state like toasts and loading spinners.
-- `LoaderManager` *(Object)* — Unified modular loading orchestrator. Tracks `activeLoaderId` and `activeLoader`, maintains a registry of dynamic loader modules, and decides whether to load/execute the monogram cinematic (`'primary'`) or standard lightsaber loading sequence (`'lightsaber'`) depending on initial load state and specific story settings.
-- `State.isInitialAppLoad` *(Boolean)* — Tracks whether the application is performing its initial cold load, letting the primary cinematic loader coordinate the intro overlay instead of the default lightsaber loading states.
-- `State.galleryConfirmed` *(Boolean)* — Tracks whether the user has viewed and accepted the Mature Content and AI advisory warning overlay for the gallery, preserving the choice for the current session.
-- `State.galleryViewMode` *(String)* — Tracks whether the active character gallery is displayed in standard column `'grid'` or premium fanning `'deck'` view modes, persisted to `localStorage`.
-- `State.gallerySearch` / `State.gallerySort` *(String)* — Hold the active character-gallery text query and client-side order (`curated`, `newest`, or `top`) while the route is open.
-- `State.showR18` *(Boolean)* — Tracks whether the gallery header toggle is revealing mature/R18/NSFW tagged artwork. When enabled, mature-tagged images surface first across recently added items and individual character galleries; when disabled, those images stay hidden. Persisted to `localStorage`.
-- `Cache` *(Object)* — TTL + LRU cache for Supabase query results.
-    - `stories` *(Array | null)* — Cached stories list with `storiesTTL` timestamp.
-    - `author` *(Object | null)* — Cached author profile with `authorTTL` timestamp.
-    - `_hubEntries` *(Array)* — LRU-ordered list of cached story hub data (max 5 entries, 5-min TTL).
-    - `_hubMap` *(Object)* — Quick slug-to-hub lookup dictionary.
-- `MapViewer` *(Object)* - Advanced interactive map engine.
-    - `mapData` *(Object | null)* - Loaded node and edge data for the currently selected Supabase map record.
-    - `currentMap` *(Object)* - Active reader map metadata including Supabase `id`, image `src`, display `name`, and coordinate `width` / `height`.
-    - `graph` *(Object | null)* - Adjacency list used for Dijkstra pathfinding.
-    - `mapHeight` *(Number)* - Internal coordinate space height (4000px) used for Y-axis inversion.
-    - `state.pendingX` / `state.pendingY` / `state.dragTicking` *(Number/Boolean)* — State variables used to gate dragging layout updates inside a `requestAnimationFrame` loop.
-- `MinPriorityQueue` *(Class)* - Lightweight binary heap implementation for Dijkstra pathfinding.
-- `MinPriorityQueue` *(Class)* — Lightweight binary heap implementation for Dijkstra pathfinding.
-- `default_behavior_lightsaber` *(String)* — Sets the site-wide default loader orientation (`'vertical'` or `'horizontal'`) used when the reader has not saved a personal saber mode preference yet.
-- `Particles` *(Object)* — Background particle engine.
-    - `_rafId` *(Number | null)* — Current `requestAnimationFrame` ID for cancellation.
-    - `_paused` *(Boolean)* — Whether the engine is paused (e.g., tab hidden).
-- `UserAuth` *(Object)* — Manages current user session.
-    - `user` *(Object | null)* — The authenticated user.
-    - `profile` *(Object | null)* — The user's profile info from the DB.
+`index.html` serves as the public frontend for readers to browse and read stories, characters, lore, and interactive maps. 
+Historically a monolithic file, it has been refactored into a **modular ES6 architecture** to improve maintainability, separation of concerns, and developer experience.
 
-#### `index.html` MapViewer state additions
-- `MapViewer.componentIndex` / `MapViewer.nodeComponentIndex` — Connected-component indexes used to separate routeable hyperlane clusters from isolated worlds.
-- `MapViewer.edgeLengthIndex` — Cached per-edge geometry lengths reused by routing and nearest-exit calculations.
-- `MapViewer.routeState.offlaneSegments` / `routeState.accessPoints` / `routeState.advisory` — Hybrid-route metadata for snapped exits, straight-line off-lane travel, and reader-facing warnings about unregistered approach legs.
-- `MapViewer.routeOverlayDismissed` — Tracks whether the reader manually hid the current in-map route information overlay, resetting when a new course is plotted or cleared.
-- `MapViewer.crossMapIndex` — Bidirectional cross-map indexing mapping lowercase planet names to a list of `{ mapId, mapName }` records where they exist across all charts in the current story, enabling cross-map search and snap hints.
-- `MapViewer.storyMaps` — Local cache of all maps for the current story to enable quick name and metadata mapping.
-- `MapViewer.storySlug` — Stores the current story slug to construct clean relative routing paths during map switching.
-- `MapViewer.dockState` — Object managing open and pinned states for Navicomputer, World Intel, Itinerary, and Charts docks.
+The application uses **vanilla HTML, CSS, and JavaScript** without a build step or bundler.
 
-- `MapViewer.storyTimeline` - Stores the current story's timeline events while the reader map route is active so selected planets can search local Story History without another Supabase fetch.
-- `MapViewer._historyRequestId` - Monotonic token that ignores stale compact planet-history overlay searches when readers click between map nodes quickly.
-- `MapViewer.activeIntelTab` — Holds the active tab ID (e.g. `'overview'`) for the World Inspector left dock panel.
+### Core Structure
+- **`index.html`**: A lightweight HTML shell. It contains the DOM structure, `<script type="module" src="js/main.js"></script>`, and imports `styles.css`.
+- **`styles.css`**: Contains all styling rules and CSS variables for the application.
+- **`js/`**: The core JavaScript directory containing the modular ES6 architecture.
 
-#### `index.html` TimelineHub state additions
-- `TimelineHub._galacticTree` - Cached parsed copy of `data/timeline/timeline_tree.json`, loaded only when the reader opens Galactic History.
-- `TimelineHub._galacticMetadata` - Cached parsed copy of `data/timeline/galactic_metadata.json`, loaded in parallel to decouple headers and assets from raw events.
-- `TimelineHub._galacticData` - Cached normalized Galactic History state produced by `TimelineHub.parseWikiData(rawJson, metadata)`, containing eras, sub-eras, parsed BBY/ABY events, image assets, and chronology sort metadata for the UI.
-- `TimelineHub._GALACTIC_TREE_URL` - Local JSON path used by the Galactic History explorer.
+---
 
-#### `index.html` LocationHistoryIndex state additions
-- `LocationHistoryIndex._galacticCache` - In-memory Map keyed by normalized location name, caching Galactic History matches after the first planet-history lookup.
-- `LocationHistoryIndex._overlay` - Reusable DOM overlay attached to `document.body` for map planet history results.
+## 2. ES6 Module Architecture
 
-### `admin.html`
-- `State` *(Object)* — The primary global state container for the admin panel.
-  - `user` *(Object | null)* — The Supabase auth user object. Changes on auth state change.
-  - `profile` *(Object | null)* — The admin user's profile data. Changes after fetching user profile post-login.
-  - `currentView` *(String)* — Tracks the active view/section (e.g., 'dashboard', 'stories', 'characters', 'mapRequests'). Changes when navigating the sidebar.
-  - `stories` *(Array)*, `characters` *(Array)*, `lore` *(Array)*, `mapRequests` *(Array)*, etc. — Caches for entity lists to populate tables.
-  - `selectedStoryId` *(String | null)* — The ID of the currently selected story context for filtering chapters or related entities. Changes via the story dropdown on certain views.
-  - `selectedCharacterId` *(String | null)* — For character relation filtering contexts.
-  - `gallerySearch` *(String)* — Active admin gallery workspace search query spanning caption text, character names, and tags while filtering the published panel and hidden pool.
+The application logic is broken down into specialized singleton modules.
 
-  - `galleryVisibilityFilter` *(String)* â€” Tracks whether the admin gallery workspace is currently showing the published board or the unpublished pool.
+### Entry Point
+- **`js/main.js`**
+  - Imports all other modules.
+  - Exposes necessary modules to the global `window` scope for inline event handlers (`onclick`, etc.) found in the HTML.
+  - Bootstraps the application on `DOMContentLoaded` by initializing auth, configuring routing, and starting visual engines (particles, cinematic loaders).
 
-### `writer.html`
-- `supabase` *(Object)* — Holds the initialized Supabase client instance.
-- `currentStoryId` *(String | null)* — The ID of the story currently being edited. Initialized from the `?story_id=` URL parameter or the first available story; changes via the top-bar dropdown.
-- `state` *(Object)* — The IDE's complex state manager.
-  - `treeMode` *(String)* — Either `'workspace'` (drafts) or `'published'` (live entities). Changes via the binder tabs.
-  - `nodes` *(Array)* — The current list of tree nodes (documents, folders, characters, etc.) for the active tree mode.
-  - `nodeMap` *(Object)* — A dictionary mapping node IDs to node objects for quick lookup.
-  - `childrenByParent` *(Object)* — A precomputed parent-id index used by the binder renderer to avoid repeatedly filtering the full node list while walking the tree.
-  - `activeNodeId` *(String | null)* — The ID of the currently opened node in the editor. Changes when clicking a node in the binder.
-  - `activeNodeRequestId` / `linksRenderRequestId` / `searchRequestId` *(Number)* — Monotonic request tokens used to ignore stale async editor, inspector-link, and global-search completions after the user changes context.
-  - `expandedFolders` *(Set)* — Keeps track of which folders are visually expanded in the tree. Saved to/from `localStorage`.
-  - `bookmarks` *(Set)* — A collection of bookmarked node IDs.
-  - `savePromise` / `isSaving` / `pendingSaveAfterCurrent` *(Object | Boolean)* — Autosave coordination state that prevents overlapping Supabase writes from marking newer edits as saved.
-  - `isDirty` *(Boolean)* — Tracks if the editor has unsaved changes. Changes on text input and resets on successful save.
-  - `editorChangeRevision` *(Number)* — Incremented on each Quill text-change so save completions can tell whether newer edits happened while a write was in flight.
-  - `isProgrammaticLoad` *(Boolean)* — Suppresses Quill `text-change` autosave work while large documents are being loaded into the editor.
-  - `currentWordCount` / `currentCharCount` / `currentParaCount` *(Number)* — Cached editor metrics reused by target bars and session stats so long documents are not re-scanned by multiple panels.
-  - `searchContentHydratedKey` *(String | null)* — Tracks whether full body text has been loaded on demand for the active story/tree mode global search.
-  - `quill` *(Object)* — The Quill rich-text editor instance.
-  - `currentTheme` *(String)* — The active UI theme name. Loaded from `localStorage`.
-  - `sessionStartWords` / `sessionStartTime` *(Number)* — Tracking metrics for the active writing session.
+### Configuration & State Management
+- **`js/config.js`**
+  - **`supabaseClient`**: Initializes and exports the Supabase client.
+  - **`State`**: A global state object containing active story references, filter states, mature content flags (`showR18`), gallery view modes, and initialization flags.
+  - **`Utils`**: General helper methods (e.g., date parsing, text formatting, truncation, sanitize string).
 
-### `cartographer.html`
-- `supabaseClient` *(Object)* — Supabase client instance.
-- `State` *(Object)* — Primary global state container.
-  - `user` *(Object | null)* — Authenticated user. Set after login.
-  - `profile` *(Object | null)* — User's profile row.
-  - `pendingRequestCount` *(Number)* — Active pending contribution count.
-  - `currentProject` *(Object | null)* — The active `maps` row used as the editor’s canonical parent record. Changes when switching maps.
-  - `projects` *(Array)* — Cached list of available shared `maps` rows.
-  - `stories` *(Array)* — Cached stories list used to require `story_id` when admins create new maps.
-  - `nodes` *(Array)* — All `map_nodes` for the current map.
-  - `edges` *(Array)* — All `map_edges` for the current map.
-  - `mode` *(String)* — Current interaction mode: `'select'`, `'place'`, or `'trace'`.
-  - `traceQueue` *(Array)* — Ordered list of nodes selected during trace mode before path finalization.
-  - `isDirty` *(Boolean)* — Whether there are unsaved local changes.
-  - `contributors` *(Object)* — Map of contributor user IDs to assigned display colors.
-  - `undoStack` / `redoStack` *(Array)* — Client-side undo/redo history.
-- `MapEngine` *(Object)* — Leaflet.js map controller managing layers, rendering, and Catmull-Rom spline interpolation.
-- `Hub` *(Object)* — Post-login landing controller for map discovery, role-aware actions, and contribution status previews before entering the editor.
-- `PlanetDB` *(Object)* — In-memory index of `sw_planets.csv` entries for autocomplete suggestions.
-  - `entries` *(Array)* — Parsed planet records with `name`, `sector`, `region`, `grid` fields.
+### Data Access Layer
+- **`js/db.js`**
+  - **`DB`**: Encapsulates all interactions with Supabase (e.g., `fetchStory()`, `fetchStories()`, `fetchEncyclopedia()`).
+  - **`Cache`**: Implements a robust TTL (Time-To-Live) and LRU (Least Recently Used) caching mechanism to prevent redundant database hits for heavy queries.
+
+### User Authentication
+- **`js/auth.js`**
+  - **`UserAuth`**: Handles Supabase session retrieval, sign-in, registration, sign-out, and profile synchronization. Exposes active user and profile details.
+
+### Routing & Navigation
+- **`js/router.js`**
+  - **`Router`**: A custom hash-based client-side router. Listens to `hashchange` and controls transitions between views (`home`, `story`, `read`, `maps`).
+  - Governs transition fade-ins/outs and prevents rapid-click race conditions using monotonic routing tokens.
+
+### Rendering Engine
+- **`js/render.js`**
+  - **`Render`**: Responsible for DOM manipulation and injecting HTML structures based on the active route.
+  - Contains methods like `Render.home()`, `Render.storyHub()`, `Render.chapter()`, `Render.maps()`, each corresponding to a major view.
+
+### User Interface & Interactions
+- **`js/ui.js`**
+  - **`UI`**: General UI state toggles, modal handling (Auth, Profile, Wallpapers, Saber Configuration), and background wallpaper dynamic updates.
+  - **`Actions`**: Event handlers for gallery voting and R18 filtering logic.
+  - **`SaberController`**: The interactive Lightsaber loading sequence overlay.
+  - **`LoaderManager`**: Orchestrates transitions between various cinematic loaders (e.g., `primary_loader`, `anomaly_loader`) dynamically based on story theme configurations using dynamic ES modules (`await import()`).
+  - **`Visuals` & `Particles`**: Floating canvas particles, depth-of-field glassmorphism filters, and lightbox mechanics.
+
+### Comments & Community
+- **`js/comments.js`**
+  - **`CommentsManager`**: Controls the sliding comments drawer, fetching comments, posting replies, editing, and managing user interaction within discussions.
+
+### Maps & Cartography
+- **`js/maps/`**
+  - **`MapHub.js`**: Controls the map selection interface ("Star Chart Registry").
+  - **`MapViewer.js`**: The Leaflet.js-based interactive star chart engine. Handles panning, zooming, custom SVG lanes, and the Dijkstra-based pathfinding navicomputer.
+
+---
+
+## 3. Application Initialization Flow
+
+When a reader loads `index.html`, `js/main.js` dictates the bootstrap sequence:
+
+1. **`DOMContentLoaded` Hook:**
+   - **Loader Initiation**: `LoaderManager.show()` is fired immediately. The primary monogram cinematic or the lightsaber loader takes over the viewport.
+   - **Auth Check**: `UserAuth.init()` retrieves the active session from Supabase local storage and fetches user profile details asynchronously.
+   - **Engine Startup**: Visual engines such as `Particles.init()` and `Visuals.initDynamicTransparency()` are started.
+   - **Route Dispatch**: `Router.handle()` resolves the initial URL hash.
+   
+2. **Routing Phase:**
+   - The target route fetches data via `DB` (leveraging `Cache`).
+   - `Render` constructs the DOM structure and injects it into the reader stage.
+   - Upon successful rendering, `Router` triggers the loader outro sequence (`LoaderManager.playOutro()`).
+
+3. **Global Scope Binding:**
+   - Due to the nature of inline HTML event listeners (`onclick="UI.openAuthModal()"`), `js/main.js` binds all relevant controller objects (`UI`, `Actions`, `UserAuth`, `Router`, etc.) directly to the `window` object.
+
+---
+
+## 4. Loader Architecture (Dynamic Loading)
+
+To optimize load times, secondary loaders (like specific anomalies or interactive elements) are code-split and loaded dynamically.
+
+`LoaderManager` in `js/ui.js` contains a `registry`:
+```javascript
+registry: {
+    'primary': { path: '../components/primary_loader/primary_loader.js', className: 'PrimaryLoader' },
+    'anomaly_flesh': { path: '../components/anomaly_loader/anomaly_loader.js', ... }
+}
+```
+When a loader is requested, `LoaderManager` dynamically imports the module (`await import(config.path)`), ensuring that bulky canvas manipulation scripts only execute if the specific story requires them.
+
+---
+
+## 5. Security & Access Control
+
+- **Read-Only by Default**: The Reader SPA operates strictly via read-only RLS policies for unauthenticated users.
+- **Progressive Enhancement**: Functions like voting, commenting, and editing profile details require a verified `UserAuth` session. The UI progressively displays login prompts or auth-locked modals depending on user intent.
+
+---
+
+### Reader Map Conventions
+- **Two-Phase Map Discovery & Routing:** The maps view follows a robust two-phase routing structure. A root story map registry (`#maps/slug`) displays the **Star Chart Registry (Map Hub)**, which transitions into the **Interactive Viewer** (`#maps/slug/mapId`) when a specific map is selected. A glassmorphic top navigation bar on the viewer allows seamless return to the Registry.
+- **Star Chart Registry (Map Hub):** A modern, grid-based interface displaying all charted maps associated with a story. Maps are dynamically grouped into **Galactic**, **Regional / Sector**, and **Local** categories, featuring live stats (node and hyperlane counts) on each thumbnail card.
+- **Dynamic Search & Filtering:** The Map Hub includes a real-time responsive search bar to filter charts instantly by name or type category, dynamically hiding empty sections.
+- **Cross-Map Planet Search & Navigation:** Navicomputer input fields (`Focus`, `Origin`, `Destination`) are enhanced with cross-map lookups. When a user queries a planet not charting on the current map, a non-intrusive hint detects if the world is charted in any other story map and provides one-click navigation links to switch charts instantly.
+- The `maps` route renders as a full-viewport sci-fi console shell where the map fills 100% of the stage and all modules (Navicomputer, World Intel, Itinerary, and Map selector) live as edge-docked glassmorphic panels triggered dynamically.
+- `MapViewer.init()` binds the interactive dial trigger, edge dock controls, layer toggles, and resets active route/dock states.
+- `MapViewer` owns map switching, dock management, node selection, route plotting, inline routing status, route summaries, and itinerary generation.
+- `MapViewer.routeState` persists selected endpoints plus computed route metadata, while `MapViewer.dockState` manages open/pinned states for all edge panels.
+- `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` by `map_id`, then remaps edge foreign-key fields into the legacy `source` / `target` shape expected by the routing engine.
+- Map reader controls include layer toggles for labels and hyperlanes, explicit route actions (`Plot`, `Swap`, `Clear`, `Center Route`), and responsive layout behavior for smaller screens.
+- Active route labels now run through a collision-aware placement pass that offsets important planet names around their nodes, raises those labels above nearby pins, and draws connector stems back to the owning planet node. Access-point markers no longer render separate "Exit" / "Approach" text labels, keeping hybrid route clusters less crowded.
+- Reader map planet pins use a double-ring marker style. When the map image can be sampled safely, `MapViewer` derives each node's CSS color from nearby pixels on the underlying map image and falls back to the story accent color if canvas sampling is blocked.
+- After plotting a course, MapViewer mirrors route distance, hop count, and a compact itinerary into a glassmorphic in-map overlay card. The card chooses a low-obstruction viewport corner based on the active route and route nodes, while also reserving vertical space below the top label/hyperlane controls and active map chip.
+- `MapViewer.buildComponents()` now derives connected hyperlane clusters after graph construction so isolated worlds can be recognized without extra fetches.
+- `MapViewer.edgeLengthIndex` caches polyline lengths for each lane so nearest-exit snapping and route totals reuse the same geometry measurements.
+- When a selected world has no registered lane links, `MapViewer.calculateRoute()` falls back to a hybrid route that snaps to the nearest linked world or point on a hyperlane, renders a cyan straight-line off-lane segment, and adds itinerary/summary advisory copy warning that the remaining approach uses unregistered travel.
+- Clicking a planet opens a compact, scrollable in-map history overlay first. `MapViewer.renderLocationHistoryOverlay()` passes the selected planet name and current story timeline into `LocationHistoryIndex`, which lazy-loads Galactic History if needed, scans by normalized exact location phrase, and caches Galactic matches in memory. The focused-world card and compact overlay still provide a Full History / Open Full Archive action through `MapViewer.openSelectedNodeHistory()` for the larger full-screen archive.
+
+---
+
+### Reader Timeline Conventions
+- **Two-Phase Timeline Discovery:** The timeline route now opens a chronology chooser at `#timeline/{slug}`. Readers select either **Story History** (`#timeline/{slug}/story`) or **Timeline of Galactic History** (`#timeline/{slug}/galactic`) instead of landing directly in one long alternating list.
+- **Story History:** The existing Supabase `timeline_events` stream is rendered as a searchable, compact long-history list with event counts, first/latest date stats, and linked character chips that navigate to the character gallery.
+- **Galactic History:** The galactic reference view loads `data/timeline/timeline_tree.json` on demand through `TimelineHub.fetchGalacticTree()`. The parser expects the extractor shape `{ title, children, lists }` with nested list items shaped like `{ text, children }`, ranks duplicate "Timeline of galactic history" sections by child-era count and recursive record count, then runs `TimelineHub.parseWikiData(rawJson)` to normalize raw Wookieepedia scrape nodes into UI-ready eras, sub-eras, and `{ year, era, text }` event objects. Date parsing supports BBY/ABY values and implied-era ranges such as `34 - 35 ABY`.
+- **Galactic History Browsing:** The first screen is the searchable major-era poster grid. Selecting an era opens Page 2, a parent-era-background sub-era selection page with a left-aligned 40%-width hero, a glassmorphic "View timeline overview" action, and an image-backed responsive sub-era card grid. Selecting a sub-era or overview opens Page 3, a detailed timeline view that uses the active sub-era image (or era image for overview), a sticky SVG mountain frequency chart, a glassmorphic viewport scrubber, and a centered vertical event list. Event cards contain only a quote icon and parsed paragraph text; same-year events branch left/right according to count, and left/right arrow keys jump between eventful years.
+- **Galactic History Images:** `js/timelines/galacticTimelineAssets.js` exports `ImageMapping`, a normalized title-to-image configuration object, because `timeline_tree.json` does not contain image URLs. Fallback era and sub-era image arrays keep dynamic parsed sections image-backed even before final art is assigned.
+- **Performance Boundary:** The large galactic JSON is not fetched on story hub load or timeline chooser load; it is cached in memory only after a reader enters the Galactic History view.
+
+---
+
+## Admin Panel (`admin.html`) — CMS Operations
+
+This document outlines the architecture, authentication security, global state, initialization flow, and advanced component paradigms of the administrative Content Management System (`admin.html`).
+
+---
+
+## 1. Purpose & Access Control
+
+`admin.html` serves as the private administrative portal for content management, story publications, asset uploads, and moderation. Like the other apps, it is a single-file SPA built on vanilla HTML, CSS, and JS.
+
+### Security Model:
+- **Session-Based Authentication:** Leverages Supabase Auth. Upon successful login, it queries the database profiles to verify `role === 'admin'`. Access is blocked locally if this check fails.
+- **Backend Database Protection:** Relies on Supabase Row Level Security (RLS) rules which check `public.is_admin()`. This ensures that even if local scripts are bypassed, write access is blocked at the database layer.
+
+---
+
+## 2. Global State Reference
+
+Global states are organized within a dedicated `State` manager:
+
+- `State` *(Object)* — Primary state container:
+  - `user` *(Object | null)* — The active Supabase Auth session details.
+  - `profile` *(Object | null)* — Profile columns fetched from the database, including the user's role.
+  - `currentView` *(String)* — The active sidebar view identifier (e.g. `'dashboard'`, `'stories'`, `'mapRequests'`).
+  - `stories` / `characters` / `lore` / `mapRequests` / `wallpapers` *(Array)* — Lists of queried database records used to populate dashboard tables.
+  - `selectedStoryId` *(UUID | null)* — Story context filter used when managing chapters or gallery cards.
+  - `selectedCharacterId` *(UUID | null)* — Character context filter used in gallery configurations.
 
 ---
 
 ## 3. Initialization Flow
 
-### `index.html` (Reader - Modularized)
-The bootstrap sequence is triggered entirely within the ES6 module system of `js/main.js`:
-1. **Module Loading & Global Binding:**
-   - `<script type="module" src="js/main.js"></script>` imports all controller modules synchronously inside the module scope.
-   - All modules (e.g. `Router`, `UI`, `DB`, `UserAuth`, `CommentsManager`, etc.) are explicitly bound to the global `window` object to prevent `ReferenceError`s from legacy inline event handlers.
-2. **`DOMContentLoaded` Event Listener:**
-   - Triggers `LoaderManager.show()` immediately to resolve and render the cold start primary loader. Loader module imports are time-boxed so a stalled dynamic import falls back instead of blocking app startup.
-   - Starts a short bootstrap watchdog that invokes `Router.handle()` if loader or cosmetic startup work stalls before the initial route begins.
-   - Initializes `Router` to set up hash change listeners.
-   - `SaberController.init()` bootstraps the centered vertical lightsaber transition overlay before route rendering begins so loading states can mirror the live reader background without the separate progress bar overlay.
-   - `UserAuth.init()` sets up the auth listener, checks existing session via `supabase.auth.getSession()`, fetching profile if needed, overriding default nav based on role.
-   - Global `DB.getSettings()` call applies custom CSS variables from the backend.
-   - Global `DB.getWallpapers()` call checks for custom main background.
-    - `Particles.init()` starts the dynamic background canvas.
-    - `Router.handle()` executes the initial route (e.g., `#home`), with same-route re-renders, guarded completion, time-boxed route rendering, and defensive loader teardown so failed, stalled, or stale async work cannot leave the reader stage blank or trapped beneath a stuck loader overlay. The same teardown path now also releases the cold-start loader if the gallery advisory modal intercepts the route before rendering. On initial load, the completion of this routing cycle triggers `LoaderManager.playOutro()` to transition smoothly into the active home view.
-    - **Map Initialization:** When the maps view is rendered, `Render.maps()` passes the selected map row's `id`, image URL, and coordinate dimensions into `MapViewer.init()`, after which `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` for that specific `map_id`.
-2. **Reader Header Chrome:**
-   - The top-right header controls combine utility shortcuts (saber settings, wallpaper/audio toggles, admin shortcut when applicable), a static contributor badge with a hover/focus popover crediting the Vesper collaboration, and the auth/profile slot managed by `UI.initAuthLink()`.
+Upon loading the Admin Panel, the page executes the following bootstrap sequence:
 
-### `admin.html`
-1. **`DOMContentLoaded` Event Listener:**
-   - `Auth.init()` executes:
-     - Keeps `#login-view` hidden by default so shared-domain Supabase sessions can restore without a visible login flash.
-     - Checks session via `supabaseClient.auth.getSession()`.
-     - If session exists, calls `Auth.loadProfile()` and only reveals the login view when profile validation fails.
-     - Subscribes to auth state changes so cross-tab sign-in/out events can swap between the admin shell and login screen.
-     - Subscribes to auth state changes so cross-tab sign-in/out events can swap between the admin shell and login screen.
-   - `UI.applyAdminWallpaper()` fetches and sets custom admin background.
-   - `Particles.init()` starts the background effects.
-2. **Post-Authentication (`Auth.loadProfile` -> `Auth.showAdminView`):**
-   - Populates sidebar user avatar/name.
-   - Calls `Views.render('dashboard')` to render the default CMS view.
-
-### `writer.html`
-1. **IIFE -> `init()`:**
-   - Checks for `Quill` and `window.supabase`.
-   - Initializes Supabase using the global anon key.
-   - `initQuill()` sets up the rich text editor on `#editor-quill`.
-   - `bindEvents()` attaches UI listeners (buttons, modal handlers, hotkeys).
-   - `setTheme(state.currentTheme)` applies the user's stored theme.
-   - `DB.getStories()` populates the workspace dropdown, defaulting to the first or the `?story_id=` URL param.
-   - `loadNodes()` fetches lightweight hierarchical document metadata from the DB, building `state.nodes`, `nodeMap`, and `childrenByParent`, then rendering the left sidebar binder. Full node bodies are fetched only when a document is opened or when global search hydrates searchable content on demand.
-   - In Published Tree mode, the Add Document control creates a live draft `chapters` row with the next available `chapter_order`, opens it in the editor, and lets the existing inspector status control publish it directly from `writer.html`.
-   - `startSessionTimer()` begins tracking time/word count.
-   - During editing, Quill text changes increment a revision counter, schedule a debounced autosave, and batch editor metrics/outline/target updates through `requestAnimationFrame` so typing does not synchronously recompute all panels on every keystroke.
-   - Long document switching first closes and unloads the current editor content, yields frames for the browser to release/render, then opens the requested document. The header close button uses the same unload path so very large documents can be explicitly closed before opening another.
-   - Markdown rendering is manual: the editor header's Render Markdown button (or `Ctrl+Shift+M`) converts the editor's current markdown-like text through the native renderer. This avoids surprise re-processing while typing or deleting, while still allowing explicit conversion inside an already edited document.
-
-### `cartographer.html`
-1. **`DOMContentLoaded` Event Listener:**
-   - Binds login form submit handler.
-   - `Auth.init()` keeps `#login-view` hidden by default, checks for a shared Supabase session first, and only reveals the login screen when no valid session/profile is available.
-   - Subscribes to auth state changes so sign-in/out from any tab can move between the login view, hub, and editor correctly.
-2. **Post-Authentication (`Auth.loadProfile` -> `Hub.show`):**
-   - Verifies profile `role IN ('cartographer','admin')`.
-   - Populates shared user UI elements for both the hub and editor chrome.
-   - Renders the Cartography Hub with active map cards, contribution status tab, and role-sensitive create/propose actions.
-3. **Editor Entry (`Hub.openMap` or admin create flow -> `Auth.showEditor`):**
-   - `App.init()` bootstraps: `ContextMenu.init()`, `MapEngine.init()` (Leaflet CRS.Simple), `Keyboard.init()` (V/P/T shortcuts), `PlanetDB.load()` (CSV autocomplete), `Particles.init()`, `DB.getStories()` (for story-linked map creation), `ProjectPicker.refresh()` (auto-selects first available map).
+1. **`DOMContentLoaded` Event:**
+   - **Auth Boot:** `Auth.init()` is triggered. To prevent a flash of the login screen for logged-in users, the lock overlay is hidden by default. The script runs `supabaseClient.auth.getSession()` to check for an active session. If found, it fetches the user profile; if not, it displays the login form.
+   - **Real-time Session Syncing:** Subscribes to Supabase Auth state changes. This ensures that logging out or logging in on another tab automatically updates the active view.
+   - **Visual Customizations:** Fetches and applies custom admin wallpaper backgrounds.
+   - **Background Effects:** Starts the background floating particle canvas.
+2. **Post-Authentication Dispatch (`Auth.showAdminView`):**
+   - Populates user details (display name, profile avatar) in the sidebar.
+   - Renders the primary dashboard view using `Views.render('dashboard')`.
 
 ---
 
-## 4. Supabase Usage & Conventions
+## 4. Advanced Operational Paradigms
+
+The Admin Panel utilizes several robust UI components to streamline content management:
+
+### A. Drag-and-Drop Dropzone
+- **Component:** Managed by `UI.imageUploadField` and `UI.initDragAndDrop`.
+- **UX Features:** Replaces standard file inputs with a glassmorphic dropzone. Supports dragenter/dragover hover highlights, drag-and-drop file imports, local previews using the standard `FileReader` API, and pasting direct image URLs.
+
+### B. Interactive Autocomplete Tagging
+- **Components:** Built using `UI.initTagComponent` and `UI.initTagAutocomplete`.
+- **Behavior:** Renders tag strings as deletable visual chips styled with deterministic HSL-themed colors. The autocomplete engine queries existing database tags, allowing admins to select tags using keyboard controls or enter custom tags.
+
+### C. NSFW / R18 Content Categorization
+- **Behavior:** Implements a visual toggle switch inside image upload forms. Saving an image with this toggle enabled programmatically appends a structural `NSFW` tag to the record's metadata. The Reader SPA uses this tag to filter content based on user preferences.
+
+### D. Multi-File Sequential Upload Flow
+- **Operation:** When uploading multiple media files, save routines (such as `Forms.saveGalleryImage`) sequentially upload files to Supabase Storage. It creates database records concurrently and provides progress feedback to prevent request timeouts.
+
+---
+
+### `admin.html` Updates
+
+#### Drag-and-Drop Dropzone & Interactive Tagging Pipeline
+- **Drag-and-Drop Dropzone Component:** Replaced legacy basic image upload fields with a feature-rich, drag-and-drop-enabled Dropzone component (`UI.imageUploadField` & `UI.initDragAndDrop`). It supports dragenter/dragover hover highlights, seamless drag-and-drop file transfers, revocable object-URL previews, and fallback URL text field matching.
+- **Interactive Tag Chip & Autocomplete System:** Integrated a dynamic, HSL-themed visual tag chip input (`UI.initTagComponent` & `UI.initTagAutocomplete`) that converts input strings into deletable tag chips. The autocomplete-powered variant fetches existing distinct tags from the database (filtering out structural flags like `NSFW`), allowing arrow-key selection, click selection, and custom tokenization. 
+- **NSFW / R18 Content Categorization:** Implemented a standardized visual toggle switch inside `Forms.galleryImageForm` that isolates age-gated media assets. Upon saving, it programmatically injects or prunes structural metadata tags (`NSFW`) while maintaining standard user tags.
+- **Reader Visual Archive:** The public gallery uses one unified sub-window: a dominant selected-character profile image, compact biography/action panel, and a right-side browser containing archive totals plus a content-driven profile-image grid that can grow with roster length instead of clipping inside a fixed-height viewport. Hovering or focusing a card updates the hero and marks the active card with an accent glow. The detached scenic quote panel, scattered hero previews, and separate roster section are intentionally absent. A small Gallery banner replaces oversized story typography, Recently Added remains below the unified window, and offscreen profile cards retain lazy/async/low-priority loading.
+- **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
+- **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and presents a single broad-view gallery board with a side toggle between the reader-visible published collection and the unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
+
+---
+
+## Writer IDE (`writer.html`) — Editor System
+
+This document outlines the architecture, global state management, initialization flow, and hierarchical content tree structure of the Author Writing IDE (`writer.html`).
+
+---
+
+## 1. Purpose & Core Features
+
+`writer.html` is a distraction-free, rich-text writing environment (IDE) tailored specifically for drafting and compiling story universes. Like other components, it is a single-file SPA built on vanilla HTML, CSS, and JS, featuring direct Supabase integration.
+
+### Core Features:
+- **Distraction-Free Workspace:** Minimalistic design offering a split-panel interface. Includes toggles for Focus Mode (hiding side panels) and Typewriter Scrolling (locking the cursor in the vertical center of the editor).
+- **Rich Text Editor:** Integrated Quill.js editor that dynamically processes content, tracking word counts, session stats, and real-time writing speeds.
+- **Hierarchical Binder (Document Tree):** An interactive left-sidebar tree representing folders, drafts, location notes, and character reference profiles.
+- **Hallway Illumination Engine:** The editor pane features a visual illumination effect that grows brighter as the writer approaches their custom word targets.
+- **Local Version Snapshots:** A lightweight, metadata-stored version control system that allows writers to save and restore historical document drafts locally.
+- **Split-View Editing:** Allows writers to open a read-only node (e.g. world lore or character references) in a secondary panel for reference while writing.
+
+---
+
+## 2. Global State Reference
+
+The IDE encapsulates state in a unified `state` manager and global context variables:
+
+- `supabase` *(Object)* — Holds the initialized Supabase client instance.
+- `currentStoryId` *(UUID | null)* — The ID of the story currently being edited. Initialized from URL query parameters (`?story_id=`) or standard workspace selects.
+- `state` *(Object)* — Main state engine:
+  - `treeMode` *(String)* — Toggle between `'workspace'` (draft folders and notes) and `'published'` (live story elements like chapters).
+  - `nodes` *(Array)* — flat array representing tree elements for the active `treeMode`.
+  - `nodeMap` *(Object)* — Dictionary mapping node IDs to node objects for immediate O(1) lookups.
+  - `activeNodeId` *(UUID | null)* — The ID of the node currently loaded in the active editor.
+  - `expandedFolders` *(Set)* — Set of folder UUIDs currently expanded in the binder tree view. Persisted in `localStorage`.
+  - `bookmarks` *(Set)* — Collection of flagged node UUIDs.
+  - `childrenByParent` *(Object)* — Precomputed binder-tree child index used to avoid repeated full-array scans during recursive rendering.
+  - `isDirty` *(Boolean)* — Tracks whether there are unsaved editor changes. Governs auto-saves and navigation warning prompts.
+  - `editorChangeRevision` / async request tokens *(Number)* — Guard autosaves, node loads, inspector link renders, and global search against stale async completions.
+  - `currentWordCount` / `currentCharCount` / `currentParaCount` *(Number)* — Cached long-document metrics reused by target bars and session stats.
+  - `quill` *(Object)* — The Quill rich-text editor instance.
+  - `currentTheme` *(String)* — Name of the active visual theme (e.g. Amber Glow, Solarized Dark). Persisted in `localStorage`.
+  - `sessionStartWords` / `sessionStartTime` *(Number)* — word and time markers used to calculate session metrics.
+
+---
+
+## 3. Initialization Flow
+
+Upon loading the Writer IDE, the page executes the following IIFE bootstrap process:
+
+1. **IIIFE Launch (`init()`):**
+   - **Environment Verification:** Validates that `Quill` and `window.supabase` are loaded via CDN.
+   - **Client Bootstrap:** Initializes the Supabase client using the global anon key.
+   - **Quill Setup:** `initQuill()` configures the editor toolbar and registers custom font and layout elements.
+   - **Listener Bindings:** `bindEvents()` registers keyboard shortcuts (Ctrl+S, Focus Mode keys), sidebar resizers, and popup controllers.
+   - **Visual Theme Selection:** Recovers saved visual themes from `localStorage` and injects theme classes onto the document root.
+   - **Story Lookup:** Queries available stories via Supabase and populates the top dropdown, defaulting to the URL parameters if present.
+   - **Tree Builder:** `loadNodes()` fetches lightweight node metadata for the selected story, indexes nodes by ID and parent ID, and renders the left binder tree. Full bodies are loaded on node open or on-demand global search.
+   - **Long Document Switching:** `openNode()` closes and unloads the current document before opening another, yields paint frames between unload/load phases, shows metadata word counts immediately, defers full metric scans, and updates the active binder row without rebuilding the full tree.
+   - **Markdown Rendering:** The editor header's Render Markdown button and `Ctrl+Shift+M` shortcut manually convert the current markdown-like editor text through the native renderer, avoiding surprise re-processing during normal edits.
+   - **Session Metric Init:** Records baseline word counts and start times, launching interval timers to update statistics.
+
+---
+
+## 4. The Hierarchical Content Tree (Binder)
+
+The left-hand Binder represents a hierarchical filesystem built on top of a single database table (`writer_nodes`).
+
+### Technical Structure:
+- **Recursive DB Mapping:** Tree nodes are stored in a flat database table where each node has a nullable `parent_id` linking back to its parent folder node. Root nodes have `parent_id = NULL`.
+- **Tree Reconstruction:** The application fetches the flat array of nodes in a single select query. It then builds a lookup map in-memory and recursively parses child elements based on `parent_id` connections.
+- **Node Types:** Mapped through the Postgres ENUM `node_type_enum`:
+  - `folder` — Container node (can visually expand/collapse).
+  - `document` / `note` — Text-based files containing Quill Delta data.
+  - `character` / `location` / `item` — World-building reference cards.
+  - `trash` — Isolated nodes pending deletion.
+
+### Workspace vs. Published Modes:
+- **Workspace Tree:** Private drafts, outlines, folders, and notes managed in the `writer_nodes` recursive table.
+- **Published Tree:** Virtual nodes mapped to live tables (`chapters`, `characters`, `lore_entries`, `timeline_events`). When opened, the inspector handles saving edits back to their respective public tables instead of `writer_nodes`.
+
+---
+
+## 5. Security & Access Conventions
+
+Unlike the Admin and Reader SPAs, the Writer IDE does not implement explicit client-side auth checks.
+- **Implicit Session Sharing:** The IDE relies on the active admin session cookie established in `admin.html`.
+- **Backend Protection:** The Supabase RLS policy requires users to be authenticated (`auth.role() = 'authenticated'`). Any logged-in user can query the tables, ensuring easy access for collaborative writing teams while preventing public read/write access.
+
+---
+
+## Cartographer SPA (`cartographer.html`) — Collaborative Map Editor
+
+This document outlines the architecture, global state management, role-based access control, coordinates layout, sandbox staging logic, and initialization flow of the Collaborative Map Editor (`cartographer.html`).
+
+---
+
+## 1. Purpose & Core Engine
+
+`cartographer.html` is a collaborative star-map editing Single Page Application (SPA). It allows authorized users (admins, cartographers, and general readers) to design, customize, and edit story-linked maps.
+
+### Core Technologies:
+- **Leaflet.js (Simple Coordinate System):** Renders interactive map stages using Leaflet's `L.CRS.Simple` system. This allows custom images of any size to be plotted onto standard Cartesian plane grids.
+- **Tesseract OCR (Text Snipping):** Employs an OCR engine (`js/SnippingTool.js`) that allows map designers to select labels directly from map images to create new planet nodes automatically.
+- **Catmull-Rom Path Drawer:** Supports curved hyperlane lines (`js/PathDrawer.js`) interpolated via Catmull-Rom spline equations to draw elegant, pulsing hyperlanes.
+
+---
+
+## 2. Security Roles & Staging Queue (Sandbox Editor)
+
+To protect the star map database from corruption, the editor operates on a role-based moderation system:
+
+### User Roles:
+- **Admin:** Full CRUD privileges. Can edit live map tables directly and approve or reject proposed changes in the Moderation Queue.
+- **Cartographer:** Certified map creators. Can read all maps and submit revisions.
+- **Reader (Contributor):** Registered users who can access the Sandbox editor to suggest revisions. Suggesting a revision is capped at 3 pending requests to prevent spam.
+
+### Sandbox Staging & Moderation Queue:
+- **Direct Live Edits Blocked:** Non-admins cannot directly modify the active `map_nodes` and `map_edges` tables.
+- **Revision Tickets:** Edits made in the Sandbox editor are saved as pending revision tickets in the `map_requests` and `map_request_items` tables.
+- **Clean Submissions:** `SaveManager.submitRequest` strips away local UI properties (such as color markers or tracking lines) to ensure only clean coordinate and entity payloads are submitted for admin approval.
+
+---
+
+## 3. Global State Reference
+
+Operational state is managed in a global `State` container:
+
+- `supabaseClient` *(Object)* — Initialized Supabase client.
+- `State` *(Object)* — Primary state manager:
+  - `user` / `profile` *(Object | null)* — The authenticated user and matching database profile column.
+  - `pendingRequestCount` *(Number)* — Tracks the active user's pending request count.
+  - `currentProject` *(Object | null)* — The active `maps` table record being edited.
+  - `projects` / `stories` *(Array)* — Lists of active maps and story contexts.
+  - `nodes` / `edges` *(Array)* — Mapped node and hyperlane objects.
+  - `mode` *(String)* — Active canvas interaction mode: `'select'`, `'place'`, or `'trace'`.
+  - `traceQueue` *(Array)* — Ordered list of planet nodes queued up when tracing hyperlanes.
+  - `isDirty` *(Boolean)* — Tracks unsaved changes in the local draft workspace.
+  - `contributors` *(Object)* — Lookup index mapping contributor UUIDs to distinct marker colors.
+  - `undoStack` / `redoStack` *(Array)* — Local undo/redo action queues.
+- `MapEngine` *(Object)* — Controls Leaflet.js canvases, layers, and coordinate conversions.
+- `Hub` *(Object)* — Manages the post-login landing dashboard, project card grids, and contribution histories.
+- `PlanetDB` *(Object)* — Local lookup index of `sw_planets.csv` records used for auto-completing planet names.
+
+---
+
+## 4. Cartesian Plane & Coordinate Systems
+
+- **True Cartesian Coordinates:** The editor aligns coordinates with a true mathematical Cartesian grid where $X$ grows positive to the right and $Y$ grows positive upward.
+- **Y-Axis Inversion:** Leaflet maps place the origin $(0,0)$ in the top-left, with $Y$ increasing downward. The `MapEngine` handles inverting coordinates upon loading or saving records. This matches the Y-axis inversion calculations in `index.html` to keep map visual overlays consistent between the viewer and editor.
+- **Dynamic Scales:** Map bounds are derived dynamically from the image dimensions ($W \times H$) uploaded for each map project. This ensures that coordinates scale accurately regardless of the original image size.
+
+---
+
+## 5. Initialization Flow
+
+Upon loading the Cartographer SPA, the application executes the following bootstrap sequence:
+
+1. **`DOMContentLoaded` Event:**
+   - **Form Bindings:** Registers credentials and login handlers.
+   - **Auth Initialization:** `Auth.init()` checks Supabase for an active session. If active, it fetches the user profile; if not, it displays the login screen.
+2. **Post-Authentication (`Auth.loadProfile` -> `Hub.show`):**
+   - Verifies the user has a valid profile role (`admin`, `cartographer`, or `reader`).
+   - Populates user cards in the header.
+   - Renders the landing dashboard (`Hub.show()`), displaying available maps, contributor counts, and the user's contribution history.
+3. **Editor Workspace Entry:**
+   - **System Setup:** `App.init()` bootstraps:
+     - `ContextMenu.init()` (floating context menus).
+     - `MapEngine.init()` (Leaflet.js stage setup).
+     - `Keyboard.init()` (Toolbar shortcuts: V, P, T, Esc).
+     - `PlanetDB.load()` (Loads the CSV database into memory).
+     - `LocalDraftManager.load()` (Restores unsaved changes from `localStorage` if found).
+     - `ProjectPicker.refresh()` (Selects the target map context).
+
+---
+
+### `cartographer.html` Updates
+
+#### Sandbox/Hub Wiring
+- **Sandbox Editor:** Introduced a staging system for contributors to propose changes to maps. Changes are saved locally and submitted as "Submission Tickets" for admin review. The `SaveManager.submitRequest` method includes a `clean()` helper to strip local UI tracking states before submission.
+- **Hub Dashboard:** Added a "My Contributions" tab for contributors to view their pending, approved, and rejected requests.
+- **Coordinate Fixes:** Y-axis coordinates now align with a true Cartesian plane.
+
+#### Security Enhancements & Activity Logging
+- **Database Lockdown:** Non-admins can no longer directly modify `map_nodes` and `map_edges`. All changes must go through the new moderation queue.
+- **Request Tables:** Added `map_requests` and `map_request_items` tables to handle proposed changes.
+- **Activity Log:** Admin approvals in `admin.html` and direct admin edits in `cartographer.html` now automatically log activity to the `map_changelog` table via `DB.logChange`, ensuring a visible history in the map's Activity Log.
+
+---
+
+## Shared Conventions & Supabase Integration
 
 ### Initialization & Auth Pattern
 Across all three files, Supabase is initialized via the CDN script: `window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)` with a generic public anon key.
@@ -247,6 +438,8 @@ In all files, Supabase data access is encapsulated in module objects (`DB` objec
 - **Recent-window polling:** The worker inspects the most recent ScribbleHub entries (default 15) so it can run continuously on a local machine or scheduler without needing a full historical crawl every pass.
 - **Fetch throttling and skips:** The worker rate-limits chapter fetches by a small delay and skips individual chapters that fail to fetch/parse (e.g., `403 Forbidden` due to R18/login gating) so a single blocked page does not abort the whole sync pass.
 - **Full backfill + resequencing:** When run with `--backfill`, the worker crawls the ScribbleHub series TOC pages (`?toc=N`), sorts chapters oldest-to-newest, then resequences `chapters.chapter_order` for already-imported ScribbleHub chapters and inserts any missing earlier chapters before the newer ones. This path is designed specifically for "import the last few chapters first, then backfill everything earlier" without losing ordering.
+- **Parallel Image Downloader:** `scripts/download_timeline_images.py` downloads all external event-linked image URLs mapped in `data/timeline/page_image_lookup.json`. It runs multi-threaded (default 16 workers), sanitizes filenames/directories, organizes files into a nested directory structure (`data/timeline/downloaded_images/Era/Sub-Era/`), and displays a live terminal progress bar using standard output.
+
 
 ### Storage Conventions
 Media assets are managed using Supabase Storage buckets.
@@ -261,51 +454,3 @@ Media assets are managed using Supabase Storage buckets.
 - Offscreen reader/admin/cartographer thumbnails use native lazy loading, asynchronous decoding, and low fetch priority where appropriate.
 - `UI.setBg()` and the gallery lightbox avoid reassigning an unchanged URL, preventing needless CSS/image reload or revalidation work.
 - `cartographer.html` reuses the existing Leaflet base-image overlay when reloading the same map with unchanged dimensions, while still rebuilding topology layers.
-### Reader Map Conventions
-- **Two-Phase Map Discovery & Routing:** The maps view follows a robust two-phase routing structure. A root story map registry (`#maps/slug`) displays the **Star Chart Registry (Map Hub)**, which transitions into the **Interactive Viewer** (`#maps/slug/mapId`) when a specific map is selected. A glassmorphic top navigation bar on the viewer allows seamless return to the Registry.
-- **Star Chart Registry (Map Hub):** A modern, grid-based interface displaying all charted maps associated with a story. Maps are dynamically grouped into **Galactic**, **Regional / Sector**, and **Local** categories, featuring live stats (node and hyperlane counts) on each thumbnail card.
-- **Dynamic Search & Filtering:** The Map Hub includes a real-time responsive search bar to filter charts instantly by name or type category, dynamically hiding empty sections.
-- **Cross-Map Planet Search & Navigation:** Navicomputer input fields (`Focus`, `Origin`, `Destination`) are enhanced with cross-map lookups. When a user queries a planet not charting on the current map, a non-intrusive hint detects if the world is charted in any other story map and provides one-click navigation links to switch charts instantly.
-- The `maps` route renders as a full-viewport sci-fi console shell where the map fills 100% of the stage and all modules (Navicomputer, World Intel, Itinerary, and Map selector) live as edge-docked glassmorphic panels triggered dynamically.
-- `MapViewer.init()` binds the interactive dial trigger, edge dock controls, layer toggles, and resets active route/dock states.
-- `MapViewer` owns map switching, dock management, node selection, route plotting, inline routing status, route summaries, and itinerary generation.
-- `MapViewer.routeState` persists selected endpoints plus computed route metadata, while `MapViewer.dockState` manages open/pinned states for all edge panels.
-- `MapViewer.loadMapData()` queries `map_nodes` and `map_edges` by `map_id`, then remaps edge foreign-key fields into the legacy `source` / `target` shape expected by the routing engine.
-- Map reader controls include layer toggles for labels and hyperlanes, explicit route actions (`Plot`, `Swap`, `Clear`, `Center Route`), and responsive layout behavior for smaller screens.
-- Active route labels now run through a collision-aware placement pass that offsets important planet names around their nodes, raises those labels above nearby pins, and draws connector stems back to the owning planet node. Access-point markers no longer render separate "Exit" / "Approach" text labels, keeping hybrid route clusters less crowded.
-- Reader map planet pins use a double-ring marker style. When the map image can be sampled safely, `MapViewer` derives each node's CSS color from nearby pixels on the underlying map image and falls back to the story accent color if canvas sampling is blocked.
-- After plotting a course, MapViewer mirrors route distance, hop count, and a compact itinerary into a glassmorphic in-map overlay card. The card chooses a low-obstruction viewport corner based on the active route and route nodes, while also reserving vertical space below the top label/hyperlane controls and active map chip.
-- `MapViewer.buildComponents()` now derives connected hyperlane clusters after graph construction so isolated worlds can be recognized without extra fetches.
-- `MapViewer.edgeLengthIndex` caches polyline lengths for each lane so nearest-exit snapping and route totals reuse the same geometry measurements.
-- When a selected world has no registered lane links, `MapViewer.calculateRoute()` falls back to a hybrid route that snaps to the nearest linked world or point on a hyperlane, renders a cyan straight-line off-lane segment, and adds itinerary/summary advisory copy warning that the remaining approach uses unregistered travel.
-- Clicking a planet opens a compact, scrollable in-map history overlay first. `MapViewer.renderLocationHistoryOverlay()` passes the selected planet name and current story timeline into `LocationHistoryIndex`, which lazy-loads Galactic History if needed, scans by normalized exact location phrase, and caches Galactic matches in memory. The focused-world card and compact overlay still provide a Full History / Open Full Archive action through `MapViewer.openSelectedNodeHistory()` for the larger full-screen archive.
-
-### Reader Timeline Conventions
-- **Two-Phase Timeline Discovery:** The timeline route now opens a chronology chooser at `#timeline/{slug}`. Readers select either **Story History** (`#timeline/{slug}/story`) or **Timeline of Galactic History** (`#timeline/{slug}/galactic`) instead of landing directly in one long alternating list.
-- **Story History:** The existing Supabase `timeline_events` stream is rendered as a searchable, compact long-history list with event counts, first/latest date stats, and linked character chips that navigate to the character gallery.
-- **Galactic History:** The galactic reference view loads `data/timeline/timeline_tree.json` on demand through `TimelineHub.fetchGalacticTree()`. The parser expects the extractor shape `{ title, children, lists }` with nested list items shaped like `{ text, children }`, ranks duplicate "Timeline of galactic history" sections by child-era count and recursive record count, then runs `TimelineHub.parseWikiData(rawJson)` to normalize raw Wookieepedia scrape nodes into UI-ready eras, sub-eras, and `{ year, era, text }` event objects. Date parsing supports BBY/ABY values and implied-era ranges such as `34 - 35 ABY`.
-- **Galactic History Browsing:** The first screen is the searchable major-era poster grid. Selecting an era opens Page 2, a parent-era-background sub-era selection page with a left-aligned 40%-width hero, a glassmorphic "View timeline overview" action, and an image-backed responsive sub-era card grid. Selecting a sub-era or overview opens Page 3, a detailed timeline view that uses the active sub-era image (or era image for overview), a sticky SVG mountain frequency chart, a glassmorphic viewport scrubber, and a centered vertical event list. Event cards contain only a quote icon and parsed paragraph text; same-year events branch left/right according to count, and left/right arrow keys jump between eventful years.
-- **Galactic History Images:** `js/timelines/galacticTimelineAssets.js` exports `ImageMapping`, a normalized title-to-image configuration object, because `timeline_tree.json` does not contain image URLs. Fallback era and sub-era image arrays keep dynamic parsed sections image-backed even before final art is assigned.
-- **Performance Boundary:** The large galactic JSON is not fetched on story hub load or timeline chooser load; it is cached in memory only after a reader enters the Galactic History view.
-
-### `cartographer.html` Updates
-
-#### Sandbox/Hub Wiring
-- **Sandbox Editor:** Introduced a staging system for contributors to propose changes to maps. Changes are saved locally and submitted as "Submission Tickets" for admin review. The `SaveManager.submitRequest` method includes a `clean()` helper to strip local UI tracking states before submission.
-- **Hub Dashboard:** Added a "My Contributions" tab for contributors to view their pending, approved, and rejected requests.
-- **Coordinate Fixes:** Y-axis coordinates now align with a true Cartesian plane.
-
-#### Security Enhancements & Activity Logging
-- **Database Lockdown:** Non-admins can no longer directly modify `map_nodes` and `map_edges`. All changes must go through the new moderation queue.
-- **Request Tables:** Added `map_requests` and `map_request_items` tables to handle proposed changes.
-- **Activity Log:** Admin approvals in `admin.html` and direct admin edits in `cartographer.html` now automatically log activity to the `map_changelog` table via `DB.logChange`, ensuring a visible history in the map's Activity Log.
-
-### `admin.html` Updates
-
-#### Drag-and-Drop Dropzone & Interactive Tagging Pipeline
-- **Drag-and-Drop Dropzone Component:** Replaced legacy basic image upload fields with a feature-rich, drag-and-drop-enabled Dropzone component (`UI.imageUploadField` & `UI.initDragAndDrop`). It supports dragenter/dragover hover highlights, seamless drag-and-drop file transfers, revocable object-URL previews, and fallback URL text field matching.
-- **Interactive Tag Chip & Autocomplete System:** Integrated a dynamic, HSL-themed visual tag chip input (`UI.initTagComponent` & `UI.initTagAutocomplete`) that converts input strings into deletable tag chips. The autocomplete-powered variant fetches existing distinct tags from the database (filtering out structural flags like `NSFW`), allowing arrow-key selection, click selection, and custom tokenization. 
-- **NSFW / R18 Content Categorization:** Implemented a standardized visual toggle switch inside `Forms.galleryImageForm` that isolates age-gated media assets. Upon saving, it programmatically injects or prunes structural metadata tags (`NSFW`) while maintaining standard user tags.
-- **Reader Visual Archive:** The public gallery uses one unified sub-window: a dominant selected-character profile image, compact biography/action panel, and a right-side browser containing archive totals plus a content-driven profile-image grid that can grow with roster length instead of clipping inside a fixed-height viewport. Hovering or focusing a card updates the hero and marks the active card with an accent glow. The detached scenic quote panel, scattered hero previews, and separate roster section are intentionally absent. A small Gallery banner replaces oversized story typography, Recently Added remains below the unified window, and offscreen profile cards retain lazy/async/low-priority loading.
-- **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
-- **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and presents a single broad-view gallery board with a side toggle between the reader-visible published collection and the unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.

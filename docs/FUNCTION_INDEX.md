@@ -472,7 +472,6 @@ const SaveManager = {
 - `uuid()` — Generates a v4 UUID.
 - `getContributorColor(userId)` — Deterministic hash-based color from a 12-color palette.
 
-
 ---
 
 ## 5. `scripts/scribblehub_autosync.js` (Background Chapter Import Worker)

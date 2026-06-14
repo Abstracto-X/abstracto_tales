@@ -1,167 +1,134 @@
-# CARTOGRAPHER SPA — Function Index
+# Cartographer Editor Functions
 
-This document provides a comprehensive index of the functions, classes, and handlers operating within the Collaborative Map Editor SPA (`cartographer.html`).
+### `Auth` (Access Control)
+- `init()` - Checks for an existing Supabase session before revealing the login view, then subscribes to auth state changes so shared sessions feel seamless across tabs/pages.
+- `loadProfile()` — Fetches profile, populates shared user chrome, and routes to hub. Now allows `reader` role access to the collaborative hub.
+- `login(email, password)` — Authenticates via `signInWithPassword`.
+- `logout()` — Signs out and reloads.
+- `showLogin() / showEditor()` — Toggles between login, hub, and editor views as needed.
 
----
+### `Hub` (Post-Login Landing View)
+- `show()` — Displays the hub, hides login/editor, and loads map cards plus contribution status data.
+- `switchTab(tabId, btnElement)` — Swaps between the Active Maps and My Contributions tabs.
+- `renderMaps()` — Renders project cards plus the role-dependent create/propose action card.
+- `openMap(projectId)` — Enters the editor for a selected map project.
+- `startCreateMapFlow()` — Takes admins from the hub into the editor and immediately opens the new-project modal.
+- `renderContributions()` — Displays the contributor's pending, approved, and rejected requests. Tracks `State.pendingRequestCount` for enforcement of submission limits.
+- `showProposeModal()` — Opens the modal for proposing a new map. Enforces a limit of 3 pending requests for users with the `reader` role.
+- `submitProposal()` — Submits a new map proposal to the admin queue.
 
-## 1. `Auth` (Access Control & Sessions)
-Validates credentials, checks roles, and handles login screens.
+### `DB` (Supabase Data Access)
+- `getProjects()` / `createProject(proj)` / `updateProject(id, updates)` — CRUD for `map_projects`.
+- `getNodes(projectId)` / `saveNode(node)` / `deleteNode(id)` — CRUD for `map_nodes`.
+- `getEdges(projectId)` / `saveEdge(edge)` / `deleteEdge(id)` — CRUD for `map_edges`.
+- `logChange(action, entityType, entityId, oldData, newData)` — Inserts audit entry into `map_changelog`.
+- `getChangelog(projectId, limit)` — Fetches recent changelog entries with contributor display names.
+- `withdrawItem(reqItemId, reqId)` — Removes a proposed change from a request and cleans up the parent ticket if it becomes empty.
 
-- `init()`
-  - **Description:** Entry point for map editor auth. Checks for an active Supabase session and subscribes to auth state changes to coordinate login screens.
-- `loadProfile()`
-  - **Description:** Queries profiles. Displays user cards in the header and loads the landing Hub if the user has an authorized role (`admin`, `cartographer`, or `reader`).
-- `login(email, password)`
-  - **Description:** Logs in user credentials via `signInWithPassword`.
-- `logout()`
-  - **Description:** Logs out the active user and refreshes the page to clear the state.
-- `showLogin() / showEditor()`
-  - **Description:** Toggles between the login screen and the main map workspace.
+### `MapEngine` (Leaflet.js Controller)
+- `init()` — Creates the Leaflet CRS.Simple map with custom zoom settings, binds click/contextmenu/mousemove events.
+- `onContextMenu(e)` — Handles right-clicks on the map background. During `'trace'` mode with multiple nodes queued, it triggers the `ContextMenu` to allow finishing or curving the path.
+- `loadProject(proj)` — Sets the image overlay bounds from project dimensions, fits map view, and renders all nodes/edges. Now includes `crossOrigin: true` to prevent CORS-tainted canvas errors during snipping from cloud storage.
+- `renderAll()` — Clears and re-renders all edges then nodes on the map layers.
+- `renderNode(node)` — Creates a `L.circleMarker` with contributor color, tooltip, click/context handlers.
+  - [2026-05-17] FIX: Click and contextmenu handlers now use `action !== 'DELETE'` instead of `!action`, allowing tracing and right-click on newly drafted nodes (unapproved nodes) for path creation and context menu actions.
+- `renderEdge(edge)` — Creates a `L.polyline` (or Catmull-Rom spline) with a thick, glowing `'pulse-spline'` class (weight: 6) to ensure consistent visual quality between draft and saved states. Includes tooltips and interaction handlers.
+- `catmullRom(pts, segments)` — Interpolates a smooth curve through control points using Catmull-Rom spline math.
+- `findMarkerForNode(nodeId)` — Searches the nodes layer for a marker matching the given node ID.
+- `clear({ preserveImage })` — Clears topology/selection layers and optionally preserves the current base-image overlay so same-map reloads do not request it again.
 
----
+### `ModeManager` (Interaction Modes)
+- `set(mode)` — Switches between `'select'`, `'place'`, `'trace'` modes. Updates toolbar, status bar, cursor, and clears selection layer.
 
-## 2. `Hub` (Discovery Dashboard & Contribution History)
-Landing view managing available maps, contribution history, and proposal tickets.
+### `LocalDraftManager` (Autosave System)
+- `getKey()` — Generates a unique `localStorage` key based on the current project and user ID.
+- `save()` — Stashes all nodes/edges with the `_localAction` tag into `localStorage`.
+- `load()` — Restores unsaved local changes upon map load, reinjecting them into the active `State`.
+- `clear()` — Wipes the local draft from browser memory upon successful cloud save/submission.
+- `discardAndReload()` — Prompts to delete the local draft and reload the map from the live database.
 
-- `show()`
-  - **Description:** Displays the discovery Hub, queries operational maps, and fetches contributor statistics.
-- `switchTab(tabId, btnElement)`
-  - **Description:** Swaps between the map card list and the user's contribution history tab.
-- `renderMaps()`
-  - **Description:** Renders star chart cards and role-dependent map creation buttons.
-- `openMap(projectId)`
-  - **Description:** Enters the Leaflet editor for the selected map.
-- `startCreateMapFlow()`
-  - **Description:** Triggers new project modals for administrators to initialize new maps.
-- `renderContributions()`
-  - **Description:** Displays the active user's pending, approved, or rejected revision tickets.
-- `showProposeModal()`
-  - **Description:** Displays the proposal modal. Capped at 3 pending requests for standard readers.
-- `submitProposal()`
-  - **Description:** Submits a new map proposal ticket to the database moderation queue.
+### `SnippingTool` (OCR & Planet Placement - External `js/SnippingTool.js`)
+- `init()` — Initializes the Tesseract OCR worker.
+- `activate(latlng)` — Displays the snipping overlay for the user to select map text.
+- `onMouseUp(e)` — Captures the selected canvas area, runs OCR, fuzzy matches via `PlanetDB`, and creates a node. Handles CORS errors from cloud-hosted map images.
+- `createPlanetFallback(err)` — Fallback for failed snips, now logging the error context for easier debugging.
+- `createPlanet(name, matchData)` — Standard node creation with data pre-fill.
+  - [2026-05-17] FIX: Removed `ModeManager.set('select');` so users remain in 'Place' mode after placing a node, enabling rapid placement of multiple nodes.
 
----
+### `PathDrawer` (Advanced Spline Routing - External `js/PathDrawer.js`)
+- `addNode(node)` — Adds a node to the trace queue with sequence numbering.
+- `startCurving()` — Transitions to curvable spline mode with draggable control points (max 3).
+- `refreshCurveVisuals()` — Real-time update of the pending spline curve.
+- `finalize(isCurved)` — Saves the geometry (multi-point if curved) as an edge.
 
-## 3. `DB` (Supabase Data Access & Sandbox Submissions)
-Queries map elements, writes revisions, and logs changes.
+### `PlaceMode` (Overwritten by `SnippingTool`)
+- `placeAt(latlng)` — Triggers the `SnippingTool` activation.
 
-- **Map Projects:** `getProjects()`, `createProject(proj)`, `updateProject(id, updates)`.
-- **Map Nodes:** `getNodes(projectId)`, `saveNode(node)`, `deleteNode(id)`.
-- **Map Edges:** `getEdges(projectId)`, `saveEdge(edge)`, `deleteEdge(id)`.
-- **Auditing:** `logChange(action, entityType, entityId, oldData, newData)` — Records administrative edits to the global `map_changelog` table.
-- **Activity Log:** `getChangelog(projectId, limit)` — Queries revision logs for the activity panel.
-- **Staging Cleanup:** `withdrawItem(reqItemId, reqId)` — Removes proposed edits from a request, purging the parent ticket if it becomes empty.
+### `TraceMode` (Overwritten by `PathDrawer`)
+- `addNode(node)`, `finish()`, `cancel()` — Mapped to `PathDrawer` methods.
 
----
+### `PlanetEditor` (Node CRUD Popup)
+- `openPopup(node, marker, isNew)` — Opens a Leaflet popup with name/region/sector fields, autocomplete, save/delete buttons.
+- `bindAutocomplete(input)` — Binds the planet name input to `PlanetDB.search()` for CSV-based suggestions.
+- `save(node, popup)` — Persists node changes to Supabase.
+- `delete(node, popup)` — Removes node and cascading edges.
 
-## 4. `MapEngine` (Leaflet.js Controller)
-Controls zooming maps, creates coordinate overlays, and parses splines.
+### `ProjectPicker` (Project Management)
+- `toggle()` — Opens/closes the project dropdown menu.
+- `refresh()` — Loads all projects from DB and renders the dropdown list.
+- `select(id)` — Loads a project's nodes and edges, initializes the map, updates UI.
+- `showCreateModal()` — Opens a modal with title, image upload, and publish toggle.
+- `create()` — Creates a new project (reads image dimensions), uploads map image to `map-images` bucket.
 
-- `init()`
-  - **Description:** Instantiates the Leaflet canvas (`L.CRS.Simple`), binds coordinate tracking, and registers drag events.
-- `onContextMenu(e)`
-  - **Description:** Handles right-clicks on the canvas background. During hyperlane trace operations, it launches context menus to finalize lanes.
-- `loadProject(proj)`
-  - **Description:** Inverts image dimensions, sets coordinate limits, fits the view, and plots nodes and edges. Enables CORS headers to prevent canvas capture issues.
-- `renderAll()`
-  - **Description:** Clears all canvas overlays and draws hyperlane lines and planet markers.
-- `renderNode(node)`
-  - **Description:** Places planet markers on the canvas with contributor color rings, mouse handlers, and context actions.
-- `renderEdge(edge)`
-  - **Description:** Renders straight lanes or Catmull-Rom curves. Includes glowing pulse classes and indicator labels.
-- `catmullRom(pts, segments)`
-  - **Description:** Mathematical helper that interpolates curves through coordinates.
-- `findMarkerForNode(nodeId)`
-  - **Description:** Locates Leaflet markers using node UUIDs.
-- `clear()`
-  - **Description:** Purges map layers and clears overlays.
+### `Contributors` (Color Legend)
+- `refresh()` — Scans nodes/edges for unique `created_by` IDs, assigns deterministic colors, renders the panel.
 
----
+### `ChangelogDrawer` (Activity Log)
+- `toggle() / close()` — Opens/closes the sliding changelog drawer.
+- `load()` — Fetches and renders recent changelog entries with contributor colors and time-ago formatting.
 
-## 5. `ModeManager` (Interaction Modes)
-Controls editor inputs and toggles workspace cursors.
+### `PlanetDB` (CSV Autocomplete)
+- `load()` — Fetches `data/sw_planets.csv`, parses into `{name, sector, region, grid}` objects.
+- `search(query, limit)` — Prefix-first, then substring matching against loaded entries.
 
-- `set(mode)`
-  - **Description:** Switches interaction modes: `'select'` (inspection), `'place'` (planet positioning), or `'trace'` (lane routing).
+### `ContextMenu` (Right-Click Menu)
+- `init()` — Creates the context menu DOM element.
+- `show(e, nodeData)` — Positions and populates the menu. Intercepts clicks during `'trace'` mode to show specialized path-finalization options (Straight vs Curved) regardless of where the right-click occurs.
+- `displayAt(e)` — Helper to position and reveal the menu element.
+- `showEdge(e, edge)` — Populates the menu for existing edges (e.g., for deletion).
+- `hide()` — Hides the context menu.
+- `action(action, nodeId)` — Dispatches context menu clicks to edit/delete/trace-start actions.
 
----
+### `Keyboard` (Shortcuts)
+- `init()` — Registers: `V` (select), `P` (place), `T` (trace), `ESC` (cancel), `Enter` (finish trace), `Ctrl+S` (save).
 
-## 6. `LocalDraftManager` (Autosave System)
-Manages local browser drafts to protect user progress.
+// ==============================================
+// SAVE MANAGER (The Master Router)
+// ==============================================
+const SaveManager = {
+    save: async () => {
+        // ... (existing code)
+    },
 
-- `getKey()` — Generates unique `localStorage` keys using the active user and project UUID.
-- `save()` — Stores pending revisions (tagged with `_localAction` properties) in browser memory.
-- `load()` — Restores unsaved changes from `localStorage` upon entering the editor.
-- `clear()` — Wipes the local draft workspace after changes are successfully submitted to the database.
-- `discardAndReload()` — Purges local drafts and reloads the map from the database.
+    submitRequest: async () => {
+        // ... (existing code)
+        // Helper to strip all local UI tracking states so the JSON is pristine
+        const clean = (obj) => { ... };
+        // ... (existing code)
+    },
+    // ...
+};
 
----
+### `Particles` (Background Animation)
+- `init()` — Canvas-based floating particle animation (same pattern as admin.html).
 
-## 7. `SnippingTool` (OCR & Auto Placement - `js/SnippingTool.js`)
-Captures map coordinates, executes OCR scans, and automates planet node creations.
+### `Utils` (Shared Helpers)
+- `escapeHtml(s)` — HTML entity escaping.
+- `slugify(s)` — URL-safe slug generation.
+- `uploadImage(file, bucket, folder)` — Uploads the original map image bytes under a unique path with one-year cache metadata and returns the public URL.
+- `timeAgo(d)` — Relative time formatting (e.g. "3m ago").
+- `uuid()` — Generates a v4 UUID.
+- `getContributorColor(userId)` — Deterministic hash-based color from a 12-color palette.
 
-- `init()` — Initializes the Tesseract OCR engine.
-- `activate(latlng)` — Displays the cropping frame at the target coordinate.
-- `onMouseUp(e)` — Captures the cropped image, executes OCR, searches the CSV planet database, and generates planet nodes.
-- `createPlanetFallback(err)` — Fallback workflow when OCR scans fail.
-- `createPlanet(name, matchData)` — Node creator that pre-fills planet details (such as Sector and Region). The user remains in place mode after creating a node to allow placing multiple planets in sequence.
-- `placeAt(latlng)` — Places a generic planet node marker at the clicked canvas coordinate.
-
----
-
-## 8. `PathDrawer` (Advanced Spline Drawer - `js/PathDrawer.js`)
-Guides curved lane placements on the canvas.
-
-- `addNode(node)` — Adds a node to the active trace queue.
-- `startCurving()` — Transitions to curved spline editing, rendering drag points to adjust curves.
-- `refreshCurveVisuals()` — Dynamically redraws hyperlane curves as control points are dragged.
-- `finalize(isCurved)` — Saves lane coordinates and geometry types.
-
----
-
-## 9. `PlanetEditor` (Node Metadata CRUD popup)
-Node popup editor for updating sectors, coordinates, and names.
-
-- `openPopup(node, marker, isNew)` — Opens a popup on the planet marker with fields for name, sector, region, and custom delete buttons.
-- `bindAutocomplete(input)` — Binds planet search inputs to `PlanetDB` for CSV autocompletion.
-- `save(node, popup)` — Saves node properties to the local draft workspace or Supabase.
-- `delete(node, popup)` — Deletes a node and any connected hyperlanes.
-
----
-
-## 10. `ProjectPicker` (Map Management dropdown)
-Header dropdown managing maps, metadata, and creation flows.
-
-- `toggle()` — Opens or closes the dropdown map list.
-- `refresh()` — Queries database maps to populate selection lists.
-- `select(id)` — Swaps the editor context, centers the camera, and fetches the chosen map elements.
-- `showCreateModal()` — Displays forms to upload map assets and specify coordinate scales.
-- `create()` — Uploads map images to the `maps` bucket, registers coordinates, and creates the new map project.
 
 ---
-
-## 11. Custom Drawer & Interface managers
-Legends, menus, and keyboard shortcuts.
-
-- `Contributors.refresh()` — Assigns distinct marker colors to contributors based on active node edits.
-- `ChangelogDrawer` — Sidebar panel displaying map change histories. Includes `toggle()`, `close()`, and `load()`.
-- `PlanetDB` — Parser that loads `data/sw_planets.csv` and searches sector and region columns.
-- `ContextMenu` — Floating menu showing options to inspect elements, delete lanes, or trace routes.
-  - `displayAt(e)` — Displays the generic right-click context menu.
-  - `showEdge(e, edge)` — Triggers the specific context menu for a selected hyperlane edge.
-- `Keyboard` — Registers hotkeys: `V` (select), `P` (place), `T` (trace), `Esc` (cancel), `Enter` (save lane), and `Ctrl+S` (save project).
-- `Particles` — floating particle animation canvas.
-- `Utils` — Shared helpers including `slugify()`, `timeAgo()`, and deterministic color generators (`getContributorColor()`).
-  - `escapeHtml(s)` — Encodes strings to prevent XSS injection.
-  - `uuid()` — Generates unique IDs for local mock objects before they hit Postgres.
-
----
-
-## 12. `SaveManager` (Submission Controller)
-Master router coordinating local drafts, direct database writes, and revision tickets.
-
-- `save()`
-  - **Description:** Triggers database writes. Evaluates the user's role: admins save changes directly to live map tables, while other roles submit revisions to the moderation queue.
-- `submitRequest()`
-  - **Description:** Wraps active workspace updates into a moderation ticket.
-  - **Helper `clean(obj)`:** Strips temporary visual UI attributes from nodes and edges to ensure only clean coordinate and entity payloads are written.
