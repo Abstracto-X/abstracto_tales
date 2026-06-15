@@ -147,7 +147,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `renderMapData()` — Generates SVG paths for hyperlanes, route-overlay groups, and DOM elements for planet nodes, performing Y-axis inversion.
 - `buildGraph()` — Converts the node and edge data into an adjacency list for pathfinding and seeds cached lane lengths.
 - `calculateRoute()` — Executes normal Dijkstra routing for linked worlds, or falls back to hybrid nearest-exit routing when one or both selected worlds are isolated.
-- `drawRoute(pathNodes, pathEdges, options)` — Highlights the active path, renders any off-lane overlay segments, and populates itinerary/summary UI for both standard and hybrid routes. Now includes logic for flow direction animation on hyperlanes.
+- `drawRoute(pathNodes, pathEdges, options)` — Highlights the active path, renders off-lane overlay segments, and refreshes the route summary, floating route card, camera focus, and HUD state for standard and hybrid routes.
 - `bindUI()` - Wires the route inputs, search actions, map selector buttons, and layer toggles to the map controller. Selector clicks fully reinitialize the navicomputer for the chosen map record.
 - `zoomToNode(nodeName)` — Locates a node by name and triggers zoomToRoute to focus the camera on it.
 - `setMapSource(src, mapName)` - Swaps the visible map image, updates the active selector chip, and refreshes the reader-facing status for the current map.
@@ -172,8 +172,8 @@ The functions and components of the public reader SPA are now fully modularized 
 - `renderNodeCard()` / `renderSummary()` — Renders the focused-world card plus the route summary metrics panel.
 - `renderRouteOverlay()` — Draws cyan straight-line off-lane segments and exit markers for hybrid routes.
 - `applyNodeNaturalColors()` — Samples nearby pixels from the loaded map image when possible and assigns per-node CSS colors for the double-ring planet markers, falling back gracefully when canvas reads are blocked.
-- `ensureRouteInfoOverlay()` / `renderRouteInfoOverlay()` / `dismissRouteInfoOverlay()` — Creates and manages the in-map route information card that appears after plotting a course.
-- `positionRouteInfoOverlay()` / `getRouteScreenBounds()` / `getNodeScreenPoint()` — Chooses a low-obstruction viewport corner for the route information overlay based on the active route and planet node screen positions, with top spacing reserved for map controls.
+- `ensureRouteInfoOverlay()` / `renderRouteInfoOverlay()` / `dismissRouteInfoOverlay()` — Creates and manages the numbered, animated in-stage route information card that appears after plotting a course.
+- `positionRouteInfoOverlay()` / `getRouteScreenBounds()` / `getNodeScreenPoint()` — Scores route geometry and the live rectangles of open docks, footer, status card, and controls; desktop left candidates shift beside an open World Inspector.
 - `layoutRouteLabels()` — Applies collision-aware directional offsets and connector-line geometry to selected and active route planet labels so important names avoid nearby labels and planet nodes.
 - `toggleLayer(key)` / `applyDisplayState()` — Manages reader-facing label and hyperlane visibility controls.
 - `crossMapSearch(name)` — Searches for a world name across all other maps of the same story.
@@ -188,7 +188,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `getPlanetOrbGradient(planetClass)` — Returns a CSS gradient matching the world's planetary classification.
 - `getNodeDescription(node, specs)` — Generates a deterministic description of the world.
 - `isInWatchlist(planetName)` / `toggleWatchlist(planetName)` — Handles watchlist state checking and synchronization to local storage.
-- `renderWorldIntel(node)` — Overhauls the Left Dock panel layout with planetary orb, navigation tabs, and quick actions.
+- `renderWorldIntel(node)` — Renders the Left Dock panel with planetary orb, class-colored accent band, navigation tabs, endpoint actions, and an inline Plot Course origin picker that does not open the Navicomputer.
 - `switchIntelTab(tabName, node)` / `renderIntelTabContent(tabName, node)` — Drives the tab switching and content generation for Overview, History, Routes, Political, and Nearby tabs.
 - `initDocks(signal)` — Registers all dock triggers, close buttons, pin buttons, Escape key handlers, and click-dismiss listeners.
 - `openDock(id)` / `closeDock(id)` / `forceCloseDock(id)` / `toggleDock(id)` — Controls the sliding and pinned visibility state of edge panels.
@@ -197,7 +197,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `syncDockTrigger(id, isOpen)` — Keeps dock trigger classes and `aria-expanded` attributes synchronized with controller state.
 - `startHudTimers()` — Starts the live Galactic Time clock; its interval is cleared during `destroy()`.
 - `updateTickerText()` — Updates the footer bulletin from the active chart and currently selected world.
-- `updateHudStatus()` — Mirrors active route endpoints, hop count, distance, route mode, and active-route count into the compact HUD status surfaces.
+- `updateHudStatus()` — Mirrors active route endpoints, hop count, distance, and route mode into the compact HUD status card and synchronizes its active-route radar state.
 - `renderRouteAnalysis()` / `toggleAnalysisPanel(key)` — Populates and controls the Hyperlane Preview, Fuel Estimate, Political Borders, and Hazard Rating accordion panels.
 - `togglePanelsMinimized()` — Collapses or restores all non-map overlays without removing the command bar.
 - `toggleThemeMode()` / `toggleVolumeIndicator()` — Manage dependency-free visual HUD preferences and their accessible pressed states.
@@ -225,6 +225,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `voteImage(imageId, value)` — Handles casting and updating image upvotes/downvotes against Supabase with real-time score synchronization.
 
 ### `Visuals` Gallery Viewer (`js/ui.js`)
+- `initDynamicTransparency()` — Applies pointer-aware blur and brightness changes to the global reader background on desktop without hiding the application or treating the lower-right corner as a fullscreen-background hotspot.
 - `openGalleryLightbox(index, images)` / `updateLightboxView()` — Opens the accessible artwork viewer and synchronizes image, metadata, counter, tags, and voting state without reassigning an unchanged image URL.
 - `toggleLightboxDiscussion()` — Lazily opens or closes the current image discussion instead of loading comments on every image transition.
 - `handleLightboxKeydown(event)` — Provides Escape, arrow navigation, and focus trapping while the artwork dialog is active.

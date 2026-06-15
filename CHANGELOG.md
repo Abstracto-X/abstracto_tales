@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
 ## [2026-06-15]
+### Changed
+- 06:18 +05:30: Restored the reader map Navicomputer status widget to the right, moved zoom/reset/route-focus controls into a horizontal rail beside Minimize Panels, replaced the footer clock spinner with an animated Galactic Republic emblem, and removed the site-wide lower-right cursor hotspot that hid the entire application.
+- 05:47 +05:30: Restructured the reader map HUD by moving Star Chart Registry/Layers into the top command bar and Navicomputer/Search into the compact status card, removing itinerary and Active Routes surfaces, adding inspector-based Plot Course selection, and making the floating route card avoid live dock/HUD rectangles. Added registry thumbnails, planet-class inspector accents, route/radar/minimize animations, HUD/footer glow treatments, responsive fallbacks, and updated reader map documentation.
+
 ### Fixed
 - 04:20 +05:30: Made the Star Chart Registry scrollable by changing `.map-hub-screen` overflow from `hidden` to `visible` and adding border-radius inheritance to its grid overlay pseudo-element. Increased the translucency of the registry background box by lowering the linear-gradient opacity.
 - 03:35 +05:30: Fixed reader registration confirmation redirects by passing a current-site `emailRedirectTo` to Supabase signup. The derived URL preserves the deployed `/abstracto_tales/` GitHub Pages base path while stripping page filenames, query parameters, and hashes. Updated reader architecture, function, and API documentation.

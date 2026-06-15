@@ -1,8 +1,17 @@
 # Reader Map Handover
 
-Last audited: **2026-06-15 03:44 +05:30**
+Last audited: **2026-06-15 05:47 +05:30**
 
 This is the working handover for the public reader Map Hub and interactive map viewer. Read this before changing the map so the next implementation pass can begin at the relevant code instead of surveying the whole repository.
+
+## Latest HUD Restructure
+
+- Star Chart Registry and Layers are labeled controls in the top-right command bar.
+- Open Navicomputer and Search live in the bottom-right radar/status card. Zoom, reset, and route-focus controls use a horizontal rail beside the upper-right Minimize Panels control.
+- The separate itinerary dock, inline Navicomputer itinerary, and Active Routes footer action were removed.
+- World Inspector uses Plot Course instead of its watchlist action. Existing origins route immediately; otherwise an inline searchable departure picker plots without opening the Navicomputer.
+- The floating route card renders numbered animated stops and scores live HUD/dock rectangles. Desktop left-side positions shift beside an open World Inspector.
+- Registry entries use their map image as a hover/focus thumbnail, and the refreshed HUD includes scanlines, edge glows, planet-class inspector accents, active-route radar feedback, minimize-state feedback, a Galactic Republic clock emblem, and reduced-motion fallbacks.
 
 ## 1. Scope and Routes
 
@@ -126,7 +135,7 @@ There are older experimental map rules around `styles.css:1833-3830`. The EOF re
 - Layer visibility controls for labels and hyperlanes.
 - Planet selection and left World Inspector.
 - History lookup against Story History and lazy Galactic History.
-- Local-storage watchlist.
+- Inspector-based Plot Course workflow; legacy local-storage watchlist helpers remain in code without an inspector control.
 - Responsive desktop overlays and mobile bottom sheets.
 - Dock ARIA open-state synchronization.
 - Cleanup of event listeners and live clock interval through `MapViewer.destroy()`.
@@ -173,7 +182,6 @@ The accordion calculations in `renderRouteAnalysis()` are approximations:
 - Settings button currently opens the Layers panel rather than a dedicated settings panel.
 - Radar is decorative CSS, not a live scanner.
 - Galactic Time is the reader’s local device time, not a story calendar.
-- “Active Routes” is binary (`0` or `1`), not a persisted collection of saved routes.
 
 ### Legend
 
@@ -228,9 +236,9 @@ Recommended future model:
 
 This requires reading `docs_v2/shared/database.md` before implementation.
 
-### Filters Panel
+### Registry Scope
 
-The HUD button says **Filters**, but the Charts panel currently acts mainly as a map switcher. There are no true filters for faction, threat, map region, linked/unlinked worlds, or watchlist.
+The top-right **Star Chart Registry** control is a map switcher with image-backed previews. It is not a faction, threat, region, connectivity, or watchlist filter system.
 
 ### Dedicated Settings
 
@@ -249,7 +257,6 @@ Route data can appear in:
 - Itinerary dock
 - Floating route overlay
 - Radar/status card
-- Footer route count
 
 This is intentional for the concept, but it can become noisy. A UX pass should decide which surfaces remain visible at each viewport width.
 
@@ -286,11 +293,10 @@ The main dock controls have ARIA states, but keyboard/focus behavior still needs
 1. Restore the visible Cartography contribution action/banner.
 2. Label generated world data as estimated, or connect it to canonical data.
 3. Manually test all desktop/mobile collision states.
-4. Implement real filters or rename the Filters control to Charts.
-5. Remove or implement the visual-only audio/settings controls.
-6. Reduce duplicated route surfaces based on viewport.
-7. Consolidate legacy map CSS.
-8. Improve planet-node keyboard accessibility.
+4. Remove or implement the visual-only audio/settings controls.
+5. Reduce duplicated route surfaces further if manual viewport testing still feels noisy.
+6. Consolidate legacy map CSS.
+7. Improve planet-node keyboard accessibility.
 
 ## 7. Manual Verification Checklist
 
@@ -304,7 +310,7 @@ Automated browser testing is not run by default for this project.
 6. Confirm generated telemetry is understood as placeholder data.
 7. Plot linked and isolated-world routes.
 8. Test Plot, Swap, Clear, Center Route, labels, and hyperlanes.
-9. Test History, watchlist persistence, and cross-map hints.
+9. Test History, inspector Plot Course, and cross-map hints.
 10. Test Minimize/Expand Panels.
 11. Verify the contribution banner/action is visible after it is implemented.
 12. Repeat at 1366×768, tablet width, and mobile portrait.
@@ -320,4 +326,3 @@ For any integrated map change:
 4. Update `docs_v2/shared/database.md` if canonical world fields or queries are added.
 5. Run `npm run compile-docs`.
 6. Add a timestamped entry to `CHANGELOG.md`.
-

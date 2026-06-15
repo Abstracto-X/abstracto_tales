@@ -597,12 +597,13 @@ export const Render = {
             return `
                 <button class="map-selector-btn ${m.id === activeMap.id ? 'active' : ''}"
                     data-id="${m.id}"
-                    data-src="${m.image_url}"
+                    data-src="${Utils.escapeAttr(m.image_url || '')}"
                     data-map-name="${Utils.escapeAttr(m.map_name)}"
                     data-map-type="${Utils.escapeAttr(type)}"
                     data-width="${m.width || 4000}"
                     data-height="${m.height || 4000}"
                     type="button">
+                    <img class="map-selector-thumb" src="${Utils.escapeAttr(m.image_url || '')}" alt="" loading="lazy" decoding="async">
                     <span class="map-selector-btn-eyebrow">${Utils.escapeHtml(typeLabel)}</span>
                     <strong>${Utils.escapeHtml(m.map_name)}</strong>
                     <span class="map-selector-btn-meta">${m.is_primary ? 'Primary chart' : 'Mapped registry entry'}</span>
@@ -623,6 +624,12 @@ export const Render = {
                         <div class="map-hud-subtitle" id="map-hud-subtitle">${Utils.escapeHtml(story.title)} &bull; ${Utils.escapeHtml(activeMap.map_name)}</div>
                     </div>
                     <div class="map-hud-actions">
+                        <button class="map-hud-action-btn" id="charts-trigger" type="button" aria-controls="charts-dock" aria-expanded="false">
+                            <i class="fas fa-map" aria-hidden="true"></i><span>Star Chart Registry</span>
+                        </button>
+                        <button class="map-hud-action-btn" id="layers-trigger" type="button" aria-controls="layers-dock" aria-expanded="false">
+                            <i class="fas fa-layer-group" aria-hidden="true"></i><span>Layers</span>
+                        </button>
                         <button class="map-hud-icon-btn" id="hud-theme-toggle" type="button" aria-label="Toggle console accent theme" aria-pressed="false">
                             <i class="fas fa-magic" aria-hidden="true"></i>
                         </button>
@@ -666,10 +673,20 @@ export const Render = {
                 </section>
 
                 <div class="map-stage">
-                    <button class="minimize-panels-btn" id="minimize-panels-btn" type="button" aria-pressed="false">
-                        <i class="fas fa-compress-alt" aria-hidden="true"></i>
-                        <span class="minimize-panels-label">Minimize Panels</span>
-                    </button>
+                    <div class="map-panel-tools">
+                        <div class="map-controls" aria-label="Map controls">
+                            <div class="map-viewport-rail">
+                                <button class="map-control-icon" id="zoom-in-btn" type="button" title="Zoom in" aria-label="Zoom in"><i class="fas fa-plus" aria-hidden="true"></i></button>
+                                <button class="map-control-icon" id="zoom-out-btn" type="button" title="Zoom out" aria-label="Zoom out"><i class="fas fa-minus" aria-hidden="true"></i></button>
+                                <button class="map-control-icon" id="map-reset-btn" type="button" title="Reset view" aria-label="Reset view"><i class="fas fa-house" aria-hidden="true"></i></button>
+                                <button class="map-control-icon" id="map-center-route-btn" type="button" title="Center route" aria-label="Center plotted route"><i class="fas fa-crosshairs" aria-hidden="true"></i></button>
+                            </div>
+                        </div>
+                        <button class="minimize-panels-btn" id="minimize-panels-btn" type="button" aria-pressed="false">
+                            <i class="fas fa-compress-alt" aria-hidden="true"></i>
+                            <span class="minimize-panels-label">Minimize Panels</span>
+                        </button>
+                    </div>
 
                     <div class="map-viewer" id="map-viewer">
                         <div class="map-canvas" id="map-canvas">
@@ -787,16 +804,7 @@ export const Render = {
                                 </div>
                             </section>
 
-                            <div id="routing-itinerary" class="routing-itinerary"></div>
                         </div>
-                    </aside>
-
-                    <aside class="map-dock dock-bottom" id="itinerary-dock" aria-label="Route itinerary" aria-hidden="true">
-                        <div class="dock-header">
-                            <span class="dock-header-title"><i class="fas fa-route" aria-hidden="true"></i> Route Itinerary</span>
-                            <button class="dock-btn" id="close-itinerary" type="button" aria-label="Close itinerary"><i class="fas fa-times" aria-hidden="true"></i></button>
-                        </div>
-                        <div class="dock-body" id="itinerary-dock-body"></div>
                     </aside>
 
                     <section class="map-status-card" id="map-status-card" aria-live="polite">
@@ -805,6 +813,14 @@ export const Render = {
                             <h3 id="hud-route-title">Navicomputer Online</h3>
                             <p id="hud-route-state">Select two worlds to plot a course.</p>
                             <div class="map-status-card-meta" id="hud-route-meta">0 Hops &bull; 0 u</div>
+                            <div class="map-status-actions">
+                                <button class="map-status-btn" id="navicomputer-trigger" type="button" aria-controls="navicomputer-dock" aria-expanded="false">
+                                    <i class="fas fa-satellite-dish" aria-hidden="true"></i><span>Open Navicomputer</span>
+                                </button>
+                                <button class="map-status-btn" id="search-map-btn" type="button">
+                                    <i class="fas fa-search" aria-hidden="true"></i><span>Search</span>
+                                </button>
+                            </div>
                         </div>
                         <div class="map-status-radar" aria-hidden="true">
                             <div class="radar-scope">
@@ -818,21 +834,6 @@ export const Render = {
                             </div>
                         </div>
                     </section>
-
-                    <div class="map-controls" aria-label="Map controls">
-                        <div class="map-viewport-rail">
-                            <button class="map-control-icon" id="zoom-in-btn" type="button" title="Zoom in" aria-label="Zoom in"><i class="fas fa-plus" aria-hidden="true"></i></button>
-                            <button class="map-control-icon" id="zoom-out-btn" type="button" title="Zoom out" aria-label="Zoom out"><i class="fas fa-minus" aria-hidden="true"></i></button>
-                            <button class="map-control-icon" id="map-reset-btn" type="button" title="Reset view" aria-label="Reset view"><i class="fas fa-house" aria-hidden="true"></i></button>
-                            <button class="map-control-icon" id="map-center-route-btn" type="button" title="Center route" aria-label="Center plotted route"><i class="fas fa-crosshairs" aria-hidden="true"></i></button>
-                        </div>
-                        <div class="map-hud-stack">
-                            <button class="map-pill-btn" id="navicomputer-trigger" type="button" aria-controls="navicomputer-dock" aria-expanded="false"><i class="fas fa-satellite-dish" aria-hidden="true"></i><span>Navicomputer</span></button>
-                            <button class="map-pill-btn" id="charts-trigger" type="button" aria-controls="charts-dock" aria-expanded="false"><i class="fas fa-filter" aria-hidden="true"></i><span>Filters</span></button>
-                            <button class="map-pill-btn" id="layers-trigger" type="button" aria-controls="layers-dock" aria-expanded="false"><i class="fas fa-layer-group" aria-hidden="true"></i><span>Layers</span></button>
-                            <button class="map-pill-btn" id="search-map-btn" type="button"><i class="fas fa-search" aria-hidden="true"></i><span>Search</span></button>
-                        </div>
-                    </div>
 
                     <div class="map-console-legend" id="map-console-legend" aria-label="Map legend">
                         <span class="map-legend-item"><span class="map-legend-swatch galaxy"></span>The Galaxy (Political)</span>
@@ -858,7 +859,6 @@ export const Render = {
                     <footer class="map-console-footer" id="map-console-footer">
                         <div class="map-footer-actions">
                             <button class="map-footer-btn" id="footer-history-btn" type="button"><i class="fas fa-book-open" aria-hidden="true"></i><span>Historical Index</span></button>
-                            <button class="map-footer-btn" id="footer-active-routes-btn" type="button"><i class="fas fa-route" aria-hidden="true"></i><span><strong id="footer-active-routes-count">0</strong> Active Routes</span></button>
                         </div>
                         <div class="map-footer-ticker" id="map-footer-ticker">
                             <div class="map-footer-ticker-track"><span id="map-footer-ticker-text">Awaiting live astrogation bulletins...</span></div>
@@ -867,7 +867,7 @@ export const Render = {
                         <div class="map-footer-clock">
                             <span class="map-footer-clock-label">Galactic Time</span>
                             <strong id="map-galactic-clock">--:--:--</strong>
-                            <span class="map-footer-clock-spinner" aria-hidden="true"></span>
+                            <span class="map-footer-clock-spinner" aria-hidden="true"><i class="fab fa-galactic-republic"></i></span>
                         </div>
                     </footer>
                 </div>

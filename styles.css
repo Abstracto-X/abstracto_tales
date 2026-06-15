@@ -6885,3 +6885,637 @@ body.fullscreen-map-active #global-comment-btn {
         transition-duration: 0.001ms !important;
     }
 }
+
+/* Reader map HUD restructure and astrogation polish */
+.map-console-shell {
+    --map-content-top: 100px;
+}
+
+.map-console-ambience {
+    background:
+        linear-gradient(90deg, rgba(120, 221, 255, 0.12), transparent 8%, transparent 92%, rgba(120, 221, 255, 0.12)),
+        linear-gradient(rgba(119, 222, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(119, 222, 255, 0.022) 1px, transparent 1px),
+        repeating-linear-gradient(0deg, transparent 0 3px, rgba(0, 0, 0, 0.12) 3px 4px),
+        radial-gradient(ellipse at center, transparent 35%, rgba(1, 4, 12, 0.72) 100%);
+    background-size: auto, 72px 72px, 72px 72px, auto, auto;
+}
+
+.map-console-shell .map-stage::before,
+.map-console-shell .map-stage::after {
+    content: "";
+    position: absolute;
+    z-index: 12;
+    width: 38px;
+    height: 38px;
+    pointer-events: none;
+    opacity: 0.48;
+}
+
+.map-console-shell .map-stage::before {
+    top: var(--map-content-top);
+    left: 16px;
+    border-top: 1px solid var(--hud-cyan);
+    border-left: 1px solid var(--hud-cyan);
+    background: linear-gradient(90deg, transparent 18px, rgba(120, 221, 255, 0.55) 18px 19px, transparent 19px);
+}
+
+.map-console-shell .map-stage::after {
+    right: 16px;
+    bottom: 82px;
+    border-right: 1px solid var(--hud-cyan);
+    border-bottom: 1px solid var(--hud-cyan);
+    background: linear-gradient(0deg, transparent 18px, rgba(120, 221, 255, 0.55) 18px 19px, transparent 19px);
+}
+
+.map-hud-bar {
+    overflow: hidden;
+    border-bottom-color: rgba(120, 221, 255, 0.42);
+    background:
+        repeating-linear-gradient(0deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 4px),
+        linear-gradient(110deg, rgba(8, 15, 28, 0.78), rgba(10, 15, 28, 0.5));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35), 0 1px 14px rgba(0, 242, 254, 0.2), inset 0 1px rgba(255, 255, 255, 0.04);
+}
+
+.map-hud-actions {
+    gap: 6px;
+}
+
+.map-hud-action-btn {
+    min-height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 10px;
+    border: 1px solid var(--hud-soft-line);
+    border-radius: 9px;
+    color: rgba(225, 238, 248, 0.76);
+    background: rgba(3, 10, 20, 0.32);
+    font: inherit;
+    font-size: 0.64rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.map-hud-action-btn:hover,
+.map-hud-action-btn.open,
+.map-hud-action-btn[aria-expanded="true"] {
+    color: #fff;
+    border-color: rgba(120, 221, 255, 0.48);
+    background: rgba(66, 185, 234, 0.13);
+    box-shadow: 0 0 20px rgba(72, 197, 255, 0.12);
+}
+
+.dock-left {
+    top: var(--map-content-top);
+    bottom: 82px;
+}
+
+.dock-left[data-planet-class] {
+    border-top-width: 4px;
+    border-top-color: var(--planet-class-accent, var(--hud-cyan));
+    box-shadow: 0 -8px 24px color-mix(in srgb, var(--planet-class-accent, var(--hud-cyan)) 18%, transparent), 0 24px 65px rgba(0, 0, 0, 0.42);
+}
+
+.dock-left[data-planet-class="terrestrial"],
+.dock-left[data-planet-class="forest"] { --planet-class-accent: #62d47c; }
+.dock-left[data-planet-class="desert"],
+.dock-left[data-planet-class="barren"] { --planet-class-accent: #e5ad63; }
+.dock-left[data-planet-class="ice-world"],
+.dock-left[data-planet-class="oceanic"] { --planet-class-accent: #55d9ff; }
+.dock-left[data-planet-class="gas-giant"] { --planet-class-accent: #ff9f5a; }
+.dock-left[data-planet-class="volcanic"] { --planet-class-accent: #ff5a4f; }
+.dock-left[data-planet-class="swamp"] { --planet-class-accent: #8fcf65; }
+.dock-left[data-planet-class="ecumenopolis"] { --planet-class-accent: #c579ff; }
+
+.plot-course-action {
+    position: relative;
+    overflow: hidden;
+    justify-content: center;
+    min-height: 42px;
+    color: #eefdff;
+    border-color: rgba(120, 221, 255, 0.42);
+    background: linear-gradient(135deg, rgba(0, 242, 254, 0.18), rgba(0, 120, 255, 0.42));
+    box-shadow: inset 0 1px rgba(255,255,255,0.1), 0 0 22px rgba(0, 198, 255, 0.12);
+}
+
+.plot-course-action:hover {
+    transform: translateY(-1px);
+    box-shadow: inset 0 1px rgba(255,255,255,0.14), 0 0 28px rgba(0, 210, 255, 0.25);
+}
+
+.plot-course-action.pulse-glow {
+    animation: plot-course-pulse 0.85s ease-out;
+}
+
+@keyframes plot-course-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(100, 225, 255, 0.65); }
+    100% { box-shadow: 0 0 0 18px rgba(100, 225, 255, 0), 0 0 30px rgba(0, 210, 255, 0.2); }
+}
+
+.inspector-course-picker {
+    margin-top: 9px;
+    padding: 10px;
+    border: 1px solid var(--hud-soft-line);
+    border-radius: 10px;
+    background: rgba(1, 6, 14, 0.48);
+}
+
+.inspector-course-picker[hidden] {
+    display: none;
+}
+
+.inspector-course-picker label {
+    display: block;
+    margin-bottom: 7px;
+    color: rgba(220, 237, 249, 0.68);
+    font-size: 0.67rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+}
+
+.inspector-course-picker-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 7px;
+}
+
+.inspector-course-picker-row input {
+    min-width: 0;
+}
+
+.inspector-course-picker p {
+    margin: 7px 0 0;
+    color: rgba(205, 225, 240, 0.62);
+    font-size: 0.69rem;
+}
+
+.map-status-card {
+    left: 16px;
+    right: auto;
+    width: min(390px, calc(100vw - 32px));
+    min-height: 154px;
+    grid-template-columns: minmax(0, 1fr) 104px;
+    border-left: 3px solid var(--hud-cyan);
+    background: linear-gradient(145deg, rgba(7, 15, 29, 0.68), rgba(5, 11, 22, 0.48));
+    box-shadow: -4px 0 18px rgba(0, 242, 254, 0.16), 0 24px 65px rgba(0, 0, 0, 0.42);
+}
+
+.map-status-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 11px;
+}
+
+.map-status-btn {
+    position: relative;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 7px 10px;
+    border: 1px solid rgba(120, 221, 255, 0.2);
+    border-radius: 999px;
+    color: rgba(224, 239, 249, 0.76);
+    background: rgba(0, 242, 254, 0.045);
+    backdrop-filter: blur(12px);
+    font: inherit;
+    font-size: 0.66rem;
+    cursor: pointer;
+}
+
+.map-status-btn::after {
+    content: "";
+    position: absolute;
+    right: 9px;
+    bottom: 4px;
+    left: 9px;
+    height: 1px;
+    background: var(--hud-cyan);
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.25s ease;
+}
+
+.map-status-btn:hover,
+.map-status-btn[aria-expanded="true"] {
+    color: #fff;
+    border-color: rgba(120, 221, 255, 0.46);
+}
+
+.map-status-btn:hover::after {
+    transform: scaleX(1);
+    transform-origin: left;
+}
+
+.map-status-card.has-active-route .radar-sweep {
+    animation-duration: 1.85s;
+    filter: drop-shadow(0 0 5px var(--hud-cyan));
+}
+
+.map-status-card.has-active-route .radar-ring {
+    animation: active-radar-ring 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes active-radar-ring {
+    to { border-color: rgba(112, 218, 255, 0.58); box-shadow: 0 0 10px rgba(80, 205, 255, 0.28); }
+}
+
+.map-controls {
+    right: 16px;
+    bottom: 88px;
+}
+
+.map-controls .map-hud-stack {
+    display: none;
+}
+
+.charts-dock .map-selector-btn {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 68px;
+}
+
+.charts-dock .map-selector-thumb {
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1.08);
+    filter: brightness(0.42) saturate(0.75);
+    transition: opacity 0.25s ease, transform 0.35s ease;
+    pointer-events: none;
+}
+
+.charts-dock .map-selector-btn:hover .map-selector-thumb,
+.charts-dock .map-selector-btn:focus-visible .map-selector-thumb,
+.charts-dock .map-selector-btn.active .map-selector-thumb {
+    opacity: 0.58;
+    transform: scale(1);
+}
+
+.map-route-info-overlay {
+    z-index: 680 !important;
+    border-left: 3px solid var(--hud-cyan) !important;
+    background: linear-gradient(145deg, rgba(6, 15, 28, 0.78), rgba(4, 10, 20, 0.58)) !important;
+    box-shadow: -5px 0 20px rgba(0, 242, 254, 0.16), 0 22px 54px rgba(0,0,0,0.54) !important;
+}
+
+.map-route-info-list li {
+    position: relative;
+    grid-template-columns: 24px 54px minmax(0, 1fr) !important;
+    min-height: 28px;
+}
+
+.map-route-info-list li:not(:last-child)::after {
+    content: "›";
+    position: absolute;
+    left: 7px;
+    bottom: -10px;
+    color: var(--hud-cyan);
+    animation: route-flow-arrow 1.25s ease-in-out infinite;
+}
+
+.map-route-hop-number {
+    width: 21px;
+    height: 21px;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(120, 221, 255, 0.48);
+    border-radius: 50%;
+    color: #dff8ff !important;
+    background: rgba(0, 196, 255, 0.12);
+    font-size: 0.62rem !important;
+}
+
+.map-route-hop-label {
+    color: rgba(255,255,255,0.48);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-size: 0.6rem;
+}
+
+@keyframes route-flow-arrow {
+    50% { transform: translateY(3px); opacity: 0.35; }
+}
+
+.map-console-footer {
+    border-top-color: rgba(120, 221, 255, 0.42);
+    background: linear-gradient(145deg, rgba(7, 15, 29, 0.68), rgba(5, 11, 22, 0.5));
+    box-shadow: 0 -1px 14px rgba(0, 242, 254, 0.16), 0 24px 65px rgba(0, 0, 0, 0.42);
+}
+
+.map-footer-btn i {
+    transition: transform 0.25s ease, text-shadow 0.25s ease;
+}
+
+.map-footer-btn:hover {
+    transform: translateY(-1px);
+    text-shadow: 0 0 12px rgba(120, 221, 255, 0.45);
+}
+
+#footer-history-btn:hover i {
+    animation: history-book-flip 0.55s ease;
+}
+
+@keyframes history-book-flip {
+    50% { transform: perspective(80px) rotateY(-28deg) scale(1.08); }
+}
+
+.minimize-panels-btn {
+    overflow: visible;
+}
+
+.minimize-panels-btn i {
+    transition: transform 0.3s ease;
+}
+
+.map-console-shell.panels-minimized .minimize-panels-btn i {
+    transform: rotate(180deg) scale(1.08);
+}
+
+.map-console-shell.panels-minimized .minimize-panels-btn::after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    border-radius: 50%;
+    background: #ff516b;
+    box-shadow: 0 0 10px #ff365f;
+    animation: minimized-badge 1.4s ease-in-out infinite;
+}
+
+@keyframes minimized-badge {
+    50% { opacity: 0.35; transform: scale(0.78); }
+}
+
+.map-console-shell.panels-minimized .map-status-card {
+    transform: translateX(-120%);
+}
+
+.map-console-shell.panels-minimized .map-route-info-overlay {
+    opacity: 0;
+    pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+    .map-hud-icon-btn,
+    .map-hud-avatar-btn,
+    .active-map-chip {
+        display: none;
+    }
+
+    .map-status-card {
+        width: 350px;
+    }
+}
+
+@media (max-width: 920px) {
+    .map-hud-action-btn span {
+        display: none;
+    }
+
+    .map-hud-action-btn {
+        width: 36px;
+        justify-content: center;
+        padding: 0;
+        border-radius: 50%;
+    }
+
+    .map-status-card {
+        width: 300px;
+        grid-template-columns: 1fr;
+    }
+
+    .map-status-actions {
+        flex-wrap: nowrap;
+    }
+}
+
+@media (max-width: 720px) {
+    .map-console-shell {
+        --map-content-top: 74px;
+    }
+
+    .map-hud-action-btn {
+        display: inline-flex;
+    }
+
+    .dock-left {
+        top: auto;
+        bottom: 68px;
+    }
+
+    .map-status-card {
+        left: 8px;
+        width: min(270px, calc(100vw - 68px));
+        min-height: 104px;
+        border-left-width: 2px;
+    }
+
+    .map-status-actions {
+        margin-top: 7px;
+    }
+
+    .map-status-btn {
+        width: 36px;
+        height: 36px;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .map-status-btn span {
+        display: none;
+    }
+
+    .map-controls {
+        right: 8px;
+    }
+
+    .map-console-shell .map-stage::before {
+        top: 74px;
+        left: 8px;
+    }
+
+    .map-console-shell .map-stage::after {
+        right: 8px;
+        bottom: 68px;
+    }
+
+    .map-route-info-overlay {
+        z-index: 590 !important;
+    }
+}
+
+/* Reader map control placement corrections */
+.map-status-card {
+    left: auto;
+    right: 16px;
+    border-left: 1px solid var(--hud-line);
+    border-right: 3px solid var(--hud-cyan);
+    box-shadow: 4px 0 18px rgba(0, 242, 254, 0.16), 0 24px 65px rgba(0, 0, 0, 0.42);
+}
+
+.map-panel-tools {
+    position: absolute;
+    z-index: 910;
+    top: 100px;
+    right: 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.map-panel-tools .map-controls,
+.map-panel-tools .minimize-panels-btn {
+    position: static;
+    inset: auto;
+    transform: none;
+}
+
+.map-panel-tools .map-controls {
+    display: block;
+}
+
+.map-panel-tools .map-viewport-rail {
+    display: flex;
+    grid-template-columns: none;
+    gap: 6px;
+    padding: 4px;
+    border: 1px solid var(--hud-line);
+    border-radius: 10px;
+    background: rgba(7, 13, 24, 0.72);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(16px);
+}
+
+.map-panel-tools .map-control-icon {
+    width: 34px;
+    height: 34px;
+    border-color: transparent;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.map-panel-tools .map-control-icon:hover {
+    color: var(--hud-cyan);
+    border-color: rgba(120, 221, 255, 0.38);
+    background: rgba(70, 190, 238, 0.12);
+}
+
+.map-console-shell.panels-minimized .map-panel-tools .map-controls {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(-10px);
+}
+
+.map-console-shell.panels-minimized .map-status-card {
+    transform: translateX(120%);
+}
+
+.map-footer-clock-spinner {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: 0;
+    color: var(--hud-cyan);
+    background: radial-gradient(circle, rgba(120, 221, 255, 0.14), transparent 62%);
+    filter: drop-shadow(0 0 7px rgba(120, 221, 255, 0.4));
+    animation: clock-emblem-float 3.4s ease-in-out infinite;
+}
+
+.map-footer-clock-spinner::before,
+.map-footer-clock-spinner::after {
+    content: "";
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.map-footer-clock-spinner::before {
+    inset: 1px;
+    border: 1px solid rgba(120, 221, 255, 0.42);
+    border-top-color: transparent;
+    border-bottom-color: rgba(255, 91, 189, 0.56);
+    animation: clock-emblem-orbit 4.5s linear infinite;
+}
+
+.map-footer-clock-spinner::after {
+    inset: 6px;
+    border: 1px dashed rgba(120, 221, 255, 0.34);
+    animation: clock-emblem-orbit 3s linear infinite reverse;
+}
+
+.map-footer-clock-spinner i {
+    position: relative;
+    z-index: 1;
+    font-size: 0.84rem;
+    text-shadow: 0 0 9px currentColor;
+    animation: clock-emblem-core 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes clock-emblem-orbit {
+    to { transform: rotate(360deg); }
+}
+
+@keyframes clock-emblem-float {
+    50% { transform: translateY(-2px); filter: drop-shadow(0 0 11px rgba(120, 221, 255, 0.65)); }
+}
+
+@keyframes clock-emblem-core {
+    to { transform: scale(1.12) rotate(8deg); color: #f2fdff; }
+}
+
+@media (max-width: 920px) {
+    .map-status-card {
+        right: 8px;
+        left: auto;
+    }
+
+    .map-panel-tools {
+        right: 8px;
+    }
+}
+
+@media (max-width: 720px) {
+    .map-panel-tools {
+        top: 74px;
+        gap: 5px;
+    }
+
+    .map-panel-tools .map-viewport-rail {
+        gap: 2px;
+        padding: 3px;
+    }
+
+    .map-panel-tools .map-control-icon {
+        width: 32px;
+        height: 32px;
+    }
+
+    .map-status-card {
+        right: 8px;
+        left: auto;
+    }
+
+    .map-footer-clock {
+        min-width: 104px;
+        grid-template-columns: auto 28px;
+        grid-template-areas: "label spinner" "time spinner";
+    }
+
+    .map-footer-clock-spinner {
+        display: grid;
+        width: 28px;
+        height: 28px;
+    }
+}

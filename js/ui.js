@@ -53,9 +53,8 @@ export const Particles = {
 export const Visuals = {
     initDynamicTransparency: () => {
         if (window.innerWidth < 900) return;
-        const app = document.getElementById('app-container');
         const bgLayer = document.getElementById('global-bg');
-        if (!app || !bgLayer) return;
+        if (!bgLayer) return;
         
         let ticking = false;
         let lastTarget = null;
@@ -69,44 +68,33 @@ export const Visuals = {
             window.requestAnimationFrame(() => {
                 const w = window.innerWidth;
                 const h = window.innerHeight;
-                const isBottomRight = (e.clientX > w * 0.90) && (e.clientY > h * 0.90);
 
-                if (isBottomRight) {
-                    app.style.opacity = '0';
-                    if (currentFilterState !== 'none') {
-                        bgLayer.style.filter = 'blur(0px) brightness(1)';
-                        currentFilterState = 'none';
-                    }
+                // Optimized Target Caching
+                if (e.target !== lastTarget) {
+                    lastTarget = e.target;
+                    isHoveringContent = !!(e.target.closest('.glass-box') || e.target.closest('.char-card'));
+                }
+
+                let newFilter;
+                if (isHoveringContent) {
+                    newFilter = 'blur(5px) brightness(0.5)';
                 } else {
-                    app.style.opacity = '1';
+                    const distX = Math.abs(e.clientX - w / 2);
+                    const distY = Math.abs(e.clientY - h / 2);
+                    const maxDist = Math.hypot(w/2, h/2);
+                    const currentDist = Math.hypot(distX, distY);
                     
-                    // Optimized Target Caching
-                    if (e.target !== lastTarget) {
-                        lastTarget = e.target;
-                        isHoveringContent = !!(e.target.closest('.glass-box') || e.target.closest('.char-card'));
-                    }
+                    // Round values to 1 decimal place to prevent micro-repaints
+                    const blur = (5 * (1 - (currentDist / maxDist))).toFixed(1);
+                    const brightness = (0.5 + (0.5 * (currentDist / maxDist))).toFixed(2);
 
-                    let newFilter;
-                    if (isHoveringContent) {
-                        newFilter = 'blur(5px) brightness(0.5)';
-                    } else {
-                        const distX = Math.abs(e.clientX - w / 2);
-                        const distY = Math.abs(e.clientY - h / 2);
-                        const maxDist = Math.hypot(w/2, h/2);
-                        const currentDist = Math.hypot(distX, distY);
-                        
-                        // Round values to 1 decimal place to prevent micro-repaints
-                        const blur = (5 * (1 - (currentDist / maxDist))).toFixed(1); 
-                        const brightness = (0.5 + (0.5 * (currentDist / maxDist))).toFixed(2);
-                        
-                        newFilter = `blur(${blur}px) brightness(${brightness})`;
-                    }
+                    newFilter = `blur(${blur}px) brightness(${brightness})`;
+                }
 
-                    // DOM Write Gating: Only touch the DOM if the string actually changed
-                    if (currentFilterState !== newFilter) {
-                        bgLayer.style.filter = newFilter;
-                        currentFilterState = newFilter;
-                    }
+                // DOM Write Gating: Only touch the DOM if the string actually changed
+                if (currentFilterState !== newFilter) {
+                    bgLayer.style.filter = newFilter;
+                    currentFilterState = newFilter;
                 }
                 ticking = false;
             });

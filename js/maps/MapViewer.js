@@ -103,8 +103,8 @@ export const MapViewer = {
     dockState: {
         navicomputer: { open: false, pinned: false },
         worldIntel:   { open: false, pinned: false },
-        itinerary:    { open: false, pinned: false },
-        charts:       { open: false }
+        charts:       { open: false },
+        layers:       { open: false }
     },
     routeOverlayDismissed: false,
     activeIntelTab: 'overview',
@@ -155,7 +155,6 @@ export const MapViewer = {
             status: document.getElementById('routing-status'),
             nodeCard: document.getElementById('routing-node-card'),
             summary: document.getElementById('routing-summary'),
-            itinerary: document.getElementById('routing-itinerary'),
             plotBtn: document.getElementById('plot-course-btn'),
             swapBtn: document.getElementById('swap-route-btn'),
             clearBtn: document.getElementById('clear-route-btn'),
@@ -169,9 +168,7 @@ export const MapViewer = {
             hudRouteTitle: document.getElementById('hud-route-title'),
             hudRouteState: document.getElementById('hud-route-state'),
             hudRouteMeta: document.getElementById('hud-route-meta'),
-            footerRouteCount: document.getElementById('footer-active-routes-count'),
             footerHistoryBtn: document.getElementById('footer-history-btn'),
-            footerRoutesBtn: document.getElementById('footer-active-routes-btn'),
             footerTicker: document.getElementById('map-footer-ticker'),
             footerTickerText: document.getElementById('map-footer-ticker-text'),
             footerTickerDismiss: document.getElementById('footer-ticker-dismiss'),
@@ -192,7 +189,6 @@ export const MapViewer = {
         MapViewer.dockState = {
             navicomputer: { open: false, pinned: false },
             worldIntel: { open: false, pinned: false },
-            itinerary: { open: false, pinned: false },
             charts: { open: false, pinned: false },
             layers: { open: false, pinned: false }
         };
@@ -296,7 +292,6 @@ export const MapViewer = {
             else if (window.UserAuth?.showAuthModal) window.UserAuth.showAuthModal('signin');
         }, { signal });
         if (ui.footerHistoryBtn) ui.footerHistoryBtn.addEventListener('click', () => MapViewer.openSelectedNodeHistory(), { signal });
-        if (ui.footerRoutesBtn) ui.footerRoutesBtn.addEventListener('click', () => MapViewer.toggleDock('itinerary'), { signal });
         if (ui.footerTickerDismiss) ui.footerTickerDismiss.addEventListener('click', () => MapViewer.toggleTicker(), { signal });
         if (ui.closeChartsBtn) ui.closeChartsBtn.addEventListener('click', () => MapViewer.forceCloseDock('charts'), { signal });
         if (ui.closeLayersBtn) ui.closeLayersBtn.addEventListener('click', () => MapViewer.forceCloseDock('layers'), { signal });
@@ -831,12 +826,7 @@ export const MapViewer = {
             return;
         }
         if (sourceNode.id === targetNode.id) {
-            MapViewer.drawRoute([sourceNode.id], [], {
-                totalDistance: 0,
-                originId: sourceNode.id,
-                destinationId: targetNode.id
-            });
-            MapViewer.setStatus('Origin and destination are the same world. The route is already complete.', 'success');
+            MapViewer.setStatus('Origin and destination must be different worlds.', 'warning');
             return;
         }
 
@@ -907,64 +897,8 @@ export const MapViewer = {
         MapViewer.renderRouteOverlay();
         MapViewer.layoutRouteLabels();
 
-        const container = MapViewer.ui.itinerary;
-        container.classList.add('active');
-        let cumulative = 0;
-        let itineraryHtml = '';
-
-        MapViewer.routeState.offlaneSegments
-            .filter(segment => segment.role === 'origin' && segment.distance > 0)
-            .forEach(segment => {
-                cumulative += segment.distance;
-                itineraryHtml += `
-                    <div class="itinerary-step offlane">
-                        <div class="itinerary-step-name">
-                            <span></span>
-                            <span>${Utils.escapeHtml(segment.nodeName)} to ${Utils.escapeHtml(segment.access.label)}</span>
-                        </div>
-                        <span class="itinerary-step-distance">${MapViewer.formatDistance(cumulative)} total</span>
-                    </div>`;
-            });
-
-        pathNodes.forEach((nid, i) => {
-            const node = MapViewer.nodeIndex[nid];
-            if (!node) return;
-            let cls = 'itinerary-step';
-            if (i === 0) cls += ' origin';
-            else if (i === pathNodes.length - 1) cls += ' destination';
-            const edgeId = pathEdges[i - 1];
-            const legDistance = edgeId ? MapViewer.computeEdgeDistance(edgeId) : 0;
-            if (i > 0) cumulative += legDistance;
-            itineraryHtml += `
-                <div class="${cls}">
-                    <div class="itinerary-step-name">
-                        <span></span>
-                        <span>${Utils.escapeHtml(node.name)}</span>
-                    </div>
-                    <span class="itinerary-step-distance">${i === 0 && cumulative === 0 ? 'Departure' : `${MapViewer.formatDistance(cumulative)} total`}</span>
-                </div>`;
-        });
-
-        MapViewer.routeState.offlaneSegments
-            .filter(segment => segment.role === 'destination' && segment.distance > 0)
-            .forEach(segment => {
-                cumulative += segment.distance;
-                itineraryHtml += `
-                    <div class="itinerary-step offlane destination">
-                        <div class="itinerary-step-name">
-                            <span></span>
-                            <span>${Utils.escapeHtml(segment.access.label)} to ${Utils.escapeHtml(segment.nodeName)}</span>
-                        </div>
-                        <span class="itinerary-step-distance">${MapViewer.formatDistance(cumulative)} total</span>
-                    </div>`;
-            });
-
-        container.innerHTML = itineraryHtml;
-        const itineraryDockBody = document.getElementById('itinerary-dock-body');
-        if (itineraryDockBody) itineraryDockBody.innerHTML = itineraryHtml;
         MapViewer.renderSummary();
         MapViewer.renderRouteInfoOverlay();
-        MapViewer.openDock('itinerary');
         MapViewer.zoomToRoute(options.zoomNodeIds || Array.from(new Set([
             MapViewer.routeState.originId,
             ...pathNodes,
@@ -1301,7 +1235,19 @@ export const MapViewer = {
 
         const specs = MapViewer.getNodeSpecs(node);
         const description = MapViewer.getNodeDescription(node, specs);
-        const inWatchlist = MapViewer.isInWatchlist(node.name);
+        const className = specs.class.toLowerCase();
+        const planetClass = className.includes('gas giant') ? 'gas-giant'
+            : className.includes('ice') ? 'ice-world'
+            : className.includes('desert') ? 'desert'
+            : className.includes('volcanic') ? 'volcanic'
+            : className.includes('oceanic') ? 'oceanic'
+            : className.includes('swamp') ? 'swamp'
+            : className.includes('barren') ? 'barren'
+            : className.includes('ecumenopolis') ? 'ecumenopolis'
+            : className.includes('forest') ? 'forest'
+            : 'terrestrial';
+        const intelDock = document.getElementById('worldIntel-dock');
+        if (intelDock) intelDock.dataset.planetClass = planetClass;
         
         const neighborCount = MapViewer.graph?.[node.id]?.edges?.length || 0;
         const linksBadge = `<span class="routing-meta-pill" style="margin-left: 8px; font-size: 0.65rem; border: 1px solid rgba(255,255,255,0.15); padding: 2px 6px; border-radius: 999px;">${neighborCount} Link${neighborCount === 1 ? '' : 's'}</span>`;
@@ -1351,9 +1297,17 @@ export const MapViewer = {
                         <i class="fas fa-plane-arrival"></i> Set Destination
                     </button>
                 </div>
-                <button class="quick-action-btn wide ${inWatchlist ? 'active' : ''}" id="action-toggle-watchlist" type="button">
-                    <i class="${inWatchlist ? 'fas' : 'far'} fa-star"></i> ${inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+                <button class="quick-action-btn wide plot-course-action" id="action-plot-course" type="button" aria-expanded="false" aria-controls="inspector-course-picker">
+                    <i class="fas fa-route"></i> Plot Course
                 </button>
+                <div class="inspector-course-picker" id="inspector-course-picker" hidden>
+                    <label for="inspector-course-origin">Choose departure world</label>
+                    <div class="inspector-course-picker-row">
+                        <input id="inspector-course-origin" type="text" list="planet-datalist" autocomplete="off" placeholder="Search origin">
+                        <button class="quick-action-btn" id="inspector-course-confirm" type="button">Plot</button>
+                    </div>
+                    <p>Destination: <strong>${Utils.escapeHtml(node.name)}</strong></p>
+                </div>
             </div>
         `;
 
@@ -1364,8 +1318,55 @@ export const MapViewer = {
         document.getElementById('action-set-destination').addEventListener('click', () => {
             MapViewer.setRouteEndpoint('destination', node.id);
         });
-        document.getElementById('action-toggle-watchlist').addEventListener('click', () => {
-            MapViewer.toggleWatchlist(node.name);
+        const plotCourseBtn = document.getElementById('action-plot-course');
+        const coursePicker = document.getElementById('inspector-course-picker');
+        const courseOriginInput = document.getElementById('inspector-course-origin');
+        const courseConfirmBtn = document.getElementById('inspector-course-confirm');
+        const pulsePlotButton = () => {
+            plotCourseBtn.classList.remove('pulse-glow');
+            requestAnimationFrame(() => plotCourseBtn.classList.add('pulse-glow'));
+            window.setTimeout(() => plotCourseBtn.classList.remove('pulse-glow'), 900);
+        };
+        const plotFromInspector = () => {
+            const origin = MapViewer.findNodeByName(courseOriginInput.value);
+            if (!origin) {
+                MapViewer.setStatus('Choose a valid departure world before plotting.', 'error');
+                courseOriginInput.focus();
+                return;
+            }
+            if (origin.id === node.id) {
+                MapViewer.setStatus('Origin and destination must be different worlds.', 'warning');
+                courseOriginInput.focus();
+                return;
+            }
+            MapViewer.setRouteEndpoint('origin', origin.id);
+            MapViewer.setRouteEndpoint('destination', node.id);
+            MapViewer.calculateRoute();
+            pulsePlotButton();
+        };
+        plotCourseBtn.addEventListener('click', () => {
+            const originId = MapViewer.routeState.originId;
+            if (originId) {
+                if (originId === node.id) {
+                    MapViewer.setStatus('Origin and destination must be different worlds.', 'warning');
+                    return;
+                }
+                MapViewer.setRouteEndpoint('destination', node.id);
+                MapViewer.calculateRoute();
+                pulsePlotButton();
+                return;
+            }
+            const shouldOpen = coursePicker.hidden;
+            coursePicker.hidden = !shouldOpen;
+            plotCourseBtn.setAttribute('aria-expanded', String(shouldOpen));
+            if (shouldOpen) courseOriginInput.focus();
+        });
+        courseConfirmBtn.addEventListener('click', plotFromInspector);
+        courseOriginInput.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                plotFromInspector();
+            }
         });
 
         // Bind tab buttons
@@ -1379,6 +1380,7 @@ export const MapViewer = {
 
         // Initial tab render
         MapViewer.renderIntelTabContent(MapViewer.activeIntelTab, node);
+        requestAnimationFrame(() => MapViewer.positionRouteInfoOverlay());
     },
 
     switchIntelTab: (tabName, node) => {
@@ -1541,14 +1543,11 @@ export const MapViewer = {
 
     renderSummary: () => {
         const summary = MapViewer.ui.summary;
-        const itinerary = MapViewer.ui.itinerary;
-        if (!summary || !itinerary) return;
+        if (!summary) return;
         const { pathNodes, totalDistance, isHybrid, advisory } = MapViewer.routeState;
         if (!pathNodes.length) {
             summary.className = 'routing-summary empty';
-            summary.innerHTML = `<h4>Route Summary</h4><p class="routing-kicker">No active course. Choose an origin and destination to generate an itinerary.</p>`;
-            itinerary.classList.remove('active');
-            itinerary.innerHTML = '';
+            summary.innerHTML = `<h4>Route Summary</h4><p class="routing-kicker">No active course. Choose an origin and destination to plot a route.</p>`;
             MapViewer.renderRouteInfoOverlay();
             MapViewer.updateHudStatus();
             MapViewer.renderRouteAnalysis();
@@ -1598,7 +1597,7 @@ export const MapViewer = {
             overlay = document.createElement('div');
             overlay.id = 'map-route-info-overlay';
             overlay.className = 'map-route-info-overlay';
-            MapViewer.viewer.appendChild(overlay);
+            (MapViewer.ui.stage || MapViewer.viewer).appendChild(overlay);
         }
         MapViewer.ui.routeInfoOverlay = overlay;
         return overlay;
@@ -1626,7 +1625,7 @@ export const MapViewer = {
             const node = MapViewer.nodeIndex[nid];
             if (!node) return '';
             const label = index === 0 ? 'Origin' : index === pathNodes.length - 1 ? 'Arrival' : `Hop ${index}`;
-            return `<li><span>${label}</span><strong>${Utils.escapeHtml(node.name)}</strong></li>`;
+            return `<li><span class="map-route-hop-number">${index + 1}</span><span class="map-route-hop-label">${label}</span><strong>${Utils.escapeHtml(node.name)}</strong></li>`;
         }).join('');
         const remaining = Math.max(pathNodes.length - 5, 0);
 
@@ -1639,7 +1638,7 @@ export const MapViewer = {
             </div>
             <ol class="map-route-info-list">
                 ${itineraryItems}
-                ${remaining ? `<li><span>More</span><strong>${remaining} additional stop${remaining === 1 ? '' : 's'}</strong></li>` : ''}
+                ${remaining ? `<li class="map-route-more"><span class="map-route-hop-number">+</span><span class="map-route-hop-label">More</span><strong>${remaining} additional stop${remaining === 1 ? '' : 's'}</strong></li>` : ''}
             </ol>
             ${isHybrid ? `<p>${Utils.escapeHtml(advisory)}</p>` : ''}`;
         overlay.classList.add('active');
@@ -1686,17 +1685,34 @@ export const MapViewer = {
         const width = Math.min(320, Math.max(250, vw - 28));
         const height = Math.min(overlay.offsetHeight || 220, Math.max(180, vh - 28));
         const margin = 16;
-        const topChromeOffset = vw <= 720 ? 108 : 82;
+        const topChromeOffset = vw <= 720 ? 74 : 100;
         const routeBox = MapViewer.getRouteScreenBounds();
+        const viewerRect = MapViewer.viewer.getBoundingClientRect();
+        const toLocalBox = element => {
+            if (!element || element.getAttribute('aria-hidden') === 'true' || element.offsetParent === null) return null;
+            const rect = element.getBoundingClientRect();
+            return {
+                left: rect.left - viewerRect.left,
+                top: rect.top - viewerRect.top,
+                right: rect.right - viewerRect.left,
+                bottom: rect.bottom - viewerRect.top
+            };
+        };
+        const worldIntel = document.getElementById('worldIntel-dock');
+        const intelBox = vw > 720 && worldIntel?.classList.contains('open') ? toLocalBox(worldIntel) : null;
         const chromeBoxes = [
-            { left: 0, top: 0, right: Math.min(vw, 330), bottom: topChromeOffset - 8 },
-            { left: Math.max(0, vw - 360), top: 0, right: vw, bottom: topChromeOffset - 8 },
-            { left: Math.max(0, vw - 86), top: Math.max(0, vh - 260), right: vw, bottom: vh }
-        ];
+            toLocalBox(document.querySelector('.map-hud-bar')),
+            toLocalBox(document.getElementById('navicomputer-dock')),
+            intelBox,
+            toLocalBox(document.getElementById('map-status-card')),
+            toLocalBox(document.querySelector('.map-controls')),
+            toLocalBox(document.getElementById('map-console-footer'))
+        ].filter(Boolean);
+        const leftInset = intelBox ? intelBox.right + 14 : margin;
         const candidates = [
-            { anchor: 'top-left', left: margin, top: topChromeOffset },
+            { anchor: 'top-left', left: leftInset, top: topChromeOffset },
             { anchor: 'top-right', left: vw - width - margin, top: topChromeOffset },
-            { anchor: 'bottom-left', left: margin, top: vh - height - margin },
+            { anchor: 'bottom-left', left: leftInset, top: vh - height - margin },
             { anchor: 'bottom-right', left: vw - width - margin, top: vh - height - margin }
         ].map(candidate => ({
             ...candidate,
@@ -2219,16 +2235,15 @@ export const MapViewer = {
             MapViewer.clamp();
             MapViewer.update();
         }
+        requestAnimationFrame(() => MapViewer.positionRouteInfoOverlay());
     },
 
     initDocks: (signal) => {
         const closeNav = document.getElementById('close-navicomputer');
         const closeIntel = document.getElementById('close-worldIntel');
-        const closeItin = document.getElementById('close-itinerary');
 
         if (closeNav) closeNav.addEventListener('click', () => MapViewer.forceCloseDock('navicomputer'), { signal });
         if (closeIntel) closeIntel.addEventListener('click', () => MapViewer.forceCloseDock('worldIntel'), { signal });
-        if (closeItin) closeItin.addEventListener('click', () => MapViewer.forceCloseDock('itinerary'), { signal });
 
         const pinNav = document.getElementById('pin-navicomputer');
         const pinIntel = document.getElementById('pin-worldIntel');
@@ -2264,6 +2279,8 @@ export const MapViewer = {
             MapViewer.dockState[id].open = true;
         }
         MapViewer.syncDockTrigger(id, true);
+        requestAnimationFrame(() => MapViewer.positionRouteInfoOverlay());
+        window.setTimeout(() => MapViewer.positionRouteInfoOverlay(), 320);
     },
 
     closeDock: (id) => {
@@ -2276,6 +2293,7 @@ export const MapViewer = {
             MapViewer.dockState[id].open = false;
         }
         MapViewer.syncDockTrigger(id, false);
+        requestAnimationFrame(() => MapViewer.positionRouteInfoOverlay());
     },
 
     forceCloseDock: (id) => {
@@ -2291,6 +2309,7 @@ export const MapViewer = {
         if (pinBtn) pinBtn.classList.remove('pinned');
         
         MapViewer.syncDockTrigger(id, false);
+        requestAnimationFrame(() => MapViewer.positionRouteInfoOverlay());
     },
 
     toggleDock: (id) => {
@@ -2311,7 +2330,6 @@ export const MapViewer = {
         }
         MapViewer.closeDock('charts');
         MapViewer.closeDock('layers');
-        MapViewer.closeDock('itinerary');
         
         const beaconCard = document.getElementById('cartographer-beacon-card');
         if (beaconCard) beaconCard.classList.remove('open');
@@ -2379,9 +2397,8 @@ export const MapViewer = {
         if (MapViewer.ui.hudRouteMeta) {
             MapViewer.ui.hudRouteMeta.textContent = `${hopCount} Hop${hopCount === 1 ? '' : 's'} • ${MapViewer.formatDistance(totalDistance || 0)}`;
         }
-        if (MapViewer.ui.footerRouteCount) {
-            MapViewer.ui.footerRouteCount.textContent = pathNodes.length ? '1' : '0';
-        }
+        const statusCard = document.getElementById('map-status-card');
+        if (statusCard) statusCard.classList.toggle('has-active-route', pathNodes.length > 0);
     },
 
     renderRouteAnalysis: () => {
@@ -2424,6 +2441,7 @@ export const MapViewer = {
                 ? '<i class="fas fa-expand-alt" aria-hidden="true"></i><span class="minimize-panels-label">Expand Panels</span>'
                 : '<i class="fas fa-compress-alt" aria-hidden="true"></i><span class="minimize-panels-label">Minimize Panels</span>';
         }
+        requestAnimationFrame(() => MapViewer.positionRouteInfoOverlay());
     },
 
     toggleThemeMode: () => {
