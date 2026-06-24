@@ -153,6 +153,147 @@ When a loader is requested, `LoaderManager` dynamically imports the module (`awa
 
 ---
 
+## Subscription Reader SPA (`subscription.html`)
+
+A new lightweight member-library reader surface has been added beside the cinematic public reader. `subscription.html` uses the same no-build vanilla module model, imports the shared Supabase client from `js/config.js`, and boots through `js/subscription/main.js`.
+
+Purpose:
+- Mobile-first chapter reading and library discovery.
+- Tier-aware chapter catalogs and locked-chapter gates.
+- Patreon-first access UX with access-key redemption and normalized entitlement status.
+- A lighter visual treatment than `index.html`: story accent colors, soft glass cards, bottom navigation on mobile, and bottom-sheet reader controls instead of heavy HUD/particle chrome.
+
+Core subscription modules:
+- `js/subscription/state.js` - shared subscription runtime state, route helpers, safe text helpers, and chapter access normalization.
+- `js/subscription/db.js` - Supabase/RPC data wrapper for stories, chapter catalogs, secure chapter reads, entitlements, access-key redemption, and Patreon OAuth start calls.
+- `js/subscription/auth.js` - subscription-specific Supabase session/profile handling and auth dialog behavior.
+- `js/subscription/ui.js` - navigation state, account chip, toast, dialog, story accent, and reader control bottom-sheet helpers.
+- `js/subscription/router.js` - hash route dispatcher for `home`, `library`, `story`, `updates`, `access`, and `account` flows.
+- `js/subscription/render.js` - renders the member library, story hubs, chapter cards, locked access gates, key/Patreon screens, account entitlements, and reader view.
+
+The subscription SPA calls secure RPCs when the subscription SQL migration is installed and gracefully falls back to existing published-story/chapter reads for pre-migration local browsing. Production locked content requires applying `scripts/sql/2026-06-23_reader_subscription_access.sql` so chapter content is protected by RLS/RPC access checks rather than frontend hiding.
+
+---
+
+## Subscription Reader SPA (`subscription.html`) — Member Library
+
+This document outlines the architecture, state management, routing, database interactions, rendering flows, and styles of the Member Library Subscription Single Page Application (`subscription.html`).
+
+---
+
+## 1. Overview
+
+`subscription.html` serves as a lightweight, mobile-first member library for published stories. It is designed around normalized entitlements, allowing tier-aware chapter catalogs, secure chapter reading via subscription RPCs, Patreon connection authentication, access-key redemption, and account status tracking.
+
+It uses **vanilla HTML, CSS, and ES6 JavaScript** with no build step.
+
+### Core Structure
+- **`subscription.html`**: A lightweight HTML shell. It defines the layout structure, loads the Supabase client via CDN, and imports `<script type="module" src="js/subscription/main.js"></script>`.
+- **`subscription.css`**: A standalone, dedicated stylesheet containing resets, layout rules, interactive hover micro-animations, responsive media queries, and reading theme configurations (Dark, Parchment, and High Contrast).
+- **`js/subscription/`**: Contains the ES6 module architecture for this SPA.
+
+---
+
+## 2. ES6 Module Architecture
+
+### Entry Point
+- **`js/subscription/main.js`**
+  - Imports all subscription-specific modules.
+  - Exposes modules to the global `window` scope (`SubAuth`, `SubRouter`, `SubUI`, `SubState`).
+  - Sets up the `hashchange` event listener.
+  - Bootstraps the application on `DOMContentLoaded` by initializing UI controls, reading theme and scale settings from storage, checking auth session, and routing to the starting hash (defaults to `#/home`).
+
+### State & Configurations
+- **`js/subscription/state.js`**
+  - **`SubState`**: Singleton state object tracking:
+    - `user`: Active Supabase auth user.
+    - `profile`: Joined user profile.
+    - `stories`: Cache of loaded story list.
+    - `entitlements`: List of user's active/inactive entitlements.
+    - `currentStory`: The story currently being viewed.
+    - `currentCatalog`: Chapter directory list of the current story.
+    - `pendingReturnRoute`: Route parameter for post-login return redirects.
+    - `authMode`: `'signin'` or `'signup'`.
+    - `readerTheme`: Saved reading theme (`'dark'`, `'parchment'`, `'contrast'`).
+    - `readerScale`: Font multiplier from `0.85` to `1.35` (default `1`).
+  - **`AccessLabels`**: Text labels mapping DB access states to user-friendly titles (`free`, `unlocked`, `locked_tier`, `early_access`, etc.).
+  - **`normalizeChapter(chapter)`**: Helper to resolve a chapter's access levels, locks, and readable entitlements.
+  - **`routeTo(path)`**: Navigates to a hash-based route.
+
+### Data Access Layer
+- **`js/subscription/db.js`**
+  - **`SubDB`**: Encapsulates all query calls to Supabase:
+    - `getStories()`: Fetches published stories.
+    - `getStoryBySlug(slug)`: Fetches a single story using its slug.
+    - `getChapterCatalog(storyId)`: Calls RPC `get_chapter_catalog` to fetch chapter order, release times, and access states.
+    - `getReaderChapter(chapterId)`: Calls RPC `get_reader_chapter` which returns full HTML/markdown text content only if authorized.
+    - `getMyEntitlements()`: Calls RPC `get_my_entitlements` to query active paid tiers, access keys, or manually granted entitlements.
+    - `redeemAccessKey(submittedCode)`: Calls RPC `redeem_access_key` to hash and claim reader access keys.
+    - `requestPatreonSync()`: Requests Patreon connection mapping and refresh.
+
+### User Authentication
+- **`js/subscription/auth.js`**
+  - **`SubAuth`**: Manages member logins and registrations:
+    - `init()`: Connects listener for auth changes, updates `SubState.user`, fetches entitlements, and updates the top bar account chip.
+    - `handleSubmit()`: Validates inputs and handles signup/signin actions.
+    - `signOut()`: signs the reader out and returns to home.
+    - `toggleMode()`: Switches the modal context between signin and registration.
+
+### Client-Side Router
+- **`js/subscription/router.js`**
+  - **`SubRouter`**: Client-side hash router. Parses parameters, sets navigation rail active states, triggers stage loading overlays, and dispatches to specific rendering actions:
+    - `#/home` -> `SubRender.home()`
+    - `#/library` -> `SubRender.library()`
+    - `#/story/:slug` -> `SubRender.story(slug)`
+    - `#/story/:slug/chapters` -> `SubRender.chapters(slug)`
+    - `#/story/:slug/chapter/:id` -> `SubRender.chapter(slug, id)`
+    - `#/story/:slug/preview/:id` -> `SubRender.preview(slug, id)`
+    - `#/updates` -> `SubRender.updates()`
+    - `#/access` -> `SubRender.access()`
+    - `#/account` -> `SubRender.account()`
+
+### Dynamic Renderers
+- **`js/subscription/render.js`**
+  - **`SubRender`**: Generates and inserts raw HTML templates into `#sub-stage`:
+    - `home()`: Renders the welcome hero panel, access cards, and story highlights.
+    - `library()`: Renders the complete story cards list.
+    - `story(slug)`: Detailed story page, cover illustration, facts, and initial catalog index.
+    - `chapters(slug)`: Renders the catalog binder list showing chapter orders, release dates, and lock statuses.
+    - `chapter(slug, chapterId)`: The primary reading interface including paragraph layout, theme styles, font scaling, and navigation links.
+    - `preview(slug, chapterId)`: Displays public excerpts/previews for locked chapters.
+    - `accessGate(story, chapter)`: Blocking interstitial asking the user to sign in, connect Patreon, or redeem a key.
+    - `access(subRoute)`: Interface to redeem keys, link provider networks, or show access statuses.
+    - `account(subRoute)`: Shows profile details and lists active entitlements.
+    - `updates()`: Displays a chronological listing of recently published chapters.
+
+### User Interface Controls
+- **`js/subscription/ui.js`**
+  - **`SubUI`**: UI binding handlers:
+    - `init()`: Attaches global document listeners for clicks on router attributes (`[data-sub-route]`) and auth triggers (`[data-sub-open-auth]`).
+    - `setActiveNav(view)`: Syncs active styling flags (`.is-active`) across desktop rail and mobile bottom navigation.
+    - `setBack(route, label)`: Shows/hides the topbar back arrow button and binds click navigation.
+    - `setAccent(story)`: Sets page accent CSS variables (`--accent-color`) and custom story background styles dynamically based on the active story.
+    - `openAuthDialog()` / `closeAuthDialog()`: Controls visibility of the login HTML `<dialog>`.
+    - `toast(message, type)`: Shows temporary status notifications at the bottom of the screen.
+    - `setInlineStatus(id, message, type)`: Writes validation text to target elements inside forms.
+    - `openReaderSheet()` / `closeReaderSheet()`: Toggles the reader slide-up toolbar.
+    - `setReaderTheme(theme)`: Sets reader themes (`dark`, `parchment`, `contrast`) on the body node.
+    - `setReaderScale(scale)`: Applies reading font sizes using scale multipliers (`--sub-reader-scale`).
+
+---
+
+## 3. Styling & Aesthetics (`subscription.css`)
+
+`subscription.css` isolates styling from the rest of the application. It establishes:
+1. **Design Tokens**: Centralized `--sub-*` colors, background layers, border properties, and smooth cubic-bezier transitions.
+2. **Layout Boundaries**: Fixed app-shell layout (`grid-template-columns: 84px 1fr` on desktop) utilizing container dimensions and independent `.sub-stage` overflow scrolling.
+3. **Responsive Media Breakpoints**: 
+   - `max-width: 860px` (Tablet/Mobile): Hides the desktop sidebar rail, sticky-aligns the top bar, and presents a floating glassmorphic bottom bar navigation layout.
+   - `max-width: 560px` (Mobile Small): Minimizes margins, collapses back button text, and wraps grid elements.
+4. **Theme Skins**: Overrides backgrounds, text colors, and border colors when `data-reader-theme` matches `parchment` or `contrast`.
+
+---
+
 ## Admin Panel (`admin.html`) — CMS Operations
 
 This document outlines the architecture, authentication security, global state, initialization flow, and advanced component paradigms of the administrative Content Management System (`admin.html`).
@@ -227,6 +368,13 @@ The Admin Panel utilizes several robust UI components to streamline content mana
 - **Reader Visual Archive:** The public gallery uses one unified sub-window: a dominant selected-character profile image, compact biography/action panel, and a right-side browser containing archive totals plus a content-driven profile-image grid that can grow with roster length instead of clipping inside a fixed-height viewport. Hovering or focusing a card updates the hero and marks the active card with an accent glow. The detached scenic quote panel, scattered hero previews, and separate roster section are intentionally absent. A small Gallery banner replaces oversized story typography, Recently Added remains below the unified window, and offscreen profile cards retain lazy/async/low-priority loading.
 - **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
 - **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and presents a single broad-view gallery board with a side toggle between the reader-visible published collection and the unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
+
+### Subscription Access Administration
+- `admin.html` now includes a **Member Access > Access Control** workspace for the subscription reader rollout.
+- The chapter form includes subscription fields: required internal access tier, optional public release date, and safe preview/teaser text. These map to `chapters.required_tier_id`, `chapters.public_release_at`, and `chapters.preview_text` from the subscription SQL migration.
+- The Access Control workspace manages internal reader tiers, hashed access keys, manual user entitlements, and provider tier mappings for Patreon/Ko-fi/PayPal/Discord-style adapters.
+- Access-key creation generates a plaintext key once in the browser, hashes the normalized key with SHA-256, and stores only `key_hash` plus a short prefix for later identification.
+- Manual grants search existing `profiles` by UUID, username, or display name; readers must have signed up before an entitlement can be granted.
 
 ---
 

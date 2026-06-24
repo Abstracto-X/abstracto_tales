@@ -1,4 +1,4 @@
-# Reader API Map
+﻿# Reader API Map
 
 This document is a quick-reference API map for the core reader modules:
 
@@ -45,7 +45,7 @@ State fields:
 - `gallerySort: string` - Active client-side gallery order: `curated`, `newest`, or `top`.
 - `galleryConfirmed: boolean` - Mature-content gate confirmation flag.
 - `galleryViewMode: string` - Gallery layout preference restored from `localStorage`.
-- `showR18: boolean` - Gallery R18 visibility preference restored from `localStorage`; when `true`, gallery views reveal artwork tagged `R18`, `NSFW`, `mature`, or `suggestive` and prioritize those images first.
+- `showR18: boolean` - Gallery R18 visibility preference restored from `localStorage`; when `true`, gallery views reveal artwork tagged `R18`, `NSFW`, `mature`, or `suggestive` and prioritize those images first. Gated behind active user login; forced to `false` if the user is unauthenticated or logs out.
 
 #### `default_behavior_lightsaber`
 - Type: `string`
@@ -333,3 +333,85 @@ State fields:
 - Calls `UI.initAdminLink()` to show or hide privileged shortcuts.
 - Calls `UI.closeAuthModal()` and `UI.closeProfileModal()` during auth transitions.
 - Calls `CommentsManager.refreshRenderedThreads()` whenever auth/profile state changes affect comment controls.
+
+---
+
+## Subscription Reader API Map (`js/subscription/`)
+
+The subscription reader is a separate SPA rooted at `subscription.html`. It imports the shared `supabaseClient` and `Utils` from `js/config.js` but keeps its own route/auth/render state under `js/subscription/`.
+
+### `js/subscription/state.js`
+
+Exports:
+- `SubState` - Subscription runtime state: `user`, `profile`, `stories`, `entitlements`, `currentStory`, `currentCatalog`, `pendingReturnRoute`, `authMode`, `readerTheme`, and `readerScale`.
+- `AccessLabels` - Display labels for access states: `free`, `unlocked`, `free_preview`, `locked_tier`, `early_access`, `key_locked`, `pending_sync`, `expired`.
+- `normalizeChapter(chapter)` - Normalizes RPC/fallback rows into a consistent access shape.
+- `routeTo(path)` - Hash route helper for subscription routes.
+- `safeText` / `safeAttr` - Re-exported escaping helpers from shared `Utils`.
+
+Side effects:
+- Reads reader theme/scale preferences from `localStorage`.
+
+### `js/subscription/db.js`
+
+Exports:
+- `SubDB.getStories()` - Reads published `stories` rows.
+- `SubDB.getStoryBySlug(slug)` - Reads one published story.
+- `SubDB.getChapterCatalog(storyId)` - Prefers `get_chapter_catalog(target_story_id)` RPC. Fallback reads published chapter metadata without content-sensitive entitlement fields.
+- `SubDB.getReaderChapter(chapterId)` - Prefers `get_reader_chapter(target_chapter_id)` RPC. Fallback reads existing published chapter rows for pre-migration compatibility.
+- `SubDB.getMyEntitlements()` - Prefers `get_my_entitlements()` RPC. Fallback reads `user_entitlements` when available.
+- `SubDB.redeemAccessKey(code)` - Calls `redeem_access_key(submitted_code)` RPC.
+- `SubDB.requestPatreonSync()` - Calls the `patreon-oauth-start` Supabase Edge Function and redirects when it returns a URL.
+
+Database touchpoints:
+- Existing: `stories`, `chapters`, `profiles`.
+- Migration-backed: `reader_access_tiers`, `user_entitlements`, `provider_connections`, `access_keys`, `access_key_redemptions` through RPCs and entitlement fallback reads.
+
+### `js/subscription/auth.js`
+
+Exports:
+- `SubAuth.init()` - Restores session, loads profile/entitlements, subscribes to auth changes.
+- `SubAuth.fetchProfile(user)` - Reads `profiles` by auth user id.
+- `SubAuth.syncAccountChip()` - Updates the `#sub-account-chip` header slot.
+- `SubAuth.setMode(mode)` / `SubAuth.toggleMode()` - Controls sign-in/sign-up dialog mode.
+- `SubAuth.handleSubmit()` - Handles sign-in/sign-up using Supabase Auth.
+- `SubAuth.signOut()` - Signs out of Supabase.
+
+DOM dependencies:
+- `#sub-account-chip`
+- `#sub-auth-dialog`
+- `#sub-auth-title`
+- `#sub-auth-message`
+- `#sub-auth-email`
+- `#sub-auth-password`
+- `#sub-auth-submit`
+- `#sub-auth-toggle`
+
+### `js/subscription/router.js`
+
+Exports:
+- `SubRouter.handle()` - Dispatches hash routes for `home`, `library`, `story`, `updates`, `access`, `account`, `tiers`, and `help`.
+- `SubRouter.navigate(path)` - Programmatic subscription hash navigation.
+
+### `js/subscription/render.js`
+
+Exports:
+- `SubRender` route render methods for home, library, story hubs, chapter shelves, chapter reader, previews, tier list/detail pages, help pages, access gates, access workflows, account/entitlement dashboard, updates, reader controls sheet, empty states, and route errors.
+
+DOM dependencies:
+- `#sub-stage`
+- Delegated `[data-sub-route]` and `[data-sub-open-auth]` controls.
+
+### `js/subscription/ui.js`
+
+Exports:
+- `SubUI.init()` - Delegated nav/auth binding.
+- `SubUI.setActiveNav(view)` - Active desktop/mobile nav state.
+- `SubUI.setBack(route, label)` - Header back button.
+- `SubUI.setAccent(story)` - Story accent/background CSS variables.
+- `SubUI.openAuthDialog()` / `SubUI.closeAuthDialog()` - Auth modal controls.
+- `SubUI.toast(message, type)` - Subscription toast.
+- `SubUI.setInlineStatus(id, message, type)` - Inline status writer.
+- `SubUI.openReaderSheet()` / `SubUI.closeReaderSheet()` - Reader bottom sheet.
+- `SubUI.setReaderTheme(theme)` / `SubUI.setReaderScale(scale)` - Reading preference persistence.
+

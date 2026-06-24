@@ -55,3 +55,22 @@
 - `getTagValues(containerId)` — Reads the current gallery tag selection from the autocomplete widget, using the hidden input when present and a container dataset fallback when the widget is still hydrating.
 
 ---
+
+### Subscription Access Admin Functions
+
+#### `DB` additions
+- `getAccessTiers()` / `saveAccessTier()` / `deleteAccessTier()` - Manage internal subscription tiers in `reader_access_tiers`.
+- `getAccessKeys()` / `saveAccessKey()` / `updateAccessKey()` - Manage hashed access keys in `access_keys`.
+- `getEntitlements()` / `saveEntitlement()` / `updateEntitlement()` - Manage normalized reader grants in `user_entitlements`.
+- `findProfileForAccess(query)` - Finds an existing profile by UUID, username, or display name before manual grant creation.
+- `getProviderMappings()` / `saveProviderMapping()` - Manage external provider tier/product/role mappings in `provider_tier_mappings`.
+
+#### `Forms` additions
+- `accessTierForm()` / `saveAccessTier()` / `deleteAccessTier()` - CRUD modal for internal access tiers.
+- `accessKeyForm()` / `saveAccessKey()` / `revokeAccessKey()` - Generates one-time plaintext access keys, hashes them client-side with SHA-256, stores only the hash/prefix, and revokes keys by status update.
+- `manualGrantForm()` / `saveManualGrant()` / `revokeEntitlement()` - Grants or revokes a reader entitlement for an existing profile.
+- `providerMappingForm()` / `saveProviderMapping()` - Configures provider tier mappings without hardcoding Patreon/Ko-fi/PayPal/Discord IDs in the reader SPA.
+- `chapterForm()` / `saveChapter()` now include `required_tier_id`, `public_release_at`, and `preview_text` fields for subscription-reader chapter gates.
+
+#### `Views` additions
+- `access(container)` - Renders the Access Control workspace with tier counts, active key counts, active grant counts, provider mappings, and management tables.

@@ -148,3 +148,25 @@ When a loader is requested, `LoaderManager` dynamically imports the module (`awa
 - **Galactic History Browsing:** The first screen is the searchable major-era poster grid. Selecting an era opens Page 2, a parent-era-background sub-era selection page with a left-aligned 40%-width hero, a glassmorphic "View timeline overview" action, and an image-backed responsive sub-era card grid. Selecting a sub-era or overview opens Page 3, a detailed timeline view that uses the active sub-era image (or era image for overview), a sticky SVG mountain frequency chart, a glassmorphic viewport scrubber, and a centered vertical event list. Event cards contain only a quote icon and parsed paragraph text; same-year events branch left/right according to count, and left/right arrow keys jump between eventful years.
 - **Galactic History Images:** `js/timelines/galacticTimelineAssets.js` exports `ImageMapping`, a normalized title-to-image configuration object, because `timeline_tree.json` does not contain image URLs. Fallback era and sub-era image arrays keep dynamic parsed sections image-backed even before final art is assigned.
 - **Performance Boundary:** The large galactic JSON is not fetched on story hub load or timeline chooser load; it is cached in memory only after a reader enters the Galactic History view.
+
+---
+
+## Subscription Reader SPA (`subscription.html`)
+
+A new lightweight member-library reader surface has been added beside the cinematic public reader. `subscription.html` uses the same no-build vanilla module model, imports the shared Supabase client from `js/config.js`, and boots through `js/subscription/main.js`.
+
+Purpose:
+- Mobile-first chapter reading and library discovery.
+- Tier-aware chapter catalogs and locked-chapter gates.
+- Patreon-first access UX with access-key redemption and normalized entitlement status.
+- A lighter visual treatment than `index.html`: story accent colors, soft glass cards, bottom navigation on mobile, and bottom-sheet reader controls instead of heavy HUD/particle chrome.
+
+Core subscription modules:
+- `js/subscription/state.js` - shared subscription runtime state, route helpers, safe text helpers, and chapter access normalization.
+- `js/subscription/db.js` - Supabase/RPC data wrapper for stories, chapter catalogs, secure chapter reads, entitlements, access-key redemption, and Patreon OAuth start calls.
+- `js/subscription/auth.js` - subscription-specific Supabase session/profile handling and auth dialog behavior.
+- `js/subscription/ui.js` - navigation state, account chip, toast, dialog, story accent, and reader control bottom-sheet helpers.
+- `js/subscription/router.js` - hash route dispatcher for `home`, `library`, `story`, `updates`, `access`, and `account` flows.
+- `js/subscription/render.js` - renders the member library, story hubs, chapter cards, locked access gates, key/Patreon screens, account entitlements, and reader view.
+
+The subscription SPA calls secure RPCs when the subscription SQL migration is installed and gracefully falls back to existing published-story/chapter reads for pre-migration local browsing. Production locked content requires applying `scripts/sql/2026-06-23_reader_subscription_access.sql` so chapter content is protected by RLS/RPC access checks rather than frontend hiding.

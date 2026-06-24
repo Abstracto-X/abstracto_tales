@@ -1,4 +1,4 @@
-# DATABASE CONTEXT — AI Agent Reference
+﻿# DATABASE CONTEXT â€” AI Agent Reference
 
 > **Purpose:** This document provides complete context for any AI agent working with this Supabase PostgreSQL database. It covers schema, relationships, RLS policies, storage buckets, enums, triggers, and architectural notes.
 
@@ -11,7 +11,7 @@
 - **Storage:** Supabase Storage (public buckets)
 - **Schema:** `public` (all application tables live here)
 - **Security Model:** Row Level Security (RLS) enabled on all tables
-- **Role System:** Three roles — `admin`, `cartographer`, and `reader` (stored in `public.profiles.role`)
+- **Role System:** Three roles â€” `admin`, `cartographer`, and `reader` (stored in `public.profiles.role`)
 - **Admin check:** The `public.is_admin()` helper function is used in all write policies
 - **New User Flow:** Every new Supabase Auth user automatically gets a `public.profiles` row created via the `on_auth_user_created` trigger. New users are assigned the `reader` role by default. Admin role must be granted manually via SQL.
 
@@ -65,7 +65,7 @@ Social/external links for the author profile page.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `profile_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
+| `profile_id` | UUID | FK â†’ `profiles(id)` CASCADE DELETE |
 | `platform_name` | TEXT | e.g. "Twitter", "Patreon" |
 | `url` | TEXT | |
 | `icon_url` | TEXT | Optional icon image |
@@ -122,7 +122,7 @@ Individual chapters belonging to a story.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `title` | TEXT | |
 | `content` | TEXT | Full chapter body text |
 | `chapter_order` | INTEGER | Ordering within story. Unique per story |
@@ -131,7 +131,7 @@ Individual chapters belonging to a story.
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | Auto-updated via trigger |
 
-**Constraint:** `UNIQUE(story_id, chapter_order)` — no two chapters in the same story can have the same order value.
+**Constraint:** `UNIQUE(story_id, chapter_order)` â€” no two chapters in the same story can have the same order value.
 
 ---
 
@@ -142,7 +142,7 @@ Characters belonging to a story.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `name` | TEXT | |
 | `role_title` | TEXT | e.g. "Protagonist", "Antagonist" |
 | `biography` | TEXT | |
@@ -159,7 +159,7 @@ Gallery images for individual characters.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `character_id` | UUID | FK → `characters(id)` CASCADE DELETE |
+| `character_id` | UUID | FK â†’ `characters(id)` CASCADE DELETE |
 | `image_url` | TEXT | From `characters` storage bucket |
 | `caption` | TEXT | |
 | `image_tags` | TEXT[] | Default `'{}'` (empty array) |
@@ -176,12 +176,12 @@ Upvote/downvote system for character gallery images.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `user_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
-| `image_id` | UUID | FK → `character_gallery_images(id)` CASCADE DELETE |
+| `user_id` | UUID | FK â†’ `profiles(id)` CASCADE DELETE |
+| `image_id` | UUID | FK â†’ `character_gallery_images(id)` CASCADE DELETE |
 | `vote_value` | INTEGER | Must be exactly `1` or `-1` (CHECK constraint) |
 | `created_at` | TIMESTAMPTZ | |
 
-**Constraint:** `UNIQUE(user_id, image_id)` — one vote per user per image (upsert to change vote).
+**Constraint:** `UNIQUE(user_id, image_id)` â€” one vote per user per image (upsert to change vote).
 
 ---
 
@@ -192,7 +192,7 @@ Downloadable wallpapers associated with a story.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `image_url` | TEXT | From `characters` or other storage bucket |
 | `label` | TEXT | Display label |
 | `sort_order` | INTEGER | Default 0 |
@@ -207,12 +207,12 @@ Categories for grouping lore entries within a story.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `name` | TEXT | Display name |
 | `slug` | TEXT | URL-safe identifier |
 | `sort_order` | INTEGER | Default 0 |
 
-**Constraint:** `UNIQUE(story_id, slug)` — slugs are unique within a story.
+**Constraint:** `UNIQUE(story_id, slug)` â€” slugs are unique within a story.
 
 ---
 
@@ -223,10 +223,10 @@ Individual lore/world-building entries.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `slug` | TEXT | URL-safe identifier |
 | `title` | TEXT | |
-| `category_id` | UUID | FK → `lore_categories(id)` SET NULL on delete |
+| `category_id` | UUID | FK â†’ `lore_categories(id)` SET NULL on delete |
 | `description` | TEXT | |
 | `image_url` | TEXT | From `lore` storage bucket |
 | `sort_order` | INTEGER | Default 0 |
@@ -241,7 +241,7 @@ In-universe timeline events for a story.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `event_date` | TEXT | In-universe date string (not a real date type) |
 | `title` | TEXT | |
 | `description` | TEXT | |
@@ -257,8 +257,8 @@ Join table linking characters to timeline events (many-to-many).
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `event_id` | UUID | FK → `timeline_events(id)` CASCADE DELETE |
-| `character_id` | UUID | FK → `characters(id)` CASCADE DELETE |
+| `event_id` | UUID | FK â†’ `timeline_events(id)` CASCADE DELETE |
+| `character_id` | UUID | FK â†’ `characters(id)` CASCADE DELETE |
 
 ---
 
@@ -269,7 +269,7 @@ Map images associated with a story.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
 | `slug` | TEXT UNIQUE | URL-safe identifier for the cartographer tool |
 | `map_name` | TEXT | |
 | `image_url` | TEXT | From `maps` storage bucket |
@@ -279,7 +279,7 @@ Map images associated with a story.
 | `is_published` | BOOLEAN | Default FALSE. Controls public visibility of the interactive map |
 | `sort_order` | INTEGER | Default 0 |
 | `map_type` | TEXT | One of: `galactic`, `regional`, `local`. Default `'galactic'` |
-| `created_by` | UUID | FK → `profiles(id)`. Identifies the original map creator |
+| `created_by` | UUID | FK â†’ `profiles(id)`. Identifies the original map creator |
 | `created_at` | TIMESTAMPTZ | |
 | `updated_at` | TIMESTAMPTZ | Auto-updated via trigger |
 
@@ -298,7 +298,7 @@ Reader comments on chapters, lore entries, gallery images, etc.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `user_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
+| `user_id` | UUID | FK â†’ `profiles(id)` CASCADE DELETE |
 | `target_id` | UUID | ID of the thing being commented on |
 | `target_type` | TEXT | e.g. `'chapter'`, `'lore'`, `'gallery'` |
 | `content` | TEXT | Comment body |
@@ -306,7 +306,7 @@ Reader comments on chapters, lore entries, gallery images, etc.
 | `metadata` | JSONB | Default `'{}'`. Used for paragraph IDs, image context, etc. |
 | `created_at` | TIMESTAMPTZ | |
 
-**Key note:** `target_id` + `target_type` is a polymorphic reference — not a hard FK. Filter by both fields when querying.
+**Key note:** `target_id` + `target_type` is a polymorphic reference â€” not a hard FK. Filter by both fields when querying.
 
 ---
 
@@ -317,8 +317,8 @@ File-tree nodes for an internal Writer IDE (private authoring tool).
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `story_id` | UUID | FK → `stories(id)` CASCADE DELETE |
-| `parent_id` | UUID | Self-referencing FK → `writer_nodes(id)` CASCADE DELETE |
+| `story_id` | UUID | FK â†’ `stories(id)` CASCADE DELETE |
+| `parent_id` | UUID | Self-referencing FK â†’ `writer_nodes(id)` CASCADE DELETE |
 | `title` | TEXT | Default `'New Document'` |
 | `content` | TEXT | Document body |
 | `type` | node_type_enum | `folder`, `document`, `note`, `trash`, `character`, `location`, `item` |
@@ -341,8 +341,8 @@ Relational links between writer nodes (e.g. a character referenced in a location
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `source_node_id` | UUID | FK → `writer_nodes(id)` CASCADE DELETE |
-| `target_node_id` | UUID | FK → `writer_nodes(id)` CASCADE DELETE |
+| `source_node_id` | UUID | FK â†’ `writer_nodes(id)` CASCADE DELETE |
+| `target_node_id` | UUID | FK â†’ `writer_nodes(id)` CASCADE DELETE |
 | `link_type` | TEXT | e.g. `'mentions'`, `'related'`, `'appears_in'` |
 | `created_at` | TIMESTAMPTZ | |
 
@@ -357,8 +357,8 @@ Handles map change requests submitted by contributors.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `map_id` | UUID | FK → `maps(id)` CASCADE DELETE. Nullable for "New Map" proposals. |
-| `user_id` | UUID | FK → `profiles(id)` CASCADE DELETE |
+| `map_id` | UUID | FK â†’ `maps(id)` CASCADE DELETE. Nullable for "New Map" proposals. |
+| `user_id` | UUID | FK â†’ `profiles(id)` CASCADE DELETE |
 | `title` | TEXT | Title of the request |
 | `reason` | TEXT | Justification for the request |
 | `status` | TEXT | `pending`, `approved`, `rejected`, `conflict` |
@@ -375,7 +375,7 @@ Tracks individual changes within a map request.
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID (PK) | |
-| `request_id` | UUID | FK → `map_requests(id)` CASCADE DELETE |
+| `request_id` | UUID | FK â†’ `map_requests(id)` CASCADE DELETE |
 | `action` | TEXT | `ADD`, `UPDATE`, `DELETE` |
 | `entity_type` | TEXT | `NODE`, `EDGE`, `MAP` |
 | `entity_id` | UUID | ID of the affected entity |
@@ -398,7 +398,7 @@ Tracks individual changes within a map request.
 
 ## 4. FUNCTIONS & TRIGGERS
 
-### `public.is_admin()` → BOOLEAN
+### `public.is_admin()` â†’ BOOLEAN
 ```sql
 SELECT EXISTS (
   SELECT 1 FROM public.profiles
@@ -468,8 +468,8 @@ RLS is enabled on all tables. Unauthenticated reads are allowed on most public c
 
 Applies to ALL operations (INSERT, UPDATE, DELETE, SELECT of unpublished):
 
-- `stories` — full access including unpublished
-- `chapters` — full access including unpublished
+- `stories` â€” full access including unpublished
+- `chapters` â€” full access including unpublished
 - `characters`
 - `character_gallery_images`
 - `story_wallpapers`
@@ -503,7 +503,7 @@ Applies to ALL operations (INSERT, UPDATE, DELETE, SELECT of unpublished):
 | `writer_nodes` | Authenticated users have full access (INSERT, SELECT, UPDATE, DELETE) |
 | `writer_node_links` | Authenticated users have full access |
 
-> ⚠️ Writer IDE tables are not scoped to ownership — any authenticated user can read/write all writer nodes. This is intended for a single-author/small-team setup.
+> âš ï¸ Writer IDE tables are not scoped to ownership â€” any authenticated user can read/write all writer nodes. This is intended for a single-author/small-team setup.
 
 ---
 
@@ -528,7 +528,7 @@ All buckets are **public** (publicly readable URLs). Writes are restricted to au
 - **UPDATE:** `auth.role() = 'authenticated'`
 - **DELETE:** `auth.role() = 'authenticated'`
 
-> ⚠️ Storage policies check `auth.role() = 'authenticated'` only — they do NOT check `is_admin()`. Any logged-in user (reader or admin) can technically upload. Enforce admin-only uploads at the application layer.
+> âš ï¸ Storage policies check `auth.role() = 'authenticated'` only â€” they do NOT check `is_admin()`. Any logged-in user (reader or admin) can technically upload. Enforce admin-only uploads at the application layer.
 
 ### Application Upload Metadata
 
@@ -544,7 +544,7 @@ All buckets are **public** (publicly readable URLs). Writes are restricted to au
 - **Allowed MIME types:** `image/png`, `image/jpeg`, `image/gif`, `image/webp`
 - **SELECT:** Public
 - **INSERT:** `auth.role() = 'authenticated'`
-- **UPDATE/DELETE:** Only by the file's owner — enforced by checking that `auth.uid()::text` matches the first segment of the filename (filenames must be formatted as `{user_id}-{timestamp}.{ext}`)
+- **UPDATE/DELETE:** Only by the file's owner â€” enforced by checking that `auth.uid()::text` matches the first segment of the filename (filenames must be formatted as `{user_id}-{timestamp}.{ext}`)
 
 ---
 
@@ -571,27 +571,27 @@ All buckets are **public** (publicly readable URLs). Writes are restricted to au
 
 ```
 auth.users
-  └── profiles (1:1)
-        └── author_links (1:many)
+  â””â”€â”€ profiles (1:1)
+        â””â”€â”€ author_links (1:many)
 
 stories
-  ├── chapters (1:many)
-  ├── characters (1:many)
-  │     └── character_gallery_images (1:many)
-  │           └── image_votes (1:many, via user)
-  ├── story_wallpapers (1:many)
-  ├── lore_categories (1:many)
-  │     └── lore_entries (1:many, category optional)
-  ├── timeline_events (1:many)
-  │     └── timeline_event_characters (many:many → characters)
-  ├── maps (1:many)
-  │     ├── map_nodes (1:many)
-  │     ├── map_edges (1:many)
-  │     └── map_changelog (1:many)
-  └── writer_nodes (tree, 1:many recursive)
-        └── writer_node_links (many:many between nodes)
+  â”œâ”€â”€ chapters (1:many)
+  â”œâ”€â”€ characters (1:many)
+  â”‚     â””â”€â”€ character_gallery_images (1:many)
+  â”‚           â””â”€â”€ image_votes (1:many, via user)
+  â”œâ”€â”€ story_wallpapers (1:many)
+  â”œâ”€â”€ lore_categories (1:many)
+  â”‚     â””â”€â”€ lore_entries (1:many, category optional)
+  â”œâ”€â”€ timeline_events (1:many)
+  â”‚     â””â”€â”€ timeline_event_characters (many:many â†’ characters)
+  â”œâ”€â”€ maps (1:many)
+  â”‚     â”œâ”€â”€ map_nodes (1:many)
+  â”‚     â”œâ”€â”€ map_edges (1:many)
+  â”‚     â””â”€â”€ map_changelog (1:many)
+  â””â”€â”€ writer_nodes (tree, 1:many recursive)
+        â””â”€â”€ writer_node_links (many:many between nodes)
 
-comments (polymorphic → chapters, lore, gallery, etc.)
+comments (polymorphic â†’ chapters, lore, gallery, etc.)
 site_settings (global key-value)
 ```
 
@@ -653,7 +653,7 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 3. **`character_gallery_images.is_published` gates public gallery visibility**. Reader-facing gallery feeds and individual character galleries should only query published rows.
 4. **`target_type` is a freeform string** on `comments`. Accepted values in use: `'chapter'`, `'lore'`, `'gallery'`. Always filter by both `target_id` AND `target_type`.
 5. **`writer_nodes` is a recursive tree.** Reconstruct the tree client-side after fetching all nodes for a `story_id`. Root nodes have `parent_id = NULL`.
-6. **`metadata` JSONB columns** exist on `comments` and `writer_nodes`. Structure is flexible — check application code for expected shape before writing.
+6. **`metadata` JSONB columns** exist on `comments` and `writer_nodes`. Structure is flexible â€” check application code for expected shape before writing.
 7. **Storage URLs** are public Supabase Storage URLs. Construct them as: `{SUPABASE_URL}/storage/v1/object/public/{bucket_id}/{filename}`
 8. **`Reader` bucket filenames** must follow `{user_id}-{timestamp}.{ext}` format for ownership policies to work.
 9. **The `event_date` field** in `timeline_events` is a plain TEXT field, not a PostgreSQL date type. It stores in-universe fictional date strings.
@@ -668,31 +668,31 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
+| `map_id` | UUID NOT NULL | FK â†’ `maps(id)` CASCADE |
 | `name` | TEXT NOT NULL | Planet/location name |
 | `x` / `y` | DOUBLE PRECISION | Map coordinates |
 | `region` / `sector` | TEXT | Optional metadata |
 | `color` | TEXT | Contributor's assigned color |
-| `created_by` | UUID | FK → `profiles(id)` |
+| `created_by` | UUID | FK â†’ `profiles(id)` |
 
 ### `map_edges`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
-| `source_node_id` / `target_node_id` | UUID NOT NULL | FK → `map_nodes(id)` CASCADE |
+| `map_id` | UUID NOT NULL | FK â†’ `maps(id)` CASCADE |
+| `source_node_id` / `target_node_id` | UUID NOT NULL | FK â†’ `map_nodes(id)` CASCADE |
 | `source_name` / `target_name` | TEXT | Denormalized for display |
 | `geometry` | JSONB | Array of `{x, y}` waypoints |
 | `edge_type` | TEXT DEFAULT 'straight' | `'straight'` or `'curved'` |
 | `color` | TEXT | Contributor's color |
-| `created_by` | UUID | FK → `profiles(id)` |
+| `created_by` | UUID | FK â†’ `profiles(id)` |
 
 ### `map_changelog`
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `map_id` | UUID NOT NULL | FK → `maps(id)` CASCADE |
-| `user_id` | UUID NOT NULL | FK → `profiles(id)` |
+| `map_id` | UUID NOT NULL | FK â†’ `maps(id)` CASCADE |
+| `user_id` | UUID NOT NULL | FK â†’ `profiles(id)` |
 | `action` | TEXT NOT NULL | `'add_node'`, `'edit_node'`, `'delete_node'`, `'add_edge'`, `'delete_edge'` |
 | `entity_type` | TEXT NOT NULL | `'node'` or `'edge'` |
 | `entity_id` | UUID | |
@@ -702,8 +702,8 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `user_id` | UUID NOT NULL | FK → `profiles(id)` |
-| `map_id` | UUID NOT NULL | FK → `maps(id)` |
+| `user_id` | UUID NOT NULL | FK â†’ `profiles(id)` |
+| `map_id` | UUID NOT NULL | FK â†’ `maps(id)` |
 | `title` | TEXT | |
 | `reason` | TEXT | Contributor notes |
 | `status` | TEXT DEFAULT 'pending' | `'pending'`, `'approved'`, `'rejected'` |
@@ -714,14 +714,14 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
-| `request_id` | UUID NOT NULL | FK → `map_requests(id)` CASCADE |
+| `request_id` | UUID NOT NULL | FK â†’ `map_requests(id)` CASCADE |
 | `action` | TEXT | `'ADD'`, `'UPDATE'`, `'DELETE'` |
 | `entity_type` | TEXT | `'NODE'`, `'EDGE'` |
 | `entity_id` | UUID | |
 | `proposed_data` | JSONB | Full payload for the record |
 
 ### SQL Helper Function
-- `is_cartographer()` — Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
+- `is_cartographer()` â€” Returns TRUE if the authenticated user's profile role is `'cartographer'` or `'admin'`. Used in all RLS policies for map tables. Defined as `SECURITY DEFINER STABLE`.
 
 ### RLS Policies
 
@@ -738,9 +738,178 @@ UPDATE public.profiles SET role = 'admin' WHERE id = '<user_uuid>';
 - `idx_maps_story`, `idx_maps_slug`, `idx_map_nodes_map`, `idx_map_edges_map`, `idx_map_edges_source`, `idx_map_edges_target`, `idx_map_changelog_map`, `idx_map_changelog_user`.
 
 ### Triggers
-- `set_maps_updated_at`, `set_map_nodes_updated_at`, `set_map_edges_updated_at` — All reuse existing `update_timestamp()` function where present.
+- `set_maps_updated_at`, `set_map_nodes_updated_at`, `set_map_edges_updated_at` â€” All reuse existing `update_timestamp()` function where present.
 
 ### Promote a user to cartographer
 ```sql
 UPDATE public.profiles SET role = 'cartographer' WHERE id = '<user_uuid>';
 ```
+
+---
+
+## 12. Subscription Reader Access Model
+
+The subscription reader SPA (`subscription.html`) is designed around normalized entitlements. The SQL migration is stored at:
+
+```txt
+sql/2026-06-23_reader_subscription_access.sql
+```
+
+Apply that migration before marking chapters as member-locked in production. Until the migration is applied, the subscription SPA can browse existing published stories/chapters through fallback reads, but production locked-content security depends on the RPC/RLS layer below.
+
+### New / changed chapter columns
+
+`public.chapters` gains optional access fields:
+
+| Column | Type | Notes |
+|---|---|---|
+| `required_tier_id` | UUID NULL | FK to `reader_access_tiers(id)`. `NULL` means free/public when published. |
+| `public_release_at` | TIMESTAMPTZ NULL | Optional early-access public release date. |
+| `preview_text` | TEXT NULL | Safe public teaser text for locked chapters. Never store full locked content here. |
+
+Existing chapters remain free by default because `required_tier_id` is `NULL`.
+
+### `public.reader_access_tiers`
+
+Internal tier definitions. Provider tier names/IDs map into these rows.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `slug` | TEXT UNIQUE | Internal tier slug. |
+| `name` | TEXT | Reader-facing tier name. |
+| `description` | TEXT | Optional copy. |
+| `tier_rank` | INTEGER | Higher rank includes lower-rank access. |
+| `is_active` | BOOLEAN | Public tier visibility. |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+### `public.user_entitlements`
+
+Normalized active/expired grants from any source.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | UUID | FK to `profiles(id)`. |
+| `tier_id` | UUID | FK to `reader_access_tiers(id)`. |
+| `source` | TEXT | `patreon`, `access_key`, `manual`, `discord`, `kofi`, `paypal`, etc. |
+| `provider` | TEXT | Optional provider name. |
+| `provider_connection_id` | UUID | Optional FK to `provider_connections(id)`. |
+| `status` | TEXT | Expected values include `active`, `expired`, `revoked`, `pending`. |
+| `valid_from` / `valid_until` | TIMESTAMPTZ | Access window. `valid_until NULL` means no listed expiry. |
+| `metadata` | JSONB | Source-specific details. |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+### `public.provider_connections`
+
+Links a Supabase reader account to an external provider identity.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | UUID | FK to `profiles(id)`. |
+| `provider` | TEXT | e.g. `patreon`, `discord`. |
+| `provider_user_id` | TEXT | External account id. |
+| `provider_account_label` | TEXT | Display label/email/handle when safe. |
+| `status` | TEXT | `active`, `revoked`, `pending`, etc. |
+| `metadata` | JSONB | Non-secret provider metadata. |
+| `last_synced_at` | TIMESTAMPTZ | Last provider sync. |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+### `public.provider_tier_mappings`
+
+Maps external provider tier/product/role IDs to internal access tiers.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `provider` | TEXT | Provider key. |
+| `provider_tier_id` | TEXT | External tier/product/role id. |
+| `provider_tier_label` | TEXT | Optional display label. |
+| `tier_id` | UUID | FK to `reader_access_tiers(id)`. |
+| `is_active` | BOOLEAN | Mapping enabled flag. |
+| `metadata` | JSONB | Provider-specific non-secret details. |
+| `created_at` | TIMESTAMPTZ | |
+
+### `public.access_keys`
+
+Stores hashed access keys. Plaintext keys must only be shown at creation time by trusted admin tooling and are never stored.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `key_hash` | TEXT UNIQUE | SHA-256 hash of normalized submitted key. |
+| `key_prefix` | TEXT | Safe short prefix for admin identification. |
+| `tier_id` | UUID | Entitlement tier granted by this key. |
+| `label` / `campaign` | TEXT | Admin organization fields. |
+| `status` | TEXT | `active`, `revoked`, etc. |
+| `max_uses` / `uses_count` | INTEGER | Redemption limits. |
+| `valid_from` / `valid_until` | TIMESTAMPTZ | Key validity window. |
+| `entitlement_duration_days` | INTEGER NULL | Optional temporary grant length. |
+| `metadata` | JSONB | Optional details. |
+| `created_by` | UUID | Admin profile id when known. |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
+### `public.access_key_redemptions`
+
+Tracks key redemptions per user.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `key_id` | UUID | FK to `access_keys(id)`. |
+| `user_id` | UUID | FK to `profiles(id)`. |
+| `entitlement_id` | UUID | FK to granted `user_entitlements(id)`. |
+| `redeemed_at` | TIMESTAMPTZ | |
+| `metadata` | JSONB | |
+
+### `public.entitlement_audit_log`
+
+Append-only style event log for grants, redemptions, provider syncs, revokes, and admin actions.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | UUID | Affected reader. |
+| `actor_user_id` | UUID | Admin/actor when applicable. |
+| `action` | TEXT | Event name. |
+| `source` | TEXT | Source system. |
+| `provider` | TEXT | Optional provider. |
+| `entitlement_id` | UUID | Related entitlement. |
+| `access_key_id` | UUID | Related access key. |
+| `details` | JSONB | Event details. |
+| `created_at` | TIMESTAMPTZ | |
+
+### Subscription RPCs
+
+| Function | Purpose |
+|---|---|
+| `has_active_entitlement(target_user_id, target_tier_id)` | Checks tier access, with higher `tier_rank` satisfying lower ranks. |
+| `chapter_is_public(chapter_row)` | Returns whether a published chapter is public/free due to no tier requirement or elapsed public release date. |
+| `get_chapter_catalog(target_story_id)` | Returns published chapter metadata plus access state, tier labels, preview text, and `can_read`; never returns full content. |
+| `get_reader_chapter(target_chapter_id)` | Returns full content only when the chapter is public, the user is admin, or the user has entitlement. Locked responses return `content = NULL`. |
+| `get_my_entitlements()` | Returns the signed-in reader's entitlement summary. |
+| `redeem_access_key(submitted_code)` | Hashes the submitted key, validates status/expiry/uses, creates an entitlement, records redemption, and logs the audit event. |
+
+### Subscription RLS notes
+
+- `reader_access_tiers` are publicly readable when active; admin has full access.
+- `provider_connections`, `user_entitlements`, and `access_key_redemptions` are readable by the owning user or admin.
+- `access_keys`, `provider_tier_mappings`, and entitlement audit logs are admin-only through RLS.
+- The migration replaces existing `chapters` policies so direct chapter table reads expose only public/free published chapters or entitled/admin rows. Locked chapter reading must go through `get_reader_chapter`.
+- Provider secrets and OAuth tokens must live only in trusted Supabase Edge Function secrets or server-side storage, never in browser modules.
+
+### Subscription Edge Functions
+
+The repository includes initial Supabase Edge Function entrypoints under `supabase/functions/`:
+
+- `patreon-oauth-start` - Builds a Patreon OAuth authorization URL from `PATREON_CLIENT_ID` and `PATREON_REDIRECT_URI`.
+- `patreon-oauth-callback` - Receives the OAuth callback and redirects back to the subscription access pending route; production token exchange and entitlement writes require provider secrets and service-role configuration.
+- `provider-webhook` - Secret-protected normalized webhook boundary for Patreon/Ko-fi/PayPal/Discord/automation payloads. It resolves a user, maps `provider_tier_id` through `provider_tier_mappings`, writes `user_entitlements`, and logs audit events.
+- `sync-provider-entitlements` - Normalized provider sync boundary for refreshing a user's entitlements.
+- `_shared/cors.ts` - Shared CORS/JSON helpers.
+
+These functions intentionally keep provider-specific secrets and service-role writes out of browser JavaScript. Before production use, complete provider signature verification, token exchange, provider tier mapping, and `user_entitlements` upsert logic inside the Edge Functions.
+
+
+

@@ -1380,6 +1380,11 @@ export const Actions = {
     },
     toggleR18: () => {
         const newValue = !State.showR18;
+        if (newValue && !UserAuth.user) {
+            UI.toast('You must be signed in to enable mature content (R18).', 'error');
+            UI.openAuthModal();
+            return;
+        }
         State.showR18 = newValue;
         localStorage.setItem('show_r18', newValue ? 'true' : 'false');
 

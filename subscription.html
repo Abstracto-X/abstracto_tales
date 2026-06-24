@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Aether Library - Member Reader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://gdivyqfhgashkqcqqnas.supabase.co" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="subscription.css">
+</head>
+<body class="subscription-body">
+    <div class="sub-bg-orb sub-bg-orb-one"></div>
+    <div class="sub-bg-orb sub-bg-orb-two"></div>
+
+    <div id="subscription-app" class="subscription-app-shell">
+        <aside class="sub-desktop-rail" aria-label="Subscription reader navigation">
+            <button class="sub-brand" type="button" data-sub-route="home" aria-label="Aether Library home">
+                <span>A</span>
+            </button>
+            <nav class="sub-rail-nav">
+                <button type="button" data-sub-route="library"><i class="fas fa-book-open"></i><span>Library</span></button>
+                <button type="button" data-sub-route="updates"><i class="fas fa-clock"></i><span>Updates</span></button>
+                <button type="button" data-sub-route="access"><i class="fas fa-key"></i><span>Access</span></button>
+                <button type="button" data-sub-route="account"><i class="fas fa-user-astronaut"></i><span>Account</span></button>
+            </nav>
+        </aside>
+
+        <main class="sub-main-shell">
+            <header class="sub-topbar">
+                <button class="sub-back" id="sub-back-btn" type="button" hidden><i class="fas fa-arrow-left"></i><span>Back</span></button>
+                <button class="sub-wordmark" type="button" data-sub-route="home">
+                    <span class="sub-kicker">Aether</span>
+                    <strong>Member Library</strong>
+                </button>
+                <div class="sub-account-chip" id="sub-account-chip">Checking session...</div>
+            </header>
+
+            <section id="sub-stage" class="sub-stage" aria-live="polite">
+                <div class="sub-loading-card">Opening the member library...</div>
+            </section>
+        </main>
+
+        <nav class="sub-bottom-nav" aria-label="Subscription reader mobile navigation">
+            <button type="button" data-sub-route="library"><i class="fas fa-book-open"></i><span>Library</span></button>
+            <button type="button" data-sub-route="updates"><i class="fas fa-clock"></i><span>Updates</span></button>
+            <button type="button" data-sub-route="access"><i class="fas fa-key"></i><span>Access</span></button>
+            <button type="button" data-sub-route="account"><i class="fas fa-user-astronaut"></i><span>Account</span></button>
+        </nav>
+    </div>
+
+    <div id="sub-toast" class="sub-toast" role="status" aria-live="polite"></div>
+
+    <dialog id="sub-auth-dialog" class="sub-dialog">
+        <form method="dialog" class="sub-dialog-card">
+            <button class="sub-dialog-close" value="cancel" aria-label="Close">&times;</button>
+            <p class="sub-kicker">Reader account</p>
+            <h2 id="sub-auth-title">Sign in</h2>
+            <div id="sub-auth-message" class="sub-inline-status"></div>
+            <label>Email <input id="sub-auth-email" type="email" autocomplete="email" placeholder="reader@example.com"></label>
+            <label>Password <input id="sub-auth-password" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+            <button id="sub-auth-submit" class="sub-primary-btn" type="button">Sign in</button>
+            <button id="sub-auth-toggle" class="sub-link-btn" type="button">Need an account? Join the library.</button>
+        </form>
+    </dialog>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script type="module" src="js/subscription/main.js"></script>
+</body>
+</html>

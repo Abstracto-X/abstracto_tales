@@ -3,8 +3,20 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-23]
+### Added
+- 22:35 +05:30: Created `docs_v2/reader/subscription_spa.md` to document the architecture, routing, state, rendering, and API connections of the Subscription reader SPA (`subscription.html`).
+- 22:35 +05:30: Created `subscription.css` as a dedicated, standalone stylesheet containing optimized resets, layout rules, interactive hover micro-animations, theme skins (Dark, Parchment, Contrast), and responsive mobile breakpoints.
+- 23:28 +05:30: Created bundling script `scripts/bundle_subscription.js` to combine all subscription SPA files.
+
+### Changed
+- 22:35 +05:30: Extracted all subscription-specific CSS from the main `styles.css` file into the new `subscription.css` to prevent layout bugs and style leakage. Updated `subscription.html` to reference `subscription.css` and allowed text selection in reader view.
+- 22:35 +05:30: Linked the new `subscription_spa.md` document in `docs_v2/CODEBASE_OVERVIEW.md` and added it to the automatic documentation compiler (`scripts/compile_docs.js`), then compiled all documentation into the unified legacy `/docs/` folder.
+- 23:28 +05:30: Aggregated all subscription SPA files (HTML, CSS, JS modules) into `subscription_bundle.md` at the project root for easy audit ingestion.
+
 ## [2026-06-15]
 ### Changed
+- 10:57 +05:30: Gated the gallery R18/mature content toggle behind active user authentication. Unauthenticated users who attempt to enable R18 are shown a toast notification and prompted with the login modal. Synchronously checks for stored auth tokens on cold-start to prevent bypassing the R18 restriction, and automatically resets the showR18 setting to false upon user logout. Updated reader API map and functions documentation, and compiled legacy docs.
 - 06:18 +05:30: Restored the reader map Navicomputer status widget to the right, moved zoom/reset/route-focus controls into a horizontal rail beside Minimize Panels, replaced the footer clock spinner with an animated Galactic Republic emblem, and removed the site-wide lower-right cursor hotspot that hid the entire application.
 - 05:47 +05:30: Restructured the reader map HUD by moving Star Chart Registry/Layers into the top command bar and Navicomputer/Search into the compact status card, removing itinerary and Active Routes surfaces, adding inspector-based Plot Course selection, and making the floating route card avoid live dock/HUD rectangles. Added registry thumbnails, planet-class inspector accents, route/radar/minimize animations, HUD/footer glow treatments, responsive fallbacks, and updated reader map documentation.
 
@@ -22,7 +34,7 @@ Agents MUST update this file whenever they complete a task or make significant u
 
 ## [2026-06-15]
 ### Added
-- 03:44 +05:30: Added `docs_v2/reader/MAP_HANDOVER.md` with exact reader-map code locations, working feature inventory, synthetic telemetry disclosures, half-finished HUD behavior, accessibility and CSS cleanup risks, manual verification steps, and a highest-priority requirement to restore the currently unreachable “Help Map the Galaxy” cartography contribution banner/action.
+- 03:44 +05:30: Added `docs_v2/reader/MAP_HANDOVER.md` with exact reader-map code locations, working feature inventory, synthetic telemetry disclosures, half-finished HUD behavior, accessibility and CSS cleanup risks, manual verification steps, and a highest-priority requirement to restore the currently unreachable â€œHelp Map the Galaxyâ€ cartography contribution banner/action.
 
 
 ## [2026-06-05]
@@ -139,3 +151,21 @@ Agents MUST update this file whenever they complete a task or make significant u
 - 03:17 +05:30: Preserved the original 3D scrolling Deck View and added boundary-aware wheel release, keyboard controls, touch swipes, focus styling, and reduced-motion handling.
 - 05:55 +05:30: Reduced Supabase image egress for new uploads by adding one-year cache metadata to unique Storage paths, fail-safe client-side WebP conversion for ordinary admin/reader PNG/JPG/JPEG uploads, and original-byte preservation for high-fidelity maps.
 - 05:55 +05:30: Added safe image loading hints across reader/admin/cartographer surfaces, prevented unchanged reader background/lightbox URL reassignment, reused same-map Leaflet image overlays, and documented that existing Storage object metadata is not changed retroactively.
+
+## 2026-06-23 21:33 +05:30
+
+- Added the lightweight subscription.html member reader SPA with mobile-first navigation, story library, tier-aware chapter catalog UI, locked access gates, Patreon connection placeholder, access-key redemption screen, account entitlement dashboard, and reader preference bottom sheet.
+- Added subscription reader modules under js/subscription/ and scoped subscription styles in styles.css.
+- Added sql/2026-06-23_reader_subscription_access.sql for access tiers, entitlements, provider connections, provider mappings, hashed access keys, redemptions, audit logs, chapter access columns, secure chapter catalog/content RPCs, and RLS policy changes.
+- Updated modular documentation for the new subscription reader surface and access model.
+
+## 2026-06-23 21:36 +05:30
+
+- Added initial Supabase Edge Functions for Patreon OAuth start/callback, normalized provider webhooks, and provider entitlement sync boundaries. These keep provider secrets/server writes outside the subscription SPA and are ready for provider-specific webhook signature logic and any additional sync rules.
+
+
+## 2026-06-23 21:44 +05:30
+
+- Extended dmin.html with a Member Access / Access Control workspace for subscription tiers, access-key generation/revocation, manual reader grants, and provider tier mappings.
+- Extended chapter editing in dmin.html with required access tier, public release date, and safe preview text fields for subscription.html chapter gates.
+

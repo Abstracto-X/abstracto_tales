@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -1052,6 +1052,13 @@
                     </div>
 
                     <div class="nav-section">
+                        <div class="nav-section-title">Member Access</div>
+                        <div class="nav-item" data-view="access">
+                            <i class="fas fa-key"></i> Access Control
+                        </div>
+                    </div>
+
+                    <div class="nav-section">
                         <div class="nav-section-title">Settings</div>
                         <div class="nav-item" data-view="settings">
                             <i class="fas fa-cog"></i> Site Settings
@@ -1117,7 +1124,11 @@
             selectedStoryId: null,
             selectedCharacterId: null,
             gallerySearch: '',
-            galleryVisibilityFilter: 'published'
+            galleryVisibilityFilter: 'published',
+            accessTiers: [],
+            accessKeys: [],
+            entitlements: [],
+            providerMappings: []
         };
 
         // ==============================================
@@ -1152,6 +1163,19 @@
             },
             isGalleryImagePublished: (image) => image?.is_published !== false,
             isGalleryImageNsfw: (image) => Array.isArray(image?.image_tags) && image.image_tags.includes('NSFW'),
+            normalizeAccessKey: (value) => (value || '').trim().toUpperCase().replace(/\s+/g, ''),
+            generateAccessCode: () => {
+                const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+                const bytes = new Uint8Array(12);
+                crypto.getRandomValues(bytes);
+                const raw = Array.from(bytes, b => alphabet[b % alphabet.length]).join('');
+                return raw.match(/.{1,4}/g).join('-');
+            },
+            sha256Hex: async (value) => {
+                const bytes = new TextEncoder().encode(value);
+                const hash = await crypto.subtle.digest('SHA-256', bytes);
+                return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+            },
             getImageUploadPayload: async (file, options = {}) => {
                 const originalExtension = (file.name.split('.').pop() || 'jpg').toLowerCase();
                 const fallback = {
@@ -2097,6 +2121,95 @@
                 await DB.updateRequestStatus(reqId, 'approved');
             },
 
+            // Member Access
+            getAccessTiers: async () => {
+                const { data, error } = await supabaseClient.from('reader_access_tiers').select('*').order('tier_rank');
+                if (error) throw error;
+                return data || [];
+            },
+            saveAccessTier: async (id, record) => {
+                if (id) {
+                    const { data, error } = await supabaseClient.from('reader_access_tiers').update(record).eq('id', id).select().single();
+                    if (error) throw error;
+                    return data;
+                }
+                const { data, error } = await supabaseClient.from('reader_access_tiers').insert(record).select().single();
+                if (error) throw error;
+                return data;
+            },
+            deleteAccessTier: async (id) => {
+                const { error } = await supabaseClient.from('reader_access_tiers').delete().eq('id', id);
+                if (error) throw error;
+            },
+            getAccessKeys: async () => {
+                const { data, error } = await supabaseClient
+                    .from('access_keys')
+                    .select('*, reader_access_tiers(name, slug, tier_rank)')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                return data || [];
+            },
+            saveAccessKey: async (record) => {
+                const { data, error } = await supabaseClient.from('access_keys').insert(record).select().single();
+                if (error) throw error;
+                return data;
+            },
+            updateAccessKey: async (id, record) => {
+                const { data, error } = await supabaseClient.from('access_keys').update(record).eq('id', id).select().single();
+                if (error) throw error;
+                return data;
+            },
+            getEntitlements: async () => {
+                const { data, error } = await supabaseClient
+                    .from('user_entitlements')
+                    .select('*, profiles(id, username, display_name), reader_access_tiers(name, slug, tier_rank)')
+                    .order('created_at', { ascending: false });
+                if (error) throw error;
+                return data || [];
+            },
+            saveEntitlement: async (record) => {
+                const { data, error } = await supabaseClient.from('user_entitlements').insert(record).select().single();
+                if (error) throw error;
+                return data;
+            },
+            updateEntitlement: async (id, record) => {
+                const { data, error } = await supabaseClient.from('user_entitlements').update(record).eq('id', id).select().single();
+                if (error) throw error;
+                return data;
+            },
+            findProfileForAccess: async (query) => {
+                const normalized = (query || '').trim();
+                if (!normalized) return null;
+                let builder = supabaseClient.from('profiles').select('*').limit(1);
+                if (/^[0-9a-f-]{36}$/i.test(normalized)) {
+                    builder = builder.eq('id', normalized);
+                } else {
+                    builder = builder.or(`username.eq.${normalized},display_name.ilike.%${normalized}%`);
+                }
+                const { data, error } = await builder;
+                if (error) throw error;
+                return (data || [])[0] || null;
+            },
+            getProviderMappings: async () => {
+                const { data, error } = await supabaseClient
+                    .from('provider_tier_mappings')
+                    .select('*, reader_access_tiers(name, slug)')
+                    .order('provider')
+                    .order('provider_tier_label');
+                if (error) throw error;
+                return data || [];
+            },
+            saveProviderMapping: async (id, record) => {
+                if (id) {
+                    const { data, error } = await supabaseClient.from('provider_tier_mappings').update(record).eq('id', id).select().single();
+                    if (error) throw error;
+                    return data;
+                }
+                const { data, error } = await supabaseClient.from('provider_tier_mappings').insert(record).select().single();
+                if (error) throw error;
+                return data;
+            },
+
             // Settings
             getSettings: async () => {
                 const { data } = await supabaseClient.from('site_settings').select('*').order('setting_key');
@@ -2184,7 +2297,7 @@
                         const icon = item.action === 'ADD' ? '<i class="fas fa-plus" style="color:var(--success-color)"></i>' :
                                      item.action === 'UPDATE' ? '<i class="fas fa-edit" style="color:var(--accent-color)"></i>' :
                                      '<i class="fas fa-trash" style="color:var(--danger-color)"></i>';
-                        const name = item.proposed_data?.name || item.proposed_data?.source_name + ' → ' + item.proposed_data?.target_name || 'Unknown Target';
+                        const name = item.proposed_data?.name || item.proposed_data?.source_name + ' â†’ ' + item.proposed_data?.target_name || 'Unknown Target';
                         return `
                             <div style="background:rgba(255,255,255,0.05); padding:0.5rem 1rem; border-radius:6px; margin-bottom:0.5rem; display:flex; align-items:center; gap:10px;">
                                 ${icon} <strong>${item.entity_type}</strong>: ${Utils.escapeHtml(name)}
@@ -2416,7 +2529,8 @@
 
             // CHAPTER FORM
             chapterForm: async (id = null) => {
-                let chapter = { title: '', content: '', chapter_order: 0, is_published: false, story_id: State.selectedStoryId };
+                let chapter = { title: '', content: '', chapter_order: 0, is_published: false, story_id: State.selectedStoryId, required_tier_id: null, public_release_at: '', preview_text: '' };
+                const tiers = await DB.getAccessTiers().catch(() => []);
                 
                 if (id) {
                     chapter = await DB.getChapter(id) || chapter;
@@ -2426,6 +2540,9 @@
                     chapter.chapter_order = chapters.length;
                 }
 
+                const tierOptions = ['<option value="">Free / public when published</option>', ...tiers.map(t => `<option value="${t.id}" ${t.id === chapter.required_tier_id ? 'selected' : ''}>${Utils.escapeHtml(t.name)} (rank ${t.tier_rank})</option>`)].join('');
+                const publicReleaseValue = chapter.public_release_at ? new Date(chapter.public_release_at).toISOString().slice(0, 16) : '';
+
                 const html = `
                     <div class="form-group">
                         <label class="form-label">Chapter Title *</label>
@@ -2434,6 +2551,21 @@
                     <div class="form-group">
                         <label class="form-label">Content *</label>
                         <textarea class="form-textarea" id="f-content" style="min-height:300px">${chapter.content || ''}</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subscription Access Tier</label>
+                        <select class="form-select" id="f-required_tier_id">${tierOptions}</select>
+                        <small style="color:#666;display:block;margin-top:0.35rem">Leave free for public chapters. Choose a tier to require member access in subscription.html.</small>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Public Release Date</label>
+                            <input type="datetime-local" class="form-input" id="f-public_release_at" value="${publicReleaseValue}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Preview / Teaser</label>
+                            <textarea class="form-textarea" id="f-preview_text" style="min-height:80px">${chapter.preview_text || ''}</textarea>
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -2469,12 +2601,17 @@
                         throw new Error(`Chapter Order ${orderValue} is already used by "${conflict.title}". Please choose a different order.`);
                     }
 
+                    const requiredTierId = document.getElementById('f-required_tier_id')?.value || null;
+                    const publicReleaseValue = document.getElementById('f-public_release_at')?.value || '';
                     const record = {
                         story_id: State.selectedStoryId,
                         title: document.getElementById('f-title').value,
                         content: document.getElementById('f-content').value,
                         chapter_order: orderValue,
-                        is_published: document.getElementById('f-is_published').checked
+                        is_published: document.getElementById('f-is_published').checked,
+                        required_tier_id: requiredTierId,
+                        public_release_at: publicReleaseValue ? new Date(publicReleaseValue).toISOString() : null,
+                        preview_text: document.getElementById('f-preview_text')?.value || null
                     };
                     await DB.saveChapter(id || null, record);
                     Modal.close();
@@ -2500,6 +2637,181 @@
                         UI.hideLoading();
                     }
                 }
+            },
+
+            // MEMBER ACCESS FORMS
+            accessTierForm: async (id = null) => {
+                const tiers = await DB.getAccessTiers();
+                const tier = id ? tiers.find(t => t.id === id) : { slug: '', name: '', description: '', tier_rank: tiers.length + 1, is_active: true };
+                const html = `
+                    <div class="form-group"><label class="form-label">Tier Name *</label><input class="form-input" id="f-tier-name" value="${Utils.escapeAttr(tier?.name || '')}"></div>
+                    <div class="form-group"><label class="form-label">Slug *</label><input class="form-input" id="f-tier-slug" value="${Utils.escapeAttr(tier?.slug || '')}" placeholder="voyager"></div>
+                    <div class="form-group"><label class="form-label">Description</label><textarea class="form-textarea" id="f-tier-description">${Utils.escapeHtml(tier?.description || '')}</textarea></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Rank</label><input type="number" class="form-input" id="f-tier-rank" value="${tier?.tier_rank || 0}"></div>
+                        <div class="form-group" style="display:flex;align-items:flex-end"><label class="form-checkbox"><input type="checkbox" id="f-tier-active" ${tier?.is_active !== false ? 'checked' : ''}> Active</label></div>
+                    </div>`;
+                const footer = `${id ? `<button class="btn btn-danger" onclick="Forms.deleteAccessTier('${id}')"><i class="fas fa-trash"></i> Delete</button>` : ''}<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" onclick="Forms.saveAccessTier('${id || ''}')"><i class="fas fa-save"></i> Save</button>`;
+                Modal.open(id ? 'Edit Access Tier' : 'Add Access Tier', html, footer);
+            },
+
+            saveAccessTier: async (id) => {
+                try {
+                    UI.showLoading();
+                    const name = document.getElementById('f-tier-name').value.trim();
+                    const slug = document.getElementById('f-tier-slug').value.trim() || Utils.generateSlug(name);
+                    if (!name || !slug) throw new Error('Tier name and slug are required.');
+                    await DB.saveAccessTier(id || null, {
+                        name,
+                        slug,
+                        description: document.getElementById('f-tier-description').value,
+                        tier_rank: parseInt(document.getElementById('f-tier-rank').value) || 0,
+                        is_active: document.getElementById('f-tier-active').checked
+                    });
+                    Modal.close();
+                    UI.showToast('Access tier saved!');
+                    Views.render('access');
+                } catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
+            },
+
+            deleteAccessTier: async (id) => {
+                if (!await Modal.confirm('Delete this access tier? Chapters and entitlements using it may be affected.')) return;
+                try { UI.showLoading(); await DB.deleteAccessTier(id); UI.showToast('Tier deleted.'); Modal.close(); Views.render('access'); }
+                catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
+            },
+
+            accessKeyForm: async () => {
+                const tiers = await DB.getAccessTiers();
+                if (!tiers.length) { UI.showToast('Create an access tier first.', 'error'); return; }
+                const generated = Utils.generateAccessCode();
+                const html = `
+                    <div class="form-group"><label class="form-label">Generated Key</label><input class="form-input" id="f-access-code" value="${generated}"><small style="color:#ffcf66;display:block;margin-top:.35rem">Copy this now. Only its SHA-256 hash will be stored.</small></div>
+                    <div class="form-group"><label class="form-label">Tier</label><select class="form-select" id="f-access-tier">${tiers.map(t => `<option value="${t.id}">${Utils.escapeHtml(t.name)} (rank ${t.tier_rank})</option>`).join('')}</select></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Label</label><input class="form-input" id="f-access-label" placeholder="Reviewer key"></div>
+                        <div class="form-group"><label class="form-label">Campaign</label><input class="form-input" id="f-access-campaign" placeholder="June beta"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Max Uses</label><input type="number" class="form-input" id="f-access-max" value="1" min="1"></div>
+                        <div class="form-group"><label class="form-label">Grant Duration Days</label><input type="number" class="form-input" id="f-access-duration" placeholder="Blank = no expiry"></div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Key Expires At</label><input type="datetime-local" class="form-input" id="f-access-valid-until"></div>`;
+                const footer = `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" onclick="Forms.saveAccessKey()"><i class="fas fa-key"></i> Create Key</button>`;
+                Modal.open('Generate Access Key', html, footer);
+            },
+
+            saveAccessKey: async () => {
+                try {
+                    UI.showLoading();
+                    const normalized = Utils.normalizeAccessKey(document.getElementById('f-access-code').value);
+                    if (!normalized) throw new Error('Access key is required.');
+                    const hash = await Utils.sha256Hex(normalized);
+                    const validUntil = document.getElementById('f-access-valid-until').value;
+                    const duration = document.getElementById('f-access-duration').value;
+                    await DB.saveAccessKey({
+                        key_hash: hash,
+                        key_prefix: normalized.slice(0, 4),
+                        tier_id: document.getElementById('f-access-tier').value,
+                        label: document.getElementById('f-access-label').value || null,
+                        campaign: document.getElementById('f-access-campaign').value || null,
+                        max_uses: parseInt(document.getElementById('f-access-max').value) || 1,
+                        valid_until: validUntil ? new Date(validUntil).toISOString() : null,
+                        entitlement_duration_days: duration ? parseInt(duration) : null,
+                        created_by: State.user?.id || null
+                    });
+                    UI.showToast('Access key created. Copy the plaintext key before closing.', 'success', 6000);
+                    Views.render('access');
+                } catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
+            },
+
+            revokeAccessKey: async (id) => {
+                if (!await Modal.confirm('Revoke this access key?')) return;
+                try { UI.showLoading(); await DB.updateAccessKey(id, { status: 'revoked' }); UI.showToast('Access key revoked.'); Views.render('access'); }
+                catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
+            },
+
+            manualGrantForm: async () => {
+                const tiers = await DB.getAccessTiers();
+                if (!tiers.length) { UI.showToast('Create an access tier first.', 'error'); return; }
+                const html = `
+                    <div class="form-group"><label class="form-label">Reader Profile ID, Username, or Display Name</label><input class="form-input" id="f-grant-user" placeholder="reader username or UUID"></div>
+                    <div class="form-group"><label class="form-label">Tier</label><select class="form-select" id="f-grant-tier">${tiers.map(t => `<option value="${t.id}">${Utils.escapeHtml(t.name)}</option>`).join('')}</select></div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Source</label><input class="form-input" id="f-grant-source" value="manual"></div>
+                        <div class="form-group"><label class="form-label">Valid Until</label><input type="datetime-local" class="form-input" id="f-grant-valid-until"></div>
+                    </div>
+                    <div class="form-group"><label class="form-label">Note</label><textarea class="form-textarea" id="f-grant-note" placeholder="Gift, reviewer, support recovery..."></textarea></div>`;
+                const footer = `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" onclick="Forms.saveManualGrant()"><i class="fas fa-user-check"></i> Grant Access</button>`;
+                Modal.open('Manual Access Grant', html, footer);
+            },
+
+            saveManualGrant: async () => {
+                try {
+                    UI.showLoading();
+                    const profile = await DB.findProfileForAccess(document.getElementById('f-grant-user').value);
+                    if (!profile) throw new Error('Reader profile not found. Ask the reader to sign up first, then search by username/display name/UUID.');
+                    const validUntil = document.getElementById('f-grant-valid-until').value;
+                    await DB.saveEntitlement({
+                        user_id: profile.id,
+                        tier_id: document.getElementById('f-grant-tier').value,
+                        source: document.getElementById('f-grant-source').value || 'manual',
+                        status: 'active',
+                        valid_until: validUntil ? new Date(validUntil).toISOString() : null,
+                        metadata: { note: document.getElementById('f-grant-note').value || '' }
+                    });
+                    Modal.close();
+                    UI.showToast('Manual entitlement granted.');
+                    Views.render('access');
+                } catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
+            },
+
+            revokeEntitlement: async (id) => {
+                if (!await Modal.confirm('Revoke this entitlement?')) return;
+                try { UI.showLoading(); await DB.updateEntitlement(id, { status: 'revoked', valid_until: new Date().toISOString() }); UI.showToast('Entitlement revoked.'); Views.render('access'); }
+                catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
+            },
+
+            providerMappingForm: async (id = null) => {
+                const [tiers, mappings] = await Promise.all([DB.getAccessTiers(), DB.getProviderMappings().catch(() => [])]);
+                if (!tiers.length) { UI.showToast('Create an access tier first.', 'error'); return; }
+                const mapping = id ? mappings.find(m => m.id === id) : { provider: 'patreon', provider_tier_id: '', provider_tier_label: '', tier_id: tiers[0].id, is_active: true };
+                const html = `
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Provider</label><select class="form-select" id="f-map-provider">${['patreon','kofi','paypal','discord','manual'].map(p => `<option value="${p}" ${mapping?.provider === p ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+                        <div class="form-group"><label class="form-label">Provider Tier/Product/Role ID</label><input class="form-input" id="f-map-provider-tier-id" value="${Utils.escapeAttr(mapping?.provider_tier_id || '')}"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label class="form-label">Provider Label</label><input class="form-input" id="f-map-label" value="${Utils.escapeAttr(mapping?.provider_tier_label || '')}"></div>
+                        <div class="form-group"><label class="form-label">Internal Tier</label><select class="form-select" id="f-map-tier">${tiers.map(t => `<option value="${t.id}" ${mapping?.tier_id === t.id ? 'selected' : ''}>${Utils.escapeHtml(t.name)}</option>`).join('')}</select></div>
+                    </div>
+                    <label class="form-checkbox"><input type="checkbox" id="f-map-active" ${mapping?.is_active !== false ? 'checked' : ''}> Mapping active</label>`;
+                const footer = `<button class="btn btn-secondary" onclick="Modal.close()">Cancel</button><button class="btn btn-primary" onclick="Forms.saveProviderMapping('${id || ''}')"><i class="fas fa-plug"></i> Save Mapping</button>`;
+                Modal.open(id ? 'Edit Provider Mapping' : 'Add Provider Mapping', html, footer);
+            },
+
+            saveProviderMapping: async (id) => {
+                try {
+                    UI.showLoading();
+                    const record = {
+                        provider: document.getElementById('f-map-provider').value,
+                        provider_tier_id: document.getElementById('f-map-provider-tier-id').value.trim(),
+                        provider_tier_label: document.getElementById('f-map-label').value || null,
+                        tier_id: document.getElementById('f-map-tier').value,
+                        is_active: document.getElementById('f-map-active').checked
+                    };
+                    if (!record.provider_tier_id) throw new Error('Provider tier/product/role ID is required.');
+                    await DB.saveProviderMapping(id || null, record);
+                    Modal.close();
+                    UI.showToast('Provider mapping saved.');
+                    Views.render('access');
+                } catch (err) { UI.showToast(err.message, 'error'); }
+                finally { UI.hideLoading(); }
             },
 
             // CHARACTER FORM
@@ -3259,6 +3571,7 @@
                         case 'timeline': await Views.timeline(content); break;
                         case 'maps': await Views.maps(content); break;
                         case 'mapRequests': await Views.mapRequests(content); break; // NEW
+                        case 'access': await Views.access(content); break;
                         case 'settings': await Views.settings(content); break;
                         case 'profile': await Views.profile(content); break;
                         default: await Views.dashboard(content);
@@ -3389,6 +3702,7 @@
                                     <th>Slug</th>
                                     <th>Genre</th>
                                     <th>Status</th>
+                                    <th>Access</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -3427,7 +3741,11 @@
                 }
 
                 State.selectedStoryId = State.selectedStoryId || stories[0].id;
-                const chapters = await DB.getChapters(State.selectedStoryId);
+                const [chapters, tiers] = await Promise.all([
+                    DB.getChapters(State.selectedStoryId),
+                    DB.getAccessTiers().catch(() => [])
+                ]);
+                const tierLookup = Object.fromEntries(tiers.map(t => [t.id, t]));
 
                 container.innerHTML = `
                     <div class="page-header">
@@ -3465,13 +3783,14 @@
                                         <td><strong>${Utils.escapeHtml(c.title)}</strong></td>
                                         <td>${c.word_count || 0}</td>
                                         <td><span class="status-badge ${c.is_published ? 'status-published' : 'status-draft'}">${c.is_published ? 'Published' : 'Draft'}</span></td>
+                                        <td>${c.required_tier_id ? `<span class="status-badge status-draft"><i class="fas fa-lock"></i> ${Utils.escapeHtml(tierLookup[c.required_tier_id]?.name || 'Tier required')}</span>` : '<span class="status-badge status-published">Free</span>'}</td>
                                         <td>
                                             <div class="action-btns">
                                                 <button class="btn btn-secondary btn-sm" onclick="Forms.chapterForm('${c.id}')" title="Edit"><i class="fas fa-edit"></i></button>
                                             </div>
                                         </td>
                                     </tr>
-                                `).join('') || '<tr><td colspan="5" style="text-align:center;color:#666">No chapters yet</td></tr>'}
+                                `).join('') || '<tr><td colspan="6" style="text-align:center;color:#666">No chapters yet</td></tr>'}
                             </tbody>
                         </table>
                     </div>
@@ -4055,6 +4374,119 @@
                 `;
             },
 
+            access: async (container) => {
+                let tiers = [], keys = [], entitlements = [], mappings = [];
+                try {
+                    [tiers, keys, entitlements, mappings] = await Promise.all([
+                        DB.getAccessTiers(),
+                        DB.getAccessKeys(),
+                        DB.getEntitlements(),
+                        DB.getProviderMappings().catch(() => [])
+                    ]);
+                } catch (err) {
+                    container.innerHTML = `
+                        <div class="page-header">
+                            <div><h1 class="page-title">Access Control</h1><p class="page-subtitle">Subscription database objects are not available yet</p></div>
+                        </div>
+                        <div class="glass-card">
+                            <h3 class="card-title" style="margin-bottom:1rem">Migration required</h3>
+                            <p style="color:#aaa;line-height:1.7">Apply <code>sql/2026-06-23_reader_subscription_access.sql</code> in Supabase before using access tiers, keys, grants, or provider mappings.</p>
+                            <p style="color:#777;margin-top:1rem">${Utils.escapeHtml(err.message)}</p>
+                        </div>`;
+                    return;
+                }
+
+                const activeEntitlements = entitlements.filter(e => e.status === 'active');
+                const activeKeys = keys.filter(k => k.status === 'active');
+
+                container.innerHTML = `
+                    <div class="page-header">
+                        <div>
+                            <h1 class="page-title">Access Control</h1>
+                            <p class="page-subtitle">Manage subscription tiers, chapter gates, access keys, manual grants, and provider mappings</p>
+                        </div>
+                        <div class="action-btns">
+                            <button class="btn btn-secondary" onclick="Forms.providerMappingForm()"><i class="fas fa-plug"></i> Add Provider Mapping</button>
+                            <button class="btn btn-secondary" onclick="Forms.manualGrantForm()"><i class="fas fa-user-check"></i> Manual Grant</button>
+                            <button class="btn btn-secondary" onclick="Forms.accessKeyForm()"><i class="fas fa-key"></i> Generate Key</button>
+                            <button class="btn btn-primary" onclick="Forms.accessTierForm()"><i class="fas fa-layer-group"></i> Add Tier</button>
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card"><i class="fas fa-layer-group stat-icon"></i><div class="stat-value">${tiers.length}</div><div class="stat-label">Access Tiers</div></div>
+                        <div class="stat-card"><i class="fas fa-key stat-icon"></i><div class="stat-value">${activeKeys.length}</div><div class="stat-label">Active Keys</div></div>
+                        <div class="stat-card"><i class="fas fa-user-check stat-icon"></i><div class="stat-value">${activeEntitlements.length}</div><div class="stat-label">Active Grants</div></div>
+                        <div class="stat-card"><i class="fas fa-plug stat-icon"></i><div class="stat-value">${mappings.length}</div><div class="stat-label">Provider Mappings</div></div>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header"><h3 class="card-title">Internal Access Tiers</h3><button class="btn btn-primary btn-sm" onclick="Forms.accessTierForm()"><i class="fas fa-plus"></i> Add Tier</button></div>
+                        <table class="data-table">
+                            <thead><tr><th>Rank</th><th>Name</th><th>Slug</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>${tiers.map(t => `
+                                <tr>
+                                    <td>${t.tier_rank}</td>
+                                    <td><strong>${Utils.escapeHtml(t.name)}</strong></td>
+                                    <td><code>${Utils.escapeHtml(t.slug)}</code></td>
+                                    <td>${Utils.escapeHtml(t.description || '-')}</td>
+                                    <td><span class="status-badge ${t.is_active ? 'status-published' : 'status-draft'}">${t.is_active ? 'Active' : 'Inactive'}</span></td>
+                                    <td><button class="btn btn-secondary btn-sm" onclick="Forms.accessTierForm('${t.id}')"><i class="fas fa-edit"></i></button></td>
+                                </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#666">No tiers yet</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header"><h3 class="card-title">Access Keys</h3><button class="btn btn-primary btn-sm" onclick="Forms.accessKeyForm()"><i class="fas fa-key"></i> Generate Key</button></div>
+                        <table class="data-table">
+                            <thead><tr><th>Prefix</th><th>Tier</th><th>Campaign</th><th>Uses</th><th>Expires</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>${keys.map(k => `
+                                <tr>
+                                    <td><code>${Utils.escapeHtml(k.key_prefix || '----')}????</code></td>
+                                    <td>${Utils.escapeHtml(k.reader_access_tiers?.name || 'Unknown tier')}</td>
+                                    <td>${Utils.escapeHtml(k.campaign || k.label || '-')}</td>
+                                    <td>${k.uses_count || 0} / ${k.max_uses || 1}</td>
+                                    <td>${Utils.escapeHtml(Utils.formatRelativeDate(k.valid_until))}</td>
+                                    <td><span class="status-badge ${k.status === 'active' ? 'status-published' : 'status-draft'}">${Utils.escapeHtml(k.status || 'active')}</span></td>
+                                    <td>${k.status === 'active' ? `<button class="btn btn-danger btn-sm" onclick="Forms.revokeAccessKey('${k.id}')"><i class="fas fa-ban"></i> Revoke</button>` : '-'}</td>
+                                </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#666">No keys generated</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header"><h3 class="card-title">Manual / Provider Entitlements</h3><button class="btn btn-primary btn-sm" onclick="Forms.manualGrantForm()"><i class="fas fa-user-check"></i> Manual Grant</button></div>
+                        <table class="data-table">
+                            <thead><tr><th>Reader</th><th>Tier</th><th>Source</th><th>Status</th><th>Valid Until</th><th>Actions</th></tr></thead>
+                            <tbody>${entitlements.map(e => `
+                                <tr>
+                                    <td><strong>${Utils.escapeHtml(e.profiles?.display_name || e.profiles?.username || e.user_id)}</strong></td>
+                                    <td>${Utils.escapeHtml(e.reader_access_tiers?.name || 'Unknown tier')}</td>
+                                    <td>${Utils.escapeHtml(e.provider || e.source || 'manual')}</td>
+                                    <td><span class="status-badge ${e.status === 'active' ? 'status-published' : 'status-draft'}">${Utils.escapeHtml(e.status || 'active')}</span></td>
+                                    <td>${Utils.escapeHtml(Utils.formatRelativeDate(e.valid_until))}</td>
+                                    <td>${e.status === 'active' ? `<button class="btn btn-danger btn-sm" onclick="Forms.revokeEntitlement('${e.id}')"><i class="fas fa-user-slash"></i> Revoke</button>` : '-'}</td>
+                                </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#666">No entitlements yet</td></tr>'}</tbody>
+                        </table>
+                    </div>
+
+                    <div class="glass-card">
+                        <div class="card-header"><h3 class="card-title">Provider Tier Mappings</h3><button class="btn btn-primary btn-sm" onclick="Forms.providerMappingForm()"><i class="fas fa-plus"></i> Add Mapping</button></div>
+                        <table class="data-table">
+                            <thead><tr><th>Provider</th><th>Provider ID</th><th>Label</th><th>Internal Tier</th><th>Status</th><th>Actions</th></tr></thead>
+                            <tbody>${mappings.map(m => `
+                                <tr>
+                                    <td>${Utils.escapeHtml(m.provider)}</td>
+                                    <td><code>${Utils.escapeHtml(m.provider_tier_id)}</code></td>
+                                    <td>${Utils.escapeHtml(m.provider_tier_label || '-')}</td>
+                                    <td>${Utils.escapeHtml(m.reader_access_tiers?.name || 'Unknown tier')}</td>
+                                    <td><span class="status-badge ${m.is_active ? 'status-published' : 'status-draft'}">${m.is_active ? 'Active' : 'Inactive'}</span></td>
+                                    <td><button class="btn btn-secondary btn-sm" onclick="Forms.providerMappingForm('${m.id}')"><i class="fas fa-edit"></i></button></td>
+                                </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#666">No provider mappings configured</td></tr>'}</tbody>
+                        </table>
+                    </div>
+                `;
+            },
+
             settings: async (container) => {
                 const settings = await DB.getSettings();
 
@@ -4294,3 +4726,4 @@
     </script>
 </body>
 </html>
+

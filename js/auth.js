@@ -1,6 +1,6 @@
 // js/auth.js
-import { supabaseClient } from './config.js';
-import { UI } from './ui.js';
+import { supabaseClient, State } from './config.js';
+import { UI, Actions } from './ui.js';
 import { CommentsManager } from './comments.js';
 
 const prepareAvatarUpload = async (file) => {
@@ -66,6 +66,11 @@ export const UserAuth = {
         } else {
             UI.initAuthLink(null);
             UI.initAdminLink();
+            if (State.showR18) {
+                State.showR18 = false;
+                localStorage.setItem('show_r18', 'false');
+                Actions.updateR18ToggleButtons();
+            }
         }
 
         supabaseClient.auth.onAuthStateChange(async (event, session) => {
@@ -80,6 +85,19 @@ export const UserAuth = {
                 UI.initAdminLink();
                 UI.closeProfileModal();
                 CommentsManager.refreshRenderedThreads();
+
+                if (State.showR18) {
+                    State.showR18 = false;
+                    localStorage.setItem('show_r18', 'false');
+                    Actions.updateR18ToggleButtons();
+                    if (document.querySelector('.archive-landing')) {
+                        window.Router.handle();
+                    } else if (document.getElementById('latest-gallery-grid')) {
+                        Actions.renderLatestGalleryGrid();
+                    } else if (document.getElementById('gallery-grid')) {
+                        Actions.renderGalleryGrid();
+                    }
+                }
             }
         });
     },
