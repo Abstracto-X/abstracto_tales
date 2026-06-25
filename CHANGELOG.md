@@ -3,6 +3,10 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-26]
+### Fixed
+- 00:00 +05:30: Removed the stale `_archive_inspect/workspace-b8ea5e3b-c977-4860-ab6d-b8dc772291cc-1` gitlink from the tracked tree so GitHub Pages checkout no longer fails on a missing `.gitmodules` submodule URL before deploying recent admin entitlement and subscription page changes.
+
 ## [2026-06-25]
 ### Changed
 - 17:55 +05:30: Created `handoff_packages/subscription-only-site/` and `handoff_packages/subscription-only-site.zip`, a standalone extraction package containing the subscription reader runtime, admin reference, SQL migrations, Supabase Edge Functions, environment template, independence requirements, database setup guide, TODOs, scanner script, and AI handoff prompt for building a new independent subscription-only site.
