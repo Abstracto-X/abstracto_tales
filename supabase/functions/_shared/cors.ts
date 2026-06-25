@@ -19,6 +19,8 @@ export const requireEnv = (name: string) => {
   return value;
 };
 
+export const optionalEnv = (name: string, fallback = '') => Deno.env.get(name) || fallback;
+
 const toBase64Url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes))
   .replace(/\+/g, '-')
   .replace(/\//g, '_')
@@ -44,5 +46,9 @@ export const verifyState = async (state: string, secret: string) => {
   const key = await crypto.subtle.importKey('raw', encoder.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const expected = toBase64Url(new Uint8Array(await crypto.subtle.sign('HMAC', key, encoder.encode(body))));
   if (expected !== signature) throw new Error('OAuth state signature mismatch.');
-  return JSON.parse(new TextDecoder().decode(fromBase64Url(body)));
+  const decoded = JSON.parse(new TextDecoder().decode(fromBase64Url(body)));
+  if (typeof decoded?.issuedAt === 'number' && Date.now() - decoded.issuedAt > 15 * 60 * 1000) {
+    throw new Error('OAuth state expired. Please start Patreon connect again.');
+  }
+  return decoded;
 };

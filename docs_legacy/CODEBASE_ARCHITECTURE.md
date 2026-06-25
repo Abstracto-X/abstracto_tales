@@ -183,7 +183,7 @@ This document outlines the architecture, state management, routing, database int
 
 ## 1. Overview
 
-`subscription.html` serves as a desktop/tablet-rich member library with responsive phone support for published stories. It is designed around normalized entitlements, allowing tier-aware chapter catalogs, secure chapter reading via subscription RPCs, Patreon connection authentication, access-key redemption, and account status tracking.
+`subscription.html` serves as a lightweight, mobile-first member library for published stories. It is designed around normalized entitlements, allowing tier-aware chapter catalogs, secure chapter reading via subscription RPCs, Patreon connection authentication, access-key redemption, and account status tracking.
 
 It uses **vanilla HTML, CSS, and ES6 JavaScript** with no build step.
 
@@ -317,84 +317,6 @@ It uses **vanilla HTML, CSS, and ES6 JavaScript** with no build step.
    - `max-width: 860px` (Tablet/Mobile): Hides the desktop sidebar rail, sticky-aligns the top bar, and presents a floating glassmorphic bottom bar navigation layout.
    - `max-width: 560px` (Mobile Small): Minimizes margins, collapses back button text, and wraps grid elements.
 4. **Theme Skins**: Overrides backgrounds, text colors, and border colors when `data-reader-theme` matches `parchment` or `contrast`.
-
----
-
-## 5. Aether Pages Production Bridge (June 24, 2026)
-
-The subscription surface has moved from the earlier lightweight scaffold to an Aether Pages based production bridge.
-
-Current files:
-- `subscription.html` now uses the Aether Pages shell: `#app` plus `<main id="main">`, with Supabase still loaded for the next auth/data adapter phase.
-- `subscription.css` is the imported Aether Pages visual system, adjusted to describe the target as desktop/tablet-rich with responsive phone adaptation.
-- `js/subscription/aether-data.js` contains temporary local story/access fixtures copied from `aether-pages/js/data.js`.
-- `js/subscription/aether-app.js` contains the temporary Aether Pages runtime copied from `aether-pages/js/app.js`, with Cloudflare injection removed by omission from the shell, default access reset to anonymous, and the account chip routed to the access vault instead of the old persona demo sheet.
-
-This is an intentional Phase 1 bridge, not the final backend-integrated architecture. The existing modular files (`main.js`, `state.js`, `router.js`, `db.js`, `auth.js`, `ui.js`, `render.js`) remain in place as the backend integration reference, but `subscription.html` currently boots the Aether bridge scripts so the preferred UI/product model is the active surface.
-
-Important boundaries:
-- Local fixtures are temporary and must not be treated as access security.
-- Locked content security still requires Supabase RPC/RLS integration before launch.
-- Temporary local progress/bookmarks/quotes/history are acceptable for v1 UI behavior, but access decisions must move to normalized Supabase entitlements.
-- The next refactor step is to split `aether-app.js` into route, state, render, access, auth, db, and local-store modules while preserving the Aether Pages UI flows.
-
-### Supabase auth bridge update
-
-The Aether Pages bridge now initializes a Supabase browser client directly inside `js/subscription/aether-app.js` until the bridge is split into modules. The account sheet supports email sign-in/sign-up, Google OAuth sign-in through Supabase Auth, sign-out, entitlement refresh via `get_my_entitlements`, access-key redemption through `redeem_access_key`, Patreon OAuth start through `patreon-oauth-start`, and manual Patreon re-sync through `sync-provider-entitlements`.
-
-Current limitation: story/chapter rendering still uses temporary local fixtures from `aether-data.js`; entitlement-derived access is only used by the bridge resolver. The next required step is replacing fixture reads with secure Supabase catalog/content RPCs so locked chapter bodies never ship to unauthorized browsers.
-
-### Backend story/catalog bridge update
-
-The active Aether Pages bridge now attempts to replace local fixtures with Supabase-published stories after auth/session initialization. It reads `stories` metadata with `is_published = true`, then calls `get_chapter_catalog(target_story_id)` per story to build catalog cards without chapter bodies. If no backend catalog rows are available, the bridge keeps the local fixtures for UI continuity and logs a warning.
-
-Reader routes for backend chapters call `get_reader_chapter(target_chapter_id)` only when a readable chapter is opened. The route shows an interim secure-loading state and only fills `chapter.content` when the RPC returns `can_read = true` and a non-empty `content` field. Locked backend chapters continue to render gates/previews from catalog metadata; full bodies are not fetched through the catalog path.
-
-### Direct metadata fallback update
-
-Because some Supabase environments may not have the subscription catalog RPC deployed yet, `loadBackendLibrary()` can still fall back to direct published `chapters` metadata when `get_chapter_catalog` is missing from PostgREST schema cache. The fallback selects only safe catalog fields (`id`, `story_id`, `title`, `chapter_order`, `word_count`, publication/timestamps) and marks them readable/free for pre-migration browsing. Full chapter bodies do **not** use a direct-table fallback anymore: `loadReaderChapterIntoFixture()` is RPC-only through `get_reader_chapter`, so locked content is never fetched and blurred client-side.
-
-### SQL hardening review update
-
-The subscription SQL migration has been revised before database application based on external model review. The hardened version now uses explicit chapter policy drops instead of blanket policy removal, checks parent `stories.is_published` in raw chapter policies, revokes inherited broad grants on new subscription tables, explicitly grants only the required RLS-backed table privileges, revokes public function execution before granting browser-facing RPCs, and triggers a PostgREST schema reload at the end.
-
-Do not run older copies of the migration that include the loop dropping every `public.chapters` policy. Use `sql/2026-06-23_reader_subscription_access.sql` or the mirrored `scripts/sql/2026-06-23_reader_subscription_access.sql` after this hardening pass.
-
-### Admin-aware bridge update
-
-The Aether Pages bridge now loads the signed-in reader `profiles` row and treats `role = 'admin'` as an admin session. Admin readers see Admin CMS links in the account sheet/top chrome, and the in-bridge Author Studio preview is gated to admins. Non-admin readers who manually navigate to `#/studio` receive an admin-required gate instead of the mock studio UI. Production tier/key/grant management remains in `admin.html` under Member Access > Access Control.
-
-### Access-key redemption hotfix note
-
-The access-key redemption RPC depends on `pgcrypto.digest`. The hardened migration now sets the redeem function search path to `public, extensions`. For databases that already ran the older function and show `function digest(text, unknown) does not exist`, apply `sql/hotfixes/2026-06-24_fix_redeem_access_key_pgcrypto_search_path.sql` in Supabase SQL Editor, then retry redemption.
-
-### RPC-only chapter body loading update
-
-After the subscription RPC migration was deployed, the Aether Pages bridge removed the temporary direct `chapters.content` fallback from reader body loading. Backend chapter routes now rely on `get_reader_chapter(target_chapter_id)` for full content. Catalog metadata may still use a safe direct metadata fallback if the catalog RPC is absent, but full chapter bodies are no longer fetched directly by the bridge.
-
-
-### Patreon OAuth/sync Edge Function update
-
-The Patreon path is now implemented as a real server-side entitlement flow instead of a placeholder. `patreon-oauth-start` verifies the Supabase session, signs a short-lived HMAC state payload, and redirects the reader to Patreon with `identity`, `identity[email]`, and `identity.memberships` scopes. `patreon-oauth-callback` exchanges the authorization code server-side, fetches the Patreon v2 identity with memberships and currently entitled tiers, stores/updates the provider connection, stores OAuth tokens in `provider_oauth_tokens`, maps Patreon tier ids through `provider_tier_mappings`, expires old active Patreon entitlements, writes fresh normalized `user_entitlements`, and redirects to the Vault with a status query. `sync-provider-entitlements` verifies the current Supabase user, refreshes Patreon tokens when needed, re-fetches membership state, and re-runs the same normalized entitlement sync.
-
-Configuration required before live testing: deploy `sql/2026-06-24_provider_oauth_tokens.sql`, deploy the Edge Functions, set `PATREON_CLIENT_ID`, `PATREON_CLIENT_SECRET`, `PATREON_REDIRECT_URI`, `PATREON_STATE_SECRET`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and optionally `PATREON_CAMPAIGN_ID` / `PATREON_USER_AGENT`. `supabase/config.toml` disables JWT verification for the external Patreon callback and provider webhook while keeping signed-in reader functions protected. Patreon tier ids still map to internal tiers through Admin > Member Access provider mappings.
-
-
-### Google OAuth and Patreon-first UX update
-
-The active Aether Pages bridge now treats Supabase Auth as the canonical site identity while reducing the visible account friction. Guest account sheets expose **Continue with Google** as the primary action, with email/password kept as a secondary option. Patreon activation for guests now offers **Continue with Google, then Patreon**: the bridge stores `store.pendingAuthAction = "connect-patreon"`, starts Supabase Google OAuth, returns to `subscription.html#/vault`, and automatically starts the Patreon Edge Function flow after the Supabase session is restored. This makes the reader journey feel like one onboarding path while keeping Patreon as an access/payment provider instead of the site account database.
-
-Operational requirement: Google must be enabled in Supabase Authentication providers, and the app URL used by `signInWithOAuth(... redirectTo ...)` must be present in Supabase Auth redirect URL allow-list. The frontend uses the current origin/path plus `#/vault` as the redirect target.
-
-
-### Google OAuth click hardening
-
-Google OAuth controls in the Aether bridge use delegated `[data-act]` buttons. The delegated click handler now calls `preventDefault()` / `stopPropagation()` before invoking actions so OAuth buttons cannot accidentally submit an enclosing form or reload the page. `signInWithGoogle()` also validates that the page is served over `http`/`https`, shows an opening toast, and manually assigns `window.location` to Supabase's returned OAuth URL as a fallback if the library does not automatically redirect.
-
-
-### Google OAuth callback exchange update
-
-The active Aether bridge now explicitly consumes Supabase OAuth callback URLs before reading the session. `initAuth()` calls `consumeOAuthCallback(client)`, which reads `code`, `state`, and OAuth error parameters from either `window.location.search` or hash query fragments, calls `auth.exchangeCodeForSession(code)` when a code is present, and then removes transient OAuth parameters from the URL while preserving the `#/vault` route. This fixes cases where Google OAuth returned to `subscription.html?code=...#/vault` but the bridge still rendered the logged-out account state.
 
 ---
 

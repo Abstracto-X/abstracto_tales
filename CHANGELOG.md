@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
+## [2026-06-25]
+### Changed
+- 00:59 +05:30: Fixed Google OAuth return handling by explicitly exchanging Supabase callback codes for sessions, cleaning transient OAuth URL parameters, and preserving the Vault route after login.
+- 00:48 +05:30: Hardened subscription Google OAuth buttons by preventing delegated action default reloads, validating http/https redirects, adding a redirect toast, and manually assigning Supabase OAuth URLs when returned.
+- 00:33 +05:30: Added Google OAuth to the active subscription reader bridge, including Google-first account UX, Patreon-after-Google pending action resume, updated Patreon activation copy, refreshed reader/database docs, and updated the subscription bundle script to include active Aether bridge files.
+- 00:14 +05:30: Loaded Patreon Edge Function secrets from local environment data, fixed `supabase/config.toml` encoding for CLI parsing, and deployed the Patreon OAuth/start/callback/sync/webhook functions to project `gdivyqfhgashkqcqqnas`.
+
+## [2026-06-24]
+### Added
+- 23:32 +05:30: Implemented the Patreon OAuth/connect and manual sync Edge Function path. Added shared Patreon helpers, service-role OAuth token storage migration, callback entitlement refresh, frontend provider re-sync, Supabase function JWT config for external callbacks/webhooks, and updated subscription/database docs.
+- 16:00 +05:30: Documented the newly implemented Patreon OAuth integration Edge Functions (`patreon-oauth-start`, `patreon-oauth-callback`, `provider-webhook`, and `sync-provider-entitlements`) in `docs_v2/shared/database.md` and `docs_v2/reader/functions.md`.
+- 16:00 +05:30: Compiled the modular subscription documentation, updating the legacy `docs/CODEBASE_ARCHITECTURE.md` with details on immersive mode, keyboard navigation, and scroll progress tracking.
+- 16:00 +05:30: Regenerated the consolidated codebase bundle `subscription_bundle.md` to capture recent updates to `subscription.html`, `subscription.css`, and `js/subscription/` modules.
+
 ## [2026-06-23]
 ### Added
 - 22:35 +05:30: Created `docs_v2/reader/subscription_spa.md` to document the architecture, routing, state, rendering, and API connections of the Subscription reader SPA (`subscription.html`).
@@ -34,7 +48,7 @@ Agents MUST update this file whenever they complete a task or make significant u
 
 ## [2026-06-15]
 ### Added
-- 03:44 +05:30: Added `docs_v2/reader/MAP_HANDOVER.md` with exact reader-map code locations, working feature inventory, synthetic telemetry disclosures, half-finished HUD behavior, accessibility and CSS cleanup risks, manual verification steps, and a highest-priority requirement to restore the currently unreachable â€œHelp Map the Galaxyâ€ cartography contribution banner/action.
+- 03:44 +05:30: Added `docs_v2/reader/MAP_HANDOVER.md` with exact reader-map code locations, working feature inventory, synthetic telemetry disclosures, half-finished HUD behavior, accessibility and CSS cleanup risks, manual verification steps, and a highest-priority requirement to restore the currently unreachable Ã¢â‚¬Å“Help Map the GalaxyÃ¢â‚¬Â cartography contribution banner/action.
 
 
 ## [2026-06-05]
@@ -169,3 +183,60 @@ Agents MUST update this file whenever they complete a task or make significant u
 - Extended dmin.html with a Member Access / Access Control workspace for subscription tiers, access-key generation/revocation, manual reader grants, and provider tier mappings.
 - Extended chapter editing in dmin.html with required access tier, public release date, and safe preview text fields for subscription.html chapter gates.
 
+
+## 2026-06-24 16:14 +05:30 - Subscription reader Aether Pages bridge
+
+- Replaced `subscription.html`'s earlier scaffold shell with the Aether Pages member-reader shell and active bridge scripts.
+- Imported the Aether Pages visual system into `subscription.css`, reframed it as desktop/tablet-rich with responsive adaptation, and omitted the copied Cloudflare challenge injection.
+- Added `js/subscription/aether-data.js` and `js/subscription/aether-app.js` as temporary Phase 1 bridge files so the approved Aether Pages product/UI flows are now the active subscription surface.
+- Reset the bridge's default access state to anonymous and routed the account icon to the access vault instead of the old persona switcher entry point.
+- Restored/updated `docs_v2/` source docs from the current modular docs, documented the Aether Pages bridge, and recompiled legacy docs with `npm run compile-docs`.
+
+## 2026-06-24 16:34 +05:30 - Aether Pages auth/access bridge
+
+- Added a Supabase-aware auth bridge inside `js/subscription/aether-app.js` while the Aether Pages monolith is being split.
+- Account sheet now supports Supabase password sign-in, sign-up, sign-out, session restore, and entitlement display.
+- Patreon connect now calls the `patreon-oauth-start` Edge Function and no longer fakes immediate member access when the provider is not configured. Provider re-sync now refreshes Supabase entitlements instead of mutating local persona state.
+- Access-key redemption now calls the `redeem_access_key` RPC instead of granting local demo access.
+- Updated subscription reader docs and recompiled generated docs.
+
+## 2026-06-24 16:57 +05:30 - Aether Pages backend catalog bridge
+
+- Added a backend story/catalog loader to the active Aether Pages bridge: published `stories` metadata is loaded from Supabase and chapter cards are populated through `get_chapter_catalog` safe metadata.
+- Added on-demand secure reader content loading through `get_reader_chapter`; backend chapter bodies are requested only when a readable chapter is opened and the RPC authorizes content.
+- Added backend-to-Aether state mapping, story/chapter normalizers, generated backend update rows, and safe fixture fallback when catalog RPCs are not deployed yet.
+- Updated subscription reader docs and recompiled generated docs.
+
+## 2026-06-24 17:12 +05:30 - Real backend fallback for Aether Pages bridge
+
+- Fixed the Aether Pages bridge still showing mock data when subscription RPCs are not deployed by adding a direct published chapter metadata fallback after `get_chapter_catalog` schema-cache failures.
+- Added a direct published chapter content fallback after `get_reader_chapter` failures so current pre-migration real chapters can open from Supabase.
+- Documented the fallback as transitional and recompiled generated docs.
+
+## 2026-06-24 17:33 +05:30 - Harden subscription SQL before DB application
+
+- Revised `sql/2026-06-23_reader_subscription_access.sql` and mirrored `scripts/sql/2026-06-23_reader_subscription_access.sql` based on external SQL security review before any database application.
+- Replaced blanket `public.chapters` policy dropping with explicit known policy drops.
+- Added parent-story publication checks to raw chapter table policies so published chapters from unpublished stories cannot leak.
+- Added explicit revokes/grants for new subscription tables and RPC function execution.
+- Added PostgREST schema reload notification and access-key high-entropy guidance.
+- Updated subscription/database docs and recompiled generated docs.
+
+## 2026-06-24 17:58 +05:30 - Admin-aware subscription bridge
+
+- Added profile-role loading to the Aether Pages bridge so signed-in admin profiles are recognized on `subscription.html`.
+- Added admin CMS links to the account/top chrome for admins.
+- Gated `#/studio` preview routes to admin profiles and rendered an admin-required gate for non-admin users.
+- Documented the admin-aware bridge behavior and recompiled generated docs.
+
+## 2026-06-24 18:12 +05:30 - Fix redeem access key pgcrypto lookup
+
+- Updated `redeem_access_key` in the subscription migration to use `SET search_path = public, extensions` so Supabase can resolve `pgcrypto.digest`.
+- Added `sql/hotfixes/2026-06-24_fix_redeem_access_key_pgcrypto_search_path.sql` for databases that already applied the previous function version.
+- Documented the hotfix and recompiled generated docs.
+
+## 2026-06-24 18:28 +05:30 - Remove direct chapter body fallback after RPC deploy
+
+- Removed the temporary direct `chapters.content` fallback from the Aether Pages bridge reader route.
+- Backend chapter bodies now load only through `get_reader_chapter`, preserving the entitlement/RLS security boundary after the subscription RPC migration is deployed.
+- Updated subscription reader docs and recompiled generated docs.

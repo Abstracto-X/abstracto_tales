@@ -119,6 +119,32 @@ ALTER TABLE public.access_keys ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.access_key_redemptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.entitlement_audit_log ENABLE ROW LEVEL SECURITY;
 
+-- Tighten table privileges for subscription tables. RLS decides row access, but
+-- explicit grants avoid inheriting overly-broad Supabase project defaults.
+REVOKE ALL ON TABLE public.reader_access_tiers FROM anon, authenticated;
+REVOKE ALL ON TABLE public.provider_connections FROM anon, authenticated;
+REVOKE ALL ON TABLE public.provider_tier_mappings FROM anon, authenticated;
+REVOKE ALL ON TABLE public.user_entitlements FROM anon, authenticated;
+REVOKE ALL ON TABLE public.access_keys FROM anon, authenticated;
+REVOKE ALL ON TABLE public.access_key_redemptions FROM anon, authenticated;
+REVOKE ALL ON TABLE public.entitlement_audit_log FROM anon, authenticated;
+
+-- Reader-facing tier labels are safe to expose when RLS says the tier is active.
+GRANT SELECT ON TABLE public.reader_access_tiers TO anon, authenticated;
+
+-- Authenticated readers can read their own rows through RLS; admins can manage
+-- rows through the admin policies below.
+GRANT SELECT ON TABLE public.provider_connections TO authenticated;
+GRANT SELECT ON TABLE public.user_entitlements TO authenticated;
+GRANT SELECT ON TABLE public.access_key_redemptions TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.reader_access_tiers TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.provider_connections TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.provider_tier_mappings TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.user_entitlements TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.access_keys TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.access_key_redemptions TO authenticated;
+GRANT SELECT, INSERT ON TABLE public.entitlement_audit_log TO authenticated;
+
 CREATE OR REPLACE FUNCTION public.has_active_entitlement(target_user_id UUID, target_tier_id UUID)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -301,7 +327,7 @@ CREATE OR REPLACE FUNCTION public.redeem_access_key(submitted_code TEXT)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, extensions
 AS $$
 DECLARE
     normalized TEXT;
@@ -400,32 +426,56 @@ DROP POLICY IF EXISTS entitlement_audit_admin_insert ON public.entitlement_audit
 CREATE POLICY entitlement_audit_admin_insert ON public.entitlement_audit_log FOR INSERT WITH CHECK (public.is_admin());
 
 -- Replace chapter SELECT policies so locked chapter content is not publicly readable by raw table queries.
-DO $$
-DECLARE
-    policy_record RECORD;
-BEGIN
-    FOR policy_record IN
-        SELECT policyname
-        FROM pg_policies
-        WHERE schemaname = 'public'
-          AND tablename = 'chapters'
-    LOOP
-        EXECUTE format('DROP POLICY IF EXISTS %I ON public.chapters', policy_record.policyname);
-    END LOOP;
-END $$;
+-- Only drop known policies. Do not blanket-drop every chapter policy because other
+-- deployment-specific policies may exist.
+DROP POLICY IF EXISTS "Public read chapters" ON public.chapters;
+DROP POLICY IF EXISTS "Admin write chapters" ON public.chapters;
+DROP POLICY IF EXISTS chapters_public_free_select ON public.chapters;
+DROP POLICY IF EXISTS chapters_entitled_select ON public.chapters;
+DROP POLICY IF EXISTS chapters_admin_all ON public.chapters;
 
 CREATE POLICY chapters_public_free_select
 ON public.chapters
 FOR SELECT
-USING (public.chapter_is_public(chapters));
+USING (
+    is_published = TRUE
+    AND (
+        required_tier_id IS NULL
+        OR (public_release_at IS NOT NULL AND public_release_at <= NOW())
+    )
+    AND EXISTS (
+        SELECT 1
+        FROM public.stories s
+        WHERE s.id = chapters.story_id
+          AND s.is_published = TRUE
+    )
+);
 
 CREATE POLICY chapters_entitled_select
 ON public.chapters
 FOR SELECT
 USING (
     is_published = TRUE
+    AND required_tier_id IS NOT NULL
     AND auth.uid() IS NOT NULL
-    AND public.has_active_entitlement(auth.uid(), required_tier_id)
+    AND EXISTS (
+        SELECT 1
+        FROM public.user_entitlements ue
+        JOIN public.reader_access_tiers held ON held.id = ue.tier_id
+        JOIN public.reader_access_tiers required ON required.id = chapters.required_tier_id
+        WHERE ue.user_id = auth.uid()
+          AND ue.status = 'active'
+          AND (ue.valid_from IS NULL OR ue.valid_from <= NOW())
+          AND (ue.valid_until IS NULL OR ue.valid_until > NOW())
+          AND held.is_active = TRUE
+          AND held.tier_rank >= required.tier_rank
+    )
+    AND EXISTS (
+        SELECT 1
+        FROM public.stories s
+        WHERE s.id = chapters.story_id
+          AND s.is_published = TRUE
+    )
 );
 
 CREATE POLICY chapters_admin_all
@@ -434,8 +484,22 @@ FOR ALL
 USING (public.is_admin())
 WITH CHECK (public.is_admin());
 
+-- SECURITY DEFINER functions must have explicit EXECUTE grants.
+REVOKE ALL ON FUNCTION public.has_active_entitlement(UUID, UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.chapter_is_public(public.chapters) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_chapter_catalog(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_reader_chapter(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.get_my_entitlements() FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.redeem_access_key(TEXT) FROM PUBLIC;
+
 GRANT EXECUTE ON FUNCTION public.get_chapter_catalog(UUID) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_reader_chapter(UUID) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_my_entitlements() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.redeem_access_key(TEXT) TO authenticated;
+
+-- Access keys must be generated as long high-entropy random codes. Store only
+-- SHA-256 hashes in access_keys.key_hash and show plaintext only at creation.
+
+-- Ask Supabase/PostgREST to refresh function/table metadata immediately.
+NOTIFY pgrst, 'reload schema';
 

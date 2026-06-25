@@ -15,15 +15,18 @@ Deno.serve(async (req) => {
     if (error || !user) throw new Error('Unable to verify the signed-in reader.');
 
     const body = req.method === 'POST' ? await req.json().catch(() => ({})) : {};
-    const returnTo = typeof body.returnTo === 'string' ? body.returnTo : new URL(req.url).origin;
-    const clientId = requireEnv('PATREON_CLIENT_ID');
-    const redirectUri = requireEnv('PATREON_REDIRECT_URI');
+    const rawReturnTo = typeof body.returnTo === 'string'
+      ? body.returnTo
+      : typeof body.return_to === 'string'
+        ? body.return_to
+        : '';
+    const returnTo = rawReturnTo || `${new URL(req.url).origin}/subscription.html#/vault`;
     const state = await signState({ userId: user.id, returnTo, issuedAt: Date.now() }, requireEnv('PATREON_STATE_SECRET'));
 
     const authUrl = new URL('https://www.patreon.com/oauth2/authorize');
     authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('client_id', requireEnv('PATREON_CLIENT_ID'));
+    authUrl.searchParams.set('redirect_uri', requireEnv('PATREON_REDIRECT_URI'));
     authUrl.searchParams.set('scope', 'identity identity[email] identity.memberships');
     authUrl.searchParams.set('state', state);
     return json({ url: authUrl.toString() });

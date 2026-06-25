@@ -291,7 +291,46 @@ The functions and components of the public reader SPA are now fully modularized 
 - `supabase/functions/patreon-oauth-start/index.ts` - Returns a Patreon OAuth authorization URL when provider environment variables are configured.
 - `supabase/functions/patreon-oauth-callback/index.ts` - Receives the Patreon callback and returns readers to `#/access/pending` after token exchange and entitlement mapping.
 - `supabase/functions/provider-webhook/index.ts` - Accepts secret-protected normalized provider webhook payloads for Patreon/Ko-fi/PayPal/Discord automation and writes mapped entitlements through the service role.
-- `supabase/functions/sync-provider-entitlements/index.ts` - Accepts provider sync requests so the SPA does not need provider-specific rules.
+- `supabase/functions/sync-provider-entitlements/index.ts` - Verifies the signed-in reader, refreshes stored Patreon OAuth tokens when needed, fetches current Patreon memberships, maps provider tiers, and refreshes normalized entitlements.
+
+### Aether Pages bridge (`js/subscription/aether-app.js`)
+- `init()` - Boots the imported Aether Pages UI bridge, creates shared scrim/toast containers, binds delegated controls, registers hash routing, and renders the current route.
+- `render()` - Resolves the active hash route and injects the corresponding Aether Pages view into `#main`.
+- `chapterResolved(ch)` - Temporary local access-state resolver. It is UI-only and must be replaced by Supabase entitlement/RPC truth before launch.
+- `topbar(active)` / `bottomnav(active)` - Render the active Aether Pages chrome used by `subscription.html`.
+- `openSheet(content)` / `closeSheet()` - Control the bridge bottom-sheet/dialog surface for reader settings, access, Patreon placeholder, and support flows.
+- `toast(title, body, opts)` - Renders lightweight Aether Pages status toasts.
+
+`aether-app.js` is an interim Phase 1 bridge copied from `aether-pages/`; future work should split it into production modules rather than adding more backend logic to the monolith.
+
+Additional Aether Pages bridge functions:
+- `getSupabase()` - Lazily creates the bridge Supabase client from the CDN global.
+- `initAuth()` - Consumes OAuth callback codes when present, restores the current Supabase Auth session, refreshes entitlements, and subscribes to auth state changes.
+- `refreshEntitlements()` - Reads normalized reader entitlements through `get_my_entitlements`, with a direct table fallback for transitional deployments.
+- `signInWithPassword(email, password)` / `signUpWithPassword(email, password)` / `signOutReader()` - Email account actions used by the bridge account sheet.
+- `oauthCallbackParams()` / `cleanOAuthCallbackUrl()` / `consumeOAuthCallback(client)` - Parse Supabase OAuth callback query/hash parameters, exchange returned authorization codes for sessions, and clean transient OAuth parameters from the URL while preserving the SPA route.
+- `subscriptionRedirectTo()` - Builds the current `subscription.html#/vault` OAuth redirect and rejects `file://` usage because Supabase OAuth requires http/https origins.
+- `signInWithGoogle(nextAction = "")` - Starts Supabase Google OAuth with a `#/vault` redirect, shows a redirect toast, stores optional pending actions, and manually redirects to `data.url` as a fallback. When `nextAction` is `connect-patreon`, the bridge resumes by starting Patreon OAuth after the Google session is restored.
+- `requestPatreonOAuth()` - Starts the Patreon OAuth Edge Function and redirects only when the backend returns an authorization URL. Guest Patreon activation now routes through Google OAuth first, then resumes Patreon via `store.pendingAuthAction`.
+- `syncProviderEntitlements()` - Calls `sync-provider-entitlements` for Patreon, refreshes `get_my_entitlements`, reloads backend catalog metadata, and clears local provider-pending state.
+- `redeemKey(code)` - Redeems keys through the Supabase `redeem_access_key` RPC instead of faking access locally.
+
+Backend data bridge functions:
+- `loadBackendLibrary()` - Loads published Supabase stories and catalog RPC metadata into the active Aether Pages UI, with fixture fallback when backend catalog data is unavailable.
+- `normalizeBackendStory(row)` - Converts a Supabase story row into the Aether Pages story object shape.
+- `normalizeBackendChapter(row, story)` - Converts `get_chapter_catalog` rows into the Aether chapter object shape and access labels.
+- `backendStateToAether(row)` - Maps normalized SQL access states to Aether UI states.
+- `loadReaderChapterIntoFixture(chapterId)` - Loads full chapter text through `get_reader_chapter` only after a readable backend chapter route is opened.
+- `textToBlocks(value)` - Converts backend chapter HTML/text into reader paragraph blocks.
+
+Backend fallback additions:
+- `loadBackendLibrary()` now has a direct published chapter metadata fallback when `get_chapter_catalog` is missing from the schema cache.
+- `loadReaderChapterIntoFixture()` is now RPC-only for full chapter bodies through `get_reader_chapter`; there is no direct `chapters.content` fallback for locked-content safety.
+
+Admin-aware bridge functions:
+- `refreshProfile()` - Loads the active reader profile and role after session restore/sign-in.
+- `isAdmin()` - Checks whether the signed-in profile has the admin role.
+- `adminGate()` - Renders a non-admin gate for protected `#/studio` bridge routes.
 
 ---
 

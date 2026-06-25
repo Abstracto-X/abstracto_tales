@@ -1,0 +1,81 @@
+# ADMIN PANEL — Architecture & CMS Operations
+
+This document outlines the architecture, authentication security, global state, initialization flow, and advanced component paradigms of the administrative Content Management System (`admin.html`).
+
+---
+
+## 1. Purpose & Access Control
+
+`admin.html` serves as the private administrative portal for content management, story publications, asset uploads, and moderation. Like the other apps, it is a single-file SPA built on vanilla HTML, CSS, and JS.
+
+### Security Model:
+- **Session-Based Authentication:** Leverages Supabase Auth. Upon successful login, it queries the database profiles to verify `role === 'admin'`. Access is blocked locally if this check fails.
+- **Backend Database Protection:** Relies on Supabase Row Level Security (RLS) rules which check `public.is_admin()`. This ensures that even if local scripts are bypassed, write access is blocked at the database layer.
+
+---
+
+## 2. Global State Reference
+
+Global states are organized within a dedicated `State` manager:
+
+- `State` *(Object)* — Primary state container:
+  - `user` *(Object | null)* — The active Supabase Auth session details.
+  - `profile` *(Object | null)* — Profile columns fetched from the database, including the user's role.
+  - `currentView` *(String)* — The active sidebar view identifier (e.g. `'dashboard'`, `'stories'`, `'mapRequests'`).
+  - `stories` / `characters` / `lore` / `mapRequests` / `wallpapers` *(Array)* — Lists of queried database records used to populate dashboard tables.
+  - `selectedStoryId` *(UUID | null)* — Story context filter used when managing chapters or gallery cards.
+  - `selectedCharacterId` *(UUID | null)* — Character context filter used in gallery configurations.
+
+---
+
+## 3. Initialization Flow
+
+Upon loading the Admin Panel, the page executes the following bootstrap sequence:
+
+1. **`DOMContentLoaded` Event:**
+   - **Auth Boot:** `Auth.init()` is triggered. To prevent a flash of the login screen for logged-in users, the lock overlay is hidden by default. The script runs `supabaseClient.auth.getSession()` to check for an active session. If found, it fetches the user profile; if not, it displays the login form.
+   - **Real-time Session Syncing:** Subscribes to Supabase Auth state changes. This ensures that logging out or logging in on another tab automatically updates the active view.
+   - **Visual Customizations:** Fetches and applies custom admin wallpaper backgrounds.
+   - **Background Effects:** Starts the background floating particle canvas.
+2. **Post-Authentication Dispatch (`Auth.showAdminView`):**
+   - Populates user details (display name, profile avatar) in the sidebar.
+   - Renders the primary dashboard view using `Views.render('dashboard')`.
+
+---
+
+## 4. Advanced Operational Paradigms
+
+The Admin Panel utilizes several robust UI components to streamline content management:
+
+### A. Drag-and-Drop Dropzone
+- **Component:** Managed by `UI.imageUploadField` and `UI.initDragAndDrop`.
+- **UX Features:** Replaces standard file inputs with a glassmorphic dropzone. Supports dragenter/dragover hover highlights, drag-and-drop file imports, local previews using the standard `FileReader` API, and pasting direct image URLs.
+
+### B. Interactive Autocomplete Tagging
+- **Components:** Built using `UI.initTagComponent` and `UI.initTagAutocomplete`.
+- **Behavior:** Renders tag strings as deletable visual chips styled with deterministic HSL-themed colors. The autocomplete engine queries existing database tags, allowing admins to select tags using keyboard controls or enter custom tags.
+
+### C. NSFW / R18 Content Categorization
+- **Behavior:** Implements a visual toggle switch inside image upload forms. Saving an image with this toggle enabled programmatically appends a structural `NSFW` tag to the record's metadata. The Reader SPA uses this tag to filter content based on user preferences.
+
+### D. Multi-File Sequential Upload Flow
+- **Operation:** When uploading multiple media files, save routines (such as `Forms.saveGalleryImage`) sequentially upload files to Supabase Storage. It creates database records concurrently and provides progress feedback to prevent request timeouts.
+
+---
+
+### `admin.html` Updates
+
+#### Drag-and-Drop Dropzone & Interactive Tagging Pipeline
+- **Drag-and-Drop Dropzone Component:** Replaced legacy basic image upload fields with a feature-rich, drag-and-drop-enabled Dropzone component (`UI.imageUploadField` & `UI.initDragAndDrop`). It supports dragenter/dragover hover highlights, seamless drag-and-drop file transfers, revocable object-URL previews, and fallback URL text field matching.
+- **Interactive Tag Chip & Autocomplete System:** Integrated a dynamic, HSL-themed visual tag chip input (`UI.initTagComponent` & `UI.initTagAutocomplete`) that converts input strings into deletable tag chips. The autocomplete-powered variant fetches existing distinct tags from the database (filtering out structural flags like `NSFW`), allowing arrow-key selection, click selection, and custom tokenization. 
+- **NSFW / R18 Content Categorization:** Implemented a standardized visual toggle switch inside `Forms.galleryImageForm` that isolates age-gated media assets. Upon saving, it programmatically injects or prunes structural metadata tags (`NSFW`) while maintaining standard user tags.
+- **Reader Visual Archive:** The public gallery uses one unified sub-window: a dominant selected-character profile image, compact biography/action panel, and a right-side browser containing archive totals plus a content-driven profile-image grid that can grow with roster length instead of clipping inside a fixed-height viewport. Hovering or focusing a card updates the hero and marks the active card with an accent glow. The detached scenic quote panel, scattered hero previews, and separate roster section are intentionally absent. A small Gallery banner replaces oversized story typography, Recently Added remains below the unified window, and offscreen profile cards retain lazy/async/low-priority loading.
+- **Multi-File Sequential Upload Flow:** Overhauled database save routines (`Forms.saveGalleryImage` / `Forms.saveWallpaper`) to sequentially upload all selected local files to Supabase Storage, inserting corresponding metadata records concurrently and providing immediate user feedback.
+- **Published Gallery + Hidden Pool Workspace:** `Views.gallery` now loads every gallery image for the selected story, supports story-wide character/tag/caption filtering, and presents a single broad-view gallery board with a side toggle between the reader-visible published collection and the unpublished holding pool. Admins can add directly into either state or move existing images between them using `character_gallery_images.is_published`.
+
+### Subscription Access Administration
+- `admin.html` now includes a **Member Access > Access Control** workspace for the subscription reader rollout.
+- The chapter form includes subscription fields: required internal access tier, optional public release date, and safe preview/teaser text. These map to `chapters.required_tier_id`, `chapters.public_release_at`, and `chapters.preview_text` from the subscription SQL migration.
+- The Access Control workspace manages internal reader tiers, hashed access keys, manual user entitlements, and provider tier mappings for Patreon/Ko-fi/PayPal/Discord-style adapters.
+- Access-key creation generates a plaintext key once in the browser, hashes the normalized key with SHA-256, and stores only `key_hash` plus a short prefix for later identification.
+- Manual grants search existing `profiles` by UUID, username, or display name; readers must have signed up before an entitlement can be granted.

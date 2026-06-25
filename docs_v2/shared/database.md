@@ -816,6 +816,30 @@ Links a Supabase reader account to an external provider identity.
 | `last_synced_at` | TIMESTAMPTZ | Last provider sync. |
 | `created_at` / `updated_at` | TIMESTAMPTZ | |
 
+
+### `public.provider_oauth_tokens`
+
+Trusted Edge Function token storage for OAuth providers. This table is created by:
+
+```txt
+sql/2026-06-24_provider_oauth_tokens.sql
+```
+
+It stores Patreon access/refresh tokens for server-side refresh and sync only. Browser roles (`anon`, `authenticated`) receive no grants; `service_role` receives SELECT/INSERT/UPDATE/DELETE for Edge Functions. Do not expose this table through admin UI or reader code.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | UUID PK | |
+| `user_id` | UUID | FK to `profiles(id)`. |
+| `provider` | TEXT | Currently `patreon`. |
+| `provider_connection_id` | UUID | Optional FK to `provider_connections(id)`. |
+| `provider_user_id` | TEXT | External provider user id. |
+| `access_token` / `refresh_token` | TEXT | Secret OAuth tokens. Service-role Edge Functions only. |
+| `token_type` | TEXT | Usually `Bearer`. |
+| `scopes` | TEXT[] | Granted OAuth scopes. |
+| `expires_at` | TIMESTAMPTZ | Access-token expiry. |
+| `created_at` / `updated_at` | TIMESTAMPTZ | |
+
 ### `public.provider_tier_mappings`
 
 Maps external provider tier/product/role IDs to internal access tiers.
@@ -891,25 +915,36 @@ Append-only style event log for grants, redemptions, provider syncs, revokes, an
 | `get_my_entitlements()` | Returns the signed-in reader's entitlement summary. |
 | `redeem_access_key(submitted_code)` | Hashes the submitted key, validates status/expiry/uses, creates an entitlement, records redemption, and logs the audit event. |
 
-### Subscription RLS notes
+### Subscription RLS and privilege notes
 
 - `reader_access_tiers` are publicly readable when active; admin has full access.
 - `provider_connections`, `user_entitlements`, and `access_key_redemptions` are readable by the owning user or admin.
 - `access_keys`, `provider_tier_mappings`, and entitlement audit logs are admin-only through RLS.
-- The migration replaces existing `chapters` policies so direct chapter table reads expose only public/free published chapters or entitled/admin rows. Locked chapter reading must go through `get_reader_chapter`.
-- Provider secrets and OAuth tokens must live only in trusted Supabase Edge Function secrets or server-side storage, never in browser modules.
+- The migration explicitly revokes broad `anon` / `authenticated` grants on new subscription tables, then grants only the table privileges needed for RLS-backed reads/admin operations.
+- The migration replaces only known `chapters` policies (`Public read chapters`, `Admin write chapters`, and subscription policy names). It does not blanket-drop every chapter policy.
+- Raw `chapters` table policies require the parent story to be published, preventing chapter leakage from unpublished stories.
+- Subscription RPC function execution is explicitly revoked from `PUBLIC` and then granted only for the browser-facing RPCs. Helper functions remain callable internally by policies/RPCs rather than becoming public frontend APIs.
+- Direct chapter table reads expose only public/free published chapters or entitled/admin rows. Locked chapter reading must go through `get_reader_chapter`.
+- Provider secrets live in Supabase Edge Function secrets. User OAuth tokens live in `provider_oauth_tokens`, which is service-role-only and not readable by browser roles.
+- Access keys must be generated as long high-entropy random codes. The database stores only `key_hash`; plaintext keys are shown once by trusted admin tooling.
+
+### Supabase Auth providers for subscription reader
+
+The subscription reader uses Supabase Auth as the canonical site identity. Email/password and Google OAuth sign readers into the same `auth.users` / `profiles` account space. Patreon remains a linked provider in `provider_connections` and `user_entitlements`; it is not the primary login database. Google OAuth requires dashboard configuration under Supabase Authentication providers plus matching redirect allow-list entries for the `subscription.html#/vault` redirect target.
 
 ### Subscription Edge Functions
 
 The repository includes initial Supabase Edge Function entrypoints under `supabase/functions/`:
 
-- `patreon-oauth-start` - Builds a Patreon OAuth authorization URL from `PATREON_CLIENT_ID` and `PATREON_REDIRECT_URI`.
-- `patreon-oauth-callback` - Receives the OAuth callback and redirects back to the subscription access pending route; production token exchange and entitlement writes require provider secrets and service-role configuration.
+- `patreon-oauth-start` - Verifies the signed-in Supabase user, signs short-lived OAuth state, and returns the Patreon authorization URL.
+- `patreon-oauth-callback` - Exchanges the OAuth code server-side, fetches Patreon v2 identity/memberships/currently entitled tiers, stores provider connection/token rows, maps Patreon tiers to internal tiers, expires old Patreon entitlements, writes fresh `user_entitlements`, and redirects to the Vault.
+- `sync-provider-entitlements` - Signed-in reader sync endpoint. It reads `provider_oauth_tokens`, refreshes Patreon tokens when needed, re-fetches membership state, and re-runs normalized entitlement sync.
 - `provider-webhook` - Secret-protected normalized webhook boundary for Patreon/Ko-fi/PayPal/Discord/automation payloads. It resolves a user, maps `provider_tier_id` through `provider_tier_mappings`, writes `user_entitlements`, and logs audit events.
-- `sync-provider-entitlements` - Normalized provider sync boundary for refreshing a user's entitlements.
-- `_shared/cors.ts` - Shared CORS/JSON helpers.
+- `_shared/cors.ts` - Shared CORS/JSON/state helpers.
+- `_shared/patreon.ts` - Shared Patreon token exchange, refresh, identity parsing, and entitlement sync helpers.
 
-These functions intentionally keep provider-specific secrets and service-role writes out of browser JavaScript. Before production use, complete provider signature verification, token exchange, provider tier mapping, and `user_entitlements` upsert logic inside the Edge Functions.
+These functions intentionally keep provider-specific secrets and service-role writes out of browser JavaScript. Patreon webhook signature verification is still a later hardening step; OAuth connect and manual sync are the first production path. `supabase/config.toml` marks `patreon-oauth-callback` and `provider-webhook` as `verify_jwt = false` because those requests originate outside the signed-in browser session; both must validate their own state/signature secrets.
 
+### Redeem-key pgcrypto search-path hotfix
 
-
+If `redeem_access_key()` fails with `function digest(text, unknown) does not exist`, run `sql/hotfixes/2026-06-24_fix_redeem_access_key_pgcrypto_search_path.sql`. Supabase commonly installs `pgcrypto` functions in the `extensions` schema, while hardened SECURITY DEFINER functions use an explicit `search_path`. The migration and hotfix now set `redeem_access_key` to `SET search_path = public, extensions` so `digest(...)` resolves correctly.
