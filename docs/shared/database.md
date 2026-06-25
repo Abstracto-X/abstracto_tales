@@ -819,6 +819,9 @@ Links a Supabase reader account to an external provider identity.
 ### `public.provider_tier_mappings`
 
 Maps external provider tier/product/role IDs to internal access tiers.
+Patreon OAuth sync can now create missing mappings automatically when an active Patreon tier title matches an active site tier name/slug, or when the Patreon amount matches the built-in Jedi fallback prices:
+`$5 -> jedi-padawan`, `$7 -> jedi-knight`, `$10 -> jedi-grandmaster`.
+Auto-created rows are stored in this table with `metadata.auto_mapped = true`; existing inactive mappings are respected and are not overwritten.
 
 | Column | Type | Notes |
 |---|---|---|
@@ -904,12 +907,12 @@ Append-only style event log for grants, redemptions, provider syncs, revokes, an
 The repository includes initial Supabase Edge Function entrypoints under `supabase/functions/`:
 
 - `patreon-oauth-start` - Builds a Patreon OAuth authorization URL from `PATREON_CLIENT_ID` and `PATREON_REDIRECT_URI`.
-- `patreon-oauth-callback` - Receives the OAuth callback and redirects back to the subscription access pending route; production token exchange and entitlement writes require provider secrets and service-role configuration.
+- `patreon-oauth-callback` - Receives the OAuth callback, exchanges the Patreon OAuth code, stores provider token metadata through the service role, auto-maps active Patreon tiers when possible, writes active entitlements, and redirects back to the subscription access route.
 - `provider-webhook` - Secret-protected normalized webhook boundary for Patreon/Ko-fi/PayPal/Discord/automation payloads. It resolves a user, maps `provider_tier_id` through `provider_tier_mappings`, writes `user_entitlements`, and logs audit events.
-- `sync-provider-entitlements` - Normalized provider sync boundary for refreshing a user's entitlements.
+- `sync-provider-entitlements` - Normalized provider sync boundary for refreshing a user's entitlements. For Patreon, it refreshes OAuth tokens when needed and uses the same auto-mapping behavior as the OAuth callback.
 - `_shared/cors.ts` - Shared CORS/JSON helpers.
 
-These functions intentionally keep provider-specific secrets and service-role writes out of browser JavaScript. Before production use, complete provider signature verification, token exchange, provider tier mapping, and `user_entitlements` upsert logic inside the Edge Functions.
+These functions intentionally keep provider-specific secrets and service-role writes out of browser JavaScript. Provider webhooks still require trusted signatures/secrets and a resolvable user/provider tier payload before granting access.
 
 
 

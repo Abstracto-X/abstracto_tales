@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 Agents MUST update this file whenever they complete a task or make significant updates, including the date, time, and a summary of the changes.
 
 ## [2026-06-26]
+### Changed
+- 02:31 +05:30: Added Patreon tier auto-mapping in the shared Supabase Edge Function helper. Patreon OAuth callback and manual provider sync now persist missing `provider_tier_mappings` automatically when active Patreon tiers match active site tier names/slugs, with `$5 Jedi Padawan`, `$7 Jedi Knight`, and `$10 Jedi Grandmaster` amount fallbacks. Deployed `patreon-oauth-callback` and `sync-provider-entitlements` to Supabase project `gdivyqfhgashkqcqqnas` and updated reader/database docs.
+
 ### Fixed
 - 00:00 +05:30: Removed the stale `_archive_inspect/workspace-b8ea5e3b-c977-4860-ab6d-b8dc772291cc-1` gitlink from the tracked tree so GitHub Pages checkout no longer fails on a missing `.gitmodules` submodule URL before deploying recent admin entitlement and subscription page changes.
 

@@ -255,7 +255,7 @@ The functions and components of the public reader SPA are now fully modularized 
 - `getReaderChapter(chapterId)` - Calls `get_reader_chapter` RPC when available; falls back to current published chapter reads before the migration is applied.
 - `getMyEntitlements()` - Calls `get_my_entitlements` RPC when available; falls back to direct `user_entitlements` reads if the table exists.
 - `redeemAccessKey(code)` - Calls `redeem_access_key` RPC and reports a deployment-needed error when the migration is absent.
-- `requestPatreonSync()` - Invokes the `patreon-oauth-start` Edge Function and redirects when it returns a provider URL.
+- `requestPatreonSync()` - Invokes the `patreon-oauth-start` Edge Function and redirects when it returns a provider URL. The downstream Patreon callback/sync path can auto-create missing provider mappings for active Patreon tiers whose title matches a site tier name/slug, with built-in `$5/$7/$10` fallbacks for Jedi Padawan/Knight/Grandmaster.
 
 ### `SubAuth` (`js/subscription/auth.js`)
 - `init()` - Restores the Supabase session, loads profile/entitlements, updates account chrome, and subscribes to auth state changes.
@@ -283,9 +283,9 @@ The functions and components of the public reader SPA are now fully modularized 
 
 #### Subscription Edge Functions
 - `supabase/functions/patreon-oauth-start/index.ts` - Returns a Patreon OAuth authorization URL when provider environment variables are configured.
-- `supabase/functions/patreon-oauth-callback/index.ts` - Receives the Patreon callback and returns readers to `#/access/pending` after token exchange and entitlement mapping.
+- `supabase/functions/patreon-oauth-callback/index.ts` - Receives the Patreon callback and returns readers to `#/access/pending` after token exchange, Patreon tier auto-mapping, and entitlement mapping.
 - `supabase/functions/provider-webhook/index.ts` - Accepts secret-protected normalized provider webhook payloads for Patreon/Ko-fi/PayPal/Discord automation and writes mapped entitlements through the service role.
-- `supabase/functions/sync-provider-entitlements/index.ts` - Accepts provider sync requests so the SPA does not need provider-specific rules.
+- `supabase/functions/sync-provider-entitlements/index.ts` - Accepts provider sync requests so the SPA does not need provider-specific rules; Patreon sync also persists auto-created provider mappings when an active Patreon tier can be matched to an active site tier.
 
 
 
