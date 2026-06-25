@@ -124,7 +124,7 @@ export const Render = {
                         <div class="hub-meta">${story.status || ''} • ${story.genre || ''}</div>
                         <div class="hub-synopsis">${story.synopsis || ''}</div>
                         <div class="hub-actions">
-                            <button class="btn-large" onclick="window.Router.navigate('read/${slug}')">Read</button>
+                            <button class="btn-large" onclick="window.location.href = 'subscription.html#/story/${slug}'">Read</button>
                             <button class="btn-large" onclick="window.Router.navigate('gallery/${slug}')">Gallery</button>
                         </div>
                     </div>

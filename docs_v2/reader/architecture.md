@@ -45,7 +45,7 @@ The application logic is broken down into specialized singleton modules.
 
 ### Routing & Navigation
 - **`js/router.js`**
-  - **`Router`**: A custom hash-based client-side router. Listens to `hashchange` and controls transitions between views (`home`, `story`, `read`, `maps`).
+  - **`Router`**: A custom hash-based client-side router. Listens to `hashchange` and controls transitions between views (`home`, `story`, `read`, `maps`). Intercepts `read` routes to redirect them automatically to the unified member library SPA (`subscription.html#/story/:slug`).
   - Governs transition fade-ins/outs and prevents rapid-click race conditions using monotonic routing tokens.
 
 ### Rendering Engine

@@ -91,6 +91,11 @@ export const Router = {
         const id = parts[1];
         const subId = parts[2];
         
+        if (view === 'read') {
+            window.location.href = `subscription.html#/story/${id}`;
+            return;
+        }
+        
         // Intercept gallery route if content disclaimer not yet accepted
         if (view === 'gallery' && !State.galleryConfirmed && sessionStorage.getItem('gallery_confirmed') !== 'true') {
             UI.showGalleryWarning(id);
