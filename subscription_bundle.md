@@ -1417,7 +1417,9 @@ const authState = { user:null, session:null, profile:null, entitlements:[], read
 function getSupabase(){
   if (sbClient) return sbClient;
   if (!window.supabase || !window.supabase.createClient) return null;
-  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: "pkce" }
+  });
   return sbClient;
 }
 function activeEntitlements(){
@@ -1474,29 +1476,46 @@ async function refreshEntitlements(){
   }
   return authState.entitlements;
 }
+const OAUTH_URL_KEYS = [
+  "code", "state", "error", "error_code", "error_description", "sub_auth", "sub_route",
+  "access_token", "refresh_token", "expires_at", "expires_in", "provider_token", "provider_refresh_token", "token_type"
+];
+function mergeOAuthParams(target, raw){
+  if (!raw) return;
+  const cleaned = raw.replace(/^[/#?&]+/, "");
+  if (!cleaned || !/[=&]/.test(cleaned)) return;
+  const parsed = new URLSearchParams(cleaned);
+  for (const [key, value] of parsed.entries()) {
+    if (!target.has(key)) target.set(key, value);
+  }
+}
 function oauthCallbackParams(){
   const url = new URL(window.location.href);
   const params = new URLSearchParams(url.search);
-  if (url.hash && url.hash.includes("?")) {
-    const hashQuery = url.hash.slice(url.hash.indexOf("?") + 1);
-    const hashParams = new URLSearchParams(hashQuery);
-    for (const [key, value] of hashParams.entries()) {
-      if (!params.has(key)) params.set(key, value);
-    }
-  }
+  if (!url.hash) return params;
+  const rawHash = url.hash.slice(1);
+  if (rawHash.includes("?")) mergeOAuthParams(params, rawHash.slice(rawHash.indexOf("?") + 1));
+  if (rawHash.includes("#")) mergeOAuthParams(params, rawHash.slice(rawHash.lastIndexOf("#") + 1));
+  const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|error|error_code|error_description|sub_auth|sub_route)=/);
+  if (marker) mergeOAuthParams(params, rawHash.slice(marker.index).replace(/^[?#&]/, ""));
   return params;
+}
+function cleanHashRoute(hash, fallbackRoute = "vault"){
+  const fallback = `#/${String(fallbackRoute || "vault").replace(/^\/?#?\/?/, "")}`;
+  if (!hash || hash === "#") return fallback;
+  let raw = hash.slice(1);
+  const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
+  const cutPoints = [raw.indexOf("?"), raw.indexOf("#"), marker ? marker.index : -1].filter(index => index >= 0);
+  if (cutPoints.length) raw = raw.slice(0, Math.min(...cutPoints));
+  raw = raw.replace(/[?#&]+$/, "");
+  if (!raw || OAUTH_URL_KEYS.some(key => raw.startsWith(`${key}=`))) return fallback;
+  return raw.startsWith("#") ? raw : `#${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 function cleanOAuthCallbackUrl(){
   const url = new URL(window.location.href);
-  ["code", "state", "error", "error_code", "error_description"].forEach(key => url.searchParams.delete(key));
-  if (url.hash && url.hash.includes("?")) {
-    const [hashPath, hashQuery] = url.hash.split("?", 2);
-    const hashParams = new URLSearchParams(hashQuery || "");
-    ["code", "state", "error", "error_code", "error_description"].forEach(key => hashParams.delete(key));
-    const rest = hashParams.toString();
-    url.hash = rest ? `${hashPath}?${rest}` : hashPath;
-  }
-  if (!url.hash) url.hash = "#/vault";
+  const routeTarget = url.searchParams.get("sub_route") || oauthCallbackParams().get("sub_route") || "vault";
+  OAUTH_URL_KEYS.forEach(key => url.searchParams.delete(key));
+  url.hash = cleanHashRoute(url.hash, routeTarget);
   window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
 }
 async function consumeOAuthCallback(client){
@@ -1505,6 +1524,14 @@ async function consumeOAuthCallback(client){
   if (callbackError) {
     cleanOAuthCallbackUrl();
     throw new Error(callbackError);
+  }
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (accessToken && refreshToken && client.auth.setSession) {
+    const { data, error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    if (error) throw error;
+    cleanOAuthCallbackUrl();
+    return data?.session || null;
   }
   const code = params.get("code");
   if (!code) return null;
@@ -1578,12 +1605,22 @@ function subscriptionRedirectTo(){
   if (!window.location.origin || window.location.origin === "null" || window.location.protocol === "file:") {
     throw new Error("Google sign-in needs the page served over http/https, not opened as a file.");
   }
-  return `${window.location.origin}${window.location.pathname}#/vault`;
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  if (!/\/subscription\.html$/i.test(url.pathname)) {
+    const base = url.pathname.endsWith("/") ? url.pathname : url.pathname.replace(/\/[^/]*$/, "/");
+    url.pathname = `${base}subscription.html`;
+  }
+  url.searchParams.set("sub_auth", "google");
+  url.searchParams.set("sub_route", "vault");
+  return url.toString();
 }
 async function signInWithGoogle(nextAction = ""){
   const client = getSupabase();
   if (!client) throw new Error("Supabase client unavailable.");
   if (nextAction) store.pendingAuthAction = nextAction;
+  store.pendingAuthReturn = "subscription";
   const redirectTo = subscriptionRedirectTo();
   saveStore();
   toast("Opening Google sign-in", "Redirecting through Supabase Auth...", {icon:"external", ms:2200});
@@ -1614,6 +1651,7 @@ async function signOutReader(){
   store.email = "";
   store.providerPending = false;
   store.pendingAuthAction = "";
+  store.pendingAuthReturn = "";
   saveStore();
 }
 async function syncProviderEntitlements(){

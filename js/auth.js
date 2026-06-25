@@ -54,15 +54,125 @@ const getAuthRedirectUrl = () => {
     return url.toString();
 };
 
+const getPendingSubscriptionAuthReturn = () => {
+    try {
+        const raw = localStorage.getItem('aether-pages-prod-bridge-v1');
+        if (!raw) return false;
+        const parsed = JSON.parse(raw);
+        return parsed?.pendingAuthReturn === 'subscription' || parsed?.pendingAuthAction === 'connect-patreon';
+    } catch (error) {
+        console.warn('Unable to inspect subscription auth return state.', error);
+        return false;
+    }
+};
+
+const clearPendingSubscriptionAuthReturn = () => {
+    try {
+        const raw = localStorage.getItem('aether-pages-prod-bridge-v1');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        parsed.pendingAuthReturn = '';
+        localStorage.setItem('aether-pages-prod-bridge-v1', JSON.stringify(parsed));
+    } catch (error) {
+        console.warn('Unable to clear subscription auth return state.', error);
+    }
+};
+
+const getSubscriptionUrl = () => {
+    const url = new URL(window.location.href);
+    url.hash = '#/vault';
+    url.search = '';
+    const base = url.pathname.endsWith('/') ? url.pathname : url.pathname.replace(/\/[^/]*$/, '/');
+    url.pathname = `${base}subscription.html`;
+    return url.toString();
+};
+
+const OAUTH_URL_KEYS = [
+    'code', 'state', 'error', 'error_code', 'error_description', 'sub_auth', 'sub_route',
+    'access_token', 'refresh_token', 'expires_at', 'expires_in', 'provider_token', 'provider_refresh_token', 'token_type'
+];
+
+const mergeOAuthParams = (target, raw) => {
+    if (!raw) return;
+    const cleaned = raw.replace(/^[/#?&]+/, '');
+    if (!cleaned || !/[=&]/.test(cleaned)) return;
+    const parsed = new URLSearchParams(cleaned);
+    for (const [key, value] of parsed.entries()) {
+        if (!target.has(key)) target.set(key, value);
+    }
+};
+
+const collectOAuthCallbackParams = () => {
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams(url.search);
+    if (url.hash) {
+        const rawHash = url.hash.slice(1);
+        if (rawHash.includes('?')) mergeOAuthParams(params, rawHash.slice(rawHash.indexOf('?') + 1));
+        if (rawHash.includes('#')) mergeOAuthParams(params, rawHash.slice(rawHash.lastIndexOf('#') + 1));
+        const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|error|error_code|error_description|sub_auth|sub_route)=/);
+        if (marker) mergeOAuthParams(params, rawHash.slice(marker.index).replace(/^[?#&]/, ''));
+    }
+    return params;
+};
+
+const cleanAuthCallbackUrl = () => {
+    const url = new URL(window.location.href);
+    OAUTH_URL_KEYS.forEach(key => url.searchParams.delete(key));
+    if (url.hash) {
+        let raw = url.hash.slice(1);
+        const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
+        const cutPoints = [raw.indexOf('?'), raw.indexOf('#'), marker ? marker.index : -1].filter(index => index >= 0);
+        if (cutPoints.length) raw = raw.slice(0, Math.min(...cutPoints));
+        raw = raw.replace(/[?#&]+$/, '');
+        url.hash = raw ? `#${raw.startsWith('/') ? raw : `/${raw}`}` : '';
+    }
+    window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
+};
+
+const consumeOAuthCallback = async () => {
+    const params = collectOAuthCallbackParams();
+    const callbackError = params.get('error_description') || params.get('error') || params.get('error_code');
+    if (callbackError) {
+        cleanAuthCallbackUrl();
+        throw new Error(callbackError);
+    }
+    const shouldReturnToSubscription = getPendingSubscriptionAuthReturn() || params.get('sub_auth') === 'google';
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (accessToken && refreshToken && supabaseClient.auth.setSession) {
+        const { data, error } = await supabaseClient.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        if (error) throw error;
+        cleanAuthCallbackUrl();
+        if (shouldReturnToSubscription) {
+            clearPendingSubscriptionAuthReturn();
+            window.location.replace(getSubscriptionUrl());
+        }
+        return data?.session || null;
+    }
+    const code = params.get('code');
+    if (!code || !supabaseClient.auth.exchangeCodeForSession) return null;
+    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
+    if (error) throw error;
+    cleanAuthCallbackUrl();
+    if (shouldReturnToSubscription) {
+        clearPendingSubscriptionAuthReturn();
+        window.location.replace(getSubscriptionUrl());
+        return data?.session || null;
+    }
+    return data?.session || null;
+};
+
 export const UserAuth = {
     user: null,
     profile: null,
     mode: 'signin',
 
     init: async () => {
+        const callbackSession = await consumeOAuthCallback();
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session) {
-            await UserAuth.fetchProfile(session.user);
+        const activeSession = callbackSession || session;
+        if (activeSession) {
+            await UserAuth.fetchProfile(activeSession.user);
         } else {
             UI.initAuthLink(null);
             UI.initAdminLink();

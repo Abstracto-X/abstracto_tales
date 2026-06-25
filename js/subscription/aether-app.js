@@ -1,5 +1,5 @@
-﻿/* =====================================================================
-   AETHER PAGES â€” Application logic (vanilla JS, no backend)
+/* =====================================================================
+   AETHER PAGES \u2014 Application logic (vanilla JS, no backend)
    Hash router, state store, access-state resolver, all views, sheets.
    ===================================================================== */
 (function () {
@@ -33,7 +33,7 @@ const defaultStore = () => ({
   personaId: "anon",
   email: "",
   progress: {
-    "go-3": { pct:62, scene:"the orchard rang â€” a single clear note", storyId:"glass-orchard", updatedAt: now()-3600000 },
+    "go-3": { pct:62, scene:"the orchard rang \u2014 a single clear note", storyId:"glass-orchard", updatedAt: now()-3600000 },
     "nc-1": { pct:100, scene:"streets that aren't there", storyId:"night-cartographer", updatedAt: now()-86400000 },
     "as-1": { pct:34, scene:"the morning audit", storyId:"ash-saints", updatedAt: now()-7200000 }
   },
@@ -53,8 +53,8 @@ const defaultStore = () => ({
   readMarked: { "mk-1":true, "nc-3":true, "nc-1":true },
   comments: {
     "go-1": [
-      { id:"c1", para:null, name:"Wren", text:"That first line is going to live in my head. 'Attended to it from the outside' â€” devastating.", time:"2d ago", color:"#c75b6b" },
-      { id:"c2", para:6, name:"Halric", text:"The detail about the key being warm with remembered heat â€” chef's kiss.", time:"1d ago", color:"#5bb8c9" }
+      { id:"c1", para:null, name:"Wren", text:"That first line is going to live in my head. 'Attended to it from the outside' \u2014 devastating.", time:"2d ago", color:"#c75b6b" },
+      { id:"c2", para:6, name:"Halric", text:"The detail about the key being warm with remembered heat \u2014 chef's kiss.", time:"1d ago", color:"#5bb8c9" }
     ],
     "nc-1": [
       { id:"c3", para:null, name:"Moth", text:"A complete story I can actually finish. Thank you for these.", time:"3d ago", color:"#9a7ed1" }
@@ -67,13 +67,27 @@ const defaultStore = () => ({
   settings: {
     readerTheme:"aether", fontScale:1, lineHeight:1.78, margin:1,
     preset:"none", showImages:true, showParaComments:true, showProgress:true,
-    showReactions:true, spoilerSafe:false
+    showReactions:true, spoilerSafe:false,
+    bgMode: "story", // "story" | "gradient" | "solid"
+    bgBlur: true,    // true | false
+    bgImageUrl: "default" // "default" | URL string
   },
   filters: { q:"", chips:[] },
   theme: "aether"
 });
 let store;
-function loadStore(){ try { const raw = LS.getItem("aether-pages-prod-bridge-v1"); store = raw ? Object.assign(defaultStore(), JSON.parse(raw)) : defaultStore(); } catch(e){ store = defaultStore(); } if(!store.settings) store.settings = defaultStore().settings; }
+function loadStore(){
+  try {
+    const raw = LS.getItem("aether-pages-prod-bridge-v1");
+    store = raw ? Object.assign(defaultStore(), JSON.parse(raw)) : defaultStore();
+  } catch(e){
+    store = defaultStore();
+  }
+  if(!store.settings) store.settings = defaultStore().settings;
+  if(!store.settings.bgMode) store.settings.bgMode = "story";
+  if(store.settings.bgBlur === undefined) store.settings.bgBlur = true;
+  if(!store.settings.bgImageUrl) store.settings.bgImageUrl = "default";
+}
 function saveStore(){ try { LS.setItem("aether-pages-prod-bridge-v1", JSON.stringify(store)); } catch(e){} }
 loadStore();
 
@@ -85,7 +99,9 @@ const authState = { user:null, session:null, profile:null, entitlements:[], read
 function getSupabase(){
   if (sbClient) return sbClient;
   if (!window.supabase || !window.supabase.createClient) return null;
-  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, flowType: "pkce" }
+  });
   return sbClient;
 }
 function activeEntitlements(){
@@ -142,29 +158,46 @@ async function refreshEntitlements(){
   }
   return authState.entitlements;
 }
+const OAUTH_URL_KEYS = [
+  "code", "state", "error", "error_code", "error_description", "sub_auth", "sub_route",
+  "access_token", "refresh_token", "expires_at", "expires_in", "provider_token", "provider_refresh_token", "token_type"
+];
+function mergeOAuthParams(target, raw){
+  if (!raw) return;
+  const cleaned = raw.replace(/^[/#?&]+/, "");
+  if (!cleaned || !/[=&]/.test(cleaned)) return;
+  const parsed = new URLSearchParams(cleaned);
+  for (const [key, value] of parsed.entries()) {
+    if (!target.has(key)) target.set(key, value);
+  }
+}
 function oauthCallbackParams(){
   const url = new URL(window.location.href);
   const params = new URLSearchParams(url.search);
-  if (url.hash && url.hash.includes("?")) {
-    const hashQuery = url.hash.slice(url.hash.indexOf("?") + 1);
-    const hashParams = new URLSearchParams(hashQuery);
-    for (const [key, value] of hashParams.entries()) {
-      if (!params.has(key)) params.set(key, value);
-    }
-  }
+  if (!url.hash) return params;
+  const rawHash = url.hash.slice(1);
+  if (rawHash.includes("?")) mergeOAuthParams(params, rawHash.slice(rawHash.indexOf("?") + 1));
+  if (rawHash.includes("#")) mergeOAuthParams(params, rawHash.slice(rawHash.lastIndexOf("#") + 1));
+  const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|error|error_code|error_description|sub_auth|sub_route)=/);
+  if (marker) mergeOAuthParams(params, rawHash.slice(marker.index).replace(/^[?#&]/, ""));
   return params;
+}
+function cleanHashRoute(hash, fallbackRoute = "vault"){
+  const fallback = `#/${String(fallbackRoute || "vault").replace(/^\/?#?\/?/, "")}`;
+  if (!hash || hash === "#") return fallback;
+  let raw = hash.slice(1);
+  const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
+  const cutPoints = [raw.indexOf("?"), raw.indexOf("#"), marker ? marker.index : -1].filter(index => index >= 0);
+  if (cutPoints.length) raw = raw.slice(0, Math.min(...cutPoints));
+  raw = raw.replace(/[?#&]+$/, "");
+  if (!raw || OAUTH_URL_KEYS.some(key => raw.startsWith(`${key}=`))) return fallback;
+  return raw.startsWith("#") ? raw : `#${raw.startsWith("/") ? raw : `/${raw}`}`;
 }
 function cleanOAuthCallbackUrl(){
   const url = new URL(window.location.href);
-  ["code", "state", "error", "error_code", "error_description"].forEach(key => url.searchParams.delete(key));
-  if (url.hash && url.hash.includes("?")) {
-    const [hashPath, hashQuery] = url.hash.split("?", 2);
-    const hashParams = new URLSearchParams(hashQuery || "");
-    ["code", "state", "error", "error_code", "error_description"].forEach(key => hashParams.delete(key));
-    const rest = hashParams.toString();
-    url.hash = rest ? `${hashPath}?${rest}` : hashPath;
-  }
-  if (!url.hash) url.hash = "#/vault";
+  const routeTarget = url.searchParams.get("sub_route") || oauthCallbackParams().get("sub_route") || "vault";
+  OAUTH_URL_KEYS.forEach(key => url.searchParams.delete(key));
+  url.hash = cleanHashRoute(url.hash, routeTarget);
   window.history.replaceState({}, document.title, `${url.pathname}${url.search}${url.hash}`);
 }
 async function consumeOAuthCallback(client){
@@ -173,6 +206,14 @@ async function consumeOAuthCallback(client){
   if (callbackError) {
     cleanOAuthCallbackUrl();
     throw new Error(callbackError);
+  }
+  const accessToken = params.get("access_token");
+  const refreshToken = params.get("refresh_token");
+  if (accessToken && refreshToken && client.auth.setSession) {
+    const { data, error } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    if (error) throw error;
+    cleanOAuthCallbackUrl();
+    return data?.session || null;
   }
   const code = params.get("code");
   if (!code) return null;
@@ -246,12 +287,22 @@ function subscriptionRedirectTo(){
   if (!window.location.origin || window.location.origin === "null" || window.location.protocol === "file:") {
     throw new Error("Google sign-in needs the page served over http/https, not opened as a file.");
   }
-  return `${window.location.origin}${window.location.pathname}#/vault`;
+  const url = new URL(window.location.href);
+  url.hash = "";
+  url.search = "";
+  if (!/\/subscription\.html$/i.test(url.pathname)) {
+    const base = url.pathname.endsWith("/") ? url.pathname : url.pathname.replace(/\/[^/]*$/, "/");
+    url.pathname = `${base}subscription.html`;
+  }
+  url.searchParams.set("sub_auth", "google");
+  url.searchParams.set("sub_route", "vault");
+  return url.toString();
 }
 async function signInWithGoogle(nextAction = ""){
   const client = getSupabase();
   if (!client) throw new Error("Supabase client unavailable.");
   if (nextAction) store.pendingAuthAction = nextAction;
+  store.pendingAuthReturn = "subscription";
   const redirectTo = subscriptionRedirectTo();
   saveStore();
   toast("Opening Google sign-in", "Redirecting through Supabase Auth...", {icon:"external", ms:2200});
@@ -282,6 +333,7 @@ async function signOutReader(){
   store.email = "";
   store.providerPending = false;
   store.pendingAuthAction = "";
+  store.pendingAuthReturn = "";
   saveStore();
 }
 async function syncProviderEntitlements(){
@@ -408,6 +460,72 @@ function buildBackendUpdates(stories){
   }));
   return rows.slice(-12).reverse();
 }
+function isMockId(id) {
+  if (!id) return false;
+  return !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
+}
+function purgeMockStoreData() {
+  if (backendState.usingFixtures) return;
+  if (store.progress) {
+    for (const k in store.progress) {
+      if (isMockId(k)) delete store.progress[k];
+    }
+  }
+  if (store.history) {
+    store.history = store.history.filter(h => h && h.chapterId && !isMockId(h.chapterId));
+  }
+  if (store.bookmarks) {
+    store.bookmarks = store.bookmarks.filter(b => b && b.chapterId && !isMockId(b.chapterId));
+  }
+  if (store.quotes) {
+    store.quotes = store.quotes.filter(q => q && q.chapterId && !isMockId(q.chapterId));
+  }
+  if (store.followed) {
+    store.followed = store.followed.filter(id => !isMockId(id));
+  }
+  if (store.readMarked) {
+    for (const k in store.readMarked) {
+      if (isMockId(k)) delete store.readMarked[k];
+    }
+  }
+}
+function syncRealNotifications() {
+  if (backendState.usingFixtures) return;
+  if (!store.dismissedNotifs) store.dismissedNotifs = [];
+  const realNotifs = [];
+  (D.UPDATES || []).forEach(up => {
+    const chId = up.chapter;
+    if (!chId || store.dismissedNotifs.includes(chId)) return;
+    const found = byId(chId);
+    if (!found) return;
+    const isRead = !!store.readMarked[chId];
+    realNotifs.push({
+      id: chId,
+      t: found.story.title,
+      d: `New chapter: ${found.ch.title}`,
+      k: "chapter",
+      time: up.when || "Just now",
+      read: isRead,
+      story: found.story.slug,
+      chapter: chId
+    });
+  });
+  const P = persona();
+  if (P.signedIn && P.provider === "Patreon" && P.tier) {
+    if (!store.dismissedNotifs.includes("patreon-sync")) {
+      realNotifs.unshift({
+        id: "patreon-sync",
+        t: "Patreon Connection Active",
+        d: `Successfully synced tier: ${P.tier}`,
+        k: "access",
+        time: "Synced",
+        read: true
+      });
+    }
+  }
+  store.notifs = realNotifs;
+}
+
 async function loadBackendLibrary(options = {}){
   const client = getSupabase();
   if (!client || backendState.loading) return false;
@@ -422,34 +540,119 @@ async function loadBackendLibrary(options = {}){
       .order("created_at", { ascending:false });
     if (storyError) throw storyError;
     const stories = (storyRows || []).map(normalizeBackendStory);
-    for (const story of stories) {
-      try {
-        const { data, error } = await client.rpc("get_chapter_catalog", { target_story_id: story.id });
-        if (error) throw error;
-        story.chapters = (data || []).map(row => normalizeBackendChapter(row, story));
-      } catch (catalogErr) {
-        console.warn("Catalog RPC unavailable for subscription story; using direct published chapter metadata fallback", story.slug, catalogErr);
+
+    await Promise.all(stories.map(async (story) => {
+      // 1. Fetch chapters (RPC or fallback)
+      const fetchChapters = async () => {
         try {
-          const { data: fallbackChapters, error: fallbackError } = await client
-            .from("chapters")
-            .select("id, story_id, title, chapter_order, word_count, is_published, created_at, updated_at")
-            .eq("story_id", story.id)
-            .eq("is_published", true)
-            .order("chapter_order", { ascending:true });
-          if (fallbackError) throw fallbackError;
-          story.chapters = (fallbackChapters || []).map(row => normalizeBackendChapter({
-            ...row,
-            access_state:"free",
-            can_read:true,
-            preview_text:""
-          }, story));
-          story.catalogFallback = true;
-        } catch (fallbackErr) {
-          console.warn("Direct chapter metadata fallback failed", story.slug, fallbackErr);
-          story.chapters = [];
+          const { data, error } = await client.rpc("get_chapter_catalog", { target_story_id: story.id });
+          if (error) throw error;
+          story.chapters = (data || []).map(row => normalizeBackendChapter(row, story));
+        } catch (catalogErr) {
+          console.warn("Catalog RPC unavailable for subscription story; using direct published chapter metadata fallback", story.slug, catalogErr);
+          try {
+            const { data: fallbackChapters, error: fallbackError } = await client
+              .from("chapters")
+              .select("id, story_id, title, chapter_order, word_count, is_published, created_at, updated_at")
+              .eq("story_id", story.id)
+              .eq("is_published", true)
+              .order("chapter_order", { ascending:true });
+            if (fallbackError) throw fallbackError;
+            story.chapters = (fallbackChapters || []).map(row => normalizeBackendChapter({
+              ...row,
+              access_state:"free",
+              can_read:true,
+              preview_text:""
+            }, story));
+            story.catalogFallback = true;
+          } catch (fallbackErr) {
+            console.warn("Direct chapter metadata fallback failed", story.slug, fallbackErr);
+            story.chapters = [];
+          }
         }
-      }
-    }
+      };
+
+      // 2. Fetch characters (cast)
+      const fetchCast = async () => {
+        try {
+          const { data, error } = await client
+            .from("characters")
+            .select("*")
+            .eq("story_id", story.id)
+            .order("sort_order", { ascending:true });
+          if (error) throw error;
+          story.cast = (data || []).map(c => ({
+            id: c.id,
+            n: c.name,
+            r: c.role_title || "",
+            bio: c.biography || "",
+            img: c.profile_image_url || ""
+          }));
+        } catch (err) {
+          console.warn("Cast load failed for", story.slug, err);
+          story.cast = [];
+        }
+      };
+
+      // 3. Fetch lore entries (glossary)
+      const fetchGlossary = async () => {
+        try {
+          const { data, error } = await client
+            .from("lore_entries")
+            .select("*")
+            .eq("story_id", story.id)
+            .order("sort_order", { ascending:true });
+          if (error) throw error;
+          story.glossary = (data || []).map(l => ({
+            t: l.title,
+            d: l.description || "",
+            img: l.image_url || ""
+          }));
+        } catch (err) {
+          console.warn("Lore load failed for", story.slug, err);
+          story.glossary = [];
+        }
+      };
+
+      // 4. Fetch timeline events
+      const fetchTimeline = async () => {
+        try {
+          const { data, error } = await client
+            .from("timeline_events")
+            .select("*")
+            .eq("story_id", story.id)
+            .order("event_order", { ascending:true });
+          if (error) throw error;
+          story.timeline = data || [];
+        } catch (err) {
+          console.warn("Timeline load failed for", story.slug, err);
+          story.timeline = [];
+        }
+      };
+
+      // 5. Fetch wallpapers
+      const fetchWallpapers = async () => {
+        try {
+          const { data, error } = await client
+            .from("story_wallpapers")
+            .select("*")
+            .eq("story_id", story.id)
+            .order("sort_order", { ascending:true });
+          if (error) throw error;
+          story.wallpapers = (data || []).map(wp => ({
+            id: wp.id,
+            name: wp.title || "Wallpaper",
+            image_url: wp.image_url
+          }));
+        } catch (err) {
+          console.warn("Wallpapers load failed for", story.slug, err);
+          story.wallpapers = [];
+        }
+      };
+
+      await Promise.all([fetchChapters(), fetchCast(), fetchGlossary(), fetchTimeline(), fetchWallpapers()]);
+    }));
+
     const withChapters = stories.filter(story => story.chapters.length);
     if (withChapters.length) {
       D.STORIES = withChapters;
@@ -458,6 +661,9 @@ async function loadBackendLibrary(options = {}){
       D.FEATURED_SLUGS = withChapters.slice(0, 2).map(story => story.slug);
       backendState.usingFixtures = false;
       backendState.loaded = true;
+      purgeMockStoreData();
+      syncRealNotifications();
+      saveStore();
       return true;
     }
     backendState.error = new Error("No published backend stories with catalog rows were found; keeping local fixtures.");
@@ -540,11 +746,11 @@ function gateDisplay(ch){
   if (ch.state === "preview") return "preview";
   if (ch.state === "early") return "early";
   if (ch.state === "locked") return "locked";
-  // base "unlocked" means member-tier gated â€” never expose as readable without access
+  // base "unlocked" means member-tier gated \u2014 never expose as readable without access
   return "locked";
 }
 function reasonFor(ch, r) {
-  if (r.state === "pending") return "Verifying your access with Patreon â€” usually a moment.";
+  if (r.state === "pending") return "Verifying your access with Patreon \u2014 usually a moment.";
   if (r.state === "expired") return "Your Aether Member access has expired. Renew to continue.";
   if (r.noTier) return "Your Patreon tier does not include Aether Pages access.";
   if (r.state === "key") return "Redeem an access key to read this chapter.";
@@ -617,6 +823,9 @@ function icon(n, cls){ return `<span class="${cls||''}">${I[n]||""}</span>`; }
 
 /* ============ cover art generator ============ */
 function coverArt(s){
+  if (s && s.cover_image_url) {
+    return `<img class="cover-art" src="${s.cover_image_url}" alt="${esc(s.title)}" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block;" />`;
+  }
   const a=s.accent, a2=s.accent2, dark="#0b0a10";
   const motifs = {
     shards:`<g opacity=".9">${poly(400,200,120,6,a2,.5)}${poly(300,260,80,5,a,.45)}${poly(500,160,90,6,a,.4)}${poly(360,330,70,5,a2,.35)}<g stroke="${a2}" stroke-opacity=".25" fill="none" stroke-width="1">${[...Array(7)].map((_,i)=>`<path d="M${120+i*70} 460 L${200+i*40} 0"/>`).join("")}</g></g>`,
@@ -640,7 +849,7 @@ function coverArt(s){
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function badge(kind, text){ return `<span class="badge ${kind||""}">${text}</span>`; }
 function chip(label, act, active, svg){ return `<button class="chip ${active?"active":""}" ${act?`data-${act}`:""}>${svg?`<span class="ic">${I[svg]||""}</span>`:""}<span>${label}</span></button>`; }
-function storyAccentVars(s){ return `--s:${s.accent};--s2:${s.accent2};--s-soft:${hexA(s.accent,0.14)};`; }
+function storyAccentVars(s){ return `--s:${s.accent};--s2:${s.accent2};--s-soft:${hexA(s.accent,0.14)};--accent:${s.accent};--accent-2:${s.accent2};`; }
 function hexA(hex,a){ const h=hex.replace("#","");const r=parseInt(h.slice(0,2),16),g=parseInt(h.slice(2,4),16),b=parseInt(h.slice(4,6),16);return `rgba(${r},${g},${b},${a})`; }
 
 function accessTag(r){
@@ -669,14 +878,14 @@ function paraComments(chId, p){ return (store.comments[chId]||[]).filter(c=>c.pa
 function ctaFor(ch, r, story, opts){
   opts = opts||{};
   const cid = ch.id;
-  if (r.state === "free" || r.state === "unlocked") return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''} story" data-read="${cid}">${I.play}Read</button>`;
-  if (r.state === "preview") return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-preview="${cid}">${I.eye}Preview</button>`;
-  if (r.state === "early") return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.hourglass}Early access</button>`;
-  if (r.state === "pending") return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.sync}Verifying</button>`;
-  if (r.state === "expired") return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.lockOpen}Renew</button>`;
-  if (r.state === "key") return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.key}Redeem key</button>`;
-  if (r.state === "unavailable") return `<button class="btn sm" disabled>Unavailable</button>`;
-  return `<button class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.lockOpen}Unlock</button>`;
+  if (r.state === "free" || r.state === "unlocked") return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''} story" data-read="${cid}">${I.play}Read</span>`;
+  if (r.state === "preview") return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-preview="${cid}">${I.eye}Preview</span>`;
+  if (r.state === "early") return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.hourglass}Early access</span>`;
+  if (r.state === "pending") return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.sync}Verifying</span>`;
+  if (r.state === "expired") return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.lockOpen}Renew</span>`;
+  if (r.state === "key") return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.key}Redeem key</span>`;
+  if (r.state === "unavailable") return `<span class="btn sm" style="opacity:0.45;pointer-events:none">Unavailable</span>`;
+  return `<span class="btn ${opts.small?'sm':''} ${opts.block?'block':''}" data-lock="${cid}">${I.lockOpen}Unlock</span>`;
 }
 
 /* ============ shared partials ============ */
@@ -685,7 +894,7 @@ function brandMark(){ return `<svg class="mark" viewBox="0 0 32 32" xmlns="http:
 function topbar(){
   const P = persona();
   const state = P.expired?"expired":P.pending?"pending":(P.noTier||P.level===0&&P.signedIn)?"none":P.level>0?"active":"anon";
-  const label = !P.signedIn?"Not signed in":P.expired?"Access expired":P.pending?"Sync pending":P.noTier?"No access":P.tier?("Active Â· "+P.tier):"Signed in";
+  const label = !P.signedIn?"Not signed in":P.expired?"Access expired":P.pending?"Sync pending":P.noTier?"No access":P.tier?("Active \u00b7 "+P.tier):"Signed in";
   const unread = store.notifs.filter(n=>!n.read).length;
   return `<header class="topbar">
     <a class="brand" href="#/" data-nav="/">${brandMark()}<span><span class="serif">Aether Pages</span><small>Member Reader</small></span></a>
@@ -699,6 +908,10 @@ function topbar(){
 function bottomnav(active){
   const items=[["home","/","Home"],["library","/library","Library"],["feed","/updates","Updates"],["shelf","/my-shelf","Shelf"],["vault","/vault","Vault"]];
   return `<nav class="bottomnav">${items.map(([ic,path,lbl])=>`<a href="#${path}" data-nav="${path}" class="${active===ic?'active':''}">${I[ic]}<span>${lbl}</span></a>`).join("")}</nav>`;
+}
+function sidenav(active){
+  const items=[["home","/","Home"],["library","/library","Library"],["feed","/updates","Updates"],["shelf","/my-shelf","Shelf"],["vault","/vault","Vault"]];
+  return `<nav class="sidenav">${items.map(([ic,path,lbl])=>`<a href="#${path}" data-nav="${path}" class="${active===ic?'active':''}">${I[ic]}<span>${lbl}</span></a>`).join("")}<div class="spacer"></div><a href="#" onclick="return false" data-sheet="settings">${I.aa}<span>Prefs</span></a><a href="#" onclick="return false" data-sheet="persona">${I.user}<span>Account</span></a></nav>`;
 }
 function announcement(){
   return `<div class="announce"><span class="ic">${I.info}</span><div class="t"><b>Patreon sync is running smoothly</b><span>New early-access chapters are live. Public releases this week are noted in the calendar.</span></div></div>`;
@@ -774,6 +987,15 @@ function render(){
   const inStudio = /^studio/.test(route.name);
   document.body.classList.toggle("in-reader", inReader);
   document.body.classList.toggle("in-studio", inStudio);
+  if (inReader) {
+    document.body.setAttribute("data-reader-theme", store.settings.readerTheme);
+  } else {
+    document.body.removeAttribute("data-reader-theme");
+  }
+  const isStoryRoute = ["story", "chapters", "recap", "extras", "storyUpdates", "read"].includes(route.name);
+  if (!isStoryRoute) {
+    clearStoryAccent();
+  }
   const view = VIEWS[route.name] || VIEWS.home;
   const html = (inStudio && !isAdmin()) ? adminGate() : view();
   const apply = ()=>{
@@ -815,12 +1037,16 @@ function ensureChrome(){
   if (!navEl){ navEl=document.createElement("nav"); app.appendChild(navEl); }
   const active = {home:"home",library:"library",updates:"feed",shelf:"shelf",vault:"vault"}[route.name] || "";
   navEl.outerHTML = bottomnav(active);
+  let sideEl = document.querySelector(".sidenav");
+  if (!sideEl){ sideEl=document.createElement("nav"); app.insertBefore(sideEl, document.getElementById("main")); }
+  sideEl.outerHTML = sidenav(active);
   chromeBuilt = true;
 }
 function ensureStudioChrome(){
   const app = document.getElementById("app");
   const tb=document.querySelector(".topbar"); if(tb) tb.remove();
   const nv=document.querySelector(".bottomnav"); if(nv) nv.remove();
+  const sd=document.querySelector(".sidenav"); if(sd) sd.remove();
   let st = document.querySelector(".studio-top");
   if(!st){ st=document.createElement("header"); st.className="studio-top"; app.insertBefore(st, document.getElementById("main")); }
   st.outerHTML = studioTop();
@@ -846,7 +1072,96 @@ const VIEWS = {};
 /* ============ small helpers ============ */
 function fmtDate(iso){ if(!iso) return ""; const m=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; const d=new Date(iso); return m[d.getMonth()]+" "+d.getDate(); }
 function daysUntil(iso){ if(!iso) return null; const d=new Date(iso); const t=new Date("2026-06-24"); return Math.max(0, Math.round((d-t)/86400000)); }
-function setStoryAccent(s){ document.documentElement.style.setProperty("--s", s.accent); document.documentElement.style.setProperty("--s2", s.accent2); document.documentElement.style.setProperty("--s-soft", hexA(s.accent,0.14)); }
+function applyBgSettings() {
+  if (!document.body) return;
+  const bgMode = store.settings.bgMode || "story";
+  const bgBlur = store.settings.bgBlur !== false;
+  document.body.setAttribute("data-bg-mode", bgMode);
+  document.body.setAttribute("data-bg-blur", bgBlur ? "true" : "false");
+}
+function getActiveStory() {
+  if (route.name === "read" && currentChapter) {
+    return currentChapter.story;
+  }
+  if (route.params && route.params.slug) {
+    return bySlug(route.params.slug);
+  }
+  return D.STORIES && D.STORIES[0];
+}
+function wallpaperSwatches(story) {
+  if (!story) return "";
+  const wallpapers = story.wallpapers || [];
+  const activeWp = store.settings.bgImageUrl || "default";
+  const defaultCoverUrl = story.cover_image_url || "";
+  
+  let html = `<div class="wp-swatches">`;
+  
+  // 1. Default Cover
+  html += `
+    <button class="wp-swatch ${activeWp === 'default' ? 'active' : ''}" data-set-bg-url="default" aria-label="Story Cover">
+      <div class="wp-thumb" style="background-image: url('${defaultCoverUrl}')"></div>
+      <span class="nm">Story Cover</span>
+      <span class="ck">${I.check}</span>
+    </button>
+  `;
+  
+  // 2. Wallpapers
+  wallpapers.forEach((wp, idx) => {
+    html += `
+      <button class="wp-swatch ${activeWp === wp.image_url ? 'active' : ''}" data-set-bg-url="${wp.image_url}" aria-label="${wp.name}">
+        <div class="wp-thumb" style="background-image: url('${wp.image_url}')"></div>
+        <span class="nm">${wp.name || 'Wallpaper ' + (idx + 1)}</span>
+        <span class="ck">${I.check}</span>
+      </button>
+    `;
+  });
+  
+  html += `</div>`;
+  return html;
+}
+function setStoryAccent(s){
+  document.documentElement.style.setProperty("--s", s.accent);
+  document.documentElement.style.setProperty("--s2", s.accent2);
+  document.documentElement.style.setProperty("--s-soft", hexA(s.accent,0.14));
+  document.documentElement.style.setProperty("--accent", s.accent);
+  document.documentElement.style.setProperty("--accent-2", s.accent2);
+  const bg = document.getElementById("global-bg");
+  if (bg) {
+    const selectedWp = store.settings.bgImageUrl;
+    const bgUrl = (selectedWp && selectedWp !== "default") ? selectedWp : (s.background_image_url || s.cover_image_url || "");
+    if (bgUrl) {
+      bg.style.backgroundImage = `url('${bgUrl}')`;
+      bg.style.opacity = "1";
+      document.body.classList.add("has-story-bg");
+    } else {
+      bg.style.backgroundImage = "";
+      bg.style.opacity = "0";
+      document.body.classList.remove("has-story-bg");
+    }
+  }
+}
+function clearStoryAccent(){
+  document.documentElement.style.removeProperty("--s");
+  document.documentElement.style.removeProperty("--s2");
+  document.documentElement.style.removeProperty("--s-soft");
+  document.documentElement.style.removeProperty("--accent");
+  document.documentElement.style.removeProperty("--accent-2");
+  const bg = document.getElementById("global-bg");
+  if (bg) {
+    const firstStory = D.STORIES && D.STORIES[0];
+    const selectedWp = store.settings.bgImageUrl;
+    const bgUrl = (selectedWp && selectedWp !== "default") ? selectedWp : (firstStory ? (firstStory.background_image_url || firstStory.cover_image_url) : "");
+    if (bgUrl) {
+      bg.style.backgroundImage = `url('${bgUrl}')`;
+      bg.style.opacity = "0.7";
+      document.body.classList.add("has-story-bg");
+    } else {
+      bg.style.backgroundImage = "";
+      bg.style.opacity = "0";
+      document.body.classList.remove("has-story-bg");
+    }
+  }
+}
 function meta(items){ return items.filter(Boolean).map(x=>`<span class="mi">${x}</span>`).join(""); }
 function countReadable(){ let n=0; D.STORIES.forEach(s=>s.chapters.forEach(c=>{ if(isReadable(chapterResolved(c))) n++; })); return n; }
 function activeReads(){ return Object.entries(store.progress).map(([id,p])=>{ const f=byId(id); return f?{...f, prog:p}:null; }).filter(Boolean).sort((a,b)=>b.prog.updatedAt-a.prog.updatedAt); }
@@ -861,7 +1176,7 @@ function storyCard(s){
   const lastUpd = Math.max(0,...s.chapters.map((c,i)=>i));
   return `<a class="story-card" href="#/story/${s.slug}" data-nav="/story/${s.slug}" style="${storyAccentVars(s)}">
     <div class="cover">${coverArt(s)}${memberOnly?`<span class="ribbon">Member</span>`:""}${prog.length?`<div class="progress-pip">${progressBar(prog[0].pct)}</div>`:""}</div>
-    <div class="meta"><h3>${s.title}</h3><div class="by">${s.author} Â· ${s.genre}</div></div>
+    <div class="meta"><h3>${s.title}</h3><div class="by">${s.author} \u00b7 ${s.genre}</div></div>
   </a>`;
 }
 function storyCardWide(s){
@@ -869,7 +1184,7 @@ function storyCardWide(s){
   const prog = store.progress[s.chapters[0].id] || store.progress[s.chapters.find(c=>store.progress[c.id])?.id];
   return `<a class="card tinted" href="#/story/${s.slug}" data-nav="/story/${s.slug}" style="${storyAccentVars(s)};display:flex;gap:13px;align-items:center;">
     <div style="width:54px;height:72px;border-radius:8px;overflow:hidden;flex:0 0 auto;border:1px solid var(--border)">${coverArt(s)}</div>
-    <div style="min-width:0;flex:1"><div style="font-family:var(--serif);font-weight:600">${s.title}</div><div class="faint" style="font-size:.74rem">${s.genre} Â· ${s.status}</div></div>
+    <div style="min-width:0;flex:1"><div style="font-family:var(--serif);font-weight:600">${s.title}</div><div class="faint" style="font-size:.74rem">${s.genre} \u00b7 ${s.status}</div></div>
   </a>`;
 }
 
@@ -884,8 +1199,8 @@ VIEWS.home = function(){
 
   // access banner
   let banner = "";
-  if (P.expired) banner = accessBanner("expired","Your Aether Member access has expired","Some chapters are now locked. Renew to continue reading â€” a short grace window may still apply.","/vault","Renew access");
-  else if (P.pending) banner = accessBanner("pending","We're verifying your access","Your Patreon connection is syncing. This usually takes a moment â€” we'll update automatically.","/support/check-access","Check status");
+  if (P.expired) banner = accessBanner("expired","Your Aether Member access has expired","Some chapters are now locked. Renew to continue reading \u2014 a short grace window may still apply.","/vault","Renew access");
+  else if (P.pending) banner = accessBanner("pending","We're verifying your access","Your Patreon connection is syncing. This usually takes a moment \u2014 we'll update automatically.","/support/check-access","Check status");
   else if (P.noTier) banner = accessBanner("none","Your Patreon tier doesn't include access","You're connected, but your current tier doesn't unlock Aether Pages.","/benefits","See what unlocks");
   else if (!P.signedIn) banner = accessBanner("anon","Browsing as a guest","Read free chapters and previews freely. Connect Patreon or redeem a key to unlock the rest.","/vault","Activate access");
 
@@ -894,7 +1209,7 @@ VIEWS.home = function(){
   ${banner}
   <div class="between" style="margin-bottom:6px">
     <div><h1 class="page-title">${greet}, ${name}.</h1><p class="page-sub">The archive is quiet tonight. ${countReadable()} chapters await you.</p></div>
-    <div class="faint" style="text-align:right;font-size:.72rem;line-height:1.5"><div style="font-family:var(--serif);color:var(--accent-2);font-size:.9rem">Archive Presence</div>5 evenings this month Â· 12 chapters read</div>
+    <div class="faint" style="text-align:right;font-size:.72rem;line-height:1.5"><div style="font-family:var(--serif);color:var(--accent-2);font-size:.9rem">Archive Presence</div>5 evenings this month \u00b7 12 chapters read</div>
   </div>
 
   <div class="home-cols">
@@ -904,9 +1219,9 @@ VIEWS.home = function(){
       <div class="card tinted" style="${storyAccentVars(tonights.story)};display:flex;gap:14px;align-items:center">
         <div style="width:62px;height:84px;border-radius:9px;overflow:hidden;flex:0 0 auto;border:1px solid var(--border)">${coverArt(tonights.story)}</div>
         <div style="flex:1;min-width:0">
-          <div class="faint" style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase">Continue Â· ${tonights.story.title}</div>
+          <div class="faint" style="font-size:.7rem;letter-spacing:.1em;text-transform:uppercase">Continue \u00b7 ${tonights.story.title}</div>
           <div style="font-family:var(--serif);font-weight:600;font-size:1.05rem;margin:2px 0">${tonights.ch.title}</div>
-          <div class="faint" style="font-size:.78rem;margin-bottom:8px">${tonights.ch.readTime-2} min left Â· you stopped near â€œ${tonights.prog.scene}â€</div>
+          <div class="faint" style="font-size:.78rem;margin-bottom:8px">${tonights.ch.readTime-2} min left \u00b7 you stopped near \u201c${tonights.prog.scene}\u201d</div>
           ${progressBar(tonights.prog.pct)}
         </div>
         <button class="btn story sm" data-read="${tonights.ch.id}">${I.play}Resume</button>
@@ -945,7 +1260,7 @@ VIEWS.home = function(){
       </div>
     </div>
     <div class="section">
-      <div class="section-head"><h2>Because you readâ€¦</h2></div>
+      <div class="section-head"><h2>Because you read\u2026</h2></div>
       <div class="col-flex">
         ${D.STORIES.slice(1, 3).map(storyCardWide).join("") || `<p class="faint" style="font-size:.8rem">More recommendations will appear as the backend library grows.</p>`}
       </div>
@@ -1002,7 +1317,7 @@ function updateRow(u){
 /* ============ LIBRARY ============ */
 VIEWS.library = function(){
   const q=store.filters.q||""; const chips=store.filters.chips||[];
-  const timeFilters=[["under10","Under 10 min"],["10-20","10â€“20 min"],["binge","Bingeable"]];
+  const timeFilters=[["under10","Under 10 min"],["10-20","10\u201320 min"],["binge","Bingeable"]];
   const stateFilters=[["readable","Readable now"],["free","Free starts"],["preview","Previews"],["early","Early access"],["member","Member"],["key","Key content"]];
   const statusFilters=[["ongoing","Ongoing"],["completed","Completed"]];
   function matches(s){
@@ -1025,7 +1340,7 @@ VIEWS.library = function(){
   <p class="page-sub">${D.STORIES.length} stories across fantasy, gothic, and the far future.</p>
   <div style="position:relative;margin:6px 0 14px">
     <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--text-faint);display:flex">${I.search}</span>
-    <input id="lib-search" class="pill-input" style="text-align:left;padding-left:42px" placeholder="Search stories, authors, genresâ€¦" value="${esc(q)}">
+    <input id="lib-search" class="pill-input" style="text-align:left;padding-left:42px" placeholder="Search stories, authors, genres\u2026" value="${esc(q)}">
   </div>
   <div class="chips scroll" style="margin-bottom:8px">${stateFilters.map(([k,l])=>chip(l,"filter="+k,chips.includes(k))).join("")}${statusFilters.map(([k,l])=>chip(l,"filter="+k,chips.includes(k))).join("")}</div>
   <div class="chips scroll" style="margin-bottom:18px">${timeFilters.map(([k,l])=>chip(l,"filter="+k,chips.includes(k))).join("")}<a class="chip" data-nav="/collections">${I.layers}<span>Collections</span></a></div>
@@ -1050,27 +1365,87 @@ VIEWS.story = function(){
   const lastRead=activeReads().find(x=>x.story.id===s.id);
   const startCh = lastRead?.ch.id || (firstFree?.id) || s.chapters[0].id;
   const startR = chapterResolved(byId(startCh).ch);
+
+  let castHtml = "";
+  if (s.cast && s.cast.length > 0) {
+    castHtml = `
+    <div class="section">
+      <div class="section-head"><h2>Cast</h2></div>
+      <div class="cast-grid">
+        ${s.cast.map(c => {
+          const charUrl = c.id ? `index.html#gallery/${s.slug}/${c.id}` : `index.html#gallery/${s.slug}`;
+          const imgHtml = c.img
+            ? `<img src="${c.img}" alt="${esc(c.n)}" />`
+            : `<div class="cast-fallback">${esc((c.n||"?")[0].toUpperCase())}</div>`;
+          return `<a class="cast-tile" href="${charUrl}" target="_blank">
+            ${imgHtml}
+            <div class="cast-label">
+              ${esc(c.n)}
+              ${c.r ? `<div class="cast-role">${esc(c.r)}</div>` : ""}
+            </div>
+          </a>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }
+
+  let glossaryHtml = "";
+  if (s.glossary && s.glossary.length > 0) {
+    glossaryHtml = `
+    <div class="section">
+      <div class="section-head"><h2>Lore</h2></div>
+      <div class="glossary-grid">
+        ${s.glossary.map(g => {
+          const imgHtml = g.img
+            ? `<img src="${g.img}" alt="${esc(g.t)}" />`
+            : `<div class="glossary-fallback">${I.book||"\u{1F4D6}"}</div>`;
+          return `<div class="glossary-tile">
+            ${imgHtml}
+            <div class="glossary-label">${esc(g.t)}</div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>`;
+  }
+
+  let timelineHtml = "";
+  if (s.timeline && s.timeline.length > 0) {
+    const timelineUrl = `index.html#timeline/${s.slug}`;
+    timelineHtml = `
+    <div class="section">
+      <div class="section-head"><h2>Timeline</h2></div>
+      <a class="timeline-cta" href="${timelineUrl}" target="_blank">
+        <div class="timeline-cta-icon">${I.list||""}</div>
+        <div class="timeline-cta-body">
+          <div class="timeline-cta-title">Story Timeline</div>
+          <div class="timeline-cta-sub">${s.timeline.length} events \u00b7 Open in the main reader for the full chronicle</div>
+        </div>
+        <span class="faint">${I.external||""}</span>
+      </a>
+    </div>`;
+  }
+
+  const coverUrl = s.cover_image_url || "";
   return `
   <div class="hero" style="${storyAccentVars(s)}">
-    <div class="bg">${coverArt(s)}</div><div class="grad"></div>
-    <div class="inner">
-      <div class="mini-cover">${coverArt(s)}</div>
-      <div class="htxt">
-        <div class="eyebrow">${s.genre} Â· ${s.status}</div>
-        <h1>${s.title}</h1>
-        <div class="author">by ${s.author}</div>
-        <div class="tags">${s.tags.map(t=>badge("",t)).join("")}</div>
-      </div>
+    <div class="book-hero-cover">
+      <img src="${coverUrl}" alt="${esc(s.title)}" />
+    </div>
+    <div class="book-hero-details">
+      <div class="book-hero-meta">${s.genre} \u00b7 ${s.status}</div>
+      <h1>${s.title}</h1>
+      <div class="book-hero-author">by ${s.author}</div>
+      <div class="tags" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">${s.tags.map(t=>badge("",t)).join("")}</div>
+      <div class="book-hero-tagline" style="margin:0;">${s.tagline || ""}</div>
     </div>
   </div>
-  <p class="muted" style="font-family:var(--serif);font-size:1.02rem;line-height:1.6;margin:0 2px 16px">${s.tagline}</p>
 
-  <div class="sticky-cta"><button class="btn primary block" data-read="${startCh}">${lastRead?(I.play+"Continue â€” "+lastRead.ch.title):"Start reading"}</button></div>
+  <div class="sticky-cta"><button class="btn primary block" data-read="${startCh}">${lastRead?(I.play+"Continue \u2014 "+lastRead.ch.title):"Start reading"}</button></div>
 
   <div class="card tinted" style="margin-bottom:14px">
     <div class="between" style="margin-bottom:12px"><div><div class="eyebrow">Your progress</div><div style="font-family:var(--serif);font-size:1.1rem;font-weight:600;margin-top:2px">${readCount} / ${total} chapters read</div></div>${ring(pct)}</div>
     <div class="faint" style="font-size:.8rem;line-height:1.6">
-      ${nextUnread?`Next unread: <b style="color:var(--text)">${nextUnread.title}</b> Â· `:""}${latestEarly?`Latest: <b style="color:var(--early)">${latestEarly.title}</b> (early access) Â· `:""}${s.chapters.filter(c=>!isReadable(chapterResolved(c))).length} locked for you.
+      ${nextUnread?`Next unread: <b style="color:var(--text)">${nextUnread.title}</b> \u00b7 `:""}${latestEarly?`Latest: <b style="color:var(--early)">${latestEarly.title}</b> (early access) \u00b7 `:""}${s.chapters.filter(c=>!isReadable(chapterResolved(c))).length} locked for you.
     </div>
   </div>
 
@@ -1092,13 +1467,10 @@ VIEWS.story = function(){
     <p class="faint" style="font-size:.78rem;margin-top:-4px">${followed?"We'll notify you when new chapters unlock for you.":"Get notified when new chapters unlock for your access."}</p>
   </div>
 
-  <div class="section">
-    <div class="section-head"><h2>Cast &amp; glossary</h2></div>
-    <div class="card">
-      ${s.cast.map(c=>`<div style="padding:7px 0;border-bottom:1px solid var(--border)"><span style="font-family:var(--serif);font-weight:600;color:var(--s2)">${c.n}</span> <span class="faint" style="font-size:.82rem">â€” ${c.r}</span></div>`).join("")}
-      <dl class="dl" style="margin-top:12px">${s.glossary.map(g=>`<dt>${g.t}</dt><dd>${g.d}</dd>`).join("")}</dl>
-    </div>
-  </div>
+  ${castHtml}
+  ${glossaryHtml}
+  ${timelineHtml}
+
   <div class="section">
     <div class="card" style="display:flex;gap:12px;align-items:center">
       <span class="faint">${I.external}</span>
@@ -1120,7 +1492,7 @@ VIEWS.chapters = function(){
   return `
   <div class="between" style="margin-bottom:6px"><a class="section-link" data-nav="/story/${s.slug}" style="display:inline-flex;align-items:center;gap:4px;color:var(--text-dim)">${I.chevL}<span>${s.title}</span></a></div>
   <h1 class="page-title">Chapter Shelf</h1>
-  <p class="page-sub">${s.chapters.length} chapters Â· ${s.chapters.filter(c=>isReadable(chapterResolved(c))).length} readable for you now</p>
+  <p class="page-sub">${s.chapters.length} chapters \u00b7 ${s.chapters.filter(c=>isReadable(chapterResolved(c))).length} readable for you now</p>
   <div class="seg story" style="margin:6px 0 18px">
     <button class="${view==='comfortable'?'active':''}" data-shelf-view="comfortable">Comfortable</button>
     <button class="${view==='compact'?'active':''}" data-shelf-view="compact">Compact</button>
@@ -1129,7 +1501,7 @@ VIEWS.chapters = function(){
   ${view==="arc"? Object.entries(arcs).map(([arc,chs])=>{
     const rd=chs.filter(c=>store.readMarked[c.id]||(store.progress[c.id]&&store.progress[c.id].pct>=100)).length;
     const lk=chs.filter(c=>!isReadable(chapterResolved(c))).length;
-    return `<div class="arc"><div class="arc-head"><h3>${arc}</h3><div class="arc-bar">${progressBar(rd/chs.length*100)}</div><span class="arc-meta">${rd}/${chs.length}${lk?` Â· ${lk} locked`:""}</span></div><div class="col-flex">${chs.map(renderRow).join("")}</div></div>`;
+    return `<div class="arc"><div class="arc-head"><h3>${arc}</h3><div class="arc-bar">${progressBar(rd/chs.length*100)}</div><span class="arc-meta">${rd}/${chs.length}${lk?` \u00b7 ${lk} locked`:""}</span></div><div class="col-flex">${chs.map(renderRow).join("")}</div></div>`;
   }).join("") : `<div class="col-flex">${s.chapters.map(renderRow).join("")}</div>`}
   `;
 };
@@ -1143,7 +1515,7 @@ function chapterRow(ch, story){
   const tag=accessTag(r);
   const act = isReadable(r)?`data-read="${ch.id}"`:(r.state==='preview'?`data-preview="${ch.id}"`:`data-lock="${ch.id}"`);
   const compact = (store.filters.shelfView==="compact");
-  return `<button class="row ${read?'read':''} ${now_?'now':''}" style="${story?storyAccentVars(story):''}" ${act}>
+  return `<div class="row ${read?'read':''} ${now_?'now':''}" style="${story?storyAccentVars(story):''}" ${act}>
     <span class="num">${read?'<span style="color:var(--good)">'+I.check+'</span>':ch.n}</span>
     <span class="body">
       <span class="t"><span class="tt">${ch.title}</span>${r.isEarly?badge('early','Early'):''}${illus?badge('illus','Illus'):''}${ch.state==='key'?badge('key','Key'):''}</span>
@@ -1151,7 +1523,7 @@ function chapterRow(ch, story){
       ${(!compact && reasonFor(ch,r))?`<span class="reason">${reasonFor(ch,r)}</span>`:""}
     </span>
     <span class="cta">${ctaFor(ch,r,story,{small:true})}</span>
-  </button>`;
+  </div>`;
 }
 
 /* ============ READER ============ */
@@ -1167,7 +1539,7 @@ VIEWS.read = function(){
   if (ch.backend && !ch.content) {
     if (!ch.contentLoading) loadReaderChapterIntoFixture(ch.id).then(() => render());
     const message = ch.contentError || "Loading secure chapter text from Supabase...";
-    return readerShell(`theme-${store.settings.readerTheme} preset-${store.settings.preset}`, `<div class="empty" style="padding-top:120px"><div class="em">${ch.contentError?I.alert:I.sync}</div><h3>${ch.contentError?"Chapter unavailable":"Opening secure chapter"}</h3><p>${esc(message)}</p>${ch.contentError?`<button class="btn story" data-lock="${ch.id}">${I.lockOpen}Check access</button>`:""}</div>`);
+    return readerShell(`theme-${store.settings.readerTheme} preset-${store.settings.preset}`, `<div class="reader-loading">${ch.contentError?`<div class="em" style="font-size:2rem;color:var(--bad);margin-bottom:8px">${I.alert}</div>`:`<div class="reader-spinner"></div>`}<h3>${ch.contentError?"Chapter unavailable":"Opening secure chapter"}</h3><p>${esc(message)}</p>${ch.contentError?`<button class="btn sm story" data-lock="${ch.id}">${I.lockOpen}Check access</button>`:""}</div>`);
   }
   return readerFull(ch, story, index, r);
 };
@@ -1178,7 +1550,7 @@ function readerShell(themeClass, inner, settings){
     <div class="reader-progress"><i id="rprog" style="width:0%"></i></div>
     <header class="reader-top" id="rtop">
       <button class="rback" data-nav="/story/${currentChapter.story.slug}/chapters" aria-label="Back">${I.chevL}</button>
-      <div class="ctx"><div class="s">${currentChapter.story.title} Â· Ch ${currentChapter.ch.n}</div><div class="c">${currentChapter.ch.title}</div></div>
+      <div class="ctx"><div class="s">${currentChapter.story.title} \u00b7 Ch ${currentChapter.ch.n}</div><div class="c">${currentChapter.ch.title}</div></div>
       <button class="rset" data-sheet="settings" aria-label="Reader settings">${I.aa}</button>
     </header>
     <div class="reader-stage" id="rstage">${inner}</div>
@@ -1217,7 +1589,7 @@ function readerFull(ch, story, index, r){
   const nr = next?chapterResolved(next):null;
   return readerShell(themeClass, `
     <h1 class="ch-title">${ch.title}</h1>
-    <div class="ch-by">${story.title} Â· Chapter ${ch.n} Â· ${ch.readTime} min Â· ${r.isEarly?'Early access until '+fmtDate(ch.publicDate):'Unlocked'}</div>
+    <div class="ch-by">${story.title} \u00b7 Chapter ${ch.n} \u00b7 ${ch.readTime} min \u00b7 ${r.isEarly?'Early access until '+fmtDate(ch.publicDate):'Unlocked'}</div>
     ${ch.arc?`<div class="faint" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.12em;margin-bottom:24px">${ch.arc}</div>`:""}
     <div class="prose" id="prose">${renderBlocks(blocks, ch.id)}</div>
     ${endOfChapter(ch, story, next, nr)}
@@ -1230,13 +1602,13 @@ function readerPreview(ch, story, index, r){
   return readerShell(themeClass, `
     <div class="badge preview" style="margin-bottom:14px">${I.eye}Preview</div>
     <h1 class="ch-title">${ch.title}</h1>
-    <div class="ch-by">${story.title} Â· Chapter ${ch.n} Â· preview Â· ${ch.tier||"Aether Member"} to unlock full chapter</div>
+    <div class="ch-by">${story.title} \u00b7 Chapter ${ch.n} \u00b7 preview \u00b7 ${ch.tier||"Aether Member"} to unlock full chapter</div>
     <div class="prose" id="prose">${renderBlocks(ch.preview||[], ch.id)}</div>
     <div class="preview-wall" style="${storyAccentVars(story)}">
       <div class="top"></div>
       <div class="inner">
         <h3>You've reached the end of the preview</h3>
-        <p>Unlock the full chapter â€” and ${countReadable()} others â€” to continue ${story.title}. The complete text loads only after access is verified; nothing is hidden behind a blur.</p>
+        <p>Unlock the full chapter \u2014 and ${countReadable()} others \u2014 to continue ${story.title}. The complete text loads only after access is verified; nothing is hidden behind a blur.</p>
         <div class="col-flex" style="gap:9px;max-width:340px;margin:0 auto">
           <button class="btn story block" data-lock="${ch.id}">${I.lockOpen}Unlock with ${ch.tier||"Aether Member"}</button>
           <button class="btn ghost block" data-sheet="redeem">${I.key}Redeem an access key</button>
@@ -1250,7 +1622,7 @@ function readerLocked(ch, story, index, r){
   return `<div class="locked-fallback" style="${storyAccentVars(story)}">
     <div class="emblem" style="width:84px;height:84px">${r.state==='expired'?I.lockOpen:r.state==='pending'?I.sync:r.state==='key'?I.key:I.lock}</div>
     <h1>${ch.title}</h1>
-    <div class="sub">${story.title} Â· Chapter ${ch.n}</div>
+    <div class="sub">${story.title} \u00b7 Chapter ${ch.n}</div>
     <div class="card" style="max-width:420px;margin:0 auto 18px;text-align:left">
       <div class="ax ${accessTag(r)[0]}" style="font-size:1rem;margin-bottom:8px"><span class="ic" style="width:20px;height:20px">${accessTag(r)[2]}</span>${accessTag(r)[1]}</div>
       <p class="muted" style="font-size:.86rem;margin:0 0 4px">${reasonFor(ch,r)}</p>
@@ -1277,19 +1649,19 @@ function endOfChapter(ch, story, next, nr){
       <button class="btn sm ghost" data-act="reader-markread">${store.readMarked[ch.id]?I.check:'âœ“'}Mark read</button>
     </div>
     <div class="card tinted" style="max-width:440px;margin:0 auto">
-      ${next?`<div class="between"><div style="min-width:0"><div class="faint" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em">Next chapter</div><div style="font-family:var(--serif);font-weight:600;margin-top:2px">${next.title}</div><div class="faint" style="font-size:.74rem;margin-top:2px">${axInline(nr)} Â· ${next.readTime} min</div></div>${isReadable(nr)?`<button class="btn sm story" data-read="${next.id}">${I.play}Read</button>`:`<button class="btn sm" data-lock="${next.id}">${accessTag(nr)[3]}</button>`}</div>`
+      ${next?`<div class="between"><div style="min-width:0"><div class="faint" style="font-size:.7rem;text-transform:uppercase;letter-spacing:.1em">Next chapter</div><div style="font-family:var(--serif);font-weight:600;margin-top:2px">${next.title}</div><div class="faint" style="font-size:.74rem;margin-top:2px">${axInline(nr)} \u00b7 ${next.readTime} min</div></div>${isReadable(nr)?`<button class="btn sm story" data-read="${next.id}">${I.play}Read</button>`:`<button class="btn sm" data-lock="${next.id}">${accessTag(nr)[3]}</button>`}</div>`
       :`<div class="center"><div class="faint" style="font-size:.74rem">You've reached the latest chapter.</div><button class="btn sm" data-nav="/story/${story.slug}/chapters" style="margin-top:8px">${I.list}Back to shelf</button></div>`}
     </div>
   </div>`;
 }
-const REACTIONS=[{k:"heart",e:"â¤ï¸",l:"Love"},{k:"gasp",e:"ðŸ˜®",l:"Gasp"},{k:"theory",e:"ðŸ’¡",l:"Theory"},{k:"tear",e:"ðŸ˜¢",l:"Tears"},{k:"next",e:"ðŸ”¥",l:"Need next"}];
+const REACTIONS=[{k:"heart",e:"â¤ï¸",l:"Love"},{k:"gasp",e:"\ud83d\ude2e",l:"Gasp"},{k:"theory",e:"\ud83d\udca1",l:"Theory"},{k:"tear",e:"\ud83d\ude22",l:"Tears"},{k:"next",e:"\ud83d\udd25",l:"Need next"}];
 const REACTION_SEED={"go-1":{heart:42,gasp:18,theory:9,tear:6,next:23},"nc-1":{heart:31,gasp:7,theory:4,tear:12,next:5},"go-3":{heart:28,gasp:14,theory:11,tear:9,next:19},"as-1":{heart:19,gasp:6,theory:22,tear:3,next:8}};
 
 function commentsBlock(chId){
   const list = (store.comments[chId]||[]).filter(c=>c.para===null||c.para===undefined);
   return `<div class="comments" id="cmtblock">
     <div class="section-head"><h2>Reader notes</h2><span class="faint" style="font-size:.74rem">${(store.comments[chId]||[]).length} total</span></div>
-    <form class="cmt-form" data-cmt-form="${chId}"><input name="name" placeholder="Your name" style="max-width:130px"><input name="text" placeholder="Add a note about this chapterâ€¦" required><button class="btn sm story" type="submit">${I.msg}Post</button></form>
+    <form class="cmt-form" data-cmt-form="${chId}"><input name="name" placeholder="Your name" style="max-width:130px"><input name="text" placeholder="Add a note about this chapter\u2026" required><button class="btn sm story" type="submit">${I.msg}Post</button></form>
     <div>${list.slice().reverse().map(c=>commentHTML(c)).join("")||`<p class="faint" style="font-size:.82rem">Be the first to leave a note.</p>`}</div>
   </div>`;
 }
@@ -1302,8 +1674,8 @@ VIEWS.recap = function(){
   <h1 class="page-title">Story Recap</h1>
   <p class="page-sub">Spoiler-controlled. Choose how much you want remembered.</p>
   <div class="card tinted" style="margin:14px 0"><div class="eyebrow">Spoiler-free premise</div><p class="muted" style="font-family:var(--serif);font-size:1rem;line-height:1.7;margin:8px 0 0">${s.recapSafe}</p></div>
-  <div class="section"><div class="section-head"><h2>Up to your last read chapter</h2></div><div class="card"><p class="muted" style="font-family:var(--serif);line-height:1.7">So far: ${s.premise} You've reached the point where ${s.chapters[2].title.toLowerCase()} â€” and the next beat turns on what the orchard has been keeping. (This recap is generated up to your current progress and avoids anything you haven't read.)</p></div></div>
-  <div class="section"><div class="section-head"><h2>Full season recap <span class="badge" style="margin-left:6px">Spoilers</span></h2></div><div class="card"><p class="muted" style="font-family:var(--serif);line-height:1.7">${s.premise} In the full arc, the protagonist learns that ${s.cast[0].n.toLowerCase()}'s inheritance was no accident â€” and that the orchard has been waiting, patiently, for exactly this reader to arrive.</p></div></div>
+  <div class="section"><div class="section-head"><h2>Up to your last read chapter</h2></div><div class="card"><p class="muted" style="font-family:var(--serif);line-height:1.7">So far: ${s.premise} You've reached the point where ${s.chapters[2].title.toLowerCase()} \u2014 and the next beat turns on what the orchard has been keeping. (This recap is generated up to your current progress and avoids anything you haven't read.)</p></div></div>
+  <div class="section"><div class="section-head"><h2>Full season recap <span class="badge" style="margin-left:6px">Spoilers</span></h2></div><div class="card"><p class="muted" style="font-family:var(--serif);line-height:1.7">${s.premise} In the full arc, the protagonist learns that ${s.cast[0].n.toLowerCase()}'s inheritance was no accident \u2014 and that the orchard has been waiting, patiently, for exactly this reader to arrive.</p></div></div>
   <button class="btn story block" data-read="${s.chapters[0].id}">${I.play}Start / continue reading</button>`;
 };
 
@@ -1320,7 +1692,7 @@ VIEWS.extras = function(){
   ];
   return `<a class="section-link" data-nav="/story/${s.slug}" style="color:var(--text-dim);display:inline-flex;gap:4px;align-items:center">${I.chevL}${s.title}</a>
   <h1 class="page-title">Bonus Materials</h1>
-  <p class="page-sub">Author notes, deleted scenes, lore, and art â€” member &amp; key-holder extras.</p>
+  <p class="page-sub">Author notes, deleted scenes, lore, and art \u2014 member &amp; key-holder extras.</p>
   <div class="col-flex stagger">${extras.map(e=>{
     const r = e.state==="unlocked"?{state:"unlocked"}:e.state==="member"?{state:persona().level>=1?"unlocked":"locked"}:e.state==="archivist"?{state:persona().level>=2?"unlocked":"locked"}:{state:"key"};
     const readable = isReadable(r);
@@ -1349,7 +1721,7 @@ VIEWS.updates = function(){
 
 /* ============ CALENDAR ============ */
 VIEWS.calendar = function(){
-  return `<h1 class="page-title">Release Calendar</h1><p class="page-sub">This week in the archive â€” member drops &amp; public unlocks.</p>
+  return `<h1 class="page-title">Release Calendar</h1><p class="page-sub">This week in the archive \u2014 member drops &amp; public unlocks.</p>
   <div class="card tinted" style="margin-bottom:18px"><div class="between"><div><div class="eyebrow">Following</div><div style="font-family:var(--serif);margin-top:2px">${store.followed.length} stories</div></div><button class="btn sm" data-nav="/library">Manage</button></div></div>
   ${D.CALENDAR.map(day=>`<div class="section"><div class="section-head"><div><h2>${day.day}</h2><div class="faint" style="font-size:.74rem">${day.dow}</div></div></div><div class="col-flex">${day.items.map(it=>{const s=bySlug(it.s);const kColor={early:"early",public:"free",drop:"key",key:"key"}[it.k]||"";return `<div class="row" data-read="${s.chapters[0].id}"><span class="ic-col" style="color:var(--${kColor||'text-dim'})">${I[it.k==='early'?'hourglass':it.k==='public'?'sun':it.k==='drop'?'gift':'key']}</span><span class="body"><span class="t"><span class="tt">${it.c}</span>${badge(kColor,{early:"Early",public:"Public",drop:"Drop",key:"Key"}[it.k])}</span><span class="sub">${meta([`<i>${I.clock}</i>${it.t}`,s.title])}</span></span><span class="cta"><span class="faint">${I.chevR}</span></span></div>`;}).join("")}</div></div>`).join("")}`;
 };
@@ -1384,10 +1756,10 @@ VIEWS.vault = function(){
   const providerConnected = P.provider && !P.expired && !P.pending && !P.noTier;
   return `
   <h1 class="page-title">The Vault</h1>
-  <p class="page-sub">One place for every kind of access. Patreon, keys, grants â€” all just â€œaccess.â€</p>
+  <p class="page-sub">One place for every kind of access. Patreon, keys, grants \u2014 all just \u201caccess.\u201d</p>
   <div class="card tinted" style="margin:14px 0;display:flex;gap:14px;align-items:center">
     <span class="ax ${state==='active'?'unlocked':state==='expired'?'expired':state==='pending'?'pending':'locked'}" style="font-size:1.6rem"><span class="ic" style="width:30px;height:30px">${state==='active'?I.checkCirc:state==='expired'?I.lock:state==='pending'?I.sync:I.lock}</span></span>
-    <div style="flex:1"><div class="eyebrow">Current access</div><div style="font-family:var(--serif);font-size:1.3rem;font-weight:700">${stateLabel}</div><div class="faint" style="font-size:.8rem">${P.tier?("via "+P.provider+" Â· "+P.tier):P.signedIn?"Signed in, no active access":"Browsing as guest"}</div></div>
+    <div style="flex:1"><div class="eyebrow">Current access</div><div style="font-family:var(--serif);font-size:1.3rem;font-weight:700">${stateLabel}</div><div class="faint" style="font-size:.8rem">${P.tier?("via "+P.provider+" \u00b7 "+P.tier):P.signedIn?"Signed in, no active access":"Browsing as guest"}</div></div>
   </div>
 
   <div class="section"><div class="section-head"><h2>What your access unlocks</h2></div>
@@ -1436,11 +1808,11 @@ VIEWS.vault = function(){
 function providerCard(name, key, connected, tier, since, note){
   return `<div class="card" style="display:flex;gap:13px;align-items:center">
     <span style="width:42px;height:42px;border-radius:11px;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-size:.7rem;letter-spacing:.04em">${name.slice(0,2)}</span>
-    <div style="flex:1;min-width:0"><div style="font-weight:600">${name}</div><div class="faint" style="font-size:.76rem">${connected?(tier||"Connected")+(since?" Â· since "+fmtDate(since):""):(note||"Not connected")}</div></div>
+    <div style="flex:1;min-width:0"><div style="font-weight:600">${name}</div><div class="faint" style="font-size:.76rem">${connected?(tier||"Connected")+(since?" \u00b7 since "+fmtDate(since):""):(note||"Not connected")}</div></div>
     ${connected?`<span class="badge free">${I.check}Connected</span>`:`<button class="btn sm ${key==='patreon'?'story':''}" ${key==='patreon'?'data-sheet="connect-patreon"':'disabled'}>${note?'Soon':'Connect'}</button>`}
   </div>`;
 }
-function maskKey(c){ if(c.length<=4) return c; return "â€¢â€¢â€¢â€¢-â€¢â€¢â€¢â€¢-â€¢â€¢â€¢â€¢-"+c.slice(-4); }
+function maskKey(c){ if(c.length<=4) return c; return "\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022-\u2022\u2022\u2022\u2022-"+c.slice(-4); }
 
 /* ============ MY SHELF ============ */
 VIEWS.shelf = function(){
@@ -1460,8 +1832,8 @@ VIEWS.shelf = function(){
   <div class="card" style="display:flex;gap:11px;align-items:center"><span class="faint">${I.download}</span><div style="flex:1"><div style="font-weight:600;font-size:.86rem">Offline queue</div><div class="faint" style="font-size:.74rem">Save chapters for transit reading while your access is active. Expires with access.</div></div><button class="btn sm ghost" data-act="offline-queue">Manage</button></div>
   `;
 };
-VIEWS.bookmarks = function(){ return `<h1 class="page-title">Bookmarks</h1><p class="page-sub">${store.bookmarks.length} saved places across your reading.</p><div class="col-flex stagger">${store.bookmarks.map(b=>{const f=byId(b.chapterId);return `<div class="card" style="display:flex;gap:13px;align-items:center;${f?storyAccentVars(f.story):''}"><span class="ax unlocked" style="font-size:1.2rem"><span class="ic" style="width:22px;height:22px">${I.bookmarkFill}</span></span><div style="flex:1;min-width:0"><div style="font-family:var(--serif);font-style:italic">"${b.label}"</div><div class="faint" style="font-size:.74rem">${f?f.story.title+" Â· "+f.ch.title:""} Â· ${b.when}</div></div>${f?`<button class="btn sm story" data-read="${b.chapterId}">${I.play}Open</button>`:""}</div>`;}).join("")||emptyState("bookmark","No bookmarks yet","Save a place while reading with the bookmark button.")}</div>`; };
-VIEWS.quotes = function(){ return `<h1 class="page-title">Saved Quotes</h1><p class="page-sub">${store.quotes.length} lines worth keeping.</p><div class="col-flex stagger">${store.quotes.map(q=>{const f=byId(q.chapterId);return `<div class="card tinted" style="${f?storyAccentVars(f.story):''}"><div style="display:flex;gap:10px"><span style="font-size:1.6rem;color:var(--s);line-height:.8">${I.quote}</span><div><p style="font-family:var(--serif);font-size:1rem;line-height:1.6;margin:0">${q.text}</p><div class="faint" style="font-size:.74rem;margin-top:8px">${f?f.story.title:""} Â· saved ${q.when}</div></div></div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-copy="${esc(q.text)}">${I.copy}Copy</button><button class="btn sm ghost" data-quote-card="${q.id}">${I.spark}Share card</button></div></div>`;}).join("")||emptyState("quote","No quotes saved","Highlight text while reading to save a line.")}</div>`; };
+VIEWS.bookmarks = function(){ return `<h1 class="page-title">Bookmarks</h1><p class="page-sub">${store.bookmarks.length} saved places across your reading.</p><div class="col-flex stagger">${store.bookmarks.map(b=>{const f=byId(b.chapterId);return `<div class="card" style="display:flex;gap:13px;align-items:center;${f?storyAccentVars(f.story):''}"><span class="ax unlocked" style="font-size:1.2rem"><span class="ic" style="width:22px;height:22px">${I.bookmarkFill}</span></span><div style="flex:1;min-width:0"><div style="font-family:var(--serif);font-style:italic">"${b.label}"</div><div class="faint" style="font-size:.74rem">${f?f.story.title+" \u00b7 "+f.ch.title:""} \u00b7 ${b.when}</div></div>${f?`<button class="btn sm story" data-read="${b.chapterId}">${I.play}Open</button>`:""}</div>`;}).join("")||emptyState("bookmark","No bookmarks yet","Save a place while reading with the bookmark button.")}</div>`; };
+VIEWS.quotes = function(){ return `<h1 class="page-title">Saved Quotes</h1><p class="page-sub">${store.quotes.length} lines worth keeping.</p><div class="col-flex stagger">${store.quotes.map(q=>{const f=byId(q.chapterId);return `<div class="card tinted" style="${f?storyAccentVars(f.story):''}"><div style="display:flex;gap:10px"><span style="font-size:1.6rem;color:var(--s);line-height:.8">${I.quote}</span><div><p style="font-family:var(--serif);font-size:1rem;line-height:1.6;margin:0">${q.text}</p><div class="faint" style="font-size:.74rem;margin-top:8px">${f?f.story.title:""} \u00b7 saved ${q.when}</div></div></div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn sm ghost" data-copy="${esc(q.text)}">${I.copy}Copy</button><button class="btn sm ghost" data-quote-card="${q.id}">${I.spark}Share card</button></div></div>`;}).join("")||emptyState("quote","No quotes saved","Highlight text while reading to save a line.")}</div>`; };
 VIEWS.history = function(){ return `<h1 class="page-title">Reading History</h1><p class="page-sub">Your private chronicle.</p><div class="timeline">${[...store.history].map(h=>{const f=byId(h.chapterId);return `<div class="tl-item"><div class="when">${h.when}</div><div class="what">${h.kind==='preview'?'Previewed':h.kind==='completed'?'Completed':'Read'}: ${h.title}</div><div class="faint" style="font-size:.78rem">${f?f.story.title:""}</div></div>`;}).join("")}</div>`; };
 
 /* ============ NOTIFICATIONS ============ */
@@ -1469,14 +1841,36 @@ VIEWS.notifications = function(){
   const items=store.notifs;
   const kIcon={access:I.vault,chapter:I.bell};
   return `<div class="between"><div><h1 class="page-title">Notifications</h1><p class="page-sub">${items.filter(n=>!n.read).length} unread</p></div><button class="btn sm ghost" data-act="notif-prefs">${I.cog}Preferences</button></div>
-  <div class="chips scroll" style="margin:8px 0 16px"><button class="chip active" data-act="simulate-notif">${I.plus}<span>Simulate new notice</span></button><button class="btn sm ghost" data-act="mark-all-read">Mark all read</button></div>
-  <div class="col-flex stagger">${items.map(n=>`<div class="card" style="display:flex;gap:12px;align-items:flex-start;${n.read?'opacity:.65':''}"><span style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--accent)">${kIcon[n.k]||I.bell}</span><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.9rem">${n.t}</div><div class="faint" style="font-size:.8rem;margin-top:1px">${n.d}</div><div class="faint" style="font-size:.7rem;margin-top:4px">${n.time}</div></div><div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">${n.chapter?`<button class="btn sm" data-read="${n.chapter}">Open</button>`:""}<button class="tb-btn" style="width:30px;height:30px" data-dismiss="${n.id}" aria-label="Dismiss">${I.x}</button></div></div>`).join("")}</div>`;
+  <div class="chips scroll" style="margin:8px 0 16px">
+    <button class="chip active" data-act="simulate-notif">${I.plus}<span>Simulate notice</span></button>
+    <button class="btn sm ghost" data-act="mark-all-read">Mark all read</button>
+    ${items.length?`<button class="btn sm ghost" data-act="clear-all-notifs">${I.x}Clear all</button>`:""}
+  </div>
+  <div class="col-flex stagger">
+    ${items.map(n=>{
+      const f = n.chapter ? byId(n.chapter) : (n.story ? { story: bySlug(n.story) } : null);
+      const s = f?.story;
+      const accentStyle = s ? storyAccentVars(s) : "";
+      return `
+      <div class="card" style="position:relative; display:flex; gap:12px; align-items:flex-start; ${n.read?'opacity:.65':''}; ${accentStyle}">
+        <span style="width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:var(--surface-2);color:var(--accent);flex:0 0 auto">${kIcon[n.k]||I.bell}</span>
+        <div style="flex:1;min-width:0;padding-right:24px">
+          <div style="font-weight:600;font-size:.9rem">${esc(n.t)}</div>
+          <div class="faint" style="font-size:.8rem;margin-top:1px">${esc(n.d)}</div>
+          <div class="faint" style="font-size:.7rem;margin-top:4px">${esc(n.time)}</div>
+          ${n.chapter?`<span class="btn sm story" style="margin-top:10px" data-read="${n.chapter}">Open chapter</span>`:""}
+        </div>
+        <button class="tb-btn" style="position:absolute; top:10px; right:10px; width:28px; height:28px; display:grid; place-items:center" data-dismiss="${n.id}" aria-label="Dismiss">${I.x}</button>
+      </div>
+      `;
+    }).join("") || emptyState("bell","No notifications","All caught up!")}
+  </div>`;
 };
 
 /* ============ BENEFITS ============ */
 VIEWS.benefits = function(){
   const b=[{i:"hourglass",t:"Early access",d:"Read new chapters before public release."},{i:"book",t:"Member chapters",d:"Exclusive chapters not available on the public archive."},{i:"spark",t:"Bonus materials",d:"Author notes, deleted scenes, lore & art drops."},{i:"layers",t:"Complete seasons",d:"Binge finished stories start to end."},{i:"eye",t:"Previews",d:"Sample locked chapters before deciding."},{i:"msg",t:"Supporter notes",d:"Author notes attached to releases."}];
-  return `<h1 class="page-title">Membership Benefits</h1><p class="page-sub">What Aether Member access unlocks â€” clearly.</p>
+  return `<h1 class="page-title">Membership Benefits</h1><p class="page-sub">What Aether Member access unlocks \u2014 clearly.</p>
   <div class="grid-stories" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:14px">${b.map(x=>`<div class="benefit-card"><span class="ic">${I[x.i]}</span><div><h4>${x.t}</h4><p>${x.d}</p></div></div>`).join("")}</div>
   <div class="section"><div class="section-head"><h2>Your milestones</h2></div><div class="col-flex">${D.MILESTONES.map(m=>`<div class="card" style="display:flex;gap:12px;align-items:center;${m.held?'':'opacity:.5'}"><span class="ax ${m.held?'unlocked':'locked'}" style="font-size:1.2rem"><span class="ic" style="width:22px;height:22px">${m.held?I.checkCirc:I.lock}</span></span><div style="flex:1"><div style="font-family:var(--serif);font-weight:600">${m.t}</div><div class="faint" style="font-size:.76rem">${m.d}</div></div>${m.held?badge("gold","Earned"):badge("","Locked")}</div>`).join("")}</div></div>
   <div class="card tinted" style="text-align:center"><div style="font-family:var(--serif);font-size:1.05rem;margin-bottom:8px">Want to unlock the archive?</div><button class="btn primary" data-sheet="connect-patreon">${I.vault}Connect Patreon</button></div>`;
@@ -1513,10 +1907,10 @@ VIEWS.help = function(){
   <div class="section"><div class="section-head"><h2>Access-state glossary</h2></div><div class="col-flex">${D.GLOSSARY_STATES.map(g=>`<div class="card" style="display:flex;gap:12px;align-items:center"><span class="ax ${g.color==='good'?'free':g.color}" style="font-size:1.2rem"><span class="ic" style="width:22px;height:22px">${I[g.icon]}</span></span><div style="flex:1"><div style="font-weight:600;font-size:.9rem">${g.label}</div><div class="faint" style="font-size:.78rem">${g.d}</div></div></div>`).join("")}</div></div>
   <div class="section"><div class="section-head"><h2>Common questions</h2></div><div class="col-flex">${q.map(([t,a])=>`<details class="card" style="padding:0"><summary style="padding:14px 16px;cursor:pointer;font-weight:600;font-size:.9rem;list-style:none;display:flex;justify-content:space-between;align-items:center">${t}${I.chevR}</summary><div style="padding:0 16px 14px" class="muted" >${a}</div></details>`).join("")}</div></div>
   <div class="section"><div class="section-head"><h2>Features explained</h2></div><div class="col-flex">
-    <div class="card"><div style="font-weight:600;margin-bottom:4px">${I.eye} Previews</div><p class="muted" style="font-size:.82rem;margin:0">Previews show real opening text. The rest of the chapter is never sent to your browser until access is verified â€” no fake blur.</p></div>
+    <div class="card"><div style="font-weight:600;margin-bottom:4px">${I.eye} Previews</div><p class="muted" style="font-size:.82rem;margin:0">Previews show real opening text. The rest of the chapter is never sent to your browser until access is verified \u2014 no fake blur.</p></div>
     <div class="card"><div style="font-weight:600;margin-bottom:4px">${I.msg} Paragraph &amp; chapter comments</div><p class="muted" style="font-size:.82rem;margin:0">Tap a paragraph chip to note a specific line, or leave a chapter note at the end. Toggle chips in reader settings.</p></div>
     <div class="card"><div style="font-weight:600;margin-bottom:4px">${I.spark} Illustrated chapters</div><p class="muted" style="font-size:.82rem;margin:0">Some chapters include inline figures. Hide them in reader settings if you prefer pure text.</p></div>
-    <div class="card"><div style="font-weight:600;margin-bottom:4px">${I.alert} Unavailable chapters</div><p class="muted" style="font-size:.82rem;margin:0">Occasionally a chapter is being revised. It returns â€” try again later, or contact support.</p></div>
+    <div class="card"><div style="font-weight:600;margin-bottom:4px">${I.alert} Unavailable chapters</div><p class="muted" style="font-size:.82rem;margin:0">Occasionally a chapter is being revised. It returns \u2014 try again later, or contact support.</p></div>
   </div></div>`;
 };
 
@@ -1524,12 +1918,12 @@ VIEWS.help = function(){
 VIEWS.checkAccess = function(){
   const P=persona();
   return `<a class="section-link" data-nav="/help" style="color:var(--text-dim);display:inline-flex;gap:4px;align-items:center">${I.chevL}Help</a>
-  <h1 class="page-title">Access Health Check</h1><p class="page-sub">A guided check of your access â€” no jargon.</p>
+  <h1 class="page-title">Access Health Check</h1><p class="page-sub">A guided check of your access \u2014 no jargon.</p>
   <div class="card tinted" style="margin:14px 0"><div class="between"><div><div class="eyebrow">Signed-in account</div><div style="font-family:var(--serif);font-weight:600">${P.signedIn?store.email:"Not signed in"}</div></div>${P.signedIn?badge("free",I.check+"Verified"):badge("","Guest")}</div></div>
   <div class="timeline">
     <div class="tl-item"><div class="when">Step 1</div><div class="what">Account verified</div><div class="faint" style="font-size:.78rem">${P.signedIn?"You're signed in.":"Sign in to continue."}</div></div>
     <div class="tl-item ${P.provider?'':'warn'}"><div class="when">Step 2</div><div class="what">Provider: ${P.provider||"none connected"}</div><div class="faint" style="font-size:.78rem">${P.provider?"Connected.":"Connect Patreon or redeem a key."}</div></div>
-    <div class="tl-item ${P.pending?'warn':''}"><div class="when">Step 3</div><div class="what">${P.pending?"Sync in progress":"Last sync: just now"}</div><div class="faint" style="font-size:.78rem">${P.pending?"Verifying your tier â€” automatic.":"Access is up to date."}</div></div>
+    <div class="tl-item ${P.pending?'warn':''}"><div class="when">Step 3</div><div class="what">${P.pending?"Sync in progress":"Last sync: just now"}</div><div class="faint" style="font-size:.78rem">${P.pending?"Verifying your tier \u2014 automatic.":"Access is up to date."}</div></div>
     <div class="tl-item ${P.level>0||store.grantedKey?'':'bad'}"><div class="when">Step 4</div><div class="what">${P.tier||"Tier"} ${P.noTier?"(not qualifying)":""}</div><div class="faint" style="font-size:.78rem">${P.level>0?"Qualifies for Aether Pages.":P.noTier?"This tier doesn't include access.":"No active tier."}</div></div>
   </div>
   <div class="col-flex" style="margin-top:14px">
@@ -1539,7 +1933,7 @@ VIEWS.checkAccess = function(){
   </div>`;
 };
 VIEWS.wrongAccount = function(){
-  const steps=["Are you signed into the same Aether Pages account you used before? Check your email in the Vault.","Is your connected Patreon the right one? Patreon links via the Patreon API, not by matching emails.","Try reconnecting Patreon from the Vault.","Or redeem your access key again â€” it binds to this account.","Still stuck? Send a support packet with one tap."];
+  const steps=["Are you signed into the same Aether Pages account you used before? Check your email in the Vault.","Is your connected Patreon the right one? Patreon links via the Patreon API, not by matching emails.","Try reconnecting Patreon from the Vault.","Or redeem your access key again \u2014 it binds to this account.","Still stuck? Send a support packet with one tap."];
   return `<a class="section-link" data-nav="/help" style="color:var(--text-dim);display:inline-flex;gap:4px;align-items:center">${I.chevL}Help</a>
   <h1 class="page-title">Wrong Account Assistant</h1><p class="page-sub">Access on a different account? Let's recover it.</p>
   <div class="timeline">${steps.map((s,i)=>`<div class="tl-item"><div class="when">Step ${i+1}</div><div class="what">${s}</div></div>`).join("")}</div>
@@ -1547,7 +1941,7 @@ VIEWS.wrongAccount = function(){
 };
 VIEWS.contact = function(){
   const P=persona();
-  const pkt=["Account: "+(P.signedIn?store.email:"(not signed in)"),"Access: "+(P.tier||P.expired?"expired":P.pending?"sync pending":P.noTier?"no qualifying tier":"none"),"Provider: "+(P.provider||"none"),"Last sync: just now","Masked key suffix: "+(store.redeemedKeys[0]?"â€¦"+store.redeemedKeys[0].code.slice(-4):"none")];
+  const pkt=["Account: "+(P.signedIn?store.email:"(not signed in)"),"Access: "+(P.tier||P.expired?"expired":P.pending?"sync pending":P.noTier?"no qualifying tier":"none"),"Provider: "+(P.provider||"none"),"Last sync: just now","Masked key suffix: "+(store.redeemedKeys[0]?"\u2026"+store.redeemedKeys[0].code.slice(-4):"none")];
   return `<a class="section-link" data-nav="/help" style="color:var(--text-dim);display:inline-flex;gap:4px;align-items:center">${I.chevL}Help</a>
   <h1 class="page-title">Contact Support</h1><p class="page-sub">We'll attach a context packet so you don't have to explain everything.</p>
   <div class="card" style="margin:14px 0"><div class="eyebrow" style="margin-bottom:8px">Auto-attached packet (no secrets)</div><div style="font-family:var(--ui);font-size:.78rem;line-height:1.8">${pkt.map(p=>`<div>${esc(p)}</div>`).join("")}</div></div>
@@ -1565,6 +1959,16 @@ function sheetSettings(){
   <div class="set-group"><label>Site theme</label>${themeSwatches()}</div>
   <div class="set-group"><label>Reader lighting</label><div class="seg">${["aether","twilight","parchment"].map(t=>`<button class="${st.readerTheme===t?'active':''}" data-set-theme="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join("")}</div></div>
   <div class="set-group"><label>Reading preset</label><div class="seg">${[["none","Default"],["focus","Focus"],["bedtime","Bedtime"],["dyslexia","Dyslexia"],["compact","Compact"]].map(([k,l])=>`<button class="${st.preset===k?'active':''}" data-set-preset="${k}">${l}</button>`).join("")}</div></div>
+  <div class="set-group"><label>Background mode</label><div class="seg">${[["story","Artwork"],["gradient","Ambient"],["solid","Solid"]].map(([k,l])=>`<button class="${st.bgMode===k?'active':''}" data-set-bg-mode="${k}">${l}</button>`).join("")}</div></div>
+  ${st.bgMode==='story'?`
+  <div class="set-group">
+    ${toggleRow("bgBlur","Blur background","Blurs and dims the cover background",st.bgBlur)}
+  </div>
+  <div class="set-group">
+    <label>Background artwork</label>
+    ${wallpaperSwatches(getActiveStory())}
+  </div>
+  `:""}
   <div class="set-group"><label>Font size <span class="faint" style="float:right">${Math.round(st.fontScale*100)}%</span></label><input type="range" class="range" min="0.8" max="1.4" step="0.05" value="${st.fontScale}" data-set-range="fontScale"></div>
   <div class="set-group"><label>Line height <span class="faint" style="float:right">${st.lineHeight.toFixed(2)}</span></label><input type="range" class="range" min="1.5" max="2.1" step="0.02" value="${st.lineHeight}" data-set-range="lineHeight"></div>
   <div class="set-group"><label>Comfort</label>
@@ -1597,7 +2001,7 @@ function sheetSignup(){
 function sheetLock(chId){
   const f=byId(chId); if(!f) return "<p>Not found.</p>"; const {ch,story}=f; const r=chapterResolved(ch);
   return `<span class="close-x" data-act="close-sheet">${I.x}</span>
-  <div style="display:flex;gap:12px;align-items:center;margin-bottom:6px"><span class="ax ${accessTag(r)[0]}" style="font-size:1.5rem"><span class="ic" style="width:28px;height:28px">${accessTag(r)[2]}</span></span><div><h2>${ch.title}</h2><div class="sheet-sub" style="margin:0">${story.title} Â· Chapter ${ch.n}</div></div></div>
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:6px"><span class="ax ${accessTag(r)[0]}" style="font-size:1.5rem"><span class="ic" style="width:28px;height:28px">${accessTag(r)[2]}</span></span><div><h2>${ch.title}</h2><div class="sheet-sub" style="margin:0">${story.title} \u00b7 Chapter ${ch.n}</div></div></div>
   <div class="card" style="margin-bottom:14px"><p class="muted" style="font-size:.86rem;margin:0">${reasonFor(ch,r)}</p></div>
   <div class="col-flex" style="gap:9px">
     ${ch.state==='preview'?`<button class="btn story block" data-preview="${ch.id}" data-act="close-sheet">${I.eye}Read the preview</button>`:""}
@@ -1610,7 +2014,7 @@ function sheetLock(chId){
 function sheetRedeem(){
   return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Redeem an access key</h2><p class="sheet-sub">Keys unlock beta, reviewer, gift &amp; campaign content. Access binds to your account.</p>
   <form data-redeem-form><div class="col-flex"><input id="key-input-sheet" class="pill-input" name="key" style="text-align:left;letter-spacing:.1em" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off"><div id="key-error" class="faint" style="font-size:.76rem;min-height:1em"></div><button class="btn story block" type="submit">${I.key}Redeem key</button></div></form>
-  <div class="card" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:6px">Temporary local test keys</div><div class="faint" style="font-size:.76rem;line-height:1.7"><div><span class="kbd">AETHER-ARC2-2026</span> â€” Arc II preview</div><div><span class="kbd">REVIEWER-2026</span> â€” reviewer liturgy</div><div><span class="kbd">WRONG-KEY-9999</span> â€” see an error</div></div></div>`;
+  <div class="card" style="margin-top:14px"><div class="eyebrow" style="margin-bottom:6px">Temporary local test keys</div><div class="faint" style="font-size:.76rem;line-height:1.7"><div><span class="kbd">AETHER-ARC2-2026</span> \u2014 Arc II preview</div><div><span class="kbd">REVIEWER-2026</span> \u2014 reviewer liturgy</div><div><span class="kbd">WRONG-KEY-9999</span> \u2014 see an error</div></div></div>`;
 }
 function sheetConnectPatreon(){
   return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Activate with Patreon</h2><p class="sheet-sub">Patreon proves membership; your Aether login saves the library, keys, progress, and provider links.</p>
@@ -1622,7 +2026,7 @@ function sheetContext(){
   const f=currentChapter; if(!f) return "<p>Open a chapter first.</p>"; const {ch,story,index}=f;
   const prog=store.progress[ch.id];
   const next=story.chapters[index+1]; const nr=next?chapterResolved(next):null;
-  return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>${ch.title}</h2><div class="sheet-sub">${story.title} Â· Chapter ${ch.n} Â· ${ch.arc||""}</div>
+  return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>${ch.title}</h2><div class="sheet-sub">${story.title} \u00b7 Chapter ${ch.n} \u00b7 ${ch.arc||""}</div>
   <div class="card" style="margin-bottom:12px">${prog?`<div class="between"><span class="faint" style="font-size:.78rem">Progress</span><span style="font-size:.8rem;font-weight:600">${prog.pct}%</span></div>${progressBar(prog.pct)}`:`<p class="faint" style="font-size:.8rem;margin:0">Not started. Est. ${ch.readTime} min read.</p>`}</div>
   <div class="col-flex" style="gap:8px">
     <button class="btn ghost block" data-act="reader-bookmark">${I.bookmark}${store.bookmarks.find(b=>b.chapterId===ch.id)?'Remove bookmark':'Bookmark chapter'}</button>
@@ -1638,7 +2042,7 @@ function sheetParaComments(chId, p){
   const list=paraComments(chId,p);
   return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Paragraph note</h2><div class="sheet-sub">${list.length} note${list.length===1?'':'s'} on this paragraph</div>
   <div style="margin-bottom:14px">${list.map(commentHTML).join("")||`<p class="faint" style="font-size:.82rem">No notes yet.</p>`}</div>
-  <form data-para-form="${chId}" data-para-index="${p}"><div class="col-flex"><input name="name" placeholder="Your name" style="max-width:140px"><input name="text" placeholder="Add a note on this paragraphâ€¦" required><button class="btn sm story" type="submit">${I.msg}Post</button></div></form>`;
+  <form data-para-form="${chId}" data-para-index="${p}"><div class="col-flex"><input name="name" placeholder="Your name" style="max-width:140px"><input name="text" placeholder="Add a note on this paragraph\u2026" required><button class="btn sm story" type="submit">${I.msg}Post</button></div></form>`;
 }
 function sheetImage(fig, cap){
   return `<span class="close-x" data-act="close-sheet">${I.x}</span><div style="border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)">${D.FIG[fig]||""}</div><p class="muted center" style="font-size:.82rem;margin-top:10px;font-style:italic">${cap||""}</p>`;
@@ -1649,7 +2053,7 @@ function toggleFollow(id){ const i=store.followed.indexOf(id); if(i>=0) store.fo
 function setReaction(chId,k){ const cur=store.reactions[chId]?.picked; store.reactions[chId]={picked: cur===k?null:k}; saveStore(); renderReaderOnly(); }
 function toggleBookmark(){ const f=currentChapter; if(!f) return; const id=f.ch.id; const i=store.bookmarks.findIndex(b=>b.chapterId===id); if(i>=0){ store.bookmarks.splice(i,1); toast("Bookmark removed"); } else { store.bookmarks.unshift({chapterId:id, storyId:f.story.id, label:"A passage in "+f.ch.title, when:"just now"}); toast("Bookmarked", f.ch.title, {icon:'bookmarkFill'}); } saveStore(); updateReaderBar(); }
 function toggleMarkRead(){ const f=currentChapter; if(!f) return; const id=f.ch.id; store.readMarked[id]=!store.readMarked[id]; saveStore(); if(store.readMarked[id]){ const exists=store.history.find(h=>h.chapterId===id&&h.kind==='completed'); if(!exists) store.history.unshift({chapterId:id, storyId:f.story.id, title:f.ch.title, when:"just now", kind:"completed"}); saveStore(); toast("Marked as read"); } updateReaderBar(); }
-function saveQuote(){ const sel=window.getSelection(); const text=sel?sel.toString().trim():""; if(text.length<4){ toast("Select some text first","Highlight a line in the chapter, then save.",{kind:"bad",icon:"quote",ms:3000}); return; } const f=currentChapter; store.quotes.unshift({id:"q"+now(), chapterId:f.ch.id, story:f.story.id, text, when:"just now"}); saveStore(); sel.removeAllRanges(); toast("Quote saved", text.slice(0,50)+(text.length>50?"â€¦":""), {icon:"quoteFill" in I?"quote":"quote"}); }
+function saveQuote(){ const sel=window.getSelection(); const text=sel?sel.toString().trim():""; if(text.length<4){ toast("Select some text first","Highlight a line in the chapter, then save.",{kind:"bad",icon:"quote",ms:3000}); return; } const f=currentChapter; store.quotes.unshift({id:"q"+now(), chapterId:f.ch.id, story:f.story.id, text, when:"just now"}); saveStore(); sel.removeAllRanges(); toast("Quote saved", text.slice(0,50)+(text.length>50?"\u2026":""), {icon:"quoteFill" in I?"quote":"quote"}); }
 function rememberReturn(){ if(currentChapter) store.pendingReturn=currentChapter.ch.id; saveStore(); }
 async function connectPatreonGo(){
   if (!authState.user){ await signInWithGoogle("connect-patreon"); return; }
@@ -1695,6 +2099,7 @@ function copyText(t){ try{ navigator.clipboard&&navigator.clipboard.writeText(t)
 
 /* ============ reader-only re-render (keep scroll) ============ */
 function renderReaderOnly(){ if(route.name!=="read"||!currentChapter) return;
+  document.body.setAttribute("data-reader-theme", store.settings.readerTheme);
   const v=VIEWS.read(); const tmp=document.createElement("div"); tmp.innerHTML=v;
   const newReader=tmp.querySelector("#reader"); const cur=document.getElementById("reader");
   if(newReader&&cur){ cur.className=newReader.className; cur.style.cssText=newReader.style.cssText; }
@@ -1756,7 +2161,7 @@ function handleAttr(el, name, val){
 }
 function delegate(){
   document.addEventListener("click",(e)=>{
-    const t=e.target.closest("[data-nav],[data-read],[data-preview],[data-lock],[data-sheet],[data-follow],[data-react],[data-persona],[data-toggle],[data-filter],[data-act],[data-toast-action],[data-dismiss],[data-fig],[data-para],[data-copy],[data-set-theme],[data-set-preset],[data-shelf-view],[data-quote-card],[data-site-theme],[data-studio-state]");
+    const t=e.target.closest("[data-nav],[data-read],[data-preview],[data-lock],[data-sheet],[data-follow],[data-react],[data-persona],[data-toggle],[data-filter],[data-act],[data-toast-action],[data-dismiss],[data-fig],[data-para],[data-copy],[data-set-theme],[data-set-preset],[data-shelf-view],[data-quote-card],[data-site-theme],[data-studio-state],[data-set-bg-mode],[data-set-bg-url]");
     if(!t) return;
     if (t.dataset.siteTheme!=null){ setTheme(t.dataset.siteTheme); openSheet(currentSheet?currentSheet.builder:sheetSettings, currentSheet?currentSheet.opts:null); toast("Theme: "+(THEMES.find(x=>x.id===t.dataset.siteTheme)?.name), null, {icon:"palette"}); return; }
     if (t.dataset.studioState!=null){ const p=t.closest(".state-pills"); if(p) p.querySelectorAll(".state-pill").forEach(b=>b.classList.remove("active")); t.classList.add("active"); toast("Access state set", "Chapter will be "+t.textContent.trim()+" on publish.", {icon:"lock"}); return; }
@@ -1769,7 +2174,9 @@ function delegate(){
     if (t.dataset.react!=null){ if(currentChapter) setReaction(currentChapter.ch.id, t.dataset.react); return; }
     if (t.dataset.persona!=null){ store.personaId=t.dataset.persona; saveStore(); closeSheet(); toast("Viewing as "+(D.PERSONAS.find(p=>p.id===t.dataset.persona)?.label),null,{icon:"user"}); render(); return; }
     if (t.dataset.filter!=null){ const k=t.dataset.filter; const i=store.filters.chips.indexOf(k); if(i>=0) store.filters.chips.splice(i,1); else store.filters.chips.push(k); saveStore(); renderHeaderless(); return; }
-    if (t.dataset.toggle!=null){ store.settings[t.dataset.toggle]=!store.settings[t.dataset.toggle]; saveStore(); if(currentSheet){ openSheet(currentSheet.builder, currentSheet.opts); } if(route.name==="read") renderReaderOnly(); return; }
+    if (t.dataset.toggle!=null){ store.settings[t.dataset.toggle]=!store.settings[t.dataset.toggle]; saveStore(); applyBgSettings(); if(currentSheet){ openSheet(currentSheet.builder, currentSheet.opts); } if(route.name==="read") renderReaderOnly(); return; }
+    if (t.dataset.setBgMode!=null){ store.settings.bgMode=t.dataset.setBgMode; saveStore(); applyBgSettings(); if(currentSheet){ openSheet(currentSheet.builder, currentSheet.opts); } return; }
+    if (t.dataset.setBgUrl!=null){ store.settings.bgImageUrl=t.dataset.setBgUrl; saveStore(); setStoryAccent(getActiveStory()); if(currentSheet){ openSheet(currentSheet.builder, currentSheet.opts); } return; }
     if (t.dataset.shelfView!=null){ store.filters.shelfView=t.dataset.shelfView; saveStore(); render(); return; }
     if (t.dataset.setTheme!=null){ store.settings.readerTheme=t.dataset.setTheme; saveStore(); openSheet(currentSheet.builder,currentSheet.opts); renderReaderOnly(); return; }
     if (t.dataset.setPreset!=null){ store.settings.preset=t.dataset.setPreset; if(t.dataset.setPreset==="dyslexia"){/*keep*/} saveStore(); openSheet(currentSheet.builder,currentSheet.opts); renderReaderOnly(); return; }
@@ -1777,7 +2184,14 @@ function delegate(){
     if (t.dataset.para!=null && currentChapter){ openSheet(()=>sheetParaComments(currentChapter.ch.id, parseInt(t.dataset.para))); return; }
     if (t.dataset.copy!=null){ copyText(t.dataset.copy); return; }
     if (t.dataset.quoteCard!=null){ toast("Quote card ready","Copied as a shareable card.",{icon:"spark"}); return; }
-    if (t.dataset.dismiss!=null){ store.notifs=store.notifs.filter(n=>n.id!==t.dataset.dismiss); saveStore(); render(); return; }
+    if (t.dataset.dismiss!=null){
+      if (!store.dismissedNotifs) store.dismissedNotifs = [];
+      store.dismissedNotifs.push(t.dataset.dismiss);
+      store.notifs=store.notifs.filter(n=>n.id!==t.dataset.dismiss);
+      saveStore();
+      render();
+      return;
+    }
     if (t.dataset.toastAction!=null){ const a=t.dataset.toastAction; if(a.startsWith("return:")){ store.pendingReturn=null; saveStore(); nav("/read/"+a.split(":")[1]); } return; }
     if (t.dataset.act!=null){ e.preventDefault(); e.stopPropagation(); handleAct(t.dataset.act, t); return; }
   });
@@ -1840,11 +2254,12 @@ function handleAct(act, el){
     case "reader-savequote": saveQuote(); break;
     case "reader-comments": { const c=document.getElementById("cmtblock"); if(c){ c.scrollIntoView({behavior:"smooth"}); } break; }
     case "offline-queue": toast("Saved for offline","Available while your access is active (concept).",{icon:"download",ms:4000}); break;
-    case "extra-open": toast("Opening bonus material","Author note Â· reader format.",{icon:"spark"}); break;
+    case "extra-open": toast("Opening bonus material","Author note \u00b7 reader format.",{icon:"spark"}); break;
     case "external-archive": toast("Opening Abstracto Tales","The main archive opens in a new tab (concept).",{icon:"external",ms:3500}); break;
     case "external-discord": toast("Opening Discord","#aether-pages-help (concept).",{icon:"msg"}); break;
     case "simulate-notif": { const n={id:"n"+now(),t:"New chapter available",d:"A new early-access chapter just dropped.",k:"chapter",time:"just now",read:false,story:"glass-orchard",chapter:"go-5"}; store.notifs.unshift(n); saveStore(); render(); toast("Notice added",null,{icon:"bell"}); break; }
     case "mark-all-read": store.notifs.forEach(n=>n.read=true); saveStore(); render(); break;
+    case "clear-all-notifs": store.notifs=[]; saveStore(); render(); break;
     case "notif-prefs": toast("Notification preferences","Manage email & push in account settings (concept).",{icon:"cog",ms:3500}); break;
     case "studio-publish": toast("Published","Chapter is live for readers with access.",{icon:"checkCirc",ms:4000}); break;
     case "studio-save-draft": toast("Draft saved","Auto-saved to your drafts.",{icon:"book"}); break;
@@ -1865,7 +2280,7 @@ function handleAct(act, el){
 VIEWS.studioOverview = function(){
   const o=D.STUDIO.overview, a=D.STUDIO.analytics;
   const max=Math.max(...a.readsByDay);
-  return `<h1 class="page-title">Studio Overview</h1><p class="page-sub">Your archive at a glance â€” subscribers, reads, and what needs your attention.</p>
+  return `<h1 class="page-title">Studio Overview</h1><p class="page-sub">Your archive at a glance \u2014 subscribers, reads, and what needs your attention.</p>
   <div class="kpis" style="margin:14px 0 18px">
     <div class="kpi"><div class="lbl">Subscribers</div><div class="val">${o.subscribers.toLocaleString()}</div><div class="delta up">${I.trending} ${o.subsDelta}</div></div>
     <div class="kpi"><div class="lbl">Reads (30d)</div><div class="val">${o.reads30.toLocaleString()}</div><div class="delta up">${o.readsDelta}</div></div>
@@ -1874,7 +2289,7 @@ VIEWS.studioOverview = function(){
   </div>
   <div class="section"><div class="section-head"><h2>Reads this fortnight</h2></div>
     <div class="card"><div class="bars">${a.readsByDay.map(v=>`<i style="height:${Math.round(v/max*100)}%"></i>`).join("")}</div>
-    <div class="faint" style="font-size:.72rem;margin-top:8px">Peak day: ${max} reads Â· strongest in the evenings.</div></div>
+    <div class="faint" style="font-size:.72rem;margin-top:8px">Peak day: ${max} reads \u00b7 strongest in the evenings.</div></div>
   </div>
   <div class="section"><div class="section-head"><h2>Quick actions</h2></div>
     <div class="quicklinks">
@@ -1886,9 +2301,9 @@ VIEWS.studioOverview = function(){
   </div>
   <div class="section"><div class="section-head"><h2>Needs attention</h2></div>
     <div class="col-flex">
-      <div class="mgr-row"><span class="mi-ic" style="color:var(--warn)">${I.alert}</span><div class="mi-body"><div class="mi-t">1 flagged comment</div><div class="mi-s">Reported spoiler in "Inheritance of Glass" â€” review in Analytics.</div></div><div class="mi-acts"><button class="btn sm" data-nav="/studio/analytics">Review</button></div></div>
-      <div class="mgr-row"><span class="mi-ic" style="color:var(--info)">${I.sync}</span><div class="mi-body"><div class="mi-t">1 sync pending</div><div class="mi-s">Pell R. â€” Patreon connection verifying.</div></div><div class="mi-acts"><button class="btn sm" data-nav="/studio/access">Members</button></div></div>
-      <div class="mgr-row"><span class="mi-ic" style="color:var(--accent)">${I.book}</span><div class="mi-body"><div class="mi-t">Draft ready: "The Third Bell"</div><div class="mi-s">2,140 words Â· Arc II opening.</div></div><div class="mi-acts"><button class="btn sm story" data-act="studio-publish">Publish</button></div></div>
+      <div class="mgr-row"><span class="mi-ic" style="color:var(--warn)">${I.alert}</span><div class="mi-body"><div class="mi-t">1 flagged comment</div><div class="mi-s">Reported spoiler in "Inheritance of Glass" \u2014 review in Analytics.</div></div><div class="mi-acts"><button class="btn sm" data-nav="/studio/analytics">Review</button></div></div>
+      <div class="mgr-row"><span class="mi-ic" style="color:var(--info)">${I.sync}</span><div class="mi-body"><div class="mi-t">1 sync pending</div><div class="mi-s">Pell R. \u2014 Patreon connection verifying.</div></div><div class="mi-acts"><button class="btn sm" data-nav="/studio/access">Members</button></div></div>
+      <div class="mgr-row"><span class="mi-ic" style="color:var(--accent)">${I.book}</span><div class="mi-body"><div class="mi-t">Draft ready: "The Third Bell"</div><div class="mi-s">2,140 words \u00b7 Arc II opening.</div></div><div class="mi-acts"><button class="btn sm story" data-act="studio-publish">Publish</button></div></div>
     </div>
   </div>`;
 };
@@ -1900,9 +2315,9 @@ VIEWS.studioChapters = function(){
   return `<div class="between"><div><h1 class="page-title">Chapters</h1><p class="page-sub">Draft, set access state, and schedule releases.</p></div><button class="btn story sm" data-act="studio-new-chapter">${I.plus}New chapter</button></div>
   <div class="card composer" style="margin:12px 0 18px">
     <div class="eyebrow" style="margin-bottom:8px">Quick publish</div>
-    <input type="text" placeholder="Chapter titleâ€¦">
+    <input type="text" placeholder="Chapter title\u2026">
     <div class="state-pills" style="margin:10px 0">${states.map(([k,l],i)=>`<button class="state-pill ${i===3?'active':''}" data-studio-state="${k}">${l}</button>`).join("")}</div>
-    <textarea placeholder="Paste or write the chapter draftâ€¦"></textarea>
+    <textarea placeholder="Paste or write the chapter draft\u2026"></textarea>
     <div class="between" style="margin-top:10px"><span class="faint" style="font-size:.76rem">Auto-saves as you type.</span><div style="display:flex;gap:8px"><button class="btn sm ghost" data-act="studio-save-draft">${I.book}Save draft</button><button class="btn sm story" data-act="studio-publish">${I.play}Publish</button></div></div>
   </div>
   <div class="section"><div class="section-head"><h2>All chapters</h2><span class="faint" style="font-size:.78rem">${all.length} total</span></div>
@@ -1910,12 +2325,12 @@ VIEWS.studioChapters = function(){
       const st = c.state==='free'?'free':c.state==='preview'?'preview':c.state==='early'?'early':c.state==='key'?'key':c.state==='unavailable'?'unavailable':'member';
       const stColor={free:'free',preview:'preview',early:'early',member:'unlocked',key:'key',unavailable:'error'}[st];
       return `<div class="mgr-row"><span class="mi-ic" style="color:var(--${stColor==='unlocked'?'accent-2':stColor})">${I[st==='free'?'open':st==='early'?'hourglass':st==='key'?'key':st==='preview'?'eye':st==='unavailable'?'alert':'lock']}</span>
-        <div class="mi-body"><div class="mi-t"><span>${c.title}</span>${badge(stColor==='unlocked'?'gold':stColor, st)}${c.publicDate?badge('early','Public '+fmtDate(c.publicDate)):''}</div><div class="mi-s">${s.title} Â· Ch ${c.n} Â· ${c.readTime} min Â· ${c.arc||''}</div></div>
+        <div class="mi-body"><div class="mi-t"><span>${c.title}</span>${badge(stColor==='unlocked'?'gold':stColor, st)}${c.publicDate?badge('early','Public '+fmtDate(c.publicDate)):''}</div><div class="mi-s">${s.title} \u00b7 Ch ${c.n} \u00b7 ${c.readTime} min \u00b7 ${c.arc||''}</div></div>
         <div class="mi-acts"><button class="btn sm" data-act="studio-edit">${I.cog}State</button><button class="btn sm ghost" data-act="studio-preview">${I.eye}Preview</button></div></div>`;
     }).join("")}
   </div>
   <div class="section"><div class="section-head"><h2>Drafts</h2></div>
-    ${D.STUDIO.drafts.map(d=>`<div class="mgr-row"><span class="mi-ic">${I.book}</span><div class="mi-body"><div class="mi-t"><span>${d.title}</span>${badge(d.status==='review'?'':'', d.status)}</div><div class="mi-s">${d.book} Â· ${d.words.toLocaleString()} words Â· ${d.note}</div></div><div class="mi-acts"><button class="btn sm story" data-act="studio-edit">${I.cog}Edit</button></div></div>`).join("")}
+    ${D.STUDIO.drafts.map(d=>`<div class="mgr-row"><span class="mi-ic">${I.book}</span><div class="mi-body"><div class="mi-t"><span>${d.title}</span>${badge(d.status==='review'?'':'', d.status)}</div><div class="mi-s">${d.book} \u00b7 ${d.words.toLocaleString()} words \u00b7 ${d.note}</div></div><div class="mi-acts"><button class="btn sm story" data-act="studio-edit">${I.cog}Edit</button></div></div>`).join("")}
   </div>`;
 };
 VIEWS.studioAccess = function(){
@@ -1924,22 +2339,22 @@ VIEWS.studioAccess = function(){
     ${D.STUDIO.tiers.map(t=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--accent)">${I.vault}</span><div class="mi-body"><div class="mi-t"><span>${t.name}</span>${badge('gold',t.price)}${badge('',t.members+' members')}</div><div class="mi-s">${t.unlocks}</div></div><div class="mi-acts"><button class="btn sm ghost" data-act="studio-edit">${I.cog}Edit</button></div></div>`).join("")}
   </div>
   <div class="section"><div class="section-head"><h2>Key campaigns</h2><button class="btn sm story" data-act="studio-new-campaign">${I.plus}New campaign</button></div>
-    ${D.STUDIO.campaigns.map(c=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--key)">${I.key}</span><div class="mi-body"><div class="mi-t"><span>${c.name}</span>${badge(c.state==='active'?'key':'', c.state)}${badge('',c.used+'/'+c.issued+' used')}</div><div class="mi-s"><span class="kbd">${c.code}</span> Â· ${c.scope} Â· expires ${c.expires}</div></div><div class="mi-acts"><button class="btn sm" data-copy="${c.code}">${I.copy}Copy</button></div></div>`).join("")}
+    ${D.STUDIO.campaigns.map(c=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--key)">${I.key}</span><div class="mi-body"><div class="mi-t"><span>${c.name}</span>${badge(c.state==='active'?'key':'', c.state)}${badge('',c.used+'/'+c.issued+' used')}</div><div class="mi-s"><span class="kbd">${c.code}</span> \u00b7 ${c.scope} \u00b7 expires ${c.expires}</div></div><div class="mi-acts"><button class="btn sm" data-copy="${c.code}">${I.copy}Copy</button></div></div>`).join("")}
   </div>
   <div class="section"><div class="section-head"><h2>Members</h2><span class="faint" style="font-size:.78rem">${D.STUDIO.members.length} shown</span></div>
-    ${D.STUDIO.members.map(m=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--${m.status==='active'?'good':m.status==='lapsed'?'bad':'warn'})">${I.user}</span><div class="mi-body"><div class="mi-t"><span>${m.name}</span>${badge(m.status==='active'?'free':m.status==='lapsed'?'':'', m.status)}${badge('',m.tier)}</div><div class="mi-s">since ${m.since} Â· via ${m.source}</div></div><div class="mi-acts"><button class="btn sm ghost" data-act="studio-grant">${I.gift}Grant</button></div></div>`).join("")}
+    ${D.STUDIO.members.map(m=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--${m.status==='active'?'good':m.status==='lapsed'?'bad':'warn'})">${I.user}</span><div class="mi-body"><div class="mi-t"><span>${m.name}</span>${badge(m.status==='active'?'free':m.status==='lapsed'?'':'', m.status)}${badge('',m.tier)}</div><div class="mi-s">since ${m.since} \u00b7 via ${m.source}</div></div><div class="mi-acts"><button class="btn sm ghost" data-act="studio-grant">${I.gift}Grant</button></div></div>`).join("")}
   </div>`;
 };
 VIEWS.studioAnnouncements = function(){
   return `<div class="between"><div><h1 class="page-title">Posts &amp; Announcements</h1><p class="page-sub">Updates readers see on Home and in notifications.</p></div><button class="btn story sm" data-act="studio-new-post">${I.plus}New post</button></div>
   <div class="card composer" style="margin:12px 0 18px">
     <div class="eyebrow" style="margin-bottom:8px">Compose announcement</div>
-    <input type="text" placeholder="Headlineâ€¦">
+    <input type="text" placeholder="Headline\u2026">
     <textarea placeholder="What should readers know?" style="margin-top:10px"></textarea>
     <div class="between" style="margin-top:10px"><div class="chips"><button class="chip active">All readers</button><button class="chip">Aether Member</button><button class="chip">Archivist</button></div><div style="display:flex;gap:8px"><button class="btn sm ghost" data-act="studio-schedule">${I.calendar}Schedule</button><button class="btn sm story" data-act="studio-publish">${I.play}Publish now</button></div></div>
   </div>
   <div class="section"><div class="section-head"><h2>Scheduled &amp; live</h2></div>
-    ${D.STUDIO.announcements.map(a=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--${a.state==='live'?'good':'info'})">${I.msg}</span><div class="mi-body"><div class="mi-t"><span>${a.title}</span>${badge(a.state==='live'?'free':'', a.state)}</div><div class="mi-s">${a.body} Â· ${a.target} Â· ${a.when}</div></div><div class="mi-acts"><button class="btn sm ghost" data-act="studio-edit">${I.cog}Edit</button></div></div>`).join("")}
+    ${D.STUDIO.announcements.map(a=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--${a.state==='live'?'good':'info'})">${I.msg}</span><div class="mi-body"><div class="mi-t"><span>${a.title}</span>${badge(a.state==='live'?'free':'', a.state)}</div><div class="mi-s">${a.body} \u00b7 ${a.target} \u00b7 ${a.when}</div></div><div class="mi-acts"><button class="btn sm ghost" data-act="studio-edit">${I.cog}Edit</button></div></div>`).join("")}
   </div>`;
 };
 VIEWS.studioMedia = function(){
@@ -1962,7 +2377,7 @@ VIEWS.studioAnalytics = function(){
     <div class="card"><div class="bars">${a.readsByDay.map(v=>`<i style="height:${Math.round(v/max*100)}%"></i>`).join("")}</div></div>
   </div>
   <div class="section"><div class="section-head"><h2>Top chapters</h2></div>
-    ${a.topChapters.map((c,i)=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--accent);font-family:var(--serif);font-weight:700">${i+1}</span><div class="mi-body"><div class="mi-t"><span>${c.t}</span>${badge('',c.react)}</div><div class="mi-s">${c.reads.toLocaleString()} reads Â· ${c.completion}% completion</div></div></div>`).join("")}
+    ${a.topChapters.map((c,i)=>`<div class="mgr-row"><span class="mi-ic" style="color:var(--accent);font-family:var(--serif);font-weight:700">${i+1}</span><div class="mi-body"><div class="mi-t"><span>${c.t}</span>${badge('',c.react)}</div><div class="mi-s">${c.reads.toLocaleString()} reads \u00b7 ${c.completion}% completion</div></div></div>`).join("")}
   </div>
   <div class="section"><div class="section-head"><h2>Reactions</h2></div>
     <div class="card">${a.reactions.map(r=>`<div class="between" style="padding:6px 0"><span style="font-size:1.2rem">${r.e}</span><div style="flex:1;margin:0 12px">${progressBar(Math.round(r.n/a.reactions[0].n*100))}</div><span class="faint" style="font-size:.78rem">${r.n}</span></div>`).join("")}</div>
@@ -1975,7 +2390,7 @@ VIEWS.studioSettings = function(){
   const s=bySlug(D.PRIMARY_SLUG);
   return `<h1 class="page-title">Studio Settings</h1><p class="page-sub">Book identity, branding and defaults.</p>
   <div class="section"><div class="section-head"><h2>Primary book</h2></div>
-    <div class="card tinted" style="${storyAccentVars(s)};display:flex;gap:13px;align-items:center"><div style="width:54px;height:72px;border-radius:8px;overflow:hidden;flex:0 0 auto;border:1px solid var(--border)">${coverArt(s)}</div><div style="flex:1"><div style="font-family:var(--serif);font-weight:600">${s.title}</div><div class="faint" style="font-size:.76rem">${s.author} Â· ${s.genre}</div></div><button class="btn sm ghost" data-act="studio-edit">${I.cog}Edit</button></div>
+    <div class="card tinted" style="${storyAccentVars(s)};display:flex;gap:13px;align-items:center"><div style="width:54px;height:72px;border-radius:8px;overflow:hidden;flex:0 0 auto;border:1px solid var(--border)">${coverArt(s)}</div><div style="flex:1"><div style="font-family:var(--serif);font-weight:600">${s.title}</div><div class="faint" style="font-size:.76rem">${s.author} \u00b7 ${s.genre}</div></div><button class="btn sm ghost" data-act="studio-edit">${I.cog}Edit</button></div>
   </div>
   <div class="section"><div class="section-head"><h2>Branding accent</h2></div>
     <div class="card"><div class="state-pills">${["#c75b6b","#d4b06a","#5bb8c9","#9a7ed1","#8fb98a","#e08a4a"].map((col,i)=>`<button class="state-pill ${i===0?'active':''}" style="background:${col};border-color:${col};color:#fff;padding:0 18px"></button>`).join("")}</div><p class="faint" style="font-size:.76rem;margin-top:10px">This book's accent tints covers, progress and the reader when readers enter it.</p></div>
@@ -1998,7 +2413,7 @@ VIEWS.home = function(){
   const shorter = D.STORIES.filter(s=>!D.FEATURED_SLUGS.includes(s.slug));
   let banner = "";
   if (P.expired) banner = accessBanner("expired","Your Aether Member access has expired","Some chapters are now locked. Renew to continue reading.","/vault","Renew access");
-  else if (P.pending) banner = accessBanner("pending","We're verifying your access","Your Patreon connection is syncing â€” we'll update automatically.","/support/check-access","Check status");
+  else if (P.pending) banner = accessBanner("pending","We're verifying your access","Your Patreon connection is syncing \u2014 we'll update automatically.","/support/check-access","Check status");
   else if (P.noTier) banner = accessBanner("none","Your Patreon tier doesn't include access","You're connected, but your tier doesn't unlock Aether Pages.","/benefits","See what unlocks");
   else if (!P.signedIn) banner = accessBanner("anon","Browsing as a guest","Read free chapters and previews. Connect Patreon or redeem a key to unlock more.","/vault","Activate access");
   const lastRead = activeReads().find(x=>x.story.id===primary.id);
@@ -2013,12 +2428,12 @@ VIEWS.home = function(){
   ${bookHero(primary, { startCh, lastRead, pPct, pRead, latestCh })}
   <div class="home-cols">
    <div style="min-width:0">
-    <div class="section"><div class="section-head"><h2>What's new â€” ${primary.title}</h2><a class="section-link" data-nav="/story/${primary.slug}/updates">All ${I.chevR}</a></div><div class="feed stagger">${buildBookFeed(primary)}</div></div>
+    <div class="section"><div class="section-head"><h2>What's new \u2014 ${primary.title}</h2><a class="section-link" data-nav="/story/${primary.slug}/updates">All ${I.chevR}</a></div><div class="feed stagger">${buildBookFeed(primary)}</div></div>
     ${reads.length?`<div class="section"><div class="section-head"><h2>Continue reading</h2><a class="section-link" data-nav="/my-shelf">My shelf ${I.chevR}</a></div><div class="lane stagger">${reads.slice(0,6).map(({ch,story,prog})=>{const next=story.chapters[story.chapters.indexOf(ch)+1];const nr=next?chapterResolved(next):null;return `<button class="card" style="width:220px;text-align:left;${storyAccentVars(story)}" data-read="${ch.id}"><div class="faint" style="font-size:.68rem;text-transform:uppercase;letter-spacing:.08em">${story.title}</div><div style="font-family:var(--serif);font-weight:600;margin:2px 0 6px">${ch.title}</div>${progressBar(prog.pct)}<div class="between" style="margin-top:8px"><span class="faint" style="font-size:.72rem">${prog.pct<100?prog.pct+'%':'Done'}</span>${nr?`<span class="faint" style="font-size:.68rem">Next: ${accessTag(nr)[1]}</span>`:""}</div></button>`;}).join("")}</div></div>`:""}
-    <div class="section"><div class="section-head"><h2>This week's releases</h2><a class="section-link" data-nav="/calendar">Calendar ${I.chevR}</a></div><div class="sched">${D.CALENDAR.slice(0,4).map(day=>`<div class="sched-card"><div class="dow">${day.day}</div><div class="dt">${(day.items[0]?.c||day.dow).split('â€”')[0].trim()}</div>${day.items.map(it=>`<div class="dl">${it.t} Â· ${it.k}</div>`).join("")}</div>`).join("")}</div></div>
+    <div class="section"><div class="section-head"><h2>This week's releases</h2><a class="section-link" data-nav="/calendar">Calendar ${I.chevR}</a></div><div class="sched">${D.CALENDAR.slice(0,4).map(day=>`<div class="sched-card"><div class="dow">${day.day}</div><div class="dt">${(day.items[0]?.c||day.dow).split('\u2014')[0].trim()}</div>${day.items.map(it=>`<div class="dl">${it.t} \u00b7 ${it.k}</div>`).join("")}</div>`).join("")}</div></div>
    </div>
    <div style="min-width:0">
-    ${secondary?`<div class="section"><div class="section-head"><h2>Also reading</h2></div><a class="card tinted" data-nav="/story/${secondary.slug}" style="${storyAccentVars(secondary)};display:block"><div style="display:flex;gap:13px;align-items:center"><div style="width:58px;height:78px;border-radius:9px;overflow:hidden;flex:0 0 auto;border:1px solid var(--border)">${coverArt(secondary)}</div><div style="min-width:0;flex:1"><div style="font-family:var(--serif);font-weight:600;font-size:1.05rem">${secondary.title}</div><div class="faint" style="font-size:.76rem;margin-top:2px">${secondary.author} Â· ${secondary.genre}</div><div class="faint" style="font-size:.74rem;margin-top:6px">${secondary.tagline}</div></div></div><button class="btn sm story" style="margin-top:12px;width:100%">${I.book}Open story</button></a></div>`:""}
+    ${secondary?`<div class="section"><div class="section-head"><h2>Also reading</h2></div><a class="card tinted" data-nav="/story/${secondary.slug}" style="${storyAccentVars(secondary)};display:block"><div style="display:flex;gap:13px;align-items:center"><div style="width:58px;height:78px;border-radius:9px;overflow:hidden;flex:0 0 auto;border:1px solid var(--border)">${coverArt(secondary)}</div><div style="min-width:0;flex:1"><div style="font-family:var(--serif);font-weight:600;font-size:1.05rem">${secondary.title}</div><div class="faint" style="font-size:.76rem;margin-top:2px">${secondary.author} \u00b7 ${secondary.genre}</div><div class="faint" style="font-size:.74rem;margin-top:6px">${secondary.tagline}</div></div></div><button class="btn sm story" style="margin-top:12px;width:100%">${I.book}Open story</button></a></div>`:""}
     ${memberArchivePanel()}
     <div class="section"><div class="section-head"><h2>Shorter works</h2></div><p class="faint" style="font-size:.76rem;margin:-4px 0 8px">Novellas, prequels &amp; bonus pieces beyond the main serials.</p><div class="lane">${shorter.map(storyCard).join("")}</div></div>
    </div>
@@ -2028,13 +2443,44 @@ VIEWS.home = function(){
 };
 function bookHero(s, o){
   const r = chapterResolved(o.latestCh);
-  return `<div class="book-hero" style="${storyAccentVars(s)}"><div class="bg">${coverArt(s)}</div><div class="grad"></div><div class="inner"><div class="top"><div class="cover">${coverArt(s)}</div><div class="htxt"><div class="eyebrow">${s.genre} Â· ${s.status} Â· ${s.arc}</div><h1>${s.title}</h1><div class="author">by ${s.author}</div></div></div><div class="progress-line"><div class="between" style="margin-bottom:6px"><span class="faint" style="font-size:.76rem">${o.pRead} / ${s.chapters.length} chapters read</span><span class="faint" style="font-size:.76rem">${o.pPct}%</span></div>${progressBar(o.pPct)}</div><div class="cta-row"><button class="btn primary" data-read="${o.startCh}">${o.lastRead?I.play+"Continue â€” "+o.lastRead.ch.title:I.play+"Start reading"}</button><a class="btn ghost sm" data-nav="/story/${s.slug}/chapters">${I.list}Shelf</a><a class="btn ghost sm" data-nav="/story/${s.slug}/recap">${I.info}Recap</a><a class="btn ghost sm" data-nav="/story/${s.slug}/extras">${I.spark}Extras</a></div><div class="between" style="margin-top:12px"><span class="faint" style="font-size:.74rem">Latest: <b style="color:var(--text)">${o.latestCh.title}</b> Â· ${axInline(r)}</span>${o.latestCh.publicDate?`<span class="badge early">${I.hourglass}Public ${fmtDate(o.latestCh.publicDate)}</span>`:""}</div></div></div>`;
+  const coverUrl = s.cover_image_url || "";
+  return `<div class="book-hero" style="${storyAccentVars(s)}">
+    <div class="book-hero-cover">
+      <img src="${coverUrl}" alt="${esc(s.title)}" />
+    </div>
+    <div class="book-hero-details">
+      <div class="book-hero-meta">${s.genre} \u00b7 ${s.status} \u00b7 ${s.arc}</div>
+      <h1>${s.title}</h1>
+      <div class="book-hero-author">by ${s.author}</div>
+      <div class="book-hero-tagline">${s.tagline || ""}</div>
+      
+      <div class="progress-line">
+        <div class="between" style="margin-bottom:6px">
+          <span class="faint" style="font-size:.76rem">${o.pRead} / ${s.chapters.length} chapters read</span>
+          <span class="faint" style="font-size:.76rem">${o.pPct}%</span>
+        </div>
+        ${progressBar(o.pPct)}
+      </div>
+      
+      <div class="cta-row" style="margin-top:16px;">
+        <button class="btn primary" data-read="${o.startCh}">${o.lastRead ? I.play + "Continue \u2014 " + o.lastRead.ch.title : I.play + "Start reading"}</button>
+        <a class="btn ghost sm" data-nav="/story/${s.slug}/chapters">${I.list}Shelf</a>
+        <a class="btn ghost sm" data-nav="/story/${s.slug}/recap">${I.info}Recap</a>
+        <a class="btn ghost sm" data-nav="/story/${s.slug}/extras">${I.spark}Extras</a>
+      </div>
+      
+      <div class="between" style="margin-top:14px">
+        <span class="faint" style="font-size:.74rem">Latest: <b style="color:var(--text)">${o.latestCh.title}</b> \u00b7 ${axInline(r)}</span>
+        ${o.latestCh.publicDate ? `<span class="badge early">${I.hourglass}Public ${fmtDate(o.latestCh.publicDate)}</span>` : ""}
+      </div>
+    </div>
+  </div>`;
 }
 function buildBookFeed(s){
   const items = [];
-  s.chapters.slice(-3).reverse().forEach(c=>{const r=chapterResolved(c);items.push({icon:I.play,color:"var(--accent)",tone:"accent",title:`New chapter â€” ${c.title}`,desc:`Chapter ${c.n} Â· ${c.readTime} min${c.state==='early'?' Â· early access for members':''}`,meta:[c.arc,isReadable(r)?"Readable now":accessTag(r)[1]],act:`data-read="${c.id}"`,cta:isReadable(r)?"Read":accessTag(r)[3]});});
+  s.chapters.slice(-3).reverse().forEach(c=>{const r=chapterResolved(c);items.push({icon:I.play,color:"var(--accent)",tone:"accent",title:`New chapter \u2014 ${c.title}`,desc:`Chapter ${c.n} \u00b7 ${c.readTime} min${c.state==='early'?' \u00b7 early access for members':''}`,meta:[c.arc,isReadable(r)?"Readable now":accessTag(r)[1]],act:`data-read="${c.id}"`,cta:isReadable(r)?"Read":accessTag(r)[3]});});
   D.STUDIO.announcements.slice(0,2).forEach(a=>{items.push({icon:I.msg,color:"var(--info)",tone:"info",title:a.title,desc:a.body,meta:[a.target,a.when],act:`data-act="studio-post"`,cta:"View"});});
-  D.STUDIO.media.filter(m=>m.used>0).slice(0,1).forEach(m=>{items.push({icon:I.spark,color:"var(--key)",tone:"key",thumb:m.fig,title:`New artwork â€” ${m.title}`,desc:`Illustration added to ${m.attached}.`,meta:["Art drop","Today"],act:`data-act="studio-post"`,cta:"See"});});
+  D.STUDIO.media.filter(m=>m.used>0).slice(0,1).forEach(m=>{items.push({icon:I.spark,color:"var(--key)",tone:"key",thumb:m.fig,title:`New artwork \u2014 ${m.title}`,desc:`Illustration added to ${m.attached}.`,meta:["Art drop","Today"],act:`data-act="studio-post"`,cta:"See"});});
   return items.map(it=>`<button class="feed-item" ${it.act||""}>${it.thumb?`<span class="fthumb">${D.FIG[it.thumb]||""}</span>`:`<span class="fico" style="background:color-mix(in srgb,${it.color} 16%, transparent);color:${it.color}">${it.icon}</span>`}<span class="fbody"><span class="ftop"><span class="ft">${it.title}</span></span><span class="fd">${it.desc}</span><span class="fmeta">${(it.meta||[]).map(m=>`<span>${m}</span>`).join("")}</span></span><span class="btn sm ${it.tone==='accent'?'story':''}" style="flex:0 0 auto">${it.cta}</span></button>`).join("");
 }
 
@@ -2049,6 +2495,7 @@ function init(){
   if(!document.querySelector(".toasts")){ const d=document.createElement("div"); d.className="toasts"; document.body.appendChild(d); }
   document.querySelector(".scrim").addEventListener("click",()=>closeSheet());
   delegate();
+  applyBgSettings();
   window.addEventListener("hashchange", render);
   render();
   initAuth().then(async ()=>{ await loadBackendLibrary(); saveStore(); render(); }).catch(err=>console.error("Auth bridge init failed", err));

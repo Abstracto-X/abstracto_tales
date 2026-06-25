@@ -299,12 +299,12 @@ The functions and components of the public reader SPA are now fully modularized 
 
 Additional Aether Pages bridge functions:
 - `getSupabase()` - Lazily creates the bridge Supabase client from the CDN global.
-- `initAuth()` - Consumes OAuth callback codes when present, restores the current Supabase Auth session, refreshes entitlements, and subscribes to auth state changes.
+- `initAuth()` - Consumes OAuth callback codes or implicit hash tokens when present, restores the current Supabase Auth session, refreshes profile/entitlements, and subscribes to auth state changes.
 - `refreshEntitlements()` - Reads normalized reader entitlements through `get_my_entitlements`, with a direct table fallback for transitional deployments.
 - `signInWithPassword(email, password)` / `signUpWithPassword(email, password)` / `signOutReader()` - Email account actions used by the bridge account sheet.
-- `oauthCallbackParams()` / `cleanOAuthCallbackUrl()` / `consumeOAuthCallback(client)` - Parse Supabase OAuth callback query/hash parameters, exchange returned authorization codes for sessions, and clean transient OAuth parameters from the URL while preserving the SPA route.
-- `subscriptionRedirectTo()` - Builds the current `subscription.html#/vault` OAuth redirect and rejects `file://` usage because Supabase OAuth requires http/https origins.
-- `signInWithGoogle(nextAction = "")` - Starts Supabase Google OAuth with a `#/vault` redirect, shows a redirect toast, stores optional pending actions, and manually redirects to `data.url` as a fallback. When `nextAction` is `connect-patreon`, the bridge resumes by starting Patreon OAuth after the Google session is restored.
+- `oauthCallbackParams()` / `cleanOAuthCallbackUrl()` / `consumeOAuthCallback(client)` - Parse Supabase OAuth callback query/hash parameters, including `?code=...`, `#access_token=...`, and nested `#/vault#access_token=...` returns; exchange codes or set token sessions; and clean transient OAuth parameters from the URL while preserving the SPA route.
+- `subscriptionRedirectTo()` - Builds a query-based `subscription.html?sub_auth=google&sub_route=vault` OAuth redirect and rejects `file://` usage because Supabase OAuth requires http/https origins.
+- `signInWithGoogle(nextAction = "")` - Starts Supabase Google OAuth with a query-based subscription redirect, shows a redirect toast, stores optional pending actions plus a subscription-return marker, and manually redirects to `data.url` as a fallback. When `nextAction` is `connect-patreon`, the bridge resumes by starting Patreon OAuth after the Google session is restored.
 - `requestPatreonOAuth()` - Starts the Patreon OAuth Edge Function and redirects only when the backend returns an authorization URL. Guest Patreon activation now routes through Google OAuth first, then resumes Patreon via `store.pendingAuthAction`.
 - `syncProviderEntitlements()` - Calls `sync-provider-entitlements` for Patreon, refreshes `get_my_entitlements`, reloads backend catalog metadata, and clears local provider-pending state.
 - `redeemKey(code)` - Redeems keys through the Supabase `redeem_access_key` RPC instead of faking access locally.

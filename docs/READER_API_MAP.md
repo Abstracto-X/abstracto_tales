@@ -233,7 +233,7 @@ State fields:
 `UserAuth` methods:
 
 - `init()` -> `Promise<void>`
-  - Reads the current auth session with `supabaseClient.auth.getSession()`.
+  - Consumes Supabase OAuth callback URLs first, including subscription-origin `?code=...` and `#access_token=...` returns, then reads the current auth session with `supabaseClient.auth.getSession()`.
   - If a session exists, loads the profile with `fetchProfile(...)`.
   - If no session exists, initializes guest auth/admin UI state.
   - Registers `supabaseClient.auth.onAuthStateChange(...)`.
@@ -424,7 +424,7 @@ The prior modular `Sub*` API remains available in the repository but is not the 
 
 Auth bridge additions in `aether-app.js`:
 - Initializes Supabase with the project publishable key when `window.supabase` is present.
-- Explicitly exchanges OAuth callback `code` parameters with `auth.exchangeCodeForSession(...)`, then restores `auth.getSession()`, subscribes to `auth.onAuthStateChange`, and stores active `authState.user/session`.
+- Explicitly consumes OAuth callback parameters before session restore. It exchanges PKCE `code` parameters with `auth.exchangeCodeForSession(...)`, accepts implicit hash token returns through `auth.setSession(...)`, supports nested `#/vault#access_token=...` SPA hashes, then restores `auth.getSession()`, subscribes to `auth.onAuthStateChange`, and stores active `authState.user/session`.
 - Calls `get_my_entitlements` RPC with a direct `user_entitlements` fallback for bridge-only entitlement display.
 - Account sheet supports Google OAuth, password sign-in/sign-up/sign-out, and a Patreon-first onboarding path that resumes Patreon connect after Google auth. Google OAuth actions prevent default delegated click behavior and use a manual `data.url` redirect fallback.
 - Key redemption calls `redeem_access_key(submitted_code)`.
