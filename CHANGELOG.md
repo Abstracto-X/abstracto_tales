@@ -5,6 +5,7 @@ Agents MUST update this file whenever they complete a task or make significant u
 
 ## [2026-06-26]
 ### Changed
+- 02:45 +05:30: Applied production Supabase database mappings for Patreon reward IDs `27253620` (Jedi Padawan), `27253626` (Jedi Knight), and `27253630` (Jedi Grandmaster) to their matching `reader_access_tiers`. Corrected the production tier hierarchy to Padawan rank 1, Knight rank 2, and Grandmaster rank 3 so higher tiers satisfy lower chapter gates correctly. Updated database docs with the active mapping IDs.
 - 02:31 +05:30: Added Patreon tier auto-mapping in the shared Supabase Edge Function helper. Patreon OAuth callback and manual provider sync now persist missing `provider_tier_mappings` automatically when active Patreon tiers match active site tier names/slugs, with `$5 Jedi Padawan`, `$7 Jedi Knight`, and `$10 Jedi Grandmaster` amount fallbacks. Deployed `patreon-oauth-callback` and `sync-provider-entitlements` to Supabase project `gdivyqfhgashkqcqqnas` and updated reader/database docs.
 
 ### Fixed

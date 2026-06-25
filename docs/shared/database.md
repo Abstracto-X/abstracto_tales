@@ -823,6 +823,16 @@ Patreon OAuth sync can now create missing mappings automatically when an active 
 `$5 -> jedi-padawan`, `$7 -> jedi-knight`, `$10 -> jedi-grandmaster`.
 Auto-created rows are stored in this table with `metadata.auto_mapped = true`; existing inactive mappings are respected and are not overwritten.
 
+Current Patreon reward mappings configured in production:
+
+| Patreon reward ID | Patreon tier | Site tier |
+|---|---|---|
+| `27253620` | Jedi Padawan ($5) | Jedi Padawan |
+| `27253626` | Jedi Knight ($7) | Jedi Knight |
+| `27253630` | Jedi Grandmaster ($10) | Jedi Grandmaster |
+
+The active site tier hierarchy uses `tier_rank` as ascending power: Padawan `1`, Knight `2`, Grandmaster `3`. Higher ranks satisfy lower required ranks in chapter access checks.
+
 | Column | Type | Notes |
 |---|---|---|
 | `id` | UUID PK | |
