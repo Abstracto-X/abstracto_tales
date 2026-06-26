@@ -607,6 +607,9 @@ export const UI = {
     },
 
     openAuthModal: () => {
+        if (UserAuth.mode !== 'update' && UserAuth.setMode) {
+            UserAuth.setMode('signin');
+        }
         const err = document.getElementById('auth-error');
         if (err) {
             err.textContent = '';

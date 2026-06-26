@@ -127,16 +127,17 @@
             <h2 class="modal-title" id="auth-title">Enter the Archives</h2>
             <div id="auth-error"></div>
 
-            <div class="form-group">
+            <div class="form-group" id="auth-email-group">
                 <label class="form-label">Email</label>
                 <input type="email" id="auth-email" class="form-input" placeholder="reader@aether.com">
             </div>
             <div class="form-group">
-                <label class="form-label">Password</label>
+                <label class="form-label" id="auth-password-label">Password</label>
                 <input type="password" id="auth-password" class="form-input" placeholder="........">
             </div>
 
             <button class="form-btn" id="auth-submit-btn" onclick="UserAuth.handleSubmit()">Sign In</button>
+            <div class="auth-switch" id="auth-forgot-btn" onclick="UserAuth.showRecovery()">Forgot password?</div>
             <div class="auth-switch" id="auth-switch-btn" onclick="UserAuth.toggleMode()">New to the Archives? Sign up here.</div>
         </div>
     </div>

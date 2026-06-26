@@ -257,12 +257,20 @@ The functions and components of the public reader SPA are now fully modularized 
 - `redeemAccessKey(code)` - Calls `redeem_access_key` RPC and reports a deployment-needed error when the migration is absent.
 - `requestPatreonSync()` - Invokes the `patreon-oauth-start` Edge Function and redirects when it returns a provider URL. The downstream Patreon callback/sync path can auto-create missing provider mappings for active Patreon tiers whose title matches a site tier name/slug, with built-in `$5/$7/$10` fallbacks for Jedi Padawan/Knight/Grandmaster.
 
+
+### `UserAuth` password recovery (`js/auth.js`)
+- `setMode(mode)` - Drives the main reader auth modal through `signin`, `signup`, `recover`, and `update` states, updating labels, hidden fields, and autocomplete hints.
+- `showRecovery()` - Switches the main reader auth modal into the reset-email request state.
+- `handleSubmit()` - Calls `supabaseClient.auth.resetPasswordForEmail(...)` in recover mode and `supabaseClient.auth.updateUser({ password })` in update mode.
+- OAuth callback parsing now preserves Supabase `type=recovery` links, sets the returned session, opens the auth modal automatically, and prompts the reader for a new password.
+
 ### `SubAuth` (`js/subscription/auth.js`)
 - `init()` - Restores the Supabase session, loads profile/entitlements, updates account chrome, and subscribes to auth state changes.
 - `fetchProfile(user)` - Loads the signed-in reader profile with a safe fallback display profile.
 - `syncAccountChip()` - Renders the header account chip as sign-in or active reader state.
 - `setMode(mode)` / `toggleMode()` - Switches the auth dialog between sign-in and sign-up.
-- `handleSubmit()` - Signs in or signs up with a redirect back to `subscription.html`.
+- `handleSubmit()` - Signs in, signs up with a redirect back to `subscription.html`, sends password reset emails, or updates a recovered password depending on the active auth form mode.
+- `sendPasswordReset(email)` / `updateReaderPassword(password)` in the active `aether-app.js` bridge - Use Supabase Auth password recovery for the subscription reader sheet flow.
 - `signOut()` - Ends the Supabase session.
 
 ### `SubUI` (`js/subscription/ui.js`)

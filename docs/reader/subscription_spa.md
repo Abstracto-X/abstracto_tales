@@ -80,6 +80,7 @@ It uses **vanilla HTML, CSS, and ES6 JavaScript** with no build step.
   - **`SubAuth`**: Manages member logins and registrations:
     - `init()`: Connects listener for auth changes, updates `SubState.user`, fetches entitlements, and updates the top bar account chip.
     - `handleSubmit()`: Validates inputs and handles signup/signin actions.
+    - Active `aether-app.js` bridge password recovery: `sendPasswordReset(email)` sends Supabase recovery emails from the account sheet, and recovery callbacks open a `sheetUpdatePassword()` form that calls `updateReaderPassword(password)`.
     - `signOut()`: Signs the reader out and returns to home.
     - `toggleMode()`: Switches the modal context between signin and registration.
 

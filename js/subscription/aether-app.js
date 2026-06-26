@@ -159,7 +159,7 @@ async function refreshEntitlements(){
   return authState.entitlements;
 }
 const OAUTH_URL_KEYS = [
-  "code", "state", "error", "error_code", "error_description", "sub_auth", "sub_route",
+  "code", "state", "type", "error", "error_code", "error_description", "sub_auth", "sub_route",
   "access_token", "refresh_token", "expires_at", "expires_in", "provider_token", "provider_refresh_token", "token_type"
 ];
 function mergeOAuthParams(target, raw){
@@ -178,7 +178,7 @@ function oauthCallbackParams(){
   const rawHash = url.hash.slice(1);
   if (rawHash.includes("?")) mergeOAuthParams(params, rawHash.slice(rawHash.indexOf("?") + 1));
   if (rawHash.includes("#")) mergeOAuthParams(params, rawHash.slice(rawHash.lastIndexOf("#") + 1));
-  const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|error|error_code|error_description|sub_auth|sub_route)=/);
+  const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|type|error|error_code|error_description|sub_auth|sub_route)=/);
   if (marker) mergeOAuthParams(params, rawHash.slice(marker.index).replace(/^[?#&]/, ""));
   return params;
 }
@@ -186,7 +186,7 @@ function cleanHashRoute(hash, fallbackRoute = "vault"){
   const fallback = `#/${String(fallbackRoute || "vault").replace(/^\/?#?\/?/, "")}`;
   if (!hash || hash === "#") return fallback;
   let raw = hash.slice(1);
-  const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
+  const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|type|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
   const cutPoints = [raw.indexOf("?"), raw.indexOf("#"), marker ? marker.index : -1].filter(index => index >= 0);
   if (cutPoints.length) raw = raw.slice(0, Math.min(...cutPoints));
   raw = raw.replace(/[?#&]+$/, "");
@@ -202,6 +202,7 @@ function cleanOAuthCallbackUrl(){
 }
 async function consumeOAuthCallback(client){
   const params = oauthCallbackParams();
+  authState.passwordRecovery = params.get("type") === "recovery";
   const callbackError = params.get("error_description") || params.get("error") || params.get("error_code");
   if (callbackError) {
     cleanOAuthCallbackUrl();
@@ -281,6 +282,23 @@ async function signUpWithPassword(email, password){
   authState.user = data?.user || null;
   store.email = email;
   saveStore();
+  return data;
+}
+async function sendPasswordReset(email){
+  const client = getSupabase();
+  if (!client) throw new Error("Supabase client unavailable.");
+  const redirect = window.location.href.split("#")[0];
+  const { data, error } = await client.auth.resetPasswordForEmail(email, { redirectTo: redirect });
+  if (error) throw error;
+  return data;
+}
+async function updateReaderPassword(password){
+  const client = getSupabase();
+  if (!client) throw new Error("Supabase client unavailable.");
+  const { data, error } = await client.auth.updateUser({ password });
+  if (error) throw error;
+  authState.passwordRecovery = false;
+  await loadProfileAndEntitlements();
   return data;
 }
 function subscriptionRedirectTo(){
@@ -1990,13 +2008,21 @@ function sheetPersona(){
   return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Account</h2>
   <div class="card tinted" style="margin-bottom:14px;display:flex;gap:12px;align-items:center"><span style="width:42px;height:42px;border-radius:50%;background:var(--accent-soft);display:grid;place-items:center;color:var(--accent)">${I.user}</span><div style="flex:1;min-width:0"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis">${esc(accountLabel())}</div><div class="faint" style="font-size:.76rem">${esc(P.tier || status)}</div></div>${signedIn?`<button class="btn sm ghost" data-act="reader-signout">Sign out</button>`:""}</div>
   <div class="quicklinks" style="margin-bottom:16px"><a data-nav="/vault">${I.vault}<span>Vault</span><small>Manage access</small></a><a data-nav="/my-shelf">${I.shelf}<span>My Shelf</span><small>Your library</small></a><a data-sheet="settings">${I.aa}<span>Preferences</span><small>Reader</small></a>${isAdmin()?`<a href="admin.html"><span>${I.shield}</span><span>Admin CMS</span><small>Production controls</small></a><a data-nav="/studio/access">${I.overview}<span>Studio Access</span><small>Preview console</small></a>`:""}</div>
-  ${signedIn?`<div class="card" style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:7px">Entitlements</div>${active.length?active.map(e=>`<div class="between" style="gap:10px;padding:6px 0"><span style="font-weight:600;font-size:.86rem">${esc(e.tier_name || e.name || e.tier || "Reader access")}</span><span class="badge free">active</span></div>`).join(""):`<p class="faint" style="font-size:.8rem;margin:0">No active entitlement returned yet. Connect Patreon or redeem an access key.</p>`}</div>`:`<div class="card" style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:8px">Continue</div><div class="col-flex"><button class="btn story block" type="button" data-act="google-signin">${I.external}Continue with Google</button><div class="faint" style="font-size:.74rem;text-align:center">or use email</div><form data-auth-form="signin"><div class="col-flex"><input class="pill-input" name="email" type="email" autocomplete="email" placeholder="reader@example.com" style="text-align:left"><input class="pill-input" name="password" type="password" autocomplete="current-password" placeholder="Password" style="text-align:left"><div class="faint" data-auth-status style="font-size:.76rem;min-height:1em"></div><button class="btn ghost block" type="submit">${I.user}Sign in with email</button><button class="btn ghost block" type="button" data-act="show-signup">Create email account</button></div></form></div></div>`}
+  ${signedIn?`<div class="card" style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:7px">Entitlements</div>${active.length?active.map(e=>`<div class="between" style="gap:10px;padding:6px 0"><span style="font-weight:600;font-size:.86rem">${esc(e.tier_name || e.name || e.tier || "Reader access")}</span><span class="badge free">active</span></div>`).join(""):`<p class="faint" style="font-size:.8rem;margin:0">No active entitlement returned yet. Connect Patreon or redeem an access key.</p>`}</div>`:`<div class="card" style="margin-bottom:14px"><div class="eyebrow" style="margin-bottom:8px">Continue</div><div class="col-flex"><button class="btn story block" type="button" data-act="google-signin">${I.external}Continue with Google</button><div class="faint" style="font-size:.74rem;text-align:center">or use email</div><form data-auth-form="signin"><div class="col-flex"><input class="pill-input" name="email" type="email" autocomplete="email" placeholder="reader@example.com" style="text-align:left"><input class="pill-input" name="password" type="password" autocomplete="current-password" placeholder="Password" style="text-align:left"><div class="faint" data-auth-status style="font-size:.76rem;min-height:1em"></div><button class="btn ghost block" type="submit">${I.user}Sign in with email</button><button class="btn ghost block" type="button" data-act="show-signup">Create email account</button><button class="btn ghost block" type="button" data-sheet="forgot-password">Forgot password?</button></div></form></div></div>`}
   <div class="card" style="margin-top:8px"><div style="font-weight:600;font-size:.86rem">Backend bridge status</div><div class="faint" style="font-size:.74rem;margin-top:4px">Supabase auth, catalog RPCs, chapter RPCs, and entitlement checks are active. Use admin.html for real tier/key/grant management.</div></div>`;
 }
 function sheetSignup(){
   return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Save your library</h2><p class="sheet-sub">Use Google for the fastest setup, or create an email login for key redemption, Patreon linking, and future cross-device shelf sync.</p>
   <div class="card" style="margin-bottom:12px"><button class="btn story block" type="button" data-act="google-signin">${I.external}Continue with Google</button></div>
   <form data-auth-form="signup" class="card"><div class="col-flex"><input class="pill-input" name="email" type="email" autocomplete="email" placeholder="reader@example.com" style="text-align:left"><input class="pill-input" name="password" type="password" autocomplete="new-password" placeholder="Password" style="text-align:left"><div class="faint" data-auth-status style="font-size:.76rem;min-height:1em"></div><button class="btn ghost block" type="submit">${I.user}Create email login</button><button class="btn ghost block" type="button" data-sheet="persona">Back to sign in</button></div></form>`;
+}
+function sheetForgotPassword(){
+  return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Reset password</h2><p class="sheet-sub">Enter your account email and we will send a secure Supabase password reset link.</p>
+  <form data-auth-form="reset" class="card"><div class="col-flex"><input class="pill-input" name="email" type="email" autocomplete="email" placeholder="reader@example.com" style="text-align:left"><div class="faint" data-auth-status style="font-size:.76rem;min-height:1em"></div><button class="btn story block" type="submit">${I.mail}Send reset link</button><button class="btn ghost block" type="button" data-sheet="persona">Back to sign in</button></div></form>`;
+}
+function sheetUpdatePassword(){
+  return `<span class="close-x" data-act="close-sheet">${I.x}</span><h2>Set new password</h2><p class="sheet-sub">Your reset link is verified. Choose a new password for this reader account.</p>
+  <form data-auth-form="update-password" class="card"><div class="col-flex"><input class="pill-input" name="password" type="password" autocomplete="new-password" placeholder="New password" style="text-align:left"><div class="faint" data-auth-status style="font-size:.76rem;min-height:1em"></div><button class="btn story block" type="submit">${I.user}Update password</button></div></form>`;
 }
 function sheetLock(chId){
   const f=byId(chId); if(!f) return "<p>Not found.</p>"; const {ch,story}=f; const r=chapterResolved(ch);
@@ -2169,7 +2195,7 @@ function delegate(){
     if (t.dataset.read!=null){ e.preventDefault(); nav("/read/"+t.dataset.read); return; }
     if (t.dataset.preview!=null){ e.preventDefault(); nav("/read/"+t.dataset.preview); return; }
     if (t.dataset.lock!=null){ e.preventDefault(); rememberReturn(); openSheet(()=>sheetLock(t.dataset.lock)); return; }
-    if (t.dataset.sheet!=null){ e.preventDefault(); const sh=t.dataset.sheet; const builders={settings:sheetSettings,persona:sheetPersona,signup:sheetSignup,redeem:sheetRedeem,"connect-patreon":sheetConnectPatreon,context:sheetContext}; if(sh==="context"&&!currentChapter){ toast("Open a chapter first",null,{kind:"bad",icon:"alert"}); return; } openSheet(builders[sh]||sheetSettings); return; }
+    if (t.dataset.sheet!=null){ e.preventDefault(); const sh=t.dataset.sheet; const builders={settings:sheetSettings,persona:sheetPersona,signup:sheetSignup,"forgot-password":sheetForgotPassword,"update-password":sheetUpdatePassword,redeem:sheetRedeem,"connect-patreon":sheetConnectPatreon,context:sheetContext}; if(sh==="context"&&!currentChapter){ toast("Open a chapter first",null,{kind:"bad",icon:"alert"}); return; } openSheet(builders[sh]||sheetSettings); return; }
     if (t.dataset.follow!=null){ toggleFollow(t.dataset.follow); return; }
     if (t.dataset.react!=null){ if(currentChapter) setReaction(currentChapter.ch.id, t.dataset.react); return; }
     if (t.dataset.persona!=null){ store.personaId=t.dataset.persona; saveStore(); closeSheet(); toast("Viewing as "+(D.PERSONAS.find(p=>p.id===t.dataset.persona)?.label),null,{icon:"user"}); render(); return; }
@@ -2211,13 +2237,25 @@ function delegate(){
       const status=f.querySelector("[data-auth-status]");
       const email=(f.querySelector("[name=email]")?.value||"").trim();
       const password=f.querySelector("[name=password]")?.value||"";
-      if(!email || !password){ if(status){ status.style.color="var(--bad)"; status.textContent="Email and password are required."; } return; }
+      if(f.dataset.authForm==="reset" && !email){ if(status){ status.style.color="var(--bad)"; status.textContent="Email is required."; } return; }
+      if(f.dataset.authForm==="update-password" && !password){ if(status){ status.style.color="var(--bad)"; status.textContent="New password is required."; } return; }
+      if(f.dataset.authForm!=="reset" && f.dataset.authForm!=="update-password" && (!email || !password)){ if(status){ status.style.color="var(--bad)"; status.textContent="Email and password are required."; } return; }
       try {
-        if(status){ status.style.color="var(--text-dim)"; status.textContent=f.dataset.authForm==="signup"?"Creating account...":"Signing in..."; }
+        if(status){
+          status.style.color="var(--text-dim)";
+          status.textContent=f.dataset.authForm==="signup"?"Creating account...":f.dataset.authForm==="reset"?"Sending reset link...":f.dataset.authForm==="update-password"?"Updating password...":"Signing in...";
+        }
         if(f.dataset.authForm==="signup") await signUpWithPassword(email, password);
-        else await signInWithPassword(email, password);
+        else if(f.dataset.authForm==="reset") {
+          await sendPasswordReset(email);
+          if(status){ status.style.color="var(--good)"; status.textContent="Reset email sent. Check your inbox."; }
+          toast("Reset email sent", "Check your inbox for the secure password link.", {icon:"mail", ms:5500});
+          return;
+        } else if(f.dataset.authForm==="update-password") {
+          await updateReaderPassword(password);
+        } else await signInWithPassword(email, password);
         closeSheet();
-        toast(f.dataset.authForm==="signup"?"Account created":"Signed in", "Reader account is connected.", {icon:"checkCirc", ms:4500});
+        toast(f.dataset.authForm==="signup"?"Account created":f.dataset.authForm==="update-password"?"Password updated":"Signed in", "Reader account is connected.", {icon:"checkCirc", ms:4500});
         render();
       } catch (err) {
         if(status){ status.style.color="var(--bad)"; status.textContent=err.message || "Authentication failed."; }
@@ -2244,6 +2282,7 @@ function handleAct(act, el){
     case "google-signin": signInWithGoogle().catch(err=>toast("Google sign-in failed", err.message || "Unable to start Google OAuth.", {icon:"alert", kind:"bad"})); break;
     case "google-then-patreon": signInWithGoogle("connect-patreon").catch(err=>toast("Google sign-in failed", err.message || "Unable to start Google OAuth.", {icon:"alert", kind:"bad"})); break;
     case "show-signup": openSheet(sheetSignup); break;
+    case "show-forgot-password": openSheet(sheetForgotPassword); break;
     case "reader-signout": signOutReader().then(()=>{ closeSheet(); toast("Signed out", null, {icon:"user"}); render(); }).catch(err=>toast("Sign out failed", err.message, {icon:"alert", kind:"bad"})); break;
     case "resync": syncProviderEntitlements().then((data)=>{ const grants = Number(data?.grants || 0); toast("Sync complete", grants ? `${grants} Patreon entitlement${grants===1?"":"s"} active.` : "Patreon linked, but no mapped tier was found.", {icon:"checkCirc", ms:4000}); render(); }).catch(err=>toast("Sync failed", err.message || "Unable to refresh provider entitlements.", {icon:"alert", kind:"bad"})); break;
     case "expected-access": rememberReturn(); openSheet(sheetContext?sheetContext:()=>sheetLock(currentChapter?.ch.id)); break;
@@ -2498,7 +2537,7 @@ function init(){
   applyBgSettings();
   window.addEventListener("hashchange", render);
   render();
-  initAuth().then(async ()=>{ await loadBackendLibrary(); saveStore(); render(); }).catch(err=>console.error("Auth bridge init failed", err));
+  initAuth().then(async ()=>{ await loadBackendLibrary(); saveStore(); render(); if (authState.passwordRecovery) setTimeout(() => openSheet(sheetUpdatePassword), 0); }).catch(err=>console.error("Auth bridge init failed", err));
   // welcome toast for first bridge load
   if(!LS.getItem("aether-welcomed")){ LS.setItem("aether-welcomed","1"); setTimeout(()=>toast("Welcome to Aether Pages","This production shell now uses the Aether Pages concept UI; backend wiring comes next.",{icon:"spark",ms:6500}),900); }
 }

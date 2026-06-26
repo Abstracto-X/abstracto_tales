@@ -88,9 +88,11 @@ const getSubscriptionUrl = () => {
 };
 
 const OAUTH_URL_KEYS = [
-    'code', 'state', 'error', 'error_code', 'error_description', 'sub_auth', 'sub_route',
+    'code', 'state', 'type', 'error', 'error_code', 'error_description', 'sub_auth', 'sub_route',
     'access_token', 'refresh_token', 'expires_at', 'expires_in', 'provider_token', 'provider_refresh_token', 'token_type'
 ];
+
+let pendingPasswordRecovery = false;
 
 const mergeOAuthParams = (target, raw) => {
     if (!raw) return;
@@ -109,7 +111,7 @@ const collectOAuthCallbackParams = () => {
         const rawHash = url.hash.slice(1);
         if (rawHash.includes('?')) mergeOAuthParams(params, rawHash.slice(rawHash.indexOf('?') + 1));
         if (rawHash.includes('#')) mergeOAuthParams(params, rawHash.slice(rawHash.lastIndexOf('#') + 1));
-        const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|error|error_code|error_description|sub_auth|sub_route)=/);
+        const marker = rawHash.match(/(?:^|[?#&])(code|access_token|refresh_token|type|error|error_code|error_description|sub_auth|sub_route)=/);
         if (marker) mergeOAuthParams(params, rawHash.slice(marker.index).replace(/^[?#&]/, ''));
     }
     return params;
@@ -120,7 +122,7 @@ const cleanAuthCallbackUrl = () => {
     OAUTH_URL_KEYS.forEach(key => url.searchParams.delete(key));
     if (url.hash) {
         let raw = url.hash.slice(1);
-        const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
+        const marker = raw.match(/(?:^|[?#&])(code|access_token|refresh_token|type|expires_at|expires_in|provider_token|provider_refresh_token|token_type|state|error|error_code|error_description|sub_auth|sub_route)=/);
         const cutPoints = [raw.indexOf('?'), raw.indexOf('#'), marker ? marker.index : -1].filter(index => index >= 0);
         if (cutPoints.length) raw = raw.slice(0, Math.min(...cutPoints));
         raw = raw.replace(/[?#&]+$/, '');
@@ -136,7 +138,8 @@ const consumeOAuthCallback = async () => {
         cleanAuthCallbackUrl();
         throw new Error(callbackError);
     }
-    const shouldReturnToSubscription = getPendingSubscriptionAuthReturn() || params.get('sub_auth') === 'google';
+    pendingPasswordRecovery = params.get('type') === 'recovery';
+    const shouldReturnToSubscription = !pendingPasswordRecovery && (getPendingSubscriptionAuthReturn() || params.get('sub_auth') === 'google');
     const accessToken = params.get('access_token');
     const refreshToken = params.get('refresh_token');
     if (accessToken && refreshToken && supabaseClient.auth.setSession) {
@@ -173,6 +176,10 @@ export const UserAuth = {
         const activeSession = callbackSession || session;
         if (activeSession) {
             await UserAuth.fetchProfile(activeSession.user);
+            if (pendingPasswordRecovery) {
+                UserAuth.setMode('update');
+                setTimeout(() => UI.openAuthModal(), 0);
+            }
         } else {
             UI.initAuthLink(null);
             UI.initAdminLink();
@@ -253,12 +260,38 @@ export const UserAuth = {
         }
     },
 
+    setMode: (mode) => {
+        UserAuth.mode = mode;
+        const title = document.getElementById('auth-title');
+        const submit = document.getElementById('auth-submit-btn');
+        const switchBtn = document.getElementById('auth-switch-btn');
+        const forgotBtn = document.getElementById('auth-forgot-btn');
+        const emailGroup = document.getElementById('auth-email-group');
+        const passwordLabel = document.getElementById('auth-password-label');
+        const password = document.getElementById('auth-password');
+        const error = document.getElementById('auth-error');
+
+        if (title) title.textContent = mode === 'signup' ? 'Join the Archives' : mode === 'recover' ? 'Recover Access' : mode === 'update' ? 'Set New Password' : 'Enter the Archives';
+        if (submit) submit.textContent = mode === 'signup' ? 'Sign Up' : mode === 'recover' ? 'Send Reset Email' : mode === 'update' ? 'Update Password' : 'Sign In';
+        if (switchBtn) switchBtn.textContent = mode === 'signup' ? 'Already have access? Sign in here.' : mode === 'recover' || mode === 'update' ? 'Back to sign in.' : 'New to the Archives? Sign up here.';
+        if (forgotBtn) forgotBtn.style.display = mode === 'signin' ? 'block' : 'none';
+        if (emailGroup) emailGroup.style.display = mode === 'update' ? 'none' : 'block';
+        if (passwordLabel) passwordLabel.textContent = mode === 'update' ? 'New Password' : 'Password';
+        if (password) {
+            password.style.display = mode === 'recover' ? 'none' : 'block';
+            password.autocomplete = mode === 'signup' || mode === 'update' ? 'new-password' : 'current-password';
+            password.placeholder = mode === 'update' ? 'New password' : '........';
+            password.value = '';
+        }
+        if (error) error.textContent = '';
+    },
+
     toggleMode: () => {
-        UserAuth.mode = UserAuth.mode === 'signin' ? 'signup' : 'signin';
-        document.getElementById('auth-title').textContent = UserAuth.mode === 'signin' ? 'Enter the Archives' : 'Join the Archives';
-        document.getElementById('auth-submit-btn').textContent = UserAuth.mode === 'signin' ? 'Sign In' : 'Sign Up';
-        document.getElementById('auth-switch-btn').textContent = UserAuth.mode === 'signin' ? 'New to the Archives? Sign up here.' : 'Already have access? Sign in here.';
-        document.getElementById('auth-error').textContent = '';
+        UserAuth.setMode(UserAuth.mode === 'signin' ? 'signup' : 'signin');
+    },
+
+    showRecovery: () => {
+        UserAuth.setMode('recover');
     },
 
     handleSubmit: async () => {
@@ -266,7 +299,17 @@ export const UserAuth = {
         const password = document.getElementById('auth-password').value;
         const errorEl = document.getElementById('auth-error');
 
-        if (!email || !password) {
+        if (UserAuth.mode === 'recover' && !email) {
+            errorEl.textContent = 'Enter your email address.';
+            return;
+        }
+
+        if (UserAuth.mode === 'update' && !password) {
+            errorEl.textContent = 'Enter a new password.';
+            return;
+        }
+
+        if (UserAuth.mode !== 'recover' && UserAuth.mode !== 'update' && (!email || !password)) {
             errorEl.textContent = 'Please fill in all fields.';
             return;
         }
@@ -276,6 +319,26 @@ export const UserAuth = {
 
         try {
             let result;
+            if (UserAuth.mode === 'recover') {
+                result = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: getAuthRedirectUrl()
+                });
+                if (result.error) throw result.error;
+                errorEl.style.color = 'var(--success-color)';
+                errorEl.textContent = 'Password reset email sent. Check your inbox.';
+                return;
+            }
+
+            if (UserAuth.mode === 'update') {
+                result = await supabaseClient.auth.updateUser({ password });
+                if (result.error) throw result.error;
+                pendingPasswordRecovery = false;
+                errorEl.style.color = 'var(--success-color)';
+                errorEl.textContent = 'Password updated. You can continue reading.';
+                setTimeout(() => { UserAuth.setMode('signin'); UI.closeAuthModal(); }, 1200);
+                return;
+            }
+
             if (UserAuth.mode === 'signup') {
                 result = await supabaseClient.auth.signUp({
                     email,

@@ -228,7 +228,7 @@ Owns reader authentication state, profile synchronization, sign-in/sign-up actio
 State fields:
 - `user: object | null` - Current authenticated Supabase user.
 - `profile: object | null` - Current `profiles` row for the authenticated user.
-- `mode: string` - Current auth form mode: `'signin'` or `'signup'`.
+- `mode: string` - Current auth form mode: `'signin'`, `'signup'`, `'recover'`, or `'update'`.
 
 `UserAuth` methods:
 
@@ -263,9 +263,16 @@ State fields:
   - Switches between `'signin'` and `'signup'`.
   - Updates modal title, submit button label, switch button label, and clears inline errors.
 
+- `setMode(mode)` / `showRecovery()`
+  - Updates the auth modal for sign-in, sign-up, reset-email request, or new-password update states.
+
 - `handleSubmit()` -> `Promise<void>`
   - Reads email/password from the auth form.
   - Validates required fields.
+  - On recover:
+    - calls `supabaseClient.auth.resetPasswordForEmail(...)` with a redirect back to the reader root.
+  - On update:
+    - calls `supabaseClient.auth.updateUser({ password })` after a Supabase recovery callback establishes the session.
   - On sign-up:
     - calls `supabaseClient.auth.signUp(...)` with `options.emailRedirectTo`
     - derives the redirect from the current reader URL, preserving the GitHub Pages `/abstracto_tales/` subpath while removing query, hash, and filename state
@@ -308,8 +315,11 @@ State fields:
   - `#auth-title`
   - `#auth-submit-btn`
   - `#auth-switch-btn`
+  - `#auth-forgot-btn`
+  - `#auth-email-group`
   - `#auth-email`
   - `#auth-password`
+  - `#auth-password-label`
   - `#auth-error`
 - Profile modal:
   - `#profile-name`
@@ -325,6 +335,8 @@ State fields:
 - `supabaseClient.auth.signUp(...)`
 - `supabaseClient.auth.signInWithPassword(...)`
 - `supabaseClient.auth.signOut()`
+- `supabaseClient.auth.resetPasswordForEmail(...)`
+- `supabaseClient.auth.updateUser(...)`
 - `profiles` table
 - `Reader` storage bucket
 
@@ -374,7 +386,7 @@ Exports:
 - `SubAuth.fetchProfile(user)` - Reads `profiles` by auth user id.
 - `SubAuth.syncAccountChip()` - Updates the `#sub-account-chip` header slot.
 - `SubAuth.setMode(mode)` / `SubAuth.toggleMode()` - Controls sign-in/sign-up dialog mode.
-- `SubAuth.handleSubmit()` - Handles sign-in/sign-up using Supabase Auth.
+- `SubAuth.handleSubmit()` - Handles sign-in/sign-up using Supabase Auth in the modular fallback flow. The active `aether-app.js` subscription bridge also supports reset-email and recovered-password update forms through delegated `data-auth-form` handlers.
 - `SubAuth.signOut()` - Signs out of Supabase.
 
 DOM dependencies:
